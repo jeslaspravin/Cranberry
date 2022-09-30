@@ -16,3 +16,9 @@ CoreObjectDelegates::ContentDirectoryEvent CoreObjectDelegates::onContentDirecto
 
 CoreObjectDelegates::PackageEvent CoreObjectDelegates::onPackageSaved;
 CoreObjectDelegates::PackageEvent CoreObjectDelegates::onPackageLoaded;
+CoreObjectDelegates::PackageEvent CoreObjectDelegates::onPackageUnloaded;
+
+CoreObjectDelegates::PackageLoaderEvent CoreObjectDelegates::onPackageScanned;
+
+CoreObjectDelegates::ObjectEvent CoreObjectDelegates::onObjectCreated;
+CoreObjectDelegates::ObjectEvent CoreObjectDelegates::onObjectDestroyed;

@@ -14,9 +14,7 @@
 #include <optional>
 #include <set>
 
-#include "IRenderInterfaceModule.h"
 #include "Math/Box.h"
-#include "Reflections/Functions.h"
 #include "RenderInterface/Resources/GenericWindowCanvas.h"
 #include "RenderInterface/Resources/GraphicsSyncResource.h"
 #include "RenderInterface/Resources/MemoryResources.h"
@@ -30,54 +28,11 @@ struct CommandSubmitInfo;
 struct CommandSubmitInfo2;
 class LocalPipelineContext;
 struct RenderPassAdditionalProps;
-class GraphicsHelperAPI;
-class IGraphicsInstance;
-
-class ENGINERENDERER_EXPORT IRenderCommand
-{
-public:
-    virtual ~IRenderCommand() = default;
-    virtual void execute(class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper) = 0;
-};
-
-template <typename CommandType, typename LambdaType>
-void issueRenderCommand(LambdaType &&lambdaFunc)
-{
-    IRenderInterfaceModule::issueRenderCommand<CommandType>(typename CommandType::RenderCmdFunc(std::forward<LambdaType>(lambdaFunc)));
-};
-
-// LambdaBody must be followed by all capture arguments
-#define LAMBDA_BODY(...)                                                                                                                       \
-    {                                                                                                                                          \
-        __VA_ARGS__                                                                                                                            \
-    }
-
-#define ENQUEUE_COMMAND(CommandName)                                                                                                           \
-    class CommandName##_RenderCommand final : public IRenderCommand                                                                            \
-    {                                                                                                                                          \
-    public:                                                                                                                                    \
-        using RenderCmdFunc = LambdaFunction<void, class IRenderCommandList *, IGraphicsInstance *, const GraphicsHelperAPI *>;                \
-                                                                                                                                               \
-    private:                                                                                                                                   \
-        RenderCmdFunc renderCmd;                                                                                                               \
-                                                                                                                                               \
-    public:                                                                                                                                    \
-        CommandName##_RenderCommand(RenderCmdFunc &&lambdaFunc)                                                                                \
-            : renderCmd(std::forward<RenderCmdFunc>(lambdaFunc))                                                                               \
-        {}                                                                                                                                     \
-                                                                                                                                               \
-        void execute(class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper) override \
-        {                                                                                                                                      \
-            renderCmd(cmdList, graphicsInstance, graphicsHelper);                                                                              \
-        }                                                                                                                                      \
-    };                                                                                                                                         \
-    ::issueRenderCommand<CommandName##_RenderCommand>
-
-#define ENQUEUE_COMMAND_NODEBUG(CommandName, LambdaBody, ...)                                                                                  \
-    ENQUEUE_COMMAND(CommandName)                                                                                                               \
-    ([##__VA_ARGS__##](IRenderCommandList * cmdList, IGraphicsInstance * graphicsInstance, const GraphicsHelperAPI *graphicsHelper)##LambdaBody)
+class Color;
+class LinearColor;
 
 #define SCOPED_CMD_MARKER(CmdList, CommandBuffer, Name) ScopedCommandMarker cmdMarker_##Name(CmdList, CommandBuffer, TCHAR(#Name))
+#define SCOPED_STR_CMD_MARKER(CmdList, CommandBuffer, Name) ScopedCommandMarker COMBINE(cmdMarker_, __COUNTER__)(CmdList, CommandBuffer, (Name))
 #define SCOPED_CMD_COLORMARKER(CmdList, CommandBuffer, Name, Color)                                                                            \
     ScopedCommandMarker cmdMarker_##Name(CmdList, CommandBuffer, TCHAR(#Name), Color)
 struct ENGINERENDERER_EXPORT ScopedCommandMarker
@@ -130,22 +85,22 @@ class ENGINERENDERER_EXPORT IRenderCommandList
 protected:
     // Copies to known format from color, returns true if copied
     bool simpleCopyPixelsTo(
-        BufferResourceRef stagingBuffer, uint8 *stagingPtr, const std::vector<class Color> &pixelData, EPixelDataFormat::Type dataFormat,
+        BufferResourceRef stagingBuffer, uint8 *stagingPtr, ArrayView<const Color> pixelData, EPixelDataFormat::Type dataFormat,
         const EPixelDataFormat::PixelFormatInfo *formatInfo
     ) const;
 
     // raw copies the pixels to staging buffer, Only accepts non floating point or 32bit floating point
     // textures
     void copyPixelsTo(
-        BufferResourceRef stagingBuffer, uint8 *stagingPtr, const std::vector<class Color> &pixelData,
+        BufferResourceRef stagingBuffer, uint8 *stagingPtr, ArrayView<const Color> pixelData,
         const EPixelDataFormat::PixelFormatInfo *formatInfo
     ) const;
     void copyPixelsLinearMappedTo(
-        BufferResourceRef stagingBuffer, uint8 *stagingPtr, const std::vector<class Color> &pixelData,
+        BufferResourceRef stagingBuffer, uint8 *stagingPtr, ArrayView<const Color> pixelData,
         const EPixelDataFormat::PixelFormatInfo *formatInfo
     ) const;
     void copyPixelsTo(
-        BufferResourceRef stagingBuffer, uint8 *stagingPtr, const std::vector<class LinearColor> &pixelData,
+        BufferResourceRef stagingBuffer, uint8 *stagingPtr, ArrayView<const LinearColor> pixelData,
         const EPixelDataFormat::PixelFormatInfo *formatInfo, bool bIsFloatingFormat
     ) const;
 
@@ -154,12 +109,12 @@ public:
     static IRenderCommandList *genericInstance();
 
     virtual void setup(IRenderCommandList *commandList){};
-    virtual void newFrame(const float &tiimeDelta) = 0;
+    virtual void newFrame(float timeDelta) = 0;
 
     virtual void copyToBuffer(BufferResourceRef dst, uint32 dstOffset, const void *dataToCopy, uint32 size) = 0;
-    virtual void copyToBuffer(const std::vector<BatchCopyBufferData> &batchCopies) = 0;
-    virtual void copyBuffer(BufferResourceRef src, BufferResourceRef dst, const CopyBufferInfo &copyInfo) = 0;
-    virtual void copyBuffer(const std::vector<BatchCopyBufferInfo> &batchCopies) = 0;
+    virtual void copyToBuffer(ArrayView<const BatchCopyBufferData> batchCopies) = 0;
+    virtual void copyBuffer(BufferResourceRef src, BufferResourceRef dst, ArrayView<const CopyBufferInfo> copies) = 0;
+    virtual void copyBuffer(ArrayView<const BatchCopyBufferInfo> batchCopies) = 0;
     // Below copies does not take inner structure alignment and offset into account so do not use this to
     // copy structures that has inner structure which is not tightly packed
     template <typename BufferDataType>
@@ -169,49 +124,66 @@ public:
         std::vector<BatchCopyBufferData> &recordTo, BufferResourceRef dst, uint32 dstOffset, const BufferDataType *dataToCopy,
         const ShaderBufferParamInfo *bufferFields
     );
+    void recordCopyToBuffer(
+        std::vector<BatchCopyBufferData> &recordTo, BufferResourceRef dst, uint32 dstOffset, const void *dataToCopy,
+        const ShaderBufferParamInfo *bufferFields
+    );
 
     // Copy pixel data to only first MIP level of all layers and generate the rest of MIP
-    void copyToImage(ImageResourceRef dst, const std::vector<class Color> &pixelData);
-    void copyToImageLinearMapped(ImageResourceRef dst, const std::vector<class Color> &pixelData);
+    void copyToImage(ImageResourceRef dst, ArrayView<const Color> pixelData);
+    void copyToImageLinearMapped(ImageResourceRef dst, ArrayView<const Color> pixelData);
 
-    virtual void copyToImage(ImageResourceRef dst, const std::vector<class Color> &pixelData, const CopyPixelsToImageInfo &copyInfo) = 0;
+    virtual void copyToImage(ImageResourceRef dst, ArrayView<const Color> pixelData, const CopyPixelsToImageInfo &copyInfo) = 0;
     // Linear maps each pixel to component byte range
-    virtual void copyToImageLinearMapped(ImageResourceRef dst, const std::vector<class Color> &pixelData, const CopyPixelsToImageInfo &copyInfo)
-        = 0;
-    virtual void copyToImage(ImageResourceRef dst, const std::vector<class LinearColor> &pixelData, const CopyPixelsToImageInfo &copyInfo) = 0;
+    virtual void copyToImageLinearMapped(ImageResourceRef dst, ArrayView<const Color> pixelData, const CopyPixelsToImageInfo &copyInfo) = 0;
+    virtual void copyToImage(ImageResourceRef dst, ArrayView<const LinearColor> pixelData, const CopyPixelsToImageInfo &copyInfo) = 0;
     virtual void copyOrResolveImage(ImageResourceRef src, ImageResourceRef dst, const CopyImageInfo &srcInfo, const CopyImageInfo &dstInfo) = 0;
 
-    virtual void clearImage(ImageResourceRef image, const LinearColor &clearColor, const std::vector<ImageSubresource> &subresources) = 0;
-    virtual void clearDepth(ImageResourceRef image, float depth, uint32 stencil, const std::vector<ImageSubresource> &subresources) = 0;
+    virtual void clearImage(ImageResourceRef image, const LinearColor &clearColor, ArrayView<const ImageSubresource> subresources) = 0;
+    virtual void clearDepth(ImageResourceRef image, float depth, uint32 stencil, ArrayView<const ImageSubresource> subresources) = 0;
 
     virtual void setupInitialLayout(ImageResourceRef image) = 0;
 
     virtual void presentImage(
-        const std::vector<WindowCanvasRef> &canvases, const std::vector<uint32> &imageIndices, const std::vector<SemaphoreRef> &waitOnSemaphores
+        ArrayView<const WindowCanvasRef> canvases, ArrayView<const uint32> imageIndices, ArrayView<const SemaphoreRef> waitOnSemaphores
     ) = 0;
 
     ///////////////////////////////////////////////////////////////////////////////
     //// Command buffer related function access if you know what you are doing ////
     ///////////////////////////////////////////////////////////////////////////////
 
+    virtual void
+        cmdCopyBuffer(const GraphicsResource *cmdBuffer, BufferResourceRef src, BufferResourceRef dst, ArrayView<const CopyBufferInfo> copies)
+        = 0;
+    virtual void cmdCopyBuffer(const GraphicsResource *cmdBuffer, ArrayView<const BatchCopyBufferInfo> copies) = 0;
+    virtual void cmdCopyToBuffer(const GraphicsResource *cmdBuffer, ArrayView<const BatchCopyBufferData> batchCopies) = 0;
     virtual void cmdCopyOrResolveImage(
         const GraphicsResource *cmdBuffer, ImageResourceRef src, ImageResourceRef dst, const CopyImageInfo &srcInfo,
         const CopyImageInfo &dstInfo
     ) = 0;
     // Transitions the layout of image to general identified usage, for color/depth attachments sample
     // read will be after transition layout
-    virtual void cmdTransitionLayouts(const GraphicsResource *cmdBuffer, const std::vector<ImageResourceRef> &images) = 0;
+    virtual void cmdTransitionLayouts(const GraphicsResource *cmdBuffer, ArrayView<const ImageResourceRef> images) = 0;
 
     virtual void cmdClearImage(
-        const GraphicsResource *cmdBuffer, ImageResourceRef image, const LinearColor &clearColor,
-        const std::vector<ImageSubresource> &subresources
+        const GraphicsResource *cmdBuffer, ImageResourceRef image, const LinearColor &clearColor, ArrayView<const ImageSubresource> subresources
     ) = 0;
     virtual void cmdClearDepth(
-        const GraphicsResource *cmdBuffer, ImageResourceRef image, float depth, uint32 stencil,
-        const std::vector<ImageSubresource> &subresources
+        const GraphicsResource *cmdBuffer, ImageResourceRef image, float depth, uint32 stencil, ArrayView<const ImageSubresource> subresources
     ) = 0;
 
-    virtual void cmdBarrierResources(const GraphicsResource *cmdBuffer, const std::set<ShaderParametersRef> &descriptorsSets) = 0;
+    // descriptor sets must be unique
+    virtual void cmdBarrierResources(const GraphicsResource *cmdBuffer, ArrayView<const ShaderParametersRef> descriptorsSets) = 0;
+    // Below are so that barriers will be able to be applied outside render pass
+    virtual void cmdBarrierVertices(const GraphicsResource *cmdBuffer, ArrayView<const BufferResourceRef> vertexBuffers) = 0;
+    virtual void cmdBarrierIndices(const GraphicsResource *cmdBuffer, ArrayView<const BufferResourceRef> indexBuffers) = 0;
+    virtual void cmdBarrierIndirectDraws(const GraphicsResource *cmdBuffer, ArrayView<const BufferResourceRef> indirectDrawBuffers) = 0;
+    // For queue transfers
+    virtual void cmdReleaseQueueResources(const GraphicsResource *cmdBuffer, EQueueFunction releaseToQueue) = 0;
+    virtual void cmdReleaseQueueResources(
+        const GraphicsResource *cmdBuffer, EQueueFunction releaseToQueue,
+        const std::unordered_map<MemoryResourceRef, EQueueFunction> &perResourceRelease
+    ) = 0;
 
     virtual void cmdBeginRenderPass(
         const GraphicsResource *cmdBuffer, const LocalPipelineContext &contextPipeline, const QuantizedBox2D &renderArea,
@@ -224,30 +196,32 @@ public:
     ) const = 0;
     virtual void cmdBindComputePipeline(const GraphicsResource *cmdBuffer, const LocalPipelineContext &contextPipeline) const = 0;
     void cmdPushConstants(
-        const GraphicsResource *cmdBuffer, const LocalPipelineContext &contextPipeline, const std::vector<std::pair<String, std::any>> &pushData
+        const GraphicsResource *cmdBuffer, const LocalPipelineContext &contextPipeline, ArrayView<const std::pair<String, std::any>> pushData
     ) const;
+
     virtual void cmdPushConstants(
         const GraphicsResource *cmdBuffer, const LocalPipelineContext &contextPipeline, uint32 stagesUsed, const uint8 *data,
-        const std::vector<CopyBufferInfo> &pushConsts
+        ArrayView<const CopyBufferInfo> pushConsts
     ) const = 0;
     void cmdBindDescriptorsSets(
-        const GraphicsResource *cmdBuffer, const LocalPipelineContext &contextPipeline, const ShaderParametersRef &descriptorsSets
+        const GraphicsResource *cmdBuffer, const LocalPipelineContext &contextPipeline, ShaderParametersRef descriptorsSets
     ) const;
     void cmdBindDescriptorsSets(
-        const GraphicsResource *cmdBuffer, const LocalPipelineContext &contextPipeline, const std::vector<ShaderParametersRef> &descriptorsSets
+        const GraphicsResource *cmdBuffer, const LocalPipelineContext &contextPipeline, ArrayView<const ShaderParametersRef> descriptorsSets
     ) const;
     virtual void cmdBindDescriptorsSetInternal(
         const GraphicsResource *cmdBuffer, const PipelineBase *contextPipeline, const std::map<uint32, ShaderParametersRef> &descriptorsSets
     ) const = 0;
     virtual void cmdBindDescriptorsSetsInternal(
-        const GraphicsResource *cmdBuffer, const PipelineBase *contextPipeline, const std::vector<ShaderParametersRef> &descriptorsSets
+        const GraphicsResource *cmdBuffer, const PipelineBase *contextPipeline, ArrayView<const ShaderParametersRef> descriptorsSets
     ) const = 0;
     // Offset in bytes
+    virtual void cmdBindVertexBuffer(const GraphicsResource *cmdBuffer, uint32 firstBinding, BufferResourceRef vertexBuffer, uint64 offset) = 0;
     virtual void cmdBindVertexBuffers(
-        const GraphicsResource *cmdBuffer, uint32 firstBinding, const std::vector<BufferResourceRef> &vertexBuffers,
-        const std::vector<uint64> &offsets
-    ) const = 0;
-    virtual void cmdBindIndexBuffer(const GraphicsResource *cmdBuffer, const BufferResourceRef &indexBuffer, uint64 offset = 0) const = 0;
+        const GraphicsResource *cmdBuffer, uint32 firstBinding, ArrayView<const BufferResourceRef> vertexBuffers,
+        ArrayView<const uint64> offsets
+    ) = 0;
+    virtual void cmdBindIndexBuffer(const GraphicsResource *cmdBuffer, const BufferResourceRef &indexBuffer, uint64 offset = 0) = 0;
 
     virtual void cmdDispatch(const GraphicsResource *cmdBuffer, uint32 groupSizeX, uint32 groupSizeY, uint32 groupSizeZ = 1) const = 0;
     // vertexOffset is vertex to add before indexing that vertex in vertex buffer
@@ -261,18 +235,20 @@ public:
     // bufferOffset - Offset in bytes, stride - useful when draw struct is part of some complex AoS
     virtual void cmdDrawIndexedIndirect(
         const GraphicsResource *cmdBuffer, const BufferResourceRef &drawCmdsBuffer, uint32 bufferOffset, uint32 drawCount, uint32 stride
-    ) const = 0;
+    ) = 0;
     virtual void cmdDrawIndirect(
         const GraphicsResource *cmdBuffer, const BufferResourceRef &drawCmdsBuffer, uint32 bufferOffset, uint32 drawCount, uint32 stride
-    ) const = 0;
+    ) = 0;
 
     virtual void cmdSetViewportAndScissors(
-        const GraphicsResource *cmdBuffer, const std::vector<std::pair<QuantizedBox2D, QuantizedBox2D>> &viewportAndScissors,
+        const GraphicsResource *cmdBuffer, ArrayView<const std::pair<QuantizedBox2D, QuantizedBox2D>> viewportAndScissors,
         uint32 firstViewport = 0
     ) const = 0;
     virtual void cmdSetViewportAndScissor(
         const GraphicsResource *cmdBuffer, const QuantizedBox2D &viewport, const QuantizedBox2D &scissor, uint32 atViewport = 0
     ) const = 0;
+    // Usually you do one viewport and scissor set and several scissor set after that, So having separate scissor set cmd
+    virtual void cmdSetScissor(const GraphicsResource *cmdBuffer, const QuantizedBox2D &scissor, uint32 atViewport = 0) const = 0;
     virtual void cmdSetLineWidth(const GraphicsResource *cmdBuffer, float lineWidth) const = 0;
     virtual void cmdSetDepthBias(const GraphicsResource *cmdBuffer, float constantBias, float slopeFactor, float clampValue) const = 0;
 
@@ -289,15 +265,24 @@ public:
     virtual void endCmd(const GraphicsResource *cmdBuffer) = 0;
     // Frees the command buffer after usage
     virtual void freeCmd(const GraphicsResource *cmdBuffer) = 0;
-    virtual void submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo &submitInfo, FenceRef &fence) = 0;
+
+    /**
+     * Advanced submits, Dependencies needs to be handled manually. If you are using cmdBarrierResources() in this command buffer use
+     * CommandSubmitInfo2 alternative
+     */
+    virtual void submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo &submitInfo, FenceRef fence) = 0;
+    virtual void submitCmds(EQueuePriority::Enum priority, ArrayView<const CommandSubmitInfo> submitInfos, FenceRef fence) = 0;
 
     virtual void submitWaitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo2 &submitInfo) = 0;
-    virtual void submitCmds(EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo2> &commands) = 0;
+    virtual void submitCmds(EQueuePriority::Enum priority, ArrayView<const CommandSubmitInfo2> submitInfos) = 0;
     virtual void submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo2 &command) = 0;
 
     virtual void finishCmd(const GraphicsResource *cmdBuffer) = 0;
     virtual void finishCmd(const String &uniqueName) = 0;
+
     virtual const GraphicsResource *getCmdBuffer(const String &uniqueName) const = 0;
+    virtual TimelineSemaphoreRef getCmdSignalSemaphore(const String &uniqueName) const = 0;
+    virtual TimelineSemaphoreRef getCmdSignalSemaphore(const GraphicsResource *cmdBuffer) const = 0;
 
     // Waits until GPU is idle
     virtual void waitIdle() = 0;
@@ -305,6 +290,8 @@ public:
     // marked by using cmdBarrierResources() function
     virtual void waitOnResDepCmds(const MemoryResourceRef &resource) = 0;
     virtual void flushAllcommands() = 0;
+
+    virtual bool hasCmdsUsingResource(const MemoryResourceRef &resource) = 0;
 };
 
 template <typename BufferDataType>
@@ -345,18 +332,18 @@ void IRenderCommandList::recordCopyToBuffer(
 }
 
 template <typename BufferType>
-bool ShaderParameters::setBuffer(const String &paramName, const BufferType &bufferValue, uint32 index /* = 0 */)
+bool ShaderParameters::setBuffer(StringID paramName, const BufferType &bufferValue, uint32 index /* = 0 */)
 {
     bool bValueSet = false;
     auto bufferDataItr = shaderBuffers.find(paramName);
 
     if (bufferDataItr == shaderBuffers.end())
     {
-        String bufferName;
+        StringID bufferName;
         std::pair<const BufferParametersData *, const BufferParametersData::BufferParameter *> foundInfo
             = findBufferParam(bufferName, paramName);
         if (foundInfo.first && foundInfo.second && BIT_SET(foundInfo.second->bufferField->fieldDecorations, ShaderBufferField::IsStruct)
-            && (!foundInfo.second->bufferField->isPointer() || foundInfo.first->runtimeArray->currentSize > index))
+            && (!foundInfo.second->bufferField->isPointer() || foundInfo.first->runtimeArray->currentCount > index))
         {
             if (foundInfo.second->bufferField->isIndexAccessible())
             {
@@ -395,7 +382,7 @@ bool ShaderParameters::setBuffer(const String &paramName, const BufferType &buff
         }
         else
         {
-            LOG_ERROR("ShaderParameters", "%s() : Cannot set %s[%d] of %s", __func__, paramName.getChar(), index, bufferName.getChar());
+            LOG_ERROR("ShaderParameters", "Cannot set %s[%d] of %s", paramName, index, bufferName);
         }
     }
     else
@@ -420,9 +407,9 @@ bool ShaderParameters::setBuffer(const String &paramName, const BufferType &buff
         {
             LOG_ERROR(
                 "ShaderParameters",
-                "%s() : Cannot set stride %d to stride %d or cannot set buffer with runtime "
+                "Cannot set stride %d to stride %d or cannot set buffer with runtime "
                 "array as single struct, Set runtime array separately",
-                __func__, sizeof(BufferType), bufferDataPtr->descriptorInfo->bufferParamInfo->paramNativeStride()
+                sizeof(BufferType), bufferDataPtr->descriptorInfo->bufferParamInfo->paramNativeStride()
             );
         }
     }

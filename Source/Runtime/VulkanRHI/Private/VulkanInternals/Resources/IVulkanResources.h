@@ -11,7 +11,6 @@
 
 #pragma once
 
-#include "EngineRendererExports.h"
 #include "Types/CoreTypes.h"
 
 #include <vulkan_core.h>
@@ -29,10 +28,19 @@ public:
     virtual uint64 getDispatchableHandle() const { return 0; }
 };
 
+struct VulkanMemoryAllocation
+{
+    uint64 byteOffset;
+    uint64 byteSize;
+    const VulkanMemoryBlock *memBlock = nullptr;
+    VkDeviceMemory deviceMemory;
+    void *mappedMemory = nullptr;
+};
+
 class IVulkanMemoryResources : public IVulkanResources
 {
 private:
-    VulkanMemoryBlock *blockData;
+    VulkanMemoryAllocation memAllocation;
 
 public:
     virtual uint64 requiredSize() const = 0;
@@ -43,6 +51,7 @@ public:
     void *getMappedMemory() const;
 
     // Internal use only
-    void setMemoryData(VulkanMemoryBlock *block);
-    VulkanMemoryBlock *getMemoryData() const;
+    void setMemoryData(VulkanMemoryAllocation allocation);
+    const VulkanMemoryAllocation &getMemoryData() const;
+    VulkanMemoryAllocation &getMemoryData();
 };

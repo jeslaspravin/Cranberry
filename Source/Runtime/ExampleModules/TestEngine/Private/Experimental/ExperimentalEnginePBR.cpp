@@ -9,10 +9,9 @@
  *  License can be read in LICENSE file at this repository's root
  */
 
-#include "Engine/GameEngine.h"
+#include "Engine/TestGameEngine.h"
 #if EXPERIMENTAL
 
-#include "../Editor/Core/ImGui/IImGuiLayer.h"
 #include "Assets/Asset/EnvironmentMapAsset.h"
 #include "Assets/Asset/StaticMeshAsset.h"
 #include "Assets/Asset/TextureAsset.h"
@@ -22,15 +21,16 @@
 #include "Core/Types/Textures/Texture2D.h"
 #include "Core/Types/Textures/TexturesBase.h"
 #include "CoreObjectGC.h"
-#include "Editor/Core/ImGui/ImGuiLib/imgui.h"
-#include "Editor/Core/ImGui/ImGuiLib/implot.h"
-#include "Editor/Core/ImGui/ImGuiManager.h"
-#include "EngineInputCoreModule.h"
 #include "GenericAppWindow.h"
+#include "Widgets/ImGui/ImGuiLib/imgui.h"
+#include "Widgets/ImGui/IImGuiLayer.h"
+#include "Widgets/ImGui/ImGuiManager.h"
+#include "Widgets/ImGui/ImGuiLib/implot.h"
 #include "IApplicationModule.h"
 #include "ICoreObjectsModule.h"
-#include "InputSystem.h"
-#include "Keys.h"
+#include "Modules/ModuleManager.h"
+#include "InputSystem/InputSystem.h"
+#include "InputSystem/Keys.h"
 #include "Math/BVH.h"
 #include "Math/CoreMathTypes.h"
 #include "Math/Math.h"
@@ -47,40 +47,44 @@
 #include "RenderInterface/GraphicsHelper.h"
 #include "RenderInterface/Rendering/CommandBuffer.h"
 #include "RenderInterface/Rendering/IRenderCommandList.h"
-#include "RenderInterface/Rendering/RenderingContexts.h"
+#include "RenderApi/Rendering/RenderingContexts.h"
+#include "RenderInterface/Rendering/RenderInterfaceContexts.h"
 #include "RenderInterface/Resources/BufferedResources.h"
 #include "RenderInterface/Resources/MemoryResources.h"
 #include "RenderInterface/Resources/QueueResource.h"
 #include "RenderInterface/Resources/Samplers/SamplerInterface.h"
 #include "RenderInterface/ShaderCore/ShaderParameterUtility.h"
 #include "RenderInterface/ShaderCore/ShaderParameters.h"
-#include "RenderInterface/Shaders/Base/DrawMeshShader.h"
-#include "RenderInterface/Shaders/Base/UtilityShaders.h"
-#include "RenderInterface/Shaders/EngineShaders/PBRShaders.h"
-#include "RenderInterface/Shaders/EngineShaders/ShadowDepthDraw.h"
-#include "RenderInterface/Shaders/EngineShaders/SingleColorShader.h"
-#include "RenderInterface/Shaders/EngineShaders/TexturedShader.h"
+#include "RenderApi/Shaders/Base/DrawMeshShader.h"
+#include "RenderApi/Shaders/Base/UtilityShaders.h"
+#include "RenderApi/Shaders/EngineShaders/PBRShaders.h"
+#include "RenderApi/Shaders/EngineShaders/ShadowDepthDraw.h"
+#include "RenderApi/Shaders/EngineShaders/SingleColorShader.h"
+#include "RenderApi/Shaders/EngineShaders/TexturedShader.h"
 #include "String/StringID.h"
 #include "Types/Camera/Camera.h"
 #include "Types/Colors.h"
 #include "Types/CompilerDefines.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
+#include "Types/Platform/LFS/Paths.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 #include "Types/Transform3D.h"
 #include "Types/TypesInfo.h"
 #include "WindowManager.h"
 #include "ApplicationSettings.h"
+#include "Types/Platform/Threading/CoPaT/JobSystem.h"
+#include "Types/Platform/Threading/CoPaT/DispatchHelpers.h"
+#include "Types/Platform/Threading/CoPaT/CoroutineWait.h"
+#include "Types/Platform/Threading/CoPaT/CoroutineAwaitAll.h"
 
 #include <array>
 #include <map>
 #include <random>
-#include <source_location>
 #include <unordered_set>
+#include <memory_resource>
 
-#include "BasicPackagedObject.h"
-#include "CoreObjectDelegates.h"
-#include "CBEObjectHelpers.h"
-#include "CBEPackage.h"
+#include "Widgets/WidgetDrawContext.h"
+#include "Widgets/WidgetWindow.h"
 
 struct PBRSceneEntity
 {
@@ -124,7 +128,7 @@ struct FrameResource
     FenceRef recordingFence;
 };
 
-#define SHADOWS_USE_CULLED_DRAW_CMDS 0
+#define SHADOWS_USE_CULLED_DRAW_CMDS 1
 struct PointLight
 {
     Vector3D lightPos;
@@ -224,12 +228,13 @@ struct std::hash<GridEntity>
 };
 
 class ExperimentalEnginePBR
-    : public GameEngine
+    : public TestGameEngine
     , public IImGuiLayer
 {
     SamplerRef nearestFiltering = nullptr;
     SamplerRef linearFiltering = nullptr;
     SamplerRef depthFiltering = nullptr;
+    SamplerRef shadowFiltering = nullptr;
     // SamplerRef cubicFiltering = nullptr;
     void createImages(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
     void destroyImages();
@@ -238,8 +243,6 @@ class ExperimentalEnginePBR
     // offset in count, in scene
     std::unordered_map<const MeshAsset *, std::pair<uint32, uint32>> meshVertIdxOffset;
 
-    // Memory to find intersection with scene volume
-    std::vector<GridEntity> setIxMemory;
     // Scene data
     // All used asset's vertex and index data
     BufferResourceRef sceneVertexBuffer;
@@ -316,7 +319,6 @@ class ExperimentalEnginePBR
 
     void createShaderParameters(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
     void setupShaderParameterParams(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
-    void updateShaderParameters(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance);
     void destroyShaderParameters();
 
     void setupLightShaderData();
@@ -410,12 +412,12 @@ class ExperimentalEnginePBR
     String noneString{ TCHAR("None") };
 
     IReferenceCollector *collector;
-    CBE::Object *rootObj;
-    CBE::Object *objectPtrTest;
-    CBE::Object *objectPtrToValTest;
-    CBE::Object *valToObjectPtrTest;
-    CBE::Object *valToStructTest;
-    CBE::Object *structToValTest;
+    cbe::Object *rootObj;
+    cbe::Object *objectPtrTest;
+    cbe::Object *objectPtrToValTest;
+    cbe::Object *valToObjectPtrTest;
+    cbe::Object *valToStructTest;
+    cbe::Object *structToValTest;
 
 protected:
     void onStartUp() override;
@@ -451,32 +453,35 @@ public:
         {
         case GridEntity::Entity:
         {
-            fatalAssert(sceneData.size() > entity.idx, "%s() : Invalid index %d", __func__, entity.idx);
+            fatalAssertf(sceneData.size() > entity.idx, "Invalid index %d", entity.idx);
             AABB bound(
                 sceneData[entity.idx].meshAsset->bounds.minBound * sceneData[entity.idx].transform.getScale()
                     + sceneData[entity.idx].transform.getTranslation(),
                 sceneData[entity.idx].meshAsset->bounds.maxBound * sceneData[entity.idx].transform.getScale()
                     + sceneData[entity.idx].transform.getTranslation()
             );
+            bound.fixAABB();
             return bound;
         }
         case GridEntity::PointLight:
         {
-            fatalAssert(scenePointLights.size() > entity.idx, "%s() : Invalid index %d", __func__, entity.idx);
+            fatalAssertf(scenePointLights.size() > entity.idx, "Invalid index %d", entity.idx);
             AABB bound(scenePointLights[entity.idx].lightPos - Vector3D(50), scenePointLights[entity.idx].lightPos + Vector3D(50));
+            bound.fixAABB();
             return bound;
         }
         case GridEntity::SpotLight:
         {
-            fatalAssert(sceneSpotLights.size() > entity.idx, "%s() : Invalid index %d", __func__, entity.idx);
+            fatalAssertf(sceneSpotLights.size() > entity.idx, "Invalid index %d", entity.idx);
             AABB bound(
                 sceneSpotLights[entity.idx].transform.getTranslation() - Vector3D(50),
                 sceneSpotLights[entity.idx].transform.getTranslation() + Vector3D(50)
             );
+            bound.fixAABB();
             return bound;
         }
         default:
-            fatalAssert(false, "%s(): Unsupported type", __func__);
+            fatalAssertf(false, "Unsupported type");
             break;
         }
         return { Vector3D::ZERO, Vector3D::ZERO };
@@ -487,27 +492,10 @@ AABB GridEntity::getBounds() const { return static_cast<ExperimentalEnginePBR *>
 
 void ExperimentalEnginePBR::createImages(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
 {
-    SamplerCreateInfo samplerCI{
-        .filtering = ESamplerFiltering::Nearest,
-        .mipFiltering = ESamplerFiltering::Nearest,
-        .tilingMode = {ESamplerTilingMode::Repeat,                                 ESamplerTilingMode::Repeat, ESamplerTilingMode::Repeat },
-        .mipLodRange = {                         0, float(GlobalRenderVariables::MIN_SAMPLINE_MIP_LEVEL.get())                          },
-        .resourceName = TCHAR("NearestSampler")
-    };
-    nearestFiltering = graphicsHelper->createSampler(graphicsInstance, samplerCI);
-    nearestFiltering->init();
-
-    samplerCI.mipFiltering = samplerCI.filtering = ESamplerFiltering::Linear;
-    samplerCI.resourceName = TCHAR("LinearSampler");
-    linearFiltering = graphicsHelper->createSampler(graphicsInstance, samplerCI);
-    linearFiltering->init();
-
-    samplerCI.mipFiltering = samplerCI.filtering = ESamplerFiltering::Linear;
-    samplerCI.tilingMode = { ESamplerTilingMode::BorderClamp, ESamplerTilingMode::BorderClamp, ESamplerTilingMode::BorderClamp };
-    samplerCI.resourceName = TCHAR("DepthSampler");
-    // Depth sampling must be nearest however there is better filtering when using linear filtering
-    depthFiltering = graphicsHelper->createSampler(graphicsInstance, samplerCI);
-    depthFiltering->init();
+    nearestFiltering = GlobalBuffers::nearestSampler();
+    linearFiltering = GlobalBuffers::linearSampler();
+    depthFiltering = GlobalBuffers::depthSampler();
+    shadowFiltering = GlobalBuffers::shadowSampler();
 
     RenderTextureCreateParams rtCreateParams;
     rtCreateParams.bSameReadWriteTexture = true;
@@ -558,6 +546,7 @@ void ExperimentalEnginePBR::destroyImages()
     nearestFiltering.reset();
     linearFiltering.reset();
     depthFiltering.reset();
+    shadowFiltering.reset();
 
     TextureBase::destroyTexture<RenderTargetTexture>(camGizmoColorTexture);
     TextureBase::destroyTexture<RenderTargetTexture>(camGizmoDepthTarget);
@@ -654,12 +643,11 @@ void ExperimentalEnginePBR::createDrawCmdsBuffer(IGraphicsInstance *graphicsInst
             // Resizing material parameters
             sceneShaderUniqParams[pipeMeshPairToBatchEntity.first]->resizeRuntimeBuffer(TCHAR("materials"), materialCount);
             totalDrawCalls += pipelineDrawCalls;
-            LOG("ExperimentalEnginePBR", "%s() : %s Pipeline's Material's count %d", __func__,
-                pipeMeshPairToBatchEntity.first->materialName.getChar(), materialCount);
-            LOG("ExperimentalEnginePBR", "%s() : %s Pipeline's instanced draw calls %d", __func__,
-                pipeMeshPairToBatchEntity.first->materialName.getChar(), pipelineDrawCalls);
+            LOG("ExperimentalEnginePBR", "%s Pipeline's Material's count %d", pipeMeshPairToBatchEntity.first->materialName, materialCount);
+            LOG("ExperimentalEnginePBR", "%s Pipeline's instanced draw calls %d", pipeMeshPairToBatchEntity.first->materialName,
+                pipelineDrawCalls);
         }
-        LOG("ExperimentalEnginePBR", "%s() : Total instanced draw calls %d", __func__, totalDrawCalls);
+        LOG("ExperimentalEnginePBR", "Total instanced draw calls %d", totalDrawCalls);
 
         // Resize instance parameters
         instanceParameters->resizeRuntimeBuffer(TCHAR("instancesWrapper"), instanceCount);
@@ -683,7 +671,7 @@ void ExperimentalEnginePBR::createDrawCmdsBuffer(IGraphicsInstance *graphicsInst
         }
     }
 
-    // #TODO(Jeslas) : Not doing per light culling as it is faster without it, Enable after adding
+    // TODO(Jeslas) : Not doing per light culling as it is faster without it, Enable after adding
     // gpu/compute culling
     for (uint32 i = 0; i < pointShadowRTs.size() && pointShadowRTs[i]; ++i)
     {
@@ -710,7 +698,7 @@ void ExperimentalEnginePBR::createDrawCmdsBuffer(IGraphicsInstance *graphicsInst
         [drawCmds, this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
             cmdList->copyToBuffer(allEntityDrawCmds, 0, drawCmds.data(), uint32(allEntityDrawCmds->getResourceSize()));
-        // #TODO(Jeslas) : Not doing per light culling as it is faster without it, Enable after adding
+        // TODO(Jeslas) : Not doing per light culling as it is faster without it, Enable after adding
         // gpu/compute culling
 #if SHADOWS_USE_CULLED_DRAW_CMDS
             setupLightSceneDrawCmdsBuffer(cmdList, graphicsInstance);
@@ -723,10 +711,20 @@ void PBRSceneEntity::updateInstanceParams(ShaderParametersRef &shaderParams, uin
 {
     InstanceData gpuInstance;
     gpuInstance.model = transform.getTransformMatrix();
-    gpuInstance.invModel = transform.getTransformMatrix().inverse();
+    gpuInstance.invModel = gpuInstance.model.inverse();
+    gpuInstance.invModel = transform.inverseNonUniformScaled().getTransformMatrix();
     gpuInstance.shaderUniqIdx = batchShaderParamIdx[batchIdx];
 
-    shaderParams->setBuffer(TCHAR("instances"), gpuInstance, instanceParamIdx[batchIdx]);
+    // shaderParams->setBuffer(TCHAR("instances"), gpuInstance, instanceParamIdx[batchIdx]);
+
+    // Below code to test set by path and indices
+    StringID paramPath[] = { STRID("instancesWrapper"), STRID("instances"), STRID("model") };
+    uint32 paramIndices[] = { 0, instanceParamIdx[batchIdx], 0 };
+    shaderParams->setMatrixAtPath(paramPath, paramIndices, gpuInstance.model);
+    paramPath[2] = STRID("invModel");
+    shaderParams->setMatrixAtPath(paramPath, paramIndices, gpuInstance.model);
+    paramPath[2] = STRID("shaderUniqIdx");
+    shaderParams->setIntAtPath(paramPath, paramIndices, batchShaderParamIdx[batchIdx]);
 }
 
 void PBRSceneEntity::updateMaterialParams(
@@ -745,37 +743,74 @@ void PBRSceneEntity::updateMaterialParams(
         texturedMeshData.meshColor = meshBatch.color;
         texturedMeshData.rm_uvScale = { meshBatch.roughness, meshBatch.metallic, meshBatch.uvScale.x(), meshBatch.uvScale.y() };
         texturedMeshData.diffuseMapIdx
-            = (tex2dToBindlessIdx
-                   .find(static_cast<TextureAsset *>(gEngine->getAssetManager().getAsset(meshBatch.textureName + TCHAR("_D")))
-                             ->getTexture()
-                             ->getTextureResource())
-                   ->second);
+            = (tex2dToBindlessIdx.find(static_cast<TextureAsset *>(gEngine->getAssetManager().getAsset(meshBatch.textureName + TCHAR("_D")))
+                                                                       ->getTexture()
+                                                                       ->getTextureResource())
+                                           ->second);
         texturedMeshData.normalMapIdx
-            = (tex2dToBindlessIdx
-                   .find(static_cast<TextureAsset *>(gEngine->getAssetManager().getAsset(meshBatch.textureName + TCHAR("_N")))
-                             ->getTexture()
-                             ->getTextureResource())
-                   ->second);
+            = (tex2dToBindlessIdx.find(static_cast<TextureAsset *>(gEngine->getAssetManager().getAsset(meshBatch.textureName + TCHAR("_N")))
+                                                                       ->getTexture()
+                                                                       ->getTextureResource())
+                                           ->second);
         texturedMeshData.armMapIdx
-            = (tex2dToBindlessIdx
-                   .find(static_cast<TextureAsset *>(gEngine->getAssetManager().getAsset(meshBatch.textureName + TCHAR("_ARM")))
-                             ->getTexture()
-                             ->getTextureResource())
-                   ->second);
+            = (tex2dToBindlessIdx.find(static_cast<TextureAsset *>(gEngine->getAssetManager().getAsset(meshBatch.textureName + TCHAR("_ARM")))
+                                                                       ->getTexture()
+                                                                       ->getTextureResource())
+                                           ->second);
         shaderParams->setBuffer(TCHAR("meshData"), texturedMeshData, batchShaderParamIdx[batchIdx]);
     }
 }
 
 void ExperimentalEnginePBR::setupLightSceneDrawCmdsBuffer(class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance)
 {
-    setIxMemory.resize(sceneData.size() + scenePointLights.size() + sceneSpotLights.size());
-    std::pmr::monotonic_buffer_resource memRes(setIxMemory.data(), setIxMemory.size() * sizeof(GridEntity));
-    std::pmr::polymorphic_allocator<GridEntity> setIxAlloc(&memRes);
-    std::pmr::unordered_set<GridEntity> setIntersections(setIxAlloc);
-
-    auto fillDrawCmds = [&setIntersections, cmdList, this](std::vector<DrawIndexedIndirectCommand> &drawCmds, BufferResourceRef &drawCmdsBuffer)
+    struct LightObjectCulling
     {
-        for (const GridEntity &gridEntity : setIntersections)
+        std::vector<DrawIndexedIndirectCommand> drawCmds;
+        std::vector<GridEntity> setIntersections;
+    };
+    std::vector<LightObjectCulling> lightCullings(sceneSpotLights.size() + scenePointLights.size());
+    bool bHasAnyBufferResize = false;
+    auto cullLambda = [&lightCullings, &bHasAnyBufferResize, this](uint32 idx, bool bIsPtLights)
+    {
+        BufferResourceRef drawCmdsBuffer = nullptr;
+        uint32 lightCullingOffset = 0;
+        AABB lightRegion;
+        if (bIsPtLights)
+        {
+            lightCullingOffset = sceneSpotLights.size();
+            const PointLight &ptlit = scenePointLights[idx];
+            if (!ptlit.shadowViewParams || !ptlit.shadowMap || !ptlit.drawCmdsBuffer)
+            {
+                return;
+            }
+            lightRegion = AABB(ptlit.lightPos + Vector3D(ptlit.radius, 0, 0));
+            lightRegion.grow(ptlit.lightPos + Vector3D(-ptlit.radius, 0, 0));
+            lightRegion.grow(ptlit.lightPos + Vector3D(0, ptlit.radius, 0));
+            lightRegion.grow(ptlit.lightPos + Vector3D(0, -ptlit.radius, 0));
+            lightRegion.grow(ptlit.lightPos + Vector3D(0, 0, ptlit.radius));
+            lightRegion.grow(ptlit.lightPos + Vector3D(0, 0, -ptlit.radius));
+
+            drawCmdsBuffer = *ptlit.drawCmdsBuffer;
+        }
+        else
+        {
+            const SpotLight &sptlit = sceneSpotLights[idx];
+            if (!sptlit.shadowViewParams || !sptlit.shadowMap || !sptlit.drawCmdsBuffer)
+            {
+                return;
+            }
+
+            Vector3D corners[8];
+            sptlit.view.frustumCorners(corners);
+            ArrayView<Vector3D> cornersView(corners);
+            lightRegion = AABB(cornersView);
+
+            drawCmdsBuffer = *sptlit.drawCmdsBuffer;
+        }
+
+        LightObjectCulling &lightCulling = lightCullings[lightCullingOffset + idx];
+        sceneVolume.findIntersection(lightCulling.setIntersections, lightRegion, true);
+        for (const GridEntity &gridEntity : lightCulling.setIntersections)
         {
             if (gridEntity.type == GridEntity::Entity)
             {
@@ -785,7 +820,7 @@ void ExperimentalEnginePBR::setupLightSceneDrawCmdsBuffer(class IRenderCommandLi
                 {
                     const MeshVertexView &meshBatch = static_cast<const StaticMeshAsset *>(sceneEntity.meshAsset)->meshBatches[meshBatchIdx];
                     // fill draw command for this batch
-                    DrawIndexedIndirectCommand &drawCmd = drawCmds.emplace_back();
+                    DrawIndexedIndirectCommand &drawCmd = lightCulling.drawCmds.emplace_back();
                     drawCmd.firstInstance = sceneEntity.instanceParamIdx[meshBatchIdx];
                     drawCmd.firstIndex = meshVertIdxOffset[sceneEntity.meshAsset].second // Mesh's scene index buffer offset
                                          + meshBatch.startIndex;                         // Local index buffer offset
@@ -797,56 +832,70 @@ void ExperimentalEnginePBR::setupLightSceneDrawCmdsBuffer(class IRenderCommandLi
             }
         }
 
-        if (drawCmdsBuffer->bufferCount() < drawCmds.size())
+        bHasAnyBufferResize = bHasAnyBufferResize || (drawCmdsBuffer->bufferCount() < lightCulling.drawCmds.size());
+        if (bIsPtLights)
         {
-            drawCmdsBuffer->setBufferCount(uint32(drawCmds.size()));
-            cmdList->flushAllcommands();
-            drawCmdsBuffer->reinitResources();
+            scenePointLights[idx].drawCmdCount = uint32(lightCulling.drawCmds.size());
         }
-
-        cmdList->copyToBuffer(drawCmdsBuffer, 0, drawCmds.data(), uint32(drawCmdsBuffer->getResourceSize()));
+        else
+        {
+            sceneSpotLights[idx].drawCmdCount = uint32(lightCulling.drawCmds.size());
+        }
     };
 
-    // Draw spot lights
-    for (SpotLight &sptlit : sceneSpotLights)
+    auto sceneSptCullingJobs = copat::dispatch(
+        copat::JobSystem::get(), copat::DispatchFunctionType::createLambda(cullLambda, false), uint32(sceneSpotLights.size())
+    );
+    auto scenePtCullingJobs = copat::dispatch(
+        copat::JobSystem::get(), copat::DispatchFunctionType::createLambda(cullLambda, true), uint32(scenePointLights.size())
+    );
+    copat::waitOnAwaitable(sceneSptCullingJobs);
+    copat::waitOnAwaitable(scenePtCullingJobs);
+
+    if (bHasAnyBufferResize)
     {
-        if (sptlit.shadowViewParams && sptlit.shadowMap && sptlit.drawCmdsBuffer)
-        {
-            Vector3D corners[8];
-            sptlit.view.frustumCorners(corners);
-            ArrayView<Vector3D> cornersView(corners, ARRAY_LENGTH(corners));
-            AABB sptRegion(cornersView);
-
-            setIntersections.clear();
-            sceneVolume.findIntersection(setIntersections, sptRegion, true);
-
-            std::vector<DrawIndexedIndirectCommand> drawCmds;
-            fillDrawCmds(drawCmds, *sptlit.drawCmdsBuffer);
-            sptlit.drawCmdCount = uint32(drawCmds.size());
-        }
+        cmdList->flushAllcommands();
     }
-
-    // Draw point lights
-    for (PointLight &ptlit : scenePointLights)
+    std::vector<BatchCopyBufferData> batchCopies;
+    for (uint32 i = 0; i < sceneSpotLights.size(); ++i)
     {
-        if (ptlit.shadowViewParams && ptlit.shadowMap && ptlit.drawCmdsBuffer)
+        const LightObjectCulling &lightCulling = lightCullings[i];
+        SpotLight &sptlit = sceneSpotLights[i];
+        if (!sptlit.drawCmdsBuffer)
         {
-            Vector3D corners[8];
-            AABB ptRegion(ptlit.lightPos + Vector3D(ptlit.radius, 0, 0));
-            ptRegion.grow(ptlit.lightPos + Vector3D(-ptlit.radius, 0, 0));
-            ptRegion.grow(ptlit.lightPos + Vector3D(0, ptlit.radius, 0));
-            ptRegion.grow(ptlit.lightPos + Vector3D(0, -ptlit.radius, 0));
-            ptRegion.grow(ptlit.lightPos + Vector3D(0, 0, ptlit.radius));
-            ptRegion.grow(ptlit.lightPos + Vector3D(0, 0, -ptlit.radius));
-
-            setIntersections.clear();
-            sceneVolume.findIntersection(setIntersections, ptRegion, true);
-
-            std::vector<DrawIndexedIndirectCommand> drawCmds;
-            fillDrawCmds(drawCmds, *ptlit.drawCmdsBuffer);
-            ptlit.drawCmdCount = uint32(drawCmds.size());
+            continue;
         }
+        if ((*sptlit.drawCmdsBuffer)->bufferCount() < lightCulling.drawCmds.size())
+        {
+            (*sptlit.drawCmdsBuffer)->setBufferCount(uint32(lightCulling.drawCmds.size()));
+            (*sptlit.drawCmdsBuffer)->reinitResources();
+        }
+
+        batchCopies.emplace_back(BatchCopyBufferData{ .dst = (*sptlit.drawCmdsBuffer),
+                                                      .dstOffset = 0,
+                                                      .dataToCopy = lightCulling.drawCmds.data(),
+                                                      .size = uint32((*sptlit.drawCmdsBuffer)->getResourceSize()) });
     }
+    for (uint32 i = 0; i < scenePointLights.size(); ++i)
+    {
+        const LightObjectCulling &lightCulling = lightCullings[sceneSpotLights.size() + i];
+        PointLight &ptlit = scenePointLights[i];
+        if (!ptlit.drawCmdsBuffer)
+        {
+            continue;
+        }
+        if ((*ptlit.drawCmdsBuffer)->bufferCount() < lightCulling.drawCmds.size())
+        {
+            (*ptlit.drawCmdsBuffer)->setBufferCount(uint32(lightCulling.drawCmds.size()));
+            (*ptlit.drawCmdsBuffer)->reinitResources();
+        }
+
+        batchCopies.emplace_back(BatchCopyBufferData{ .dst = (*ptlit.drawCmdsBuffer),
+                                                      .dstOffset = 0,
+                                                      .dataToCopy = lightCulling.drawCmds.data(),
+                                                      .size = uint32((*ptlit.drawCmdsBuffer)->getResourceSize()) });
+    }
+    cmdList->copyToBuffer(batchCopies);
 }
 
 void ExperimentalEnginePBR::destroyDrawCmdsBuffer()
@@ -993,7 +1042,7 @@ void ExperimentalEnginePBR::setupCascadeShadowViewsShimmerFix()
     // Directional light cascades
     const AABB sceneBounds = sceneVolume.getBounds();
     Vector3D sceneBoundPts[8];
-    ArrayView<Vector3D> sceneBoundPtsView(sceneBoundPts, ARRAY_LENGTH(sceneBoundPts));
+    ArrayView<Vector3D> sceneBoundPtsView(sceneBoundPts);
     sceneBounds.boundCorners(sceneBoundPtsView);
 
     const Vector3D dirLightFwd = dirLight.direction.fwdVector();
@@ -1073,14 +1122,17 @@ void ExperimentalEnginePBR::createScene()
     StaticMeshAsset *cone = static_cast<StaticMeshAsset *>(assetManager.getOrLoadAsset(TCHAR("Cone.obj")));
     StaticMeshAsset *suzanne = static_cast<StaticMeshAsset *>(assetManager.getOrLoadAsset(TCHAR("Suzanne.obj")));
     std::array<StaticMeshAsset *, 5> assets{ cube, sphere, cylinder, cone, suzanne };
-#if NDEBUG
-    std::array<String, 8> floorTypes{ TCHAR("WoodFloor043"), TCHAR("Tiles086"),  TCHAR("Tiles074"),  TCHAR("MetalPlates006"),
-                                      TCHAR("Marble006"),    TCHAR("Ground042"), TCHAR("Ground037"), TCHAR("Gravel022") };
-    std::array<String, 6> ceilTypes{ TCHAR("WoodFloor043"),   TCHAR("Tiles108"),  TCHAR("Tiles074"),
-                                     TCHAR("MetalPlates006"), TCHAR("Marble006"), TCHAR("Wood051") };
-    std::array<String, 9> pillarTypes{ TCHAR("WoodFloor043"),   TCHAR("Tiles108"),  TCHAR("Tiles074"),
-                                       TCHAR("MetalPlates006"), TCHAR("Marble006"), TCHAR("Marble006"),
-                                       TCHAR("Rock035"),        TCHAR("Ground037"), TCHAR("PaintedPlaster016") };
+
+// clang-format off
+#if RELEASE_BUILD
+    std::array<String, 8> floorTypes{
+        TCHAR("WoodFloor043"), TCHAR("Tiles086"),  TCHAR("Tiles074"),  TCHAR("MetalPlates006"),
+        TCHAR("Marble006"),    TCHAR("Ground042"), TCHAR("Ground037"), TCHAR("Gravel022") };
+    std::array<String, 6> ceilTypes{
+        TCHAR("WoodFloor043"), TCHAR("Tiles108"), TCHAR("Tiles074"), TCHAR("MetalPlates006"), TCHAR("Marble006"), TCHAR("Wood051") };
+    std::array<String, 9> pillarTypes{
+        TCHAR("WoodFloor043"), TCHAR("Tiles108"), TCHAR("Tiles074"),  TCHAR("MetalPlates006"),   TCHAR("Marble006"),
+        TCHAR("Marble006"),    TCHAR("Rock035"),  TCHAR("Ground037"), TCHAR("PaintedPlaster016") };
     std::array<String, 15> textures{ TCHAR("Bricks059"),      TCHAR("Gravel022"),         TCHAR("Ground037"), TCHAR("Ground042"),
                                      TCHAR("Leather028"),     TCHAR("Marble006"),         TCHAR("Metal034"),  TCHAR("Metal038"),
                                      TCHAR("MetalPlates006"), TCHAR("PaintedPlaster016"), TCHAR("Rock035"),   TCHAR("Tiles086"),
@@ -1091,6 +1143,7 @@ void ExperimentalEnginePBR::createScene()
     std::array<String, 1> pillarTypes{ TCHAR("Tiles074") };
     std::array<String, 1> textures{ TCHAR("Tiles074") };
 #endif
+    // clang-format on
 
     std::default_random_engine generator;
     std::uniform_real_distribution<float> distribution(-1.0, 1.0);
@@ -1101,7 +1154,7 @@ void ExperimentalEnginePBR::createScene()
     const Vector2D pillarTextureScale(1 / 3.0f, 1 / 6.0f);
     const Vector2D textureScale(1 / 3.0f);
 
-    std::list<GridEntity> entities;
+    std::vector<GridEntity> entities;
     auto pushEntity = [&entities, this](const PBRSceneEntity &entity)
     {
         entities.emplace_back(GridEntity{ GridEntity::Entity, uint32(sceneData.size()) });
@@ -1118,9 +1171,10 @@ void ExperimentalEnginePBR::createScene()
         scenePointLights.emplace_back(pointLight);
     };
 
-    for (int32 i = -1; i <= 1; i++)
+    const int32 halfCount = 1;
+    for (int32 i = -halfCount; i <= halfCount; i++)
     {
-        for (int32 j = -1; j <= 1; j++)
+        for (int32 j = -halfCount; j <= halfCount; j++)
         {
             String roomIdx = String::toString((i + 1) * 3 + j + 1);
             Vector3D offset = Vector3D(i * 1400.0f, j * 1400.0f, 0);
@@ -1353,7 +1407,7 @@ void ExperimentalEnginePBR::createScene()
         PBRSceneEntity car;
         car.name = TCHAR("DodgeChallenger");
         car.meshAsset = static_cast<StaticMeshAsset *>(assetManager.getAsset(car.name));
-        fatalAssert(car.meshAsset, "%s() : Failed finding car mesh %s", __func__, car.name.getChar());
+        fatalAssertf(car.meshAsset, "Failed finding car mesh %s", car.name.getChar());
         car.transform.setTranslation(Vector3D(0, 2800, 0));
         for (uint32 batchIdx = 0; batchIdx < car.meshAsset->meshBatches.size(); ++batchIdx)
         {
@@ -1468,7 +1522,7 @@ void ExperimentalEnginePBR::createShaderParameters(IGraphicsInstance *graphicsIn
     sceneShaderUniqParams[&singleColorPipelineContext] = singleColShaderParams;
     sceneShaderUniqParams[&texturedPipelineContext] = texturedShaderParams;
 
-    WindowCanvasRef windowCanvas = applicationModule->getWindowManager()->getWindowCanvas(applicationModule->mainWindow());
+    WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(application->windowManager->getMainWindow());
     uint32 swapchainCount = windowCanvas->imagesCount();
     lightTextures.setNewSwapchain(windowCanvas);
     drawQuadTextureDescs.setNewSwapchain(windowCanvas);
@@ -1495,9 +1549,7 @@ void ExperimentalEnginePBR::createShaderParameters(IGraphicsInstance *graphicsIn
         // as 1 and 2 are light common and textures
         lightData[i] = graphicsHelper->createShaderParameters(graphicsInstance, pbrModelNoShadowDescLayout, { 1, 2 });
         lightData[i]->setResourceName(
-            TCHAR("Light_") + String::toString(i * ARRAY_LENGTH(PBRLightArray::spotLits)) + TCHAR("to")
-            + String::toString(i * ARRAY_LENGTH(PBRLightArray::spotLits) + ARRAY_LENGTH(PBRLightArray::spotLits))
-        );
+            TCHAR("Light_") + String::toString(i * ARRAY_LENGTH(PBRLightArray::spotLits)) + TCHAR("to") + String::toString(i * ARRAY_LENGTH(PBRLightArray::spotLits) + ARRAY_LENGTH(PBRLightArray::spotLits)));
     }
     // as 1 and 2 are light common and textures
     lightDataShadowed = graphicsHelper->createShaderParameters(graphicsInstance, pbrModelWithShadowDescLayout, { 1, 2 });
@@ -1602,7 +1654,7 @@ void SpotLight::update() const
         );
 
         (*paramCollection)->setMatrixParam(TCHAR("sptLitsW2C"), ndcToTextureSpace * viewData.projection * viewData.invView, index);
-        (*shadowViewParams)->setBuffer(TCHAR("viewData"), viewData);
+        (*shadowViewParams)->setBuffer(RenderSceneBase::VIEW_PARAM_NAME, viewData);
     }
 }
 
@@ -1671,7 +1723,7 @@ void ExperimentalEnginePBR::setupShaderParameterParams(IGraphicsInstance *graphi
     viewData.invView = viewData.view.inverse();
     viewData.projection = camera.projectionMatrix();
     viewData.invProjection = viewData.projection.inverse();
-    viewParameters->setBuffer(TCHAR("viewData"), viewData);
+    viewParameters->setBuffer(RenderSceneBase::VIEW_PARAM_NAME, viewData);
     viewParameters->init();
 
     // Setting values to instance params and material shader params happens along with global draw
@@ -1686,7 +1738,7 @@ void ExperimentalEnginePBR::setupShaderParameterParams(IGraphicsInstance *graphi
         shaderUniqParams.second->init();
     }
 
-    lightCommon->setBuffer(TCHAR("viewData"), viewData);
+    lightCommon->setBuffer(RenderSceneBase::VIEW_PARAM_NAME, viewData);
     lightCommon->init();
 
     // Directional light at last to do Linear -> SRGB and ambient lights
@@ -1701,16 +1753,16 @@ void ExperimentalEnginePBR::setupShaderParameterParams(IGraphicsInstance *graphi
     dirLight.normalizeCascadeCoverage();
     lightDataShadowed->setFloatParam(TCHAR("gamma"), gamma);
     lightDataShadowed->setFloatParam(TCHAR("exposure"), exposure);
-    lightDataShadowed->setTextureParam(TCHAR("directionalLightCascades"), dirLight.cascadeShadowMaps->getTextureResource(), depthFiltering);
+    lightDataShadowed->setTextureParam(TCHAR("directionalLightCascades"), dirLight.cascadeShadowMaps->getTextureResource(), shadowFiltering);
     for (uint32 i = 0; i < pointShadowRTs.size(); ++i)
     {
         ImageResourceRef texture = pointShadowRTs[i] ? pointShadowRTs[i]->getTextureResource() : GlobalBuffers::dummyCube();
-        lightDataShadowed->setTextureParam(TCHAR("pointShadowMaps"), texture, depthFiltering, i);
+        lightDataShadowed->setTextureParam(TCHAR("pointShadowMaps"), texture, shadowFiltering, i);
     }
     for (uint32 i = 0; i < spotShadowRTs.size(); ++i)
     {
-        ImageResourceRef texture = spotShadowRTs[i] ? spotShadowRTs[i]->getTextureResource() : GlobalBuffers::dummyBlack2D();
-        lightDataShadowed->setTextureParam(TCHAR("spotLightShadowMaps"), texture, depthFiltering, i);
+        ImageResourceRef texture = spotShadowRTs[i] ? spotShadowRTs[i]->getTextureResource() : GlobalBuffers::dummyDepth();
+        lightDataShadowed->setTextureParam(TCHAR("spotLightShadowMaps"), texture, shadowFiltering, i);
     }
     // count will be min up to 8
     uint32 shadowedCount = lightDataShadowed->getUintParam(TCHAR("count"));
@@ -1740,7 +1792,7 @@ void ExperimentalEnginePBR::setupShaderParameterParams(IGraphicsInstance *graphi
         }
     }
 
-    uint32 swapchainCount = applicationModule->getWindowManager()->getWindowCanvas(applicationModule->mainWindow())->imagesCount();
+    uint32 swapchainCount = application->windowManager->getWindowCanvas(application->windowManager->getMainWindow())->imagesCount();
     ImageViewInfo ambImageViewInfo;
     ambImageViewInfo.componentMapping.g = ambImageViewInfo.componentMapping.b = ambImageViewInfo.componentMapping.a
         = ambImageViewInfo.componentMapping.r = EPixelComponentMapping::R;
@@ -1828,40 +1880,9 @@ void ExperimentalEnginePBR::setupShaderParameterParams(IGraphicsInstance *graphi
     camRTParams->init();
 }
 
-void ExperimentalEnginePBR::updateShaderParameters(class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance)
-{
-    // const bool canUpdate = timeData.frameCounter % frameResources.size() == 0;
-
-    // Update once every swapchain cycles are presented
-    // if(canUpdate)
-    {
-        // for (const FrameResource& frameRes : frameResources)
-        //{
-        //     if (!frameRes.recordingFence->isSignaled())
-        //     {
-        //         frameRes.recordingFence->waitForSignal();
-        //     }
-        // }
-
-        std::vector<BatchCopyBufferData> copies;
-
-        std::vector<GraphicsResource *> shaderParams;
-        ShaderParameters::staticType()->allRegisteredResources(shaderParams, true, true);
-        for (GraphicsResource *resource : shaderParams)
-        {
-            static_cast<ShaderParameters *>(resource)->pullBufferParamUpdates(copies, cmdList, graphicsInstance);
-            static_cast<ShaderParameters *>(resource)->updateParams(cmdList, graphicsInstance);
-        }
-        if (!copies.empty())
-        {
-            cmdList->copyToBuffer(copies);
-        }
-    }
-}
-
 void ExperimentalEnginePBR::reupdateTextureParamsOnResize()
 {
-    uint32 swapchainCount = applicationModule->getWindowManager()->getWindowCanvas(applicationModule->mainWindow())->imagesCount();
+    uint32 swapchainCount = application->windowManager->getWindowCanvas(application->windowManager->getMainWindow())->imagesCount();
 
     for (uint32 i = 0; i < swapchainCount; ++i)
     {
@@ -1906,7 +1927,7 @@ void ExperimentalEnginePBR::reupdateEnvMap()
         {
             cmdList->flushAllcommands();
             const uint32 swapchainCount
-                = applicationModule->getWindowManager()->getWindowCanvas(applicationModule->mainWindow())->imagesCount();
+                = application->windowManager->getWindowCanvas(application->windowManager->getMainWindow())->imagesCount();
             for (uint32 i = 0; i < swapchainCount; ++i)
             {
                 lightTextures.getResources()[i]->setTextureParam(
@@ -2017,6 +2038,7 @@ void ExperimentalEnginePBR::setupLightShaderData()
             SpotLight &lightData = sceneSpotLights[spotLightIdxs[rangeIdx + lightStartIdx]];
             lightData.shadowMap = nullptr;
             lightData.shadowViewParams = nullptr;
+            lightData.drawCmdsBuffer = nullptr;
             lightData.paramCollection = &light;
             lightData.index = rangeIdx;
 
@@ -2029,6 +2051,7 @@ void ExperimentalEnginePBR::setupLightShaderData()
             PointLight &lightData = scenePointLights[ptLightIdxs[rangeIdx + lightStartIdx]];
             lightData.shadowMap = nullptr;
             lightData.shadowViewParams = nullptr;
+            lightData.drawCmdsBuffer = nullptr;
             lightData.paramCollection = &light;
             lightData.index = rangeIdx;
 
@@ -2044,24 +2067,28 @@ void ExperimentalEnginePBR::setupLightShaderData()
 
 void ExperimentalEnginePBR::resizeLightingRts(const Size2D &size)
 {
-    WindowCanvasRef windowCanvas = applicationModule->getWindowManager()->getWindowCanvas(applicationModule->mainWindow());
+    WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(application->windowManager->getMainWindow());
 
     for (int32 i = 0; i < windowCanvas->imagesCount(); ++i)
     {
         frameResources[i].lightingPassRt->setTextureSize(size);
         frameResources[i].lightingPassResolved->setTextureSize(size);
-        rendererModule->getRenderManager()->clearExternInitRtsFramebuffer({ frameResources[i].lightingPassRt });
-        rendererModule->getRenderManager()->clearExternInitRtsFramebuffer({ frameResources[i].lightingPassResolved });
+
+        const IRenderTargetTexture *rtPtr = frameResources[i].lightingPassRt;
+        rendererModule->getRenderManager()->clearExternInitRtsFramebuffer({ &rtPtr, 1 });
+        rtPtr = frameResources[i].lightingPassResolved;
+        rendererModule->getRenderManager()->clearExternInitRtsFramebuffer({ &rtPtr, 1 });
 
         // Used in debug rendering using depth map as read only target
-        rendererModule->getRenderManager()->clearExternInitRtsFramebuffer({ frameResources[i].lightingPassRt,
-                                                                            GBuffers::getGbufferRts(ERenderPassFormat::Multibuffer, i)[3] });
+        const IRenderTargetTexture *debugRenderingTexs[2]
+            = { frameResources[i].lightingPassRt, GBuffers::getGbufferRts(ERenderPassFormat::Multibuffer, i)[3] };
+        rendererModule->getRenderManager()->clearExternInitRtsFramebuffer(debugRenderingTexs);
     }
 }
 
 void ExperimentalEnginePBR::createFrameResources(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
 {
-    WindowCanvasRef windowCanvas = applicationModule->getWindowManager()->getWindowCanvas(applicationModule->mainWindow());
+    WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(application->windowManager->getMainWindow());
 
     RenderTextureCreateParams rtCreateParams;
     rtCreateParams.bSameReadWriteTexture = true;
@@ -2078,7 +2105,7 @@ void ExperimentalEnginePBR::createFrameResources(IGraphicsInstance *graphicsInst
         frameResources[i].usageWaitSemaphore.push_back(graphicsHelper->createSemaphore(graphicsInstance, (name + TCHAR("QueueSubmit")).c_str())
         );
         frameResources[i].usageWaitSemaphore.back()->init();
-        frameResources[i].recordingFence = graphicsHelper->createFence(graphicsInstance, (name + TCHAR("RecordingGaurd")).c_str(), true);
+        frameResources[i].recordingFence = graphicsHelper->createFence(graphicsInstance, (name + TCHAR("RecordingGaurd")).c_str());
         frameResources[i].recordingFence->init();
 
         rtCreateParams.textureName = TCHAR("LightingRT_") + String::toString(i);
@@ -2095,7 +2122,8 @@ void ExperimentalEnginePBR::destroyFrameResources()
         frameResources[i].usageWaitSemaphore[0].reset();
         frameResources[i].recordingFence.reset();
 
-        rendererModule->getRenderManager()->clearExternInitRtsFramebuffer({ frameResources[i].lightingPassRt });
+        const IRenderTargetTexture *rtPtr = frameResources[i].lightingPassRt;
+        rendererModule->getRenderManager()->clearExternInitRtsFramebuffer({ &rtPtr, 1 });
         TextureBase::destroyTexture<RenderTargetTexture>(frameResources[i].lightingPassRt);
         TextureBase::destroyTexture<RenderTargetTexture>(frameResources[i].lightingPassResolved);
     }
@@ -2116,9 +2144,9 @@ void ExperimentalEnginePBR::getPipelineContextForSubpass()
     texturedPipelineContext.swapchainIdx = 0;
     rendererModule->getRenderManager()->preparePipelineContext(&texturedPipelineContext, multibufferRts);
 
-    fatalAssert(
+    fatalAssertf(
         GlobalRenderVariables::ENABLE_GEOMETRY_SHADERS, TCHAR("Geometry shader feature not supported in this device, so cannot use shadows")
-    );
+        );
     spotShadowPipelineContext.forVertexType = pointShadowPipelineContext.forVertexType = directionalShadowPipelineContext.forVertexType
         = EVertexType::StaticMesh;
     spotShadowPipelineContext.materialName = pointShadowPipelineContext.materialName = directionalShadowPipelineContext.materialName
@@ -2128,21 +2156,24 @@ void ExperimentalEnginePBR::getPipelineContextForSubpass()
     pointShadowPipelineContext.renderpassFormat = ERenderPassFormat::PointLightDepth;
 
     directionalShadowPipelineContext.renderpassFormat = ERenderPassFormat::DirectionalLightDepth;
-    rendererModule->getRenderManager()->preparePipelineContext(&directionalShadowPipelineContext, { directionalShadowRT });
+    const IRenderTargetTexture *rtPtr = directionalShadowRT;
+    rendererModule->getRenderManager()->preparePipelineContext(&directionalShadowPipelineContext, { &rtPtr, 1 });
     if (spotShadowRTs[0])
     {
-        rendererModule->getRenderManager()->preparePipelineContext(&spotShadowPipelineContext, { spotShadowRTs[0] });
+        rtPtr = spotShadowRTs[0];
+        rendererModule->getRenderManager()->preparePipelineContext(&spotShadowPipelineContext, { &rtPtr, 1 });
     }
     if (pointShadowRTs[0])
     {
-        rendererModule->getRenderManager()->preparePipelineContext(&pointShadowPipelineContext, { pointShadowRTs[0] });
+        rtPtr = pointShadowRTs[0];
+        rendererModule->getRenderManager()->preparePipelineContext(&pointShadowPipelineContext, { &rtPtr, 1 });
     }
 
-    std::vector<IRenderTargetTexture *> lightingPassRts{ frameResources[0].lightingPassRt };
-    std::vector<IRenderTargetTexture *> lightingPassResolveRts{ frameResources[0].lightingPassResolved };
+    const IRenderTargetTexture *lightingPassRts[] = { frameResources[0].lightingPassRt };
+    const IRenderTargetTexture *lightingPassResolveRts[] = { frameResources[0].lightingPassResolved };
     // Using depth map as read only target
-    std::vector<IRenderTargetTexture *> lightPassAndDepthRts{ frameResources[0].lightingPassRt,
-                                                              GBuffers::getGbufferRts(ERenderPassFormat::Multibuffer, 0)[3] };
+    const IRenderTargetTexture *lightPassAndDepthRts[]
+        = { frameResources[0].lightingPassRt, GBuffers::getGbufferRts(ERenderPassFormat::Multibuffer, 0)[3] };
     // PBR model
     drawPbrWithShadowPipelineContext.renderpassFormat = ERenderPassFormat::Generic;
     drawPbrWithShadowPipelineContext.materialName = TCHAR("PBRLightsWithShadow");
@@ -2158,7 +2189,8 @@ void ExperimentalEnginePBR::getPipelineContextForSubpass()
 
     drawLinesDWritePipelineCntxt.renderpassFormat = ERenderPassFormat::Generic;
     drawLinesDWritePipelineCntxt.materialName = TCHAR("Draw3DColoredPerVertexLineDWrite");
-    rendererModule->getRenderManager()->preparePipelineContext(&drawLinesDWritePipelineCntxt, { camGizmoColorTexture, camGizmoDepthTarget });
+    const IRenderTargetTexture *gizmoRts[] = { camGizmoColorTexture, camGizmoDepthTarget };
+    rendererModule->getRenderManager()->preparePipelineContext(&drawLinesDWritePipelineCntxt, gizmoRts);
 
     drawGridDTestPipelineCntxt.renderpassFormat = ERenderPassFormat::Generic;
     drawGridDTestPipelineCntxt.materialName = TCHAR("DrawGridDTest");
@@ -2172,7 +2204,7 @@ void ExperimentalEnginePBR::getPipelineContextForSubpass()
     resolveLightRtPipelineContext.materialName = TCHAR("DrawQuadFromTexture");
     rendererModule->getRenderManager()->preparePipelineContext(&resolveLightRtPipelineContext, lightingPassResolveRts);
 
-    WindowCanvasRef windowCanvas = applicationModule->getWindowManager()->getWindowCanvas(applicationModule->mainWindow());
+    WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(application->windowManager->getMainWindow());
     resolveToPresentPipelineContext.windowCanvas = windowCanvas;
     resolveToPresentPipelineContext.materialName = TCHAR("DrawQuadFromTexture");
     resolveToPresentPipelineContext.renderpassFormat = ERenderPassFormat::Generic;
@@ -2220,60 +2252,71 @@ void ExperimentalEnginePBR::updateCameraParams()
 {
     ViewData viewDataTemp;
     bool bCamRotated = false;
-    if (inputModule->getInputSystem()->isKeyPressed(Keys::RMB))
+    if (application->inputSystem->isKeyPressed(Keys::RMB))
     {
         cameraRotation.yaw()
-            += inputModule->getInputSystem()->analogState(AnalogStates::RelMouseX)->currentValue * timeData.activeTimeDilation * 0.25f;
+            += application->inputSystem->analogState(AnalogStates::RelMouseX)->currentValue * timeData.activeTimeDilation * 0.25f;
         cameraRotation.pitch()
-            += inputModule->getInputSystem()->analogState(AnalogStates::RelMouseY)->currentValue * timeData.activeTimeDilation * 0.25f;
+            += application->inputSystem->analogState(AnalogStates::RelMouseY)->currentValue * timeData.activeTimeDilation * 0.25f;
         bCamRotated = true;
     }
     float camSpeedModifier = 1;
-    if (inputModule->getInputSystem()->isKeyPressed(Keys::LSHIFT))
+    if (application->inputSystem->isKeyPressed(Keys::LSHIFT))
     {
         camSpeedModifier = 2;
     }
-    if (inputModule->getInputSystem()->isKeyPressed(Keys::A))
+    if (application->inputSystem->isKeyPressed(Keys::A))
     {
         cameraTranslation -= cameraRotation.rightVector() * timeData.deltaTime * timeData.activeTimeDilation * camSpeedModifier * 150.f;
     }
-    if (inputModule->getInputSystem()->isKeyPressed(Keys::D))
+    if (application->inputSystem->isKeyPressed(Keys::D))
     {
         cameraTranslation += cameraRotation.rightVector() * timeData.deltaTime * timeData.activeTimeDilation * camSpeedModifier * 150.f;
     }
-    if (inputModule->getInputSystem()->isKeyPressed(Keys::W))
+    if (application->inputSystem->isKeyPressed(Keys::W))
     {
         cameraTranslation += cameraRotation.fwdVector() * timeData.deltaTime * timeData.activeTimeDilation * camSpeedModifier * 150.f;
     }
-    if (inputModule->getInputSystem()->isKeyPressed(Keys::S))
+    if (application->inputSystem->isKeyPressed(Keys::S))
     {
         cameraTranslation -= cameraRotation.fwdVector() * timeData.deltaTime * timeData.activeTimeDilation * camSpeedModifier * 150.f;
     }
-    if (inputModule->getInputSystem()->isKeyPressed(Keys::Q))
+    if (application->inputSystem->isKeyPressed(Keys::Q))
     {
         cameraTranslation -= Vector3D::UP * timeData.deltaTime * timeData.activeTimeDilation * camSpeedModifier * 150.f;
     }
-    if (inputModule->getInputSystem()->isKeyPressed(Keys::E))
+    if (application->inputSystem->isKeyPressed(Keys::E))
     {
         cameraTranslation += Vector3D::UP * timeData.deltaTime * timeData.activeTimeDilation * camSpeedModifier * 150.f;
     }
-    if (inputModule->getInputSystem()->keyState(Keys::R)->keyWentUp)
+    if (application->inputSystem->keyState(Keys::R)->keyWentUp)
     {
         cameraRotation = RotationMatrix::fromZX(Vector3D::UP, cameraRotation.fwdVector()).asRotation();
         bCamRotated = true;
     }
 
-    if (camera.cameraProjection != projection)
+    auto projectionChanged = [this]()
     {
         camera.cameraProjection = projection;
-        viewDataTemp.projection = camera.projectionMatrix();
-        viewDataTemp.invProjection = viewDataTemp.projection.inverse();
+        camera.setFOV((110.f * ApplicationSettings::surfaceSize.get().x) / (ApplicationSettings::surfaceSize.get().y * 1.78f), 90.f);
 
-        viewParameters->setMatrixParam(TCHAR("projection"), viewDataTemp.projection);
-        viewParameters->setMatrixParam(TCHAR("invProjection"), viewDataTemp.invProjection);
-        lightCommon->setMatrixParam(TCHAR("projection"), viewDataTemp.projection);
-        lightCommon->setMatrixParam(TCHAR("invProjection"), viewDataTemp.invProjection);
+        Matrix4 projectionMat = camera.projectionMatrix();
+        Matrix4 invProjectionMat = projectionMat.inverse();
+        viewParameters->setMatrixParam(TCHAR("projection"), projectionMat);
+        viewParameters->setMatrixParam(TCHAR("invProjection"), invProjectionMat);
+        lightCommon->setMatrixParam(TCHAR("projection"), projectionMat);
+        lightCommon->setMatrixParam(TCHAR("invProjection"), invProjectionMat);
+    };
+    if (camera.cameraProjection != projection)
+    {
+        projectionChanged();
     }
+    static DelegateHandle handle = ApplicationSettings::surfaceSize.onConfigChanged().bindLambda(
+        [projectionChanged](Size2D, Size2D)
+        {
+            projectionChanged();
+        }
+    );
 
     camera.setRotation(cameraRotation);
     camera.setTranslation(cameraTranslation);
@@ -2289,31 +2332,25 @@ void ExperimentalEnginePBR::updateCameraParams()
     {
         updateCamGizmoViewParams();
         ENQUEUE_COMMAND(CameraGizmoUpdate)
-        ([this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
-         { updateCamGizmoCapture(cmdList, graphicsInstance); });
+        (
+            [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+            {
+                updateCamGizmoCapture(cmdList, graphicsInstance);
+            }
+        );
     }
 }
 
 void ExperimentalEnginePBR::onStartUp()
 {
-    GameEngine::onStartUp();
-
-    ENQUEUE_COMMAND(RenderStartup)
-    (
-        [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
-        {
-            createSceneRenderData(cmdList, graphicsInstance, graphicsHelper);
-            startUpRenderInit(graphicsInstance, graphicsHelper);
-            updateCamGizmoCapture(cmdList, graphicsInstance);
-        }
-    );
+    TestGameEngine::onStartUp();
 
     camera.cameraProjection = projection;
     camera.setOrthoSize({ 1280, 720 });
     camera.setClippingPlane(0.1f, 6000.f);
-    camera.setFOV(110.f, 90.f);
+    camera.setFOV((110.f * ApplicationSettings::surfaceSize.get().x) / (ApplicationSettings::surfaceSize.get().y * 1.78f), 90.f);
 
-    cameraTranslation = Vector3D(0.f, 1.f, 0.0f).safeNormalize() * (500);
+    cameraTranslation = Vector3D(0.f, 1.f, 0.0f).safeNormalized() * (500);
     cameraTranslation.z() += 200;
 
     camera.setTranslation(cameraTranslation);
@@ -2323,7 +2360,7 @@ void ExperimentalEnginePBR::onStartUp()
     thinColor = LinearColorConst::GRAY;
     thickColor = LinearColorConst::WHITE;
 
-    imguiManager.addLayer(this);
+    getImGuiManager().addLayer(std::static_pointer_cast<IImGuiLayer>(shared_from_this()));
     createScene();
 
     textures = assetManager.getAssetsOfType<EAssetType::Texture2D, TextureAsset>();
@@ -2356,11 +2393,21 @@ void ExperimentalEnginePBR::onStartUp()
     selectedEnv = 0;
 
     tempTest();
+
+    ENQUEUE_COMMAND(RenderStartup)
+    (
+        [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        {
+            createSceneRenderData(cmdList, graphicsInstance, graphicsHelper);
+            startUpRenderInit(graphicsInstance, graphicsHelper);
+            updateCamGizmoCapture(cmdList, graphicsInstance);
+        }
+    );
 }
 
 void ExperimentalEnginePBR::startUpRenderInit(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
 {
-    int32 swapchainCount = applicationModule->getWindowManager()->getWindowCanvas(applicationModule->mainWindow())->imagesCount();
+    int32 swapchainCount = application->windowManager->getWindowCanvas(application->windowManager->getMainWindow())->imagesCount();
     frameResources.resize(swapchainCount);
     GBuffers::initialize(swapchainCount);
 
@@ -2382,10 +2429,10 @@ void ExperimentalEnginePBR::onQuit()
         }
     );
 
-    imguiManager.removeLayer(this);
+    getImGuiManager().removeLayer(std::static_pointer_cast<IImGuiLayer>(shared_from_this()));
 
     tempTestQuit();
-    GameEngine::onQuit();
+    TestGameEngine::onQuit();
 }
 
 void ExperimentalEnginePBR::renderQuit()
@@ -2406,31 +2453,32 @@ void ExperimentalEnginePBR::frameRender(
 )
 {
     SemaphoreRef waitSemaphore;
-    WindowCanvasRef windowCanvas = applicationModule->getWindowManager()->getWindowCanvas(applicationModule->mainWindow());
+    WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(application->windowManager->getMainWindow());
     uint32 index = windowCanvas->requestNextImage(&waitSemaphore, nullptr);
 
     resolveToPresentPipelineContext.swapchainIdx = index;
     resolveToPresentPipelineContext.windowCanvas = windowCanvas;
     rendererModule->getRenderManager()->preparePipelineContext(&resolveToPresentPipelineContext);
 
-    rendererModule->getRenderManager()->preparePipelineContext(
-        &singleColorPipelineContext, GBuffers::getGbufferRts(ERenderPassFormat::Multibuffer, index)
-    );
+    auto gbufferRts = GBuffers::getGbufferRts(ERenderPassFormat::Multibuffer, index);
+    rendererModule->getRenderManager()->preparePipelineContext(&singleColorPipelineContext, gbufferRts);
 
-    std::vector<IRenderTargetTexture *> lightRtAttachments{ frameResources[index].lightingPassRt };
+    const IRenderTargetTexture *lightRtAttachments[] = { frameResources[index].lightingPassRt };
+    const IRenderTargetTexture *lightResolvedAttachments[] = { frameResources[index].lightingPassResolved };
     rendererModule->getRenderManager()->preparePipelineContext(&drawPbrWithShadowPipelineContext, lightRtAttachments);
     rendererModule->getRenderManager()->preparePipelineContext(&drawPbrNoShadowPipelineContext, lightRtAttachments);
-    rendererModule->getRenderManager()->preparePipelineContext(&resolveLightRtPipelineContext, { frameResources[index].lightingPassResolved });
+    rendererModule->getRenderManager()->preparePipelineContext(&resolveLightRtPipelineContext, lightResolvedAttachments);
 
     GraphicsPipelineQueryParams queryParam;
     queryParam.cullingMode = ECullingMode::BackFace;
     queryParam.drawMode = EPolygonDrawMode::Fill;
 
-    if (!frameResources[index].recordingFence->isSignaled())
-    {
-        frameResources[index].recordingFence->waitForSignal();
-    }
-    frameResources[index].recordingFence->resetSignal();
+    // finishCmd will wait
+    // if (!frameResources[index].recordingFence->isSignaled())
+    //{
+    //    frameResources[index].recordingFence->waitForSignal();
+    //}
+    // frameResources[index].recordingFence->resetSignal();
 
     QuantizedBox2D viewport;
     // Since view matrix positive y is along up while vulkan positive y in view is down
@@ -2457,7 +2505,7 @@ void ExperimentalEnginePBR::frameRender(
         {
             SCOPED_CMD_MARKER(cmdList, cmdBuffer, MainUnlitPass);
 
-            cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { sceneVertexBuffer }, { 0 });
+            cmdList->cmdBindVertexBuffer(cmdBuffer, 0, sceneVertexBuffer, 0);
             cmdList->cmdBindIndexBuffer(cmdBuffer, sceneIndexBuffer);
 
             // Bind less
@@ -2465,11 +2513,10 @@ void ExperimentalEnginePBR::frameRender(
             for (const auto &pipelineToOffsetCount : pipelineToDrawCmdOffsetCount)
             {
                 cmdList->cmdBindGraphicsPipeline(cmdBuffer, *pipelineToOffsetCount.first, { queryParam });
+
+                ShaderParametersRef descSets[] = { viewParameters, instanceParameters, sceneShaderUniqParams[pipelineToOffsetCount.first] };
                 // Shader material params set
-                cmdList->cmdBindDescriptorsSets(
-                    cmdBuffer, *pipelineToOffsetCount.first,
-                    { viewParameters, instanceParameters, sceneShaderUniqParams[pipelineToOffsetCount.first] }
-                );
+                cmdList->cmdBindDescriptorsSets(cmdBuffer, *pipelineToOffsetCount.first, descSets);
 
                 cmdList->cmdDrawIndexedIndirect(
                     cmdBuffer, allEntityDrawCmds, pipelineToOffsetCount.second.first, pipelineToOffsetCount.second.second,
@@ -2483,7 +2530,7 @@ void ExperimentalEnginePBR::frameRender(
         viewport.minBound = Int2D(0, 0);
         viewport.maxBound = ApplicationSettings::screenSize.get();
 
-        cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { GlobalBuffers::getQuadTriVertexBuffer() }, { 0 });
+        cmdList->cmdBindVertexBuffer(cmdBuffer, 0, GlobalBuffers::getQuadTriVertexBuffer(), 0);
         cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
         if (frameVisualizeId == 0)
         {
@@ -2507,7 +2554,8 @@ void ExperimentalEnginePBR::frameRender(
                     SCOPED_CMD_MARKER(cmdList, cmdBuffer, DrawLight);
                     cmdList->cmdBindGraphicsPipeline(cmdBuffer, drawPbrNoShadowPipelineContext, { queryParam });
 
-                    cmdList->cmdBindDescriptorsSets(cmdBuffer, drawPbrNoShadowPipelineContext, { lightCommon, *lightTextures, light });
+                    ShaderParametersRef descSets[] = { lightCommon, *lightTextures, light };
+                    cmdList->cmdBindDescriptorsSets(cmdBuffer, drawPbrNoShadowPipelineContext, descSets);
                     cmdList->cmdDrawIndexed(cmdBuffer, 0, 3);
                 }
                 cmdList->cmdEndRenderPass(cmdBuffer);
@@ -2528,17 +2576,14 @@ void ExperimentalEnginePBR::frameRender(
             {
                 SCOPED_CMD_MARKER(cmdList, cmdBuffer, DrawLightWithShadow);
 
-                cmdList->cmdPushConstants(
-                    cmdBuffer, drawPbrWithShadowPipelineContext,
-                    {
-                        {TCHAR("debugDrawFlags"), uint32(renderFlags)}
-                }
-                );
+                std::pair<String, std::any> pushConsts[] = {
+                    {TCHAR("debugDrawFlags"), uint32(renderFlags)}
+                };
+                cmdList->cmdPushConstants(cmdBuffer, drawPbrWithShadowPipelineContext, pushConsts);
                 cmdList->cmdBindGraphicsPipeline(cmdBuffer, drawPbrWithShadowPipelineContext, { queryParam });
 
-                cmdList->cmdBindDescriptorsSets(
-                    cmdBuffer, drawPbrWithShadowPipelineContext, { lightCommon, *lightTextures, lightDataShadowed }
-                );
+                ShaderParametersRef descSets[] = { lightCommon, *lightTextures, lightDataShadowed };
+                cmdList->cmdBindDescriptorsSets(cmdBuffer, drawPbrWithShadowPipelineContext, descSets);
                 cmdList->cmdDrawIndexed(cmdBuffer, 0, 3);
             }
             cmdList->cmdEndRenderPass(cmdBuffer);
@@ -2594,14 +2639,14 @@ void ExperimentalEnginePBR::frameRender(
         // Drawing IMGUI
         ImGuiDrawingContext drawingContext;
         drawingContext.cmdBuffer = cmdBuffer;
-        drawingContext.rtTextures = lightRtAttachments;
-        imguiManager.draw(cmdList, graphicsInstance, graphicsHelper, drawingContext);
+        drawingContext.rtTexture = lightRtAttachments[0];
+        getImGuiManager().draw(cmdList, graphicsInstance, graphicsHelper, drawingContext);
 
         // Drawing final resolve to presenting surface quad
         viewport.minBound = Int2D(0, 0);
         viewport.maxBound = scissor.maxBound = ApplicationSettings::surfaceSize.get();
 
-        cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { GlobalBuffers::getQuadTriVertexBuffer() }, { 0 });
+        cmdList->cmdBindVertexBuffer(cmdBuffer, 0, GlobalBuffers::getQuadTriVertexBuffer(), 0);
         cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
 
         RenderPassAdditionalProps renderPassAdditionalProps;
@@ -2622,15 +2667,18 @@ void ExperimentalEnginePBR::frameRender(
 
     CommandSubmitInfo submitInfo;
     submitInfo.waitOn = {
-        CommandSubmitInfo::WaitInfo{waitSemaphore, INDEX_TO_FLAG_MASK(EPipelineStages::FragmentShaderStage)}
+        {waitSemaphore, INDEX_TO_FLAG_MASK(EPipelineStages::FragmentShaderStage)}
     };
-    submitInfo.signalSemaphores = { frameResources[index].usageWaitSemaphore[0] };
+    submitInfo.signalSemaphores = {
+        {frameResources[index].usageWaitSemaphore[0], INDEX_TO_FLAG_MASK(EPipelineStages::ColorAttachmentOutput)}
+    };
     submitInfo.cmdBuffers = { cmdBuffer };
 
     cmdList->submitCmd(EQueuePriority::High, submitInfo, frameResources[index].recordingFence);
 
-    std::vector<uint32> indices = { index };
-    cmdList->presentImage({ windowCanvas }, indices, {});
+    // Presenting manually here as for Experimental we are not adding any widget to app main window and it gets skipped in presenting all drawn
+    // windows
+    cmdList->presentImage({ &windowCanvas, 1 }, { &index, 1 }, { frameResources[index].usageWaitSemaphore });
 }
 
 void ExperimentalEnginePBR::updateCamGizmoViewParams()
@@ -2676,14 +2724,12 @@ void ExperimentalEnginePBR::updateCamGizmoCapture(class IRenderCommandList *cmdL
             cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
             cmdList->cmdBindGraphicsPipeline(cmdBuffer, drawLinesDWritePipelineCntxt, pipelineState);
 
-            cmdList->cmdPushConstants(
-                cmdBuffer, sceneDebugLinesPipelineContext,
-                {
-                    {TCHAR("ptSize"), 1.0f}
-            }
-            );
+            std::pair<String, std::any> pushConsts[] = {
+                {TCHAR("ptSize"), 1.0f}
+            };
+            cmdList->cmdPushConstants(cmdBuffer, sceneDebugLinesPipelineContext, pushConsts);
             cmdList->cmdBindDescriptorsSets(cmdBuffer, drawLinesDWritePipelineCntxt, camViewAndInstanceParams);
-            cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { GlobalBuffers::getLineGizmoVertexIndexBuffers().first }, { 0 });
+            cmdList->cmdBindVertexBuffer(cmdBuffer, 0, GlobalBuffers::getLineGizmoVertexIndexBuffers().first, 0);
             cmdList->cmdBindIndexBuffer(cmdBuffer, GlobalBuffers::getLineGizmoVertexIndexBuffers().second);
 
             cmdList->cmdDrawIndexed(cmdBuffer, 0, GlobalBuffers::getLineGizmoVertexIndexBuffers().second->bufferCount());
@@ -2712,7 +2758,7 @@ void ExperimentalEnginePBR::renderShadows(
     QuantizedBox2D scissor = viewport;
 
     SCOPED_CMD_MARKER(cmdList, cmdBuffer, RenderShadows);
-    cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { sceneVertexBuffer }, { 0 });
+    cmdList->cmdBindVertexBuffer(cmdBuffer, 0, sceneVertexBuffer, 0);
     cmdList->cmdBindIndexBuffer(cmdBuffer, sceneIndexBuffer);
     // Draw cascade first
     {
@@ -2722,9 +2768,8 @@ void ExperimentalEnginePBR::renderShadows(
 
         // Bind and draw
         cmdList->cmdBindGraphicsPipeline(cmdBuffer, directionalShadowPipelineContext, { faceFillQueryParam });
-        cmdList->cmdBindDescriptorsSets(
-            cmdBuffer, directionalShadowPipelineContext, { viewParameters, directionalViewParam, instanceParameters }
-        );
+        ShaderParametersRef descSets[] = { viewParameters, directionalViewParam, instanceParameters };
+        cmdList->cmdBindDescriptorsSets(cmdBuffer, directionalShadowPipelineContext, descSets);
         cmdList->cmdDrawIndexedIndirect(cmdBuffer, allEntityDrawCmds, 0, allEntityDrawCmds->bufferCount(), allEntityDrawCmds->bufferStride());
 
         cmdList->cmdEndRenderPass(cmdBuffer);
@@ -2740,7 +2785,8 @@ void ExperimentalEnginePBR::renderShadows(
                 viewport = { Int2D(0, 0), Int2D(sptlit.shadowMap->getTextureSize()) };
                 scissor = viewport;
 
-                rendererModule->getRenderManager()->preparePipelineContext(&spotShadowPipelineContext, { sptlit.shadowMap });
+                const IRenderTargetTexture *shadowMapRt = sptlit.shadowMap;
+                rendererModule->getRenderManager()->preparePipelineContext(&spotShadowPipelineContext, { &shadowMapRt, 1 });
 
                 cmdList->cmdBeginRenderPass(cmdBuffer, spotShadowPipelineContext, scissor, {}, clearValues);
                 cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
@@ -2754,7 +2800,7 @@ void ExperimentalEnginePBR::renderShadows(
                 cmdList->cmdBindDescriptorsSets(cmdBuffer, spotShadowPipelineContext, *sptlit.shadowViewParams);
 #if SHADOWS_USE_CULLED_DRAW_CMDS
                 cmdList->cmdDrawIndexedIndirect(
-                    cmdBuffer, sptlit.drawCmdsBuffer, 0, sptlit.drawCmdCount, sptlit.drawCmdsBuffer->bufferStride()
+                    cmdBuffer, (*sptlit.drawCmdsBuffer), 0, sptlit.drawCmdCount, (*sptlit.drawCmdsBuffer)->bufferStride()
                 );
 #else
                 cmdList->cmdDrawIndexedIndirect(
@@ -2777,7 +2823,8 @@ void ExperimentalEnginePBR::renderShadows(
                 viewport = { Int2D(0, ptlit.shadowMap->getTextureSize().y), Int2D(ptlit.shadowMap->getTextureSize().x, 0) };
                 scissor = { Int2D(0, 0), Int2D(ptlit.shadowMap->getTextureSize()) };
 
-                rendererModule->getRenderManager()->preparePipelineContext(&pointShadowPipelineContext, { ptlit.shadowMap });
+                const IRenderTargetTexture *shadowMapRt = ptlit.shadowMap;
+                rendererModule->getRenderManager()->preparePipelineContext(&pointShadowPipelineContext, { &shadowMapRt, 1 });
 
                 cmdList->cmdBeginRenderPass(cmdBuffer, pointShadowPipelineContext, scissor, {}, clearValues);
                 cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
@@ -2786,9 +2833,12 @@ void ExperimentalEnginePBR::renderShadows(
                 faceFillQueryParam.cullingMode
                     = BIT_SET(shadowFlags, PBRShadowFlags::DrawingBackface) ? ECullingMode::FrontFace : ECullingMode::BackFace;
                 cmdList->cmdBindGraphicsPipeline(cmdBuffer, pointShadowPipelineContext, { faceFillQueryParam });
-                cmdList->cmdBindDescriptorsSets(cmdBuffer, pointShadowPipelineContext, { *ptlit.shadowViewParams, instanceParameters });
+                ShaderParametersRef descSets[] = { *ptlit.shadowViewParams, instanceParameters };
+                cmdList->cmdBindDescriptorsSets(cmdBuffer, pointShadowPipelineContext, descSets);
 #if SHADOWS_USE_CULLED_DRAW_CMDS
-                cmdList->cmdDrawIndexedIndirect(cmdBuffer, ptlit.drawCmdsBuffer, 0, ptlit.drawCmdCount, ptlit.drawCmdsBuffer->bufferStride());
+                cmdList->cmdDrawIndexedIndirect(
+                    cmdBuffer, *ptlit.drawCmdsBuffer, 0, ptlit.drawCmdCount, (*ptlit.drawCmdsBuffer)->bufferStride()
+                );
 #else
                 cmdList->cmdDrawIndexedIndirect(
                     cmdBuffer, allEntityDrawCmds, 0, allEntityDrawCmds->bufferCount(), allEntityDrawCmds->bufferStride()
@@ -2826,8 +2876,8 @@ void ExperimentalEnginePBR::debugFrameRender(
     scissor.minBound = { 0, 0 };
     scissor.maxBound = ApplicationSettings::screenSize.get();
 
-    std::vector<IRenderTargetTexture *> backFramebufferRts{ frameResources[swapchainIdx].lightingPassRt,
-                                                            GBuffers::getGbufferRts(ERenderPassFormat::Multibuffer, swapchainIdx)[3] };
+    const IRenderTargetTexture *backFramebufferRts[]
+        = { frameResources[swapchainIdx].lightingPassRt, GBuffers::getGbufferRts(ERenderPassFormat::Multibuffer, swapchainIdx)[3] };
 #if DEV_BUILD
     rendererModule->getRenderManager()->preparePipelineContext(&sceneDebugLinesPipelineContext, backFramebufferRts);
 
@@ -2849,14 +2899,14 @@ void ExperimentalEnginePBR::debugFrameRender(
             pipelineState.pipelineQuery = backfaceFillQueryParam;
             pipelineState.lineWidth = 1.0f;
             cmdList->cmdBindGraphicsPipeline(cmdBuffer, sceneDebugLinesPipelineContext, pipelineState);
-            cmdList->cmdBindDescriptorsSets(cmdBuffer, sceneDebugLinesPipelineContext, { viewParameters, instanceParameters });
-            cmdList->cmdPushConstants(
-                cmdBuffer, sceneDebugLinesPipelineContext,
-                {
-                    {TCHAR("ptSize"), 1.0f}
-            }
-            );
-            cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { sceneEntity.meshAsset->getTbnVertexBuffer() }, { 0 });
+
+            ShaderParametersRef descSets[] = { viewParameters, instanceParameters };
+            cmdList->cmdBindDescriptorsSets(cmdBuffer, sceneDebugLinesPipelineContext, descSets);
+            std::pair<String, std::any> pushConsts[] = {
+                {TCHAR("ptSize"), 1.0f}
+            };
+            cmdList->cmdPushConstants(cmdBuffer, sceneDebugLinesPipelineContext, pushConsts);
+            cmdList->cmdBindVertexBuffer(cmdBuffer, 0, sceneEntity.meshAsset->getTbnVertexBuffer(), 0);
             // Drawing with instance from one of batch as we do not care about material idx
             cmdList->cmdDrawVertices(cmdBuffer, 0, uint32(sceneEntity.meshAsset->tbnVerts.size()), sceneEntity.instanceParamIdx[0]);
         }
@@ -2879,16 +2929,17 @@ void ExperimentalEnginePBR::debugFrameRender(
             std::vector<std::pair<String, std::any>> pushCnsts{
                 {        TCHAR("gridCellSize"),         gridCellSize},
                 {      TCHAR("gridExtendSize"),       gridExtendSize},
-                {TCHAR("cellMinPixelCoverage"), cellMinPixelCoverage},
-                {           TCHAR("thinColor"),  Vector4D(thinColor)},
-                {          TCHAR("thickColor"), Vector4D(thickColor)}
+                                                           {TCHAR("cellMinPixelCoverage"), cellMinPixelCoverage},
+                                                             {           TCHAR("thinColor"),  Vector4D(thinColor)},
+                                                               {          TCHAR("thickColor"), Vector4D(thickColor)}
             };
             GraphicsPipelineState pipelineState;
             pipelineState.pipelineQuery = { EPolygonDrawMode::Fill, ECullingMode::None };
             cmdList->cmdBindGraphicsPipeline(cmdBuffer, drawGridDTestPipelineCntxt, pipelineState);
             cmdList->cmdBindDescriptorsSets(cmdBuffer, drawGridDTestPipelineCntxt, { viewParameters });
             cmdList->cmdPushConstants(cmdBuffer, drawGridDTestPipelineCntxt, pushCnsts);
-            cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { GlobalBuffers::getQuadRectVertexIndexBuffers().first }, { 0 });
+
+            cmdList->cmdBindVertexBuffer(cmdBuffer, 0, GlobalBuffers::getQuadRectVertexIndexBuffers().first, 0);
             cmdList->cmdBindIndexBuffer(cmdBuffer, GlobalBuffers::getQuadRectVertexIndexBuffers().second);
 
             cmdList->cmdDrawIndexed(cmdBuffer, 0, 6);
@@ -2896,9 +2947,8 @@ void ExperimentalEnginePBR::debugFrameRender(
         cmdList->cmdEndRenderPass(cmdBuffer);
     }
 
-    rendererModule->getRenderManager()->preparePipelineContext(
-        &overBlendedQuadPipelineContext, { frameResources[swapchainIdx].lightingPassRt }
-    );
+    const IRenderTargetTexture *lightingRtPtr = frameResources[swapchainIdx].lightingPassRt;
+    rendererModule->getRenderManager()->preparePipelineContext(&overBlendedQuadPipelineContext, { &lightingRtPtr, 1 });
     {
         SCOPED_CMD_MARKER(cmdList, cmdBuffer, DrawCameraGizmoRT);
 
@@ -2919,7 +2969,8 @@ void ExperimentalEnginePBR::debugFrameRender(
         {
             cmdList->cmdBindGraphicsPipeline(cmdBuffer, overBlendedQuadPipelineContext, { backfaceFillQueryParam });
             cmdList->cmdBindDescriptorsSets(cmdBuffer, overBlendedQuadPipelineContext, camRTParams);
-            cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { GlobalBuffers::getQuadTriVertexBuffer() }, { 0 });
+
+            cmdList->cmdBindVertexBuffer(cmdBuffer, 0, GlobalBuffers::getQuadTriVertexBuffer(), 0);
 
             cmdList->cmdDrawVertices(cmdBuffer, 0, 3);
         }
@@ -2929,42 +2980,44 @@ void ExperimentalEnginePBR::debugFrameRender(
 
 void ExperimentalEnginePBR::tickEngine()
 {
-    GameEngine::tickEngine();
+    TestGameEngine::tickEngine();
     updateCameraParams();
     setupLightShaderData();
 
-    if (inputModule->getInputSystem()->isKeyPressed(Keys::ONE))
+    if (application->inputSystem->isKeyPressed(Keys::ONE))
     {
         frameVisualizeId = 0;
     }
-    else if (inputModule->getInputSystem()->isKeyPressed(Keys::TWO))
+    else if (application->inputSystem->isKeyPressed(Keys::TWO))
     {
         frameVisualizeId = 1;
     }
-    else if (inputModule->getInputSystem()->isKeyPressed(Keys::THREE))
+    else if (application->inputSystem->isKeyPressed(Keys::THREE))
     {
         frameVisualizeId = 2;
     }
-    else if (inputModule->getInputSystem()->isKeyPressed(Keys::FOUR))
+    else if (application->inputSystem->isKeyPressed(Keys::FOUR))
     {
         frameVisualizeId = 3;
     }
 
-    if (inputModule->getInputSystem()->keyState(Keys::LMB)->keyWentDown && !imguiManager.capturedInputs())
+    if (application->inputSystem->keyState(Keys::LMB)->keyWentDown && !getImGuiManager().capturedInputs()
+        && !application->windowManager->getMainWindow()->isMinimized())
     {
-        Rect windowArea = applicationModule->mainWindow()->windowClientRect();
+        QuantShortBox2D windowArea = application->windowManager->getMainWindow()->windowClientRect();
+        Vector2D windowOrigin{ float(windowArea.minBound.x), float(windowArea.minBound.y) };
         Vector2D mouseCoord = Vector2D(
-                                  inputModule->getInputSystem()->analogState(AnalogStates::AbsMouseX)->currentValue,
-                                  inputModule->getInputSystem()->analogState(AnalogStates::AbsMouseY)->currentValue
+                                  application->inputSystem->analogState(AnalogStates::AbsMouseX)->currentValue,
+                                  application->inputSystem->analogState(AnalogStates::AbsMouseY)->currentValue
                               )
-                              - windowArea.minBound;
+                              - windowOrigin;
         mouseCoord /= Vector2D(ApplicationSettings::surfaceSize.get());
-        LOG_DEBUG("ExperimentalEnginePBR", "%s(): mouse coord (%f, %f)", __func__, mouseCoord.x(), mouseCoord.y());
+        LOG_DEBUG("ExperimentalEnginePBR", "mouse coord (%f, %f)", mouseCoord.x(), mouseCoord.y());
         if (mouseCoord.x() >= 0 && mouseCoord.x() <= 1.0f && mouseCoord.y() >= 0 && mouseCoord.y() <= 1.0f)
         {
             Vector3D worldFwd = camera.screenToWorldFwd(mouseCoord);
             std::vector<GridEntity> entities;
-            if (sceneVolume.raycast(camera.translation(), worldFwd, 2000, entities))
+            if (sceneVolume.raycast(entities, camera.translation(), worldFwd, 2000))
             {
                 selection = entities.front();
             }
@@ -2975,6 +3028,21 @@ void ExperimentalEnginePBR::tickEngine()
         }
     }
 
+    if (!application->windowManager->getMainWindow()->isMinimized())
+    {
+        ENQUEUE_COMMAND(TickFrame)
+        (
+            [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+            {
+#if SHADOWS_USE_CULLED_DRAW_CMDS
+                setupLightSceneDrawCmdsBuffer(cmdList, graphicsInstance);
+#endif
+                frameRender(cmdList, graphicsInstance, graphicsHelper);
+            }
+        );
+    }
+
+    // Do the resize after frame rendering so next frame will be updated
     if (renderSize != ApplicationSettings::screenSize.get())
     {
         ENQUEUE_COMMAND(WritingDescs)
@@ -2989,24 +3057,146 @@ void ExperimentalEnginePBR::tickEngine()
         );
     }
 
-    ENQUEUE_COMMAND(TickFrame)
-    (
-        [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
-        {
-            updateShaderParameters(cmdList, graphicsInstance);
-#if SHADOWS_USE_CULLED_DRAW_CMDS
-            setupLightSceneDrawCmdsBuffer(cmdList, graphicsInstance);
-#endif
-            frameRender(cmdList, graphicsInstance, graphicsHelper);
-        }
-    );
-
     tempTestPerFrame();
 }
 
 int32 ExperimentalEnginePBR::layerDepth() const { return 0; }
 
 int32 ExperimentalEnginePBR::sublayerDepth() const { return 0; }
+
+class TestWidget : public WidgetBase
+{
+private:
+    Short2D origin = { 300, 300 };
+    Short2D halfExtent = { 75, 50 };
+    Color colors[4] = { ColorConst::GREEN, ColorConst::GREEN, ColorConst::GREEN, ColorConst::GREEN };
+    Color color = ColorConst::GREEN;
+
+    SharedPtr<TestWidget> content;
+
+public:
+    struct WgArguments
+    {
+        Short2D origin = { 300, 300 };
+        Short2D halfExtent = { 75, 50 };
+        Color color = ColorConst::GREEN;
+        // 1 or 2 or 3 or 0
+        uint32 style;
+    };
+
+    void construct(WgArguments args)
+    {
+        origin = args.origin;
+        halfExtent = args.halfExtent;
+        color = args.color;
+        colors[0] = args.color;
+        colors[1] = args.color;
+        colors[2] = args.color;
+        colors[3] = args.color;
+
+        if (args.style == 0)
+        {
+            return;
+        }
+
+        if (args.style == 2)
+        {
+            TestWidget::WgArguments childArgs = args;
+            childArgs.origin = halfExtent * Short2D(2);
+            childArgs.style = 0;
+            childArgs.color = Color{ 255, 0, 0, 130 };
+            auto wg = std::make_shared<TestWidget>();
+            wg->construct(childArgs);
+            content = wg;
+        }
+        if (args.style == 3)
+        {
+            TestWidget::WgArguments childArgs = args;
+            childArgs.origin = Short2D(halfExtent.x + 2 * origin.x, halfExtent.y);
+            childArgs.color = ColorConst::BLUE;
+            childArgs.style = 0;
+            auto wg = std::make_shared<TestWidget>();
+            wg->construct(childArgs);
+            content = wg;
+
+            childArgs.origin = Short2D(halfExtent.x, 2 * halfExtent.y + origin.y);
+            childArgs.color = ColorConst::RED;
+            wg = std::make_shared<TestWidget>();
+            wg->construct(childArgs);
+            content->content = wg;
+
+            childArgs.origin = Short2D(halfExtent.x - 2 * origin.x, halfExtent.y);
+            childArgs.color = ColorConst::GRAY;
+            wg = std::make_shared<TestWidget>();
+            wg->construct(childArgs);
+            content->content->content = wg;
+
+            childArgs.origin = Short2D(halfExtent.x + origin.x, 0);
+            childArgs.color = ColorConst::CYAN;
+            wg = std::make_shared<TestWidget>();
+            wg->construct(childArgs);
+            content->content->content->content = wg;
+        }
+    }
+
+protected:
+    void rebuildGeometry(WidgetGeomId thisId, WidgetGeomTree &geomTree) override
+    {
+        WidgetGeom &geom = geomTree[thisId];
+        geom.box = { origin - halfExtent, origin + halfExtent };
+        if (content)
+        {
+            WidgetGeomId childId = geomTree.add(WidgetGeom{ .widget = content }, thisId);
+            content->rebuildWidgetGeometry(childId, geomTree);
+        }
+    }
+
+public:
+    void drawWidget(QuantShortBox2D clipBound, WidgetGeomId thisId, const WidgetGeomTree &geomTree, WidgetDrawContext &context) override
+    {
+        const QuantShortBox2D &box = geomTree[thisId].box;
+        context.drawBox(box, nullptr, clipBound, colors);
+        if (content)
+        {
+            WidgetGeomId childId = geomTree.getChildren(thisId, false)[0];
+            context.beginLayer();
+            // Below is right way but we are not using traditional geometry
+            // content->drawWidget(clipBound.getIntersectionBox(geomTree[childId].box), childId, geomTree, context);
+            content->drawWidget(geomTree[childId].box, childId, geomTree, context);
+            context.endLayer();
+        }
+    }
+    bool hasWidget(SharedPtr<WidgetBase> widget) const override { return content && (content == widget || content->hasWidget(widget)); }
+
+    void tick(float timeDelta) override {}
+
+    EInputHandleState inputKey(Keys::StateKeyType key, Keys::StateInfoType state, const InputSystem *inputSystem) override
+    {
+        return content ? content->inputKey(key, state, inputSystem) : EInputHandleState::NotHandled;
+    }
+    EInputHandleState analogKey(AnalogStates::StateKeyType key, AnalogStates::StateInfoType state, const InputSystem *inputSystem)
+    {
+        return EInputHandleState::NotHandled;
+    }
+
+    void mouseEnter(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) override
+    {
+        colors[0] = ColorConst::random();
+        colors[1] = ColorConst::random();
+        colors[2] = ColorConst::random();
+        colors[3] = ColorConst::random();
+    }
+
+    void mouseMoved(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) override {}
+
+    void mouseLeave(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) override
+    {
+        colors[0] = color;
+        colors[1] = color;
+        colors[2] = color;
+        colors[3] = color;
+    }
+};
 
 void ExperimentalEnginePBR::draw(class ImGuiDrawInterface *drawInterface)
 {
@@ -3028,7 +3218,7 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface *drawInterface)
         ImGui::SetNextWindowSize(ImVec2(430, 450), ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_FirstUseEver);
 
-        if (!ImGui::Begin("Settings", &bSettingOpen, ImGuiWindowFlags_NoMove))
+        if (!ImGui::Begin("Settings", &bSettingOpen))
         {
             ImGui::End();
         }
@@ -3036,14 +3226,41 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface *drawInterface)
         {
             ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
 
-            const InputAnalogState *rmxState = inputModule->getInputSystem()->analogState(AnalogStates::RelMouseX);
-            const InputAnalogState *rmyState = inputModule->getInputSystem()->analogState(AnalogStates::RelMouseY);
-            const InputAnalogState *amxState = inputModule->getInputSystem()->analogState(AnalogStates::AbsMouseX);
-            const InputAnalogState *amyState = inputModule->getInputSystem()->analogState(AnalogStates::AbsMouseY);
+            const InputAnalogState *rmxState = application->inputSystem->analogState(AnalogStates::RelMouseX);
+            const InputAnalogState *rmyState = application->inputSystem->analogState(AnalogStates::RelMouseY);
+            const InputAnalogState *amxState = application->inputSystem->analogState(AnalogStates::AbsMouseX);
+            const InputAnalogState *amyState = application->inputSystem->analogState(AnalogStates::AbsMouseY);
             ImGui::Text(
                 "Cursor pos (%.0f, %.0f) Delta (%0.1f, %0.1f)", amxState->currentValue, amyState->currentValue, rmxState->currentValue,
                 rmyState->currentValue
             );
+            SharedPtr<WgWindow> wnd = application->getHoveringWindow();
+            if (wnd)
+            {
+                Short2D wndRelPos = wnd->screenToWgWindowSpace(Short2D(amxState->currentValue, amyState->currentValue));
+                ImGui::Text(
+                    "Cursor pos in window %s (%d, %d)", TCHAR_TO_UTF8(wnd->getAppWindow()->getWindowName().getChar()), wndRelPos.x, wndRelPos.y
+                );
+            }
+            if (ImGui::Button("New Window"))
+            {
+                copat::fireAndForget(
+                    [this]() -> copat::JobSystemEnqTask<copat::EJobThreadType::MainThread>
+                    {
+                        static int32 count = 1;
+                        TestWidget::WgArguments args;
+                        args.halfExtent = { 200, 110 };
+                        args.origin = { 213, 120 };
+                        args.style = (count % 3) + 1;
+                        auto wg = std::make_shared<TestWidget>();
+                        wg->construct(args);
+                        application->createWindow(renderSize, ("TestWindow" + String::toString(count)).c_str(), nullptr)->setContent(wg);
+                        count++;
+                        co_return;
+                    }
+                );
+            }
+
             if (ImGui::CollapsingHeader("Camera"))
             {
                 {
@@ -3195,18 +3412,11 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface *drawInterface)
                 ImGui::TreePop();
             }
 
-            // if (ImGui::CollapsingHeader(TCHAR("Textures"))
-            //{
-            //     ImGui::Image(static_cast<TextureAsset*>(assetManager.getAsset(TCHAR("ten_N"))->getTexture(),
-            //     ImVec2(
-            //         ImGui::GetWindowContentRegionWidth(),
-            //         ImGui::GetWindowContentRegionWidth()));
-            // }
             if (ImGui::CollapsingHeader("Texture Histogram"))
             {
                 if (selectedTexture != 0)
                 {
-                    ImGui::Image(textures[selectedTexture - 1]->getTexture(), ImVec2(64, 64));
+                    ImGui::Image(textures[selectedTexture - 1]->getTexture()->getTextureResource().get(), ImVec2(64, 64));
                     ImGui::SameLine();
                 }
                 if (ImGui::Combo("Textures", &selectedTexture, textureNames.data(), int32(textureNames.size())))
@@ -3256,7 +3466,7 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface *drawInterface)
     ImGui::Begin(
         "FPS", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoTitleBar
     );
-    ImGui::Text("%.3f ms(%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+    ImGui::Text("%.3f ms(%.1f FPS)", 1000.0f * application->timeData.smoothedDeltaTime, 1 / application->timeData.smoothedDeltaTime);
     ImGui::End();
     ImGui::PopStyleColor();
 }
@@ -3279,8 +3489,18 @@ void ExperimentalEnginePBR::drawSelectionWidget(class ImGuiDrawInterface *drawIn
                 bool bTransformChanged = ImGui::DragFloat3("Translation", reinterpret_cast<float *>(&entity.transform.getTranslation()), 1.f);
                 bTransformChanged = ImGui::DragFloat3("Rotation", reinterpret_cast<float *>(&entity.transform.getRotation()), 1.f, 0.0f, 360.0f)
                                     || bTransformChanged;
-                bTransformChanged
-                    = ImGui::DragFloat3("Scale", reinterpret_cast<float *>(&entity.transform.getScale()), 0.05f) || bTransformChanged;
+
+                if (ImGui::DragFloat3("Scale", reinterpret_cast<float *>(&entity.transform.getScale()), 0.05f))
+                {
+                    bTransformChanged = true;
+                    for (uint32 i = 0; i < 3; ++i)
+                    {
+                        if (Math::isEqual(entity.transform.getScale()[i], 0.0f))
+                        {
+                            entity.transform.getScale()[i] += 0.1f;
+                        }
+                    }
+                }
 
                 if (bTransformChanged)
                 {
@@ -3421,77 +3641,19 @@ void ExperimentalEnginePBR::drawSelectionWidget(class ImGuiDrawInterface *drawIn
     }
 }
 
-void ExperimentalEnginePBR::tempTest()
-{
-    ModuleManager::get()->loadModule("RTTIExample");
-    String dir;
-    String name;
-    dir = FileSystemFunctions::applicationDirectory(name);
-    name = PathFunctions::stripExtension(name);
-    CoreObjectDelegates::broadcastContentDirectoryAdded(dir);
-    if (BasicPackagedObject *obj = CBE::load<BasicPackagedObject>(name))
-    {
-        LOG("Test", "Loaded object %s nameVal %s", obj->getFullPath(), obj->nameVal);
-    }
-    else
-    {
-        CBE::Package *package = CBE::create<CBE::Package>(name, nullptr);
-        CBE::Package *package2 = CBE::create<CBE::Package>(name + TCHAR("2"), nullptr);
-        package->setPackageRoot(dir);
-        package2->setPackageRoot(dir);
-
-        BasicPackagedObject *packedObj2 = CBE::create<BasicPackagedObject>(name, package2);
-        packedObj2->dt = 0.56;
-        packedObj2->nameVal = TCHAR("Its connected object");
-        BasicPackagedObject *packedObj = CBE::create<BasicPackagedObject>(name, package);
-        packedObj->dt = 0.28;
-        packedObj->id = STRID("Hello Subity & Jeslas");
-        packedObj->nameVal = TCHAR("Its Me Jeslas");
-        packedObj->idxToStr = {
-            {1, TCHAR("Jeslas Pravin")},
-            {2, TCHAR("Subity Jerald")}
-        };
-        packedObj->interLinked = packedObj2;
-
-        BasicFieldSerializedObject *testTemp = CBE::create<BasicFieldSerializedObject>(name, package);
-        testTemp->dt = 101.111;
-        testTemp->id = STRID("HEll Let lOsE");
-        testTemp->interLinked = packedObj;
-        testTemp->nameVal = TCHAR("Test All field serialization!");
-        testTemp->idxToStr[10] = {
-            {TCHAR("ABC"), 123},
-            {TCHAR("CBA"), 321}
-        };
-        testTemp->idxToStr[5] = {
-            {TCHAR("XYZ"), 55667788},
-            {TCHAR("ZYX"),     8235}
-        };
-        IInterfaceExample *interface1 = CBE::cast<IInterfaceExample>(static_cast<CBE::Object *>(testTemp));
-        IInterfaceExample2 *interface2 = CBE::cast<IInterfaceExample2>(static_cast<CBE::Object *>(testTemp));
-        IInterfaceExample2 *interface3 = CBE::cast<IInterfaceExample2>(interface1);
-        BasicFieldSerializedObject *ixToClassObj = CBE::cast<BasicFieldSerializedObject>(interface1);
-        CBE::Object *ix1ToClassObj = CBE::cast<CBE::Object>(interface1);
-        CBE::Object *ix2ToClassObj = CBE::cast<CBE::Object>(interface2);
-        BasicPackagedObject *failingCast = CBE::cast<BasicPackagedObject>(interface1);
-
-        BasicFieldSerializedObject *copied = CBE::cast<BasicFieldSerializedObject>(CBE::duplicateObject(testTemp, package));
-
-        CBE::save(packedObj);
-        CBE::save(packedObj2);
-    }
-}
+void ExperimentalEnginePBR::tempTest() {}
 
 void ExperimentalEnginePBR::tempTestPerFrame()
 {
-    CoreObjectGC &gc = ICoreObjectsModule::get()->getGC();
-    gc.collect(0.016f);
+    // CoreObjectGC &gc = ICoreObjectsModule::get()->getGC();
+    // gc.collect(0.016f);
 }
 
 void ExperimentalEnginePBR::tempTestQuit() {}
 
-GameEngine *GameEngineWrapper::createEngineInstance()
-{
-    static ExperimentalEnginePBR gameEngine;
-    return &gameEngine;
-}
+// TestGameEngine *GameEngineWrapper::createEngineInstance()
+//{
+//     static SharedPtr<ExperimentalEnginePBR> engineInst = std::make_shared<ExperimentalEnginePBR>();
+//     return engineInst.get();
+// }
 #endif

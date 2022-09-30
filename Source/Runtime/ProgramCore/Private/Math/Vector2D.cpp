@@ -25,7 +25,7 @@ Vector2D::Vector2D()
     : value(0)
 {}
 
-Vector2D::Vector2D(const float &x, const float &y)
+Vector2D::Vector2D(float x, float y)
     : value(x, y)
 {}
 
@@ -37,7 +37,7 @@ Vector2D::Vector2D(Vector2D &&other)
     : value(std::move(other.value))
 {}
 
-Vector2D::Vector2D(const float &allValue)
+Vector2D::Vector2D(float allValue)
     : value(allValue)
 {}
 
@@ -91,9 +91,9 @@ Vector2D &Vector2D::operator*=(const Vector2D &b)
     return *this;
 }
 
-Vector2D Vector2D::operator*(const float &scalar) const { return Vector2D(value * scalar); }
+Vector2D Vector2D::operator*(float scalar) const { return Vector2D(value * scalar); }
 
-Vector2D &Vector2D::operator*=(const float &scalar)
+Vector2D &Vector2D::operator*=(float scalar)
 {
     value *= scalar;
     return *this;
@@ -107,9 +107,9 @@ Vector2D &Vector2D::operator/=(const Vector2D &b)
     return *this;
 }
 
-Vector2D Vector2D::operator/(const float &scalar) const { return Vector2D(value / scalar); }
+Vector2D Vector2D::operator/(float scalar) const { return Vector2D(value / scalar); }
 
-Vector2D &Vector2D::operator/=(const float &scalar)
+Vector2D &Vector2D::operator/=(float scalar)
 {
     value /= scalar;
     return *this;
@@ -123,9 +123,9 @@ Vector2D &Vector2D::operator-=(const Vector2D &b)
     return *this;
 }
 
-Vector2D Vector2D::operator-(const float &scalar) const { return Vector2D(value - scalar); }
+Vector2D Vector2D::operator-(float scalar) const { return Vector2D(value - scalar); }
 
-Vector2D &Vector2D::operator-=(const float &scalar)
+Vector2D &Vector2D::operator-=(float scalar)
 {
     value -= scalar;
     return *this;
@@ -141,9 +141,9 @@ Vector2D &Vector2D::operator+=(const Vector2D &b)
     return *this;
 }
 
-Vector2D Vector2D::operator+(const float &scalar) const { return Vector2D(value + scalar); }
+Vector2D Vector2D::operator+(float scalar) const { return Vector2D(value + scalar); }
 
-Vector2D &Vector2D::operator+=(const float &scalar)
+Vector2D &Vector2D::operator+=(float scalar)
 {
     value += scalar;
     return *this;
@@ -156,9 +156,14 @@ bool Vector2D::isSame(const Vector2D &b, float epsilon /*= SMALL_EPSILON*/) cons
 
 bool Vector2D::isFinite() const { return Math::isFinite(value.x) && Math::isFinite(value.y); }
 
+Vector2D Vector2D::safeInverse() const
+{
+    return Vector2D(Math::isEqual(value.x, 0.0f) ? 0.0f : 1.0f / value.x, Math::isEqual(value.y, 0.0f) ? 0.0f : 1.0f / value.y);
+}
+
 Vector2D Vector2D::normalized() const { return Vector2D(glm::normalize(value)); }
 
-Vector2D Vector2D::safeNormalize(float threshold /*= SMALL_EPSILON*/) const
+Vector2D Vector2D::safeNormalized(float threshold /*= SMALL_EPSILON*/) const
 {
     float sqrLen = sqrlength();
     if (sqrLen < SMALL_EPSILON)
@@ -207,6 +212,6 @@ Vector2D Vector2D::round(const Vector2D &value) { return Vector2D(glm::round(val
 
 Vector2D Vector2D::mod(const Vector2D &a, const Vector2D &b) { return Vector2D(glm::mod(a.value, b.value)); }
 
-Vector2D Vector2D::mod(const Vector2D &a, const float &b) { return Vector2D(glm::mod(a.value, b)); }
+Vector2D Vector2D::mod(const Vector2D &a, float b) { return Vector2D(glm::mod(a.value, b)); }
 
 Vector2D Vector2D::modf(Vector2D &wholePart, const Vector2D &value) { return Vector2D(glm::modf(value.value, wholePart.value)); }

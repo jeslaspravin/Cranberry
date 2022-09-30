@@ -69,6 +69,12 @@ NODISCARD CONST_EXPR SizeT length(const CharType *start)
     return recurseToNullEnd(start) - start;
 }
 
+template <typename CharType>
+NODISCARD CONST_EXPR bool empty(const CharType *start)
+{
+    return length(start) == 0;
+}
+
 template <typename CharType, typename StringViewType = CharStringView<CharType>>
 CONST_EXPR bool find(const CharType *findIn, const CharType *findStr, SizeT *outFoundAt = nullptr, SizeT findFrom = 0)
 {
@@ -93,7 +99,7 @@ CONST_EXPR bool find(const CharType *findIn, const CharType findCh, SizeT *outFo
 }
 
 template <typename CharType, typename StringViewType = CharStringView<CharType>>
-CONST_EXPR bool rfind(const CharType *findIn, const CharType *findStr, SizeT *outFoundAt = nullptr, SizeT findFrom = 0)
+CONST_EXPR bool rfind(const CharType *findIn, const CharType *findStr, SizeT *outFoundAt = nullptr, SizeT findFrom = StringViewType::npos)
 {
     StringViewType strView(findIn);
     SizeT foundAt = strView.rfind(findStr, findFrom);
@@ -104,7 +110,7 @@ CONST_EXPR bool rfind(const CharType *findIn, const CharType *findStr, SizeT *ou
     return foundAt != StringViewType::npos;
 }
 template <typename CharType, typename StringViewType = CharStringView<CharType>>
-CONST_EXPR bool rfind(const CharType *findIn, const CharType findCh, SizeT *outFoundAt = nullptr, SizeT findFrom = 0)
+CONST_EXPR bool rfind(const CharType *findIn, const CharType findCh, SizeT *outFoundAt = nullptr, SizeT findFrom = StringViewType::npos)
 {
     StringViewType strView(findIn);
     SizeT foundAt = strView.rfind(findCh, findFrom);
@@ -291,7 +297,10 @@ NODISCARD bool startsWith(const CharType *matchIn, const CharType *match, bool b
 
     auto it = std::search(
         matchInView.cbegin(), matchInView.cend(), matchView.cbegin(), matchView.cend(),
-        [](CharType c1, CharType c2) { return PlatformFunctions::toUpper(c1) == PlatformFunctions::toUpper(c2); }
+        [](CharType c1, CharType c2)
+        {
+            return PlatformFunctions::toUpper(c1) == PlatformFunctions::toUpper(c2);
+        }
     );
 
     return matchInView.cbegin() == it;
@@ -330,7 +339,10 @@ NODISCARD bool endsWith(const CharType *matchIn, const CharType *match, bool bMa
 
     auto it = std::search(
         matchInView.cbegin(), matchInView.cend(), matchView.cbegin(), matchView.cend(),
-        [](CharType c1, CharType c2) { return PlatformFunctions::toUpper(c1) == PlatformFunctions::toUpper(c2); }
+        [](CharType c1, CharType c2)
+        {
+            return PlatformFunctions::toUpper(c1) == PlatformFunctions::toUpper(c2);
+        }
     );
 
     return matchInView.cbegin() == it;
@@ -339,7 +351,13 @@ NODISCARD bool endsWith(const CharType *matchIn, const CharType *match, bool bMa
 template <typename CharType, typename StringViewType = CharStringView<CharType>>
 NODISCARD CONST_EXPR StringViewType trimL(StringViewType strView)
 {
-    auto itr = std::find_if(strView.cbegin(), strView.cend(), [](CharType ch) { return !std::isspace(ch); });
+    auto itr = std::find_if(
+        strView.cbegin(), strView.cend(),
+        [](CharType ch)
+        {
+            return !std::isspace(ch);
+        }
+    );
 
     if (itr == strView.cend())
     {
@@ -352,7 +370,13 @@ NODISCARD CONST_EXPR StringViewType trimL(StringViewType strView)
 template <typename CharType, typename StringViewType = CharStringView<CharType>>
 NODISCARD CONST_EXPR StringViewType trimR(StringViewType strView)
 {
-    auto itr = std::find_if(strView.crbegin(), strView.crend(), [](CharType ch) { return !std::isspace(ch); });
+    auto itr = std::find_if(
+        strView.crbegin(), strView.crend(),
+        [](CharType ch)
+        {
+            return !std::isspace(ch);
+        }
+    );
 
     if (itr == strView.cend())
     {

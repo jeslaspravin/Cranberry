@@ -90,6 +90,7 @@ public:
 
     virtual void *get(void *object) const = 0;
     virtual const void *get(const void *object) const = 0;
+    virtual void setTypeless(void *value, void *object) const = 0;
 
     // Will return pointer to value else null
     template <typename AsType, typename ObjectType>
@@ -159,14 +160,14 @@ public:
 
         if CONST_EXPR (std::is_const_v<UnderlyingTypeWithConst<ObjectType>>)
         {
-            LOG_ERROR("MemberDataProperty", "%s() : Cannot set constant value", __func__);
+            LOG_ERROR("MemberDataProperty", "Cannot set constant value");
         }
         else
         {
             // If constant then we use const MemberDataPointer
             if (BIT_SET(getPropertyTypeInfo()->qualifiers, EReflectTypeQualifiers::Constant))
             {
-                LOG_ERROR("MemberDataProperty", "%s() : Cannot set constant value", __func__);
+                LOG_ERROR("MemberDataProperty", "Cannot set constant value");
             }
             else
             {
@@ -190,6 +191,7 @@ public:
     {}
 
     virtual FieldValuePtr<void> get() const = 0;
+    virtual void setTypeless(void *value) const = 0;
 
     // Will return pointer to value else null
     template <typename AsType>
@@ -223,7 +225,7 @@ public:
             const AsType *retVal = nullptr;
             const GlobalField<true, AsType> *memberFieldPtr = (const GlobalField<true, AsType> *)(propertyAccessor());
 
-            fatalAssert(memberFieldPtr, "%s() : Invalid Field pointer", __func__);
+            fatalAssertf(memberFieldPtr, "Invalid Field pointer");
             retVal = &memberFieldPtr->get();
             return retVal;
         }
@@ -232,7 +234,7 @@ public:
             AsType *retVal = nullptr;
             const GlobalField<false, AsType> *memberFieldPtr = (const GlobalField<false, AsType> *)(propertyAccessor());
 
-            fatalAssert(memberFieldPtr, "%s() : Invalid Field pointer", __func__);
+            fatalAssertf(memberFieldPtr, "Invalid Field pointer");
             retVal = &memberFieldPtr->get();
             return retVal;
         }
@@ -245,13 +247,13 @@ public:
         // If constant then we use const MemberDataPointer
         if (BIT_SET(getPropertyTypeInfo()->qualifiers, EReflectTypeQualifiers::Constant))
         {
-            LOG_ERROR("MemberDataProperty", "%s() : Cannot set constant value", __func__);
+            LOG_ERROR("MemberDataProperty", "Cannot set constant value");
         }
         else
         {
             const GlobalField<false, MemberType> *memberFieldPtr = (const GlobalField<false, MemberType> *)(propertyAccessor());
 
-            fatalAssert(memberFieldPtr, "%s() : Invalid member pointer", __func__);
+            fatalAssertf(memberFieldPtr, "Invalid member pointer");
             memberFieldPtr->set(std::forward<FromType>(value));
             return true;
         }
@@ -259,7 +261,9 @@ public:
     }
 };
 
+//////////////////////////////////////////////////////////////////////////
 // Templated Implementations
+//////////////////////////////////////////////////////////////////////////
 
 template <typename ObjectType, typename MemberType>
 class MemberFieldWrapperImpl : public MemberFieldWrapper
@@ -286,7 +290,7 @@ public:
     {
         if CONST_EXPR (std::is_const_v<MemberType>)
         {
-            LOG_ERROR("MemberFieldWrapperImpl", "%s() : Use const object function to retrieve const value", __func__);
+            LOG_ERROR("MemberFieldWrapperImpl", "Use const object function to retrieve const value");
             return nullptr;
         }
         else
@@ -300,6 +304,15 @@ public:
     {
         const ObjectType *outerObject = (const ObjectType *)(object);
         return &memberField.get(outerObject);
+    }
+    void setTypeless(void *value, void *object) const override
+    {
+        if CONST_EXPR (!std::is_const_v<MemberType>)
+        {
+            ObjectType *outerObject = (ObjectType *)(object);
+            MemberType *valuePtr = (MemberType *)(value);
+            memberField.set(outerObject, *valuePtr);
+        }
     }
     /* Override ends */
 };
@@ -326,6 +339,14 @@ protected:
     /* GlobalFieldWrapper overrides */
 public:
     FieldValuePtr<void> get() const override { return &field.get(); }
+    void setTypeless(void *value) const override
+    {
+        if CONST_EXPR (!std::is_const_v<MemberType>)
+        {
+            MemberType *valuePtr = (MemberType *)(value);
+            field.set(*valuePtr);
+        }
+    }
 
     /* Override ends */
 };

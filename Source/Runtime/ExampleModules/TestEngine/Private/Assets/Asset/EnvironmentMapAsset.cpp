@@ -13,12 +13,15 @@
 #include "Core/Types/Textures/CubeTextures.h"
 #include "Core/Types/Textures/Texture2D.h"
 #include "RenderInterface/GraphicsHelper.h"
+#include "IRenderInterfaceModule.h"
+#include "RenderApi/RenderManager.h"
+#include "RenderApi/Shaders/Base/UtilityShaders.h"
 #include "RenderInterface/Rendering/CommandBuffer.h"
 #include "RenderInterface/Rendering/IRenderCommandList.h"
-#include "RenderInterface/Rendering/RenderingContexts.h"
+#include "RenderApi/Rendering/RenderingContexts.h"
+#include "RenderInterface/Rendering/RenderInterfaceContexts.h"
 #include "RenderInterface/Resources/Samplers/SamplerInterface.h"
 #include "RenderInterface/ShaderCore/ShaderParameterResources.h"
-#include "RenderInterface/Shaders/Base/UtilityShaders.h"
 #include "RenderInterface/GlobalRenderVariables.h"
 
 ICleanupAsset *EnvironmentMapAsset::cleanableAsset() { return this; }
@@ -48,7 +51,7 @@ void EnvironmentMapAsset::initAsset()
                 copyInfo.extent = hdrImage->getImageSize();
                 copyInfo.subres.layersCount = 1;
                 copyInfo.subres.baseMip = copyInfo.subres.baseLayer = 0;
-                cmdList->copyToImage(hdrImage, tempPixelData, copyInfo);
+                cmdList->copyToImage(hdrImage, ArrayView<const LinearColor>(tempPixelData), copyInfo);
             }
 
             // Create Textures
@@ -138,8 +141,7 @@ void EnvironmentMapAsset::initAsset()
                     ImageViewInfo viewInfo;
                     viewInfo.viewSubresource.baseMip = i;
                     viewInfo.viewSubresource.mipCount = 1;
-                    hdriToPrefilteredSpecParams->setTextureParam(
-                        TCHAR("outPrefilteredSpecMap"), specIrradIntermediate->getTextureResource(), i
+                    hdriToPrefilteredSpecParams->setTextureParam(TCHAR("outPrefilteredSpecMap"), specIrradIntermediate->getTextureResource(), i
                     );
                     hdriToPrefilteredSpecParams->setTextureParamViewInfo(TCHAR("outPrefilteredSpecMap"), viewInfo, i);
                 }
@@ -150,7 +152,7 @@ void EnvironmentMapAsset::initAsset()
                 const GraphicsResource *createEnvCmdBuffer
                     = cmdList->startCmd(TCHAR("CreateEnvMap_") + assetName(), EQueueFunction::Graphics, false);
 
-                cmdList->cmdBarrierResources(createEnvCmdBuffer, { hdriToCubeParams });
+                cmdList->cmdBarrierResources(createEnvCmdBuffer, { &hdriToCubeParams, 1 });
                 cmdList->cmdBindComputePipeline(createEnvCmdBuffer, hdriToCubeContext);
                 cmdList->cmdBindDescriptorsSets(createEnvCmdBuffer, hdriToCubeContext, hdriToCubeParams);
                 subgrpSize = static_cast<const ComputeShaderConfig *>(hdriToCubeContext.getPipeline()->getShaderResource()->getShaderConfig())
@@ -166,7 +168,8 @@ void EnvironmentMapAsset::initAsset()
                     createEnvCmdBuffer, writeIntermediate->getTextureResource(), envMap->getTextureResource(), copyInfo, copyInfo
                 );
 
-                cmdList->cmdBarrierResources(createEnvCmdBuffer, { envToDiffIrradParams, hdriToPrefilteredSpecParams });
+                ShaderParametersRef barrierParams[] = { envToDiffIrradParams, hdriToPrefilteredSpecParams };
+                cmdList->cmdBarrierResources(createEnvCmdBuffer, barrierParams);
                 cmdList->cmdBindComputePipeline(createEnvCmdBuffer, envToDiffIrradContext);
                 cmdList->cmdBindDescriptorsSets(createEnvCmdBuffer, envToDiffIrradContext, envToDiffIrradParams);
                 subgrpSize
@@ -183,12 +186,10 @@ void EnvironmentMapAsset::initAsset()
                 );
 
                 cmdList->cmdBindComputePipeline(createEnvCmdBuffer, hdriToPrefilteredSpecContext);
-                cmdList->cmdPushConstants(
-                    createEnvCmdBuffer, hdriToPrefilteredSpecContext,
-                    {
-                        {TCHAR("sourceSize"), envMap->getTextureSize().x}
-                }
-                );
+                std::pair<String, std::any> pushConsts[] = {
+                    {TCHAR("sourceSize"), envMap->getTextureSize().x}
+                };
+                cmdList->cmdPushConstants(createEnvCmdBuffer, hdriToPrefilteredSpecContext, pushConsts);
                 cmdList->cmdBindDescriptorsSets(createEnvCmdBuffer, hdriToPrefilteredSpecContext, hdriToPrefilteredSpecParams);
                 subgrpSize = static_cast<const ComputeShaderConfig *>(
                                  hdriToPrefilteredSpecContext.getPipeline()->getShaderResource()->getShaderConfig()
@@ -203,13 +204,11 @@ void EnvironmentMapAsset::initAsset()
                 cmdList->cmdCopyOrResolveImage(
                     createEnvCmdBuffer, specIrradIntermediate->getTextureResource(), specularIrradMap->getTextureResource(), copyInfo, copyInfo
                 );
-                cmdList->cmdTransitionLayouts(
-                    createEnvCmdBuffer, { specularIrradMap->getTextureResource(), diffuseIrradMap->getTextureResource() }
-                );
+                ImageResourceRef imgsToTransition[] = { specularIrradMap->getTextureResource(), diffuseIrradMap->getTextureResource() };
+                cmdList->cmdTransitionLayouts(createEnvCmdBuffer, imgsToTransition);
 
                 // Record here
                 cmdList->endCmd(createEnvCmdBuffer);
-                ;
 
                 CommandSubmitInfo2 submitInfo;
                 submitInfo.cmdBuffers.emplace_back(createEnvCmdBuffer);

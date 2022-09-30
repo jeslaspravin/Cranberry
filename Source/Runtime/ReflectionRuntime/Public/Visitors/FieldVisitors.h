@@ -17,6 +17,7 @@
 #include "ReflectionMacros.h"
 #include "ReflectionRuntimeExports.h"
 #include "Types/Colors.h"
+#include "String/NameString.h"
 #include "Types/PropertyTypes.h"
 #include "Types/Templates/TypeList.h"
 #include "Types/Transform3D.h"
@@ -73,7 +74,7 @@ private:
         }
         else
         {
-            fatalAssert(false, "References in field is not allowed");
+            fatalAssertf(false, "References in field is not allowed");
         }
     }
     template <typename Visitable>
@@ -81,7 +82,7 @@ private:
     {
         // Qualified type cannot have more than 1 inner type as that means double or more
         // reference/pointer combination
-        fatalAssert(
+        fatalAssertf(
             propInfo.thisProperty->typeInfo->innerType == nullptr || propInfo.thisProperty->typeInfo->innerType->innerType == nullptr,
             "Qualification for property %s is not allowed for field types in field %s", propInfo.thisProperty->nameString,
             propInfo.fieldProperty->nameString
@@ -147,7 +148,7 @@ private:
             }
             else
             {
-                alertIf(false, "Qualified type invoked inside qualified type, Use struct");
+                alertAlwaysf(false, "Qualified type invoked inside qualified type, Use struct");
             }
             break;
         case EPropertyType::FundamentalType:
@@ -267,7 +268,10 @@ public:
     template <typename Visitable>
     static void visit(const TypedProperty *prop, void *userData)
     {
-        auto typeVisitor = [userData]<typename Type>(PropertyInfo propInfo) { Visitable::template visit<Type>(propInfo, userData); };
+        auto typeVisitor = [userData]<typename Type>(PropertyInfo propInfo)
+        {
+            Visitable::template visit<Type>(propInfo, userData);
+        };
         PropertyInfo propInfo;
         propInfo.thisProperty = prop;
         visit(propInfo, typeVisitor);
@@ -277,8 +281,10 @@ public:
     template <typename Visitable>
     static void visit(const TypedProperty *prop, void *val, void *userData)
     {
-        auto typeVisitor
-            = [val, userData]<typename Type>(PropertyInfo propInfo) { Visitable::visit(reinterpret_cast<Type *>(val), propInfo, userData); };
+        auto typeVisitor = [val, userData]<typename Type>(PropertyInfo propInfo)
+        {
+            Visitable::visit(reinterpret_cast<Type *>(val), propInfo, userData);
+        };
         PropertyInfo propInfo;
         propInfo.thisProperty = prop;
         visit(propInfo, typeVisitor);

@@ -14,12 +14,12 @@
 #include "Types/Platform/PlatformAssertionErrors.h"
 #include "ObjectPathHelpers.h"
 
-namespace CBE
+namespace cbe
 {
 
 Package::Package()
 {
-    debugAssert(!getName().empty() || BIT_SET(getFlags(), EObjectFlagBits::Default));
+    debugAssert(!getName().empty() || BIT_SET(getFlags(), EObjectFlagBits::ObjFlag_Default));
 
     // Name will be empty only in default objects now
     if (!getName().empty())
@@ -28,8 +28,10 @@ Package::Package()
     }
 }
 
+void Package::setPackageRoot(const String &root) { packageRoot = root; }
+
 String Package::getPackageFilePath() const { return PathFunctions::combinePath(getPackageRoot(), getName() + TCHAR(".") + PACKAGE_EXT); }
 
 void Package::destroy() { Object::destroy(); }
 
-} // namespace CBE
+} // namespace cbe

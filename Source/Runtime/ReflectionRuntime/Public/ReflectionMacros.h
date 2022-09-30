@@ -17,6 +17,7 @@
 #define FOR_EACH_SPECIAL_TYPES_UNIQUE_FIRST_LAST(FirstMacroName, MacroName, LastMacroName) \
     FirstMacroName(String)          \
     MacroName(StringID)             \
+    MacroName(NameString)           \
     MacroName(Color)                \
     MacroName(LinearColor)          \
     MacroName(Vector2D)             \
@@ -70,6 +71,15 @@
 public:                                                                                                                                        \
     using GENERATED_INTERFACE_CODES_ALIAS = uint32;                                                                                            \
     virtual const ClassProperty *getType() const = 0;
+
+// Class only codes to inject
+#define GENERATED_CLASS_CODES()
+
+// Struct only codes to inject
+#define GENERATED_STRUCT_CODES()
+
+// Common codes to inject
+#define GENERATED_COMMON_CODES()
 
 // If present in base class with Build Flag BaseType then generator will not setup
 // DefaultConstructionPolicy in Base class

@@ -101,8 +101,8 @@ template <typename Parent, typename Child>
 class GraphicsResourceTypeSpecialized final : public GraphicsResourceType
 {
 protected:
-    using ThisType = typename Child;
-    using ParentType = typename Parent;
+    using ThisType = Child;
+    using ParentType = Parent;
 
     constexpr bool verifyParent(const GraphicsResourceType *otherType) const override
     {
@@ -119,6 +119,8 @@ public:
     bool isRootType() const override { return ThisType::staticType() == ParentType::staticType(); }
 };
 
+#define DECLARE_GRAPHICS_RESOURCE_OVERRIDE
+
 #ifndef DECLARE_GRAPHICS_RESOURCE
 #define DECLARE_GRAPHICS_RESOURCE(NewTypeName, NewTypeTemplates, BaseTypeName, BaseTypeTemplates)                                              \
 private:                                                                                                                                       \
@@ -126,44 +128,17 @@ private:                                                                        
     using BaseType = BaseTypeName##BaseTypeTemplates;                                                                                          \
                                                                                                                                                \
 protected:                                                                                                                                     \
-    using NewTypeName##_Type = GraphicsResourceTypeSpecialized<typename BaseType, typename NewType>;                                           \
-    static UniquePtr<typename NewTypeName##_Type> STATIC_TYPE;                                                                                 \
-    virtual GraphicsResourceType *privateType() const;                                                                                         \
+    using NewTypeName##_Type = GraphicsResourceTypeSpecialized<BaseType, NewType>;                                                             \
+    static UniquePtr<NewTypeName##_Type> STATIC_TYPE;                                                                                          \
+    virtual GraphicsResourceType *privateType() const DECLARE_GRAPHICS_RESOURCE_OVERRIDE;                                                      \
                                                                                                                                                \
 public:                                                                                                                                        \
-    virtual const GraphicsResourceType *getType() const;                                                                                       \
+    virtual const GraphicsResourceType *getType() const DECLARE_GRAPHICS_RESOURCE_OVERRIDE;                                                    \
     static const GraphicsResourceType *staticType();                                                                                           \
                                                                                                                                                \
 private:                                                                                                                                       \
-    static void delFn(GraphicsResource *resource);                                                                                             \
-                                                                                                                                               \
-protected:                                                                                                                                     \
-    template <typename CheckType, typename BaseType>                                                                                           \
-    struct TypeOfBase                                                                                                                          \
-    {                                                                                                                                          \
-                                                                                                                                               \
-        static bool isTypeOfBase() { return BaseType::template isTypeOf<CheckType>(); }                                                        \
-    };                                                                                                                                         \
-                                                                                                                                               \
-    template <typename CheckType>                                                                                                              \
-    struct TypeOfBase<CheckType, GraphicsResource>                                                                                             \
-    {                                                                                                                                          \
-                                                                                                                                               \
-        static bool isTypeOfBase() { return false; }                                                                                           \
-    };                                                                                                                                         \
-                                                                                                                                               \
-public:                                                                                                                                        \
-    template <typename CheckType>                                                                                                              \
-    static bool isTypeOf()                                                                                                                     \
-    {                                                                                                                                          \
-        return TypeOfBase<CheckType, GraphicsResource>::isTypeOfBase();                                                                        \
-    }                                                                                                                                          \
-                                                                                                                                               \
-    template <>                                                                                                                                \
-    static bool isTypeOf<GraphicsResource>()                                                                                                   \
-    {                                                                                                                                          \
-        return true;                                                                                                                           \
-    }
+    static void delFn(GraphicsResource *resource);
+
 #endif // DECLARE_GRAPHICS_RESOURCE
 
 #ifndef DEFINE_GRAPHICS_RESOURCE
@@ -185,7 +160,7 @@ public:                                                                         
             new typename NewTypeName##TemplatesDefine## ::##NewTypeName##_Type(                                                                \
                 new typename NewTypeName##TemplatesDefine## ::NewType(), &NewTypeName##TemplatesDefine## ::delFn,                              \
                 TCHAR(#NewTypeName #TemplatesDefine)                                                                                           \
-            )                                                                                                                                  \
+                )                                                                                                                              \
         );                                                                                                                                     \
                                                                                                                                                \
     template##NewTypeTemplates##void NewTypeName##TemplatesDefine## ::delFn(GraphicsResource *resource) { delete resource; }                   \
@@ -205,7 +180,7 @@ public:                                                                         
 
 class ENGINERENDERER_EXPORT GraphicsResource
 {
-    DECLARE_GRAPHICS_RESOURCE(GraphicsResource, , GraphicsResource, )
+    DECLARE_GRAPHICS_RESOURCE(GraphicsResource, , GraphicsResource, );
 
 public:
     GraphicsResource(const GraphicsResource &otherResource) = delete;
@@ -222,3 +197,7 @@ public:
     // This needs to be set before initializing or needs be reinit for the GPU resource be relabeled.
     virtual void setResourceName(const String &name){};
 };
+
+// Override only inside classes implements GraphicsResource
+#undef DECLARE_GRAPHICS_RESOURCE_OVERRIDE
+#define DECLARE_GRAPHICS_RESOURCE_OVERRIDE override

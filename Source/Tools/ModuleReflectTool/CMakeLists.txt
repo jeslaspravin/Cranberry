@@ -1,5 +1,5 @@
-include(${cmake_script_dir}/EngineProjectMacros.cmake)
-include(${cmake_script_dir}/EngineFileUtilities.cmake)
+include(EngineProjectMacros)
+include(EngineCMakeHelpers)
 
 # Since Clang creates more targets
 get_filename_component(directory_name ${CMAKE_CURRENT_LIST_DIR} NAME)
@@ -26,9 +26,15 @@ else ()
     message (FATAL_ERROR "Clang package not found, Make sure to configure \"llvm_install_path\" config CACHE with path to llvm install")
 endif ()
 
+map_imported_targets_config(TARGETS libclang 
+    # clangAST
+    # Below are libs clangAST pulls
+    # LLVMSupport LLVMCore LLVMBinaryFormat LLVMBitstreamReader LLVMFrontendOpenMP LLVMRemarks
+    # clangBasic clangLex
+)
 set(private_libraries
     libclang
-    clangAST # Contains implementations for AST, Necessary to implement some custom parse function that are not exposed in libclang
+    # clangAST # Contains implementations for AST, Necessary to implement some custom parse function that are not exposed in libclang
 )
 set(private_includes
     ${CLANG_INCLUDE_DIRS}
@@ -48,6 +54,7 @@ target_compile_definitions(${target_name}
         LLVM_INSTALL_PATH="${LLVM_INSTALL_PREFIX}"
         TEMPLATES_DIR="${CMAKE_CURRENT_LIST_DIR}/Templates"
 )
+target_compile_options(${target_name} PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/MP>)
 mark_delay_loaded_dlls()
 # we delay load here
 #copy_target_exe_runtime_deps(${target_name})

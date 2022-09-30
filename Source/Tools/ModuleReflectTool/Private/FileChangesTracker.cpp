@@ -12,6 +12,7 @@
 #include "FileChangesTracker.h"
 #include "Types/Platform/LFS/File/FileHelper.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
+#include "Types/Platform/LFS/PathFunctions.h"
 
 #include <unordered_set>
 
@@ -20,15 +21,16 @@ FileChangesTracker::FileChangesTracker(const String name, const String &director
     , folderPath(directory)
     , writePath(intermediateDir)
 {
-    fatalAssert(PlatformFile(folderPath).exists(), "%s() : Tracking base directory %s is not valid", __func__, folderPath);
+    fatalAssertf(PlatformFile(folderPath).exists(), "Tracking base directory %s is not valid", folderPath);
     String manifestContent;
-    if (FileHelper::readString(manifestContent, PathFunctions::combinePath(writePath, trackerManifestName)))
+    String manifestFile = PathFunctions::combinePath(writePath, trackerManifestName);
+    if (PlatformFile(manifestFile).exists() && FileHelper::readString(manifestContent, manifestFile))
     {
         std::vector<StringView> readLines = manifestContent.splitLines();
         for (String line : readLines)
         {
             std::vector<String> fileEntry = String::split(line, TCHAR("="));
-            fatalAssert(fileEntry.size() == 2, "%s() : Cannot parse file timestamp from %s", __func__, line);
+            fatalAssertf(fileEntry.size() == 2, "Cannot parse file timestamp from %s", line);
             fileLastTimestamp[fileEntry[0]] = std::stoll(fileEntry[1]);
         }
     }
@@ -44,7 +46,7 @@ FileChangesTracker::~FileChangesTracker()
         ++i;
     }
 
-    String manifestFileContent = String::join(manifestEntries.cbegin(), manifestEntries.cend(), LINE_FEED_CHAR);
+    String manifestFileContent = String::join(manifestEntries.cbegin(), manifestEntries.cend(), LINE_FEED_TCHAR);
     FileHelper::writeString(manifestFileContent, PathFunctions::combinePath(writePath, trackerManifestName));
 }
 

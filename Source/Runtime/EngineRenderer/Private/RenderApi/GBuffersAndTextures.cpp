@@ -11,35 +11,46 @@
 
 #include "RenderApi/GBuffersAndTextures.h"
 #include "Math/Math.h"
+#include "IRenderInterfaceModule.h"
+#include "RenderApi/RenderManager.h"
+#include "RenderInterface/Rendering/RenderInterfaceContexts.h"
 #include "RenderInterface/GlobalRenderVariables.h"
 #include "RenderInterface/GraphicsHelper.h"
 #include "RenderInterface/Rendering/CommandBuffer.h"
 #include "RenderInterface/Rendering/IRenderCommandList.h"
-#include "RenderInterface/Rendering/RenderingContexts.h"
+#include "RenderApi/Rendering/RenderingContexts.h"
 #include "RenderInterface/Resources/GenericWindowCanvas.h"
-#include "RenderInterface/Shaders/Base/UtilityShaders.h"
+#include "RenderApi/Shaders/Base/UtilityShaders.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 
 //////////////////////////////////////////////////////////////////////////
 // GBuffers
 //////////////////////////////////////////////////////////////////////////
 
+// clang-format off
 std::unordered_map<ERenderPassFormat::Type, FramebufferFormat::AttachmentsFormatList> GlobalBuffers::GBUFFERS_ATTACHMENT_FORMATS{
-    {          ERenderPassFormat::Multibuffer,
-     { EPixelDataFormat::BGRA_U8_Norm, EPixelDataFormat::A2BGR10_U32_NormPacked, EPixelDataFormat::A2BGR10_U32_NormPacked,
-     EPixelDataFormat::D24S8_U32_DNorm_SInt }                                            },
-    {                ERenderPassFormat::Depth, { EPixelDataFormat::D24S8_U32_DNorm_SInt }},
-    {      ERenderPassFormat::PointLightDepth, { EPixelDataFormat::D24S8_U32_DNorm_SInt }},
-    {ERenderPassFormat::DirectionalLightDepth, { EPixelDataFormat::D24S8_U32_DNorm_SInt }}
+    { ERenderPassFormat::Multibuffer            , { EPixelDataFormat::BGRA_U8_Norm, EPixelDataFormat::A2BGR10_U32_NormPacked, EPixelDataFormat::A2BGR10_U32_NormPacked, EPixelDataFormat::D24S8_U32_DNorm_SInt }},
+    { ERenderPassFormat::Depth                  , { EPixelDataFormat::D24S8_U32_DNorm_SInt }},
+    { ERenderPassFormat::PointLightDepth        , { EPixelDataFormat::D24S8_U32_DNorm_SInt }},
+    { ERenderPassFormat::DirectionalLightDepth  , { EPixelDataFormat::D24S8_U32_DNorm_SInt }}
 };
+// clang-format on
 
 ImageResourceRef GlobalBuffers::dummyBlackTexture;
 ImageResourceRef GlobalBuffers::dummyWhiteTexture;
 ImageResourceRef GlobalBuffers::dummyCubeTexture;
 ImageResourceRef GlobalBuffers::dummyNormalTexture;
+ImageResourceRef GlobalBuffers::dummyDepthTexture;
+
 ImageResourceRef GlobalBuffers::integratedBRDF;
 
 BufferResourceRef GlobalBuffers::quadTriVerts = nullptr;
+
+SamplerRef GlobalBuffers::nearestFiltering = nullptr;
+SamplerRef GlobalBuffers::linearFiltering = nullptr;
+SamplerRef GlobalBuffers::depthFiltering = nullptr;
+SamplerRef GlobalBuffers::shadowFiltering = nullptr;
+
 std::pair<BufferResourceRef, BufferResourceRef> GlobalBuffers::quadRectVertsInds{ nullptr, nullptr };
 std::pair<BufferResourceRef, BufferResourceRef> GlobalBuffers::lineGizmoVertxInds{ nullptr, nullptr };
 
@@ -86,30 +97,27 @@ bool FramebufferFormat::operator<(const FramebufferFormat &otherFormat) const
 
 void GlobalBuffers::initialize()
 {
-    ENQUEUE_COMMAND(InitializeGlobalBuffers)
-    (
-        [](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
-        {
-            createTextureCubes(cmdList, graphicsInstance, graphicsHelper);
-            createTexture2Ds(cmdList, graphicsInstance, graphicsHelper);
-            createVertIndBuffers(cmdList, graphicsInstance, graphicsHelper);
+    IRenderInterfaceModule *renderInterface = IRenderInterfaceModule::get();
+    debugAssert(renderInterface);
 
-            generateTexture2Ds();
-        }
-    );
+    IRenderCommandList *cmdList = renderInterface->getRenderManager()->getRenderCmds();
+    IGraphicsInstance *graphicsInstance = renderInterface->currentGraphicsInstance();
+    const GraphicsHelperAPI *graphicsHelper = renderInterface->currentGraphicsHelper();
+
+    createTextureCubes(cmdList, graphicsInstance, graphicsHelper);
+    createTexture2Ds(cmdList, graphicsInstance, graphicsHelper);
+    createVertIndBuffers(cmdList, graphicsInstance, graphicsHelper);
+    createSamplers(cmdList, graphicsInstance, graphicsHelper);
+
+    generateTexture2Ds(cmdList, graphicsInstance, graphicsHelper);
 }
 
 void GlobalBuffers::destroy()
 {
-    ENQUEUE_COMMAND(DestroyGlobalBuffers)
-    (
-        [](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
-        {
-            destroyTextureCubes();
-            destroyTexture2Ds();
-            destroyVertIndBuffers();
-        }
-    );
+    destroyTextureCubes();
+    destroyTexture2Ds();
+    destroyVertIndBuffers();
+    destroySamplers();
 }
 
 GenericRenderPassProperties GlobalBuffers::getFramebufferRenderpassProps(ERenderPassFormat::Type renderpassFormat)
@@ -150,9 +158,13 @@ void GlobalBuffers::createTexture2Ds(IRenderCommandList *cmdList, IGraphicsInsta
     dummyNormalTexture = graphicsHelper->createImage(graphicsInstance, imageCI);
     dummyNormalTexture->setResourceName(TCHAR("Dummy_Normal"));
 
+    imageCI.imageFormat = EPixelDataFormat::D_SF32;
+    dummyDepthTexture = graphicsHelper->createImage(graphicsInstance, imageCI);
+    dummyDepthTexture->setResourceName(TCHAR("Dummy_Depth"));
+
     if (GlobalRenderVariables::ENABLE_EXTENDED_STORAGES)
     {
-        // #TODO(Jeslas) : Create better read only LUT
+        // TODO(Jeslas) : Create better read only LUT
         imageCI.imageFormat = EPixelDataFormat::RG_SF16;
         imageCI.dimensions = Size3D(GlobalRenderVariables::MAX_ENV_MAP_SIZE / 2u, GlobalRenderVariables::MAX_ENV_MAP_SIZE / 2u, 1);
         integratedBRDF = graphicsHelper->createImage(graphicsInstance, imageCI);
@@ -161,54 +173,51 @@ void GlobalBuffers::createTexture2Ds(IRenderCommandList *cmdList, IGraphicsInsta
     }
     else
     {
-        LOG_ERROR("GlobalBuffers", "%s(): Cannot create integrated BRDF LUT, RG_SF16 is not supported format", __func__);
+        LOG_ERROR("GlobalBuffers", "Cannot create integrated BRDF LUT, RG_SF16 is not supported format");
         integratedBRDF = nullptr;
     }
 }
 
-void GlobalBuffers::generateTexture2Ds()
+void GlobalBuffers::generateTexture2Ds(
+    IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
+)
 {
-    ENQUEUE_COMMAND(GenerateTextures2D)
-    (
-        [](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
-        {
-            dummyWhiteTexture->init();
-            dummyBlackTexture->init();
-            dummyNormalTexture->init();
-            integratedBRDF->init();
-            cmdList->setupInitialLayout(integratedBRDF);
+    dummyWhiteTexture->init();
+    dummyBlackTexture->init();
+    dummyNormalTexture->init();
+    dummyDepthTexture->init();
+    integratedBRDF->init();
+    cmdList->setupInitialLayout(integratedBRDF);
 
-            LocalPipelineContext integrateBrdfContext;
-            integrateBrdfContext.materialName = TCHAR("IntegrateBRDF_16x16x1");
-            IRenderInterfaceModule::get()->getRenderManager()->preparePipelineContext(&integrateBrdfContext);
-            ShaderParametersRef integrateBrdfParams
-                = graphicsHelper->createShaderParameters(graphicsInstance, integrateBrdfContext.getPipeline()->getParamLayoutAtSet(0), {});
-            integrateBrdfParams->setTextureParam(TCHAR("outIntegratedBrdf"), integratedBRDF);
-            integrateBrdfParams->init();
+    LocalPipelineContext integrateBrdfContext;
+    integrateBrdfContext.materialName = TCHAR("IntegrateBRDF_16x16x1");
+    IRenderInterfaceModule::get()->getRenderManager()->preparePipelineContext(&integrateBrdfContext);
+    ShaderParametersRef integrateBrdfParams
+        = graphicsHelper->createShaderParameters(graphicsInstance, integrateBrdfContext.getPipeline()->getParamLayoutAtSet(0), {});
+    integrateBrdfParams->setTextureParam(TCHAR("outIntegratedBrdf"), integratedBRDF);
+    integrateBrdfParams->init();
 
-            const GraphicsResource *cmdBuffer = cmdList->startCmd(TCHAR("IntegrateBRDF"), EQueueFunction::Graphics, false);
-            cmdList->cmdBindComputePipeline(cmdBuffer, integrateBrdfContext);
-            cmdList->cmdBindDescriptorsSets(cmdBuffer, integrateBrdfContext, { integrateBrdfParams });
-            Size3D subgrpSize
-                = static_cast<const ComputeShaderConfig *>(integrateBrdfContext.getPipeline()->getShaderResource()->getShaderConfig())
-                      ->getSubGroupSize();
-            cmdList->cmdDispatch(cmdBuffer, integratedBRDF->getImageSize().x / subgrpSize.x, integratedBRDF->getImageSize().y / subgrpSize.y);
-            cmdList->cmdTransitionLayouts(cmdBuffer, { integratedBRDF });
-            cmdList->endCmd(cmdBuffer);
+    const GraphicsResource *cmdBuffer = cmdList->startCmd(TCHAR("IntegrateBRDF"), EQueueFunction::Graphics, false);
+    cmdList->cmdBindComputePipeline(cmdBuffer, integrateBrdfContext);
+    cmdList->cmdBindDescriptorsSets(cmdBuffer, integrateBrdfContext, { integrateBrdfParams });
+    Size3D subgrpSize = static_cast<const ComputeShaderConfig *>(integrateBrdfContext.getPipeline()->getShaderResource()->getShaderConfig())
+                            ->getSubGroupSize();
+    cmdList->cmdDispatch(cmdBuffer, integratedBRDF->getImageSize().x / subgrpSize.x, integratedBRDF->getImageSize().y / subgrpSize.y);
+    cmdList->cmdTransitionLayouts(cmdBuffer, { &integratedBRDF, 1 });
+    cmdList->endCmd(cmdBuffer);
 
-            CommandSubmitInfo2 submitInfo;
-            submitInfo.cmdBuffers.emplace_back(cmdBuffer);
-            cmdList->submitCmd(EQueuePriority::High, submitInfo);
+    CommandSubmitInfo2 submitInfo;
+    submitInfo.cmdBuffers.emplace_back(cmdBuffer);
+    cmdList->submitCmd(EQueuePriority::High, submitInfo);
 
-            cmdList->copyToImage(dummyBlackTexture, { ColorConst::BLACK });
-            cmdList->copyToImage(dummyWhiteTexture, { ColorConst::WHITE });
-            cmdList->copyToImage(dummyNormalTexture, { ColorConst::BLUE });
+    cmdList->copyToImage(dummyBlackTexture, { &ColorConst::BLACK, 1 });
+    cmdList->copyToImage(dummyWhiteTexture, { &ColorConst::WHITE, 1 });
+    cmdList->copyToImage(dummyNormalTexture, { &ColorConst::BLUE, 1 });
+    cmdList->copyToImage(dummyDepthTexture, { &LinearColorConst::BLACK, 1 }, { .extent = dummyDepthTexture->getImageSize() });
 
-            cmdList->finishCmd(cmdBuffer);
-            cmdList->freeCmd(cmdBuffer);
-            integrateBrdfParams.reset();
-        }
-    );
+    cmdList->finishCmd(cmdBuffer);
+    cmdList->freeCmd(cmdBuffer);
+    integrateBrdfParams.reset();
 }
 
 void GlobalBuffers::destroyTexture2Ds()
@@ -216,8 +225,51 @@ void GlobalBuffers::destroyTexture2Ds()
     dummyBlackTexture.reset();
     dummyWhiteTexture.reset();
     dummyNormalTexture.reset();
+    dummyDepthTexture.reset();
 
     integratedBRDF.reset();
+}
+
+void GlobalBuffers::createSamplers(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+{
+    SamplerCreateInfo samplerCI{
+        .filtering = ESamplerFiltering::Nearest,
+        .mipFiltering = ESamplerFiltering::Nearest,
+        .mipLodRange = ValueRange<float>{0, float(GlobalRenderVariables::MIN_SAMPLINE_MIP_LEVEL.get())},
+        .resourceName = TCHAR("NearestSampler")
+    };
+    samplerCI.tilingMode = { ESamplerTilingMode::Repeat, ESamplerTilingMode::Repeat, ESamplerTilingMode::Repeat };
+
+    nearestFiltering = graphicsHelper->createSampler(graphicsInstance, samplerCI);
+    nearestFiltering->init();
+
+    samplerCI.mipFiltering = samplerCI.filtering = ESamplerFiltering::Linear;
+    samplerCI.resourceName = TCHAR("LinearSampler");
+    linearFiltering = graphicsHelper->createSampler(graphicsInstance, samplerCI);
+    linearFiltering->init();
+
+    samplerCI.mipFiltering = samplerCI.filtering = ESamplerFiltering::Linear;
+    samplerCI.tilingMode = { ESamplerTilingMode::BorderClamp, ESamplerTilingMode::BorderClamp, ESamplerTilingMode::BorderClamp };
+    samplerCI.resourceName = TCHAR("DepthSampler");
+    // Depth sampling must be nearest however there is better filtering when using linear filtering
+    depthFiltering = graphicsHelper->createSampler(graphicsInstance, samplerCI);
+    depthFiltering->init();
+
+    // Has to lesser comparison since we want shadow to be 1.0 only if shading texel's depth is less that shadow depth texel
+    // And lesser than gives 1.0(Shadowed) if shading depth is less than texel depth
+    samplerCI.useCompareOp = 1;
+    samplerCI.compareOp = CoreGraphicsTypes::ECompareOp::Less;
+    samplerCI.resourceName = TCHAR("ShadowSampler");
+    shadowFiltering = graphicsHelper->createSampler(graphicsInstance, samplerCI);
+    shadowFiltering->init();
+}
+
+void GlobalBuffers::destroySamplers()
+{
+    nearestFiltering.reset();
+    linearFiltering.reset();
+    depthFiltering.reset();
+    shadowFiltering.reset();
 }
 
 void GlobalBuffers::createTextureCubes(

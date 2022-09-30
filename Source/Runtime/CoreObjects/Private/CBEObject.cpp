@@ -14,11 +14,11 @@
 #include "CoreObjectsModule.h"
 #include "ObjectPathHelpers.h"
 
-namespace CBE
+namespace cbe
 {
 
 //////////////////////////////////////////////////////////////////////////
-/// CBE::Object implementations
+/// cbe::Object implementations
 //////////////////////////////////////////////////////////////////////////
 
 void Object::destroyObject()
@@ -26,14 +26,31 @@ void Object::destroyObject()
     destroy();
 
     // Must have entry in object DB if we constructed the objects properly unless object is default
-    debugAssert(CoreObjectsModule::objectsDB().hasObject(sid) || BIT_SET(flags, EObjectFlagBits::Default));
+    debugAssert(CoreObjectsModule::objectsDB().hasObject(sid) || BIT_SET(flags, EObjectFlagBits::ObjFlag_Default));
     if (CoreObjectsModule::objectsDB().hasObject(sid))
     {
         CoreObjectsModule::objectsDB().removeObject(sid);
     }
     objOuter = nullptr;
     sid = StringID();
-    SET_BITS(flags, EObjectFlagBits::Deleted);
+    SET_BITS(flags, EObjectFlagBits::ObjFlag_Deleted);
+}
+
+void Object::beginDestroy()
+{
+    markReadyForDestroy();
+
+    CoreObjectsDB &objectsDb = CoreObjectsModule::objectsDB();
+
+    uint64 uniqNameSuffix = 0;
+    String newObjName = objectName + TCHAR("_Delete");
+    while (objectsDb.hasObject(ObjectPathHelper::getFullPath(newObjName.getChar(), objOuter).getChar()))
+    {
+        newObjName = objectName + TCHAR("_Delete") + String::toString(uniqNameSuffix);
+        uniqNameSuffix++;
+    }
+    // Rename it Immediately to allow other objects to replace this object with same name
+    INTERNAL_ObjectCoreAccessors::setOuterAndName(this, newObjName, objOuter, getType());
 }
 
 String Object::getFullPath() const { return ObjectPathHelper::getFullPath(this); }
@@ -50,7 +67,7 @@ void INTERNAL_ObjectCoreAccessors::setAllocIdx(Object *object, ObjectAllocIdx al
 
 void INTERNAL_ObjectCoreAccessors::setOuterAndName(Object *object, const String &newName, Object *outer, CBEClass clazz /*= nullptr*/)
 {
-    fatalAssert(!newName.empty(), "Object name cannot be empty");
+    fatalAssertf(!newName.empty(), "Object name cannot be empty");
     if (outer == object->getOuter() && object->getName() == newName)
         return;
 
@@ -60,6 +77,10 @@ void INTERNAL_ObjectCoreAccessors::setOuterAndName(Object *object, const String 
     object->objOuter = outer;
 
     StringID newSid(ObjectPathHelper::getFullPath(newName.getChar(), outer));
+    fatalAssertf(
+        !objectsDb.hasObject(newSid), "Object cannot be renamed to another existing object! [Old name: %s, New name: %s]", object->getName(),
+        newName
+    );
     if (object->getStringID().isValid() && objectsDb.hasObject(object->getStringID()))
     {
         // Setting object name
@@ -99,13 +120,15 @@ void INTERNAL_ObjectCoreAccessors::setOuterAndName(Object *object, const String 
 void INTERNAL_ObjectCoreAccessors::setOuter(Object *object, Object *outer) { setOuterAndName(object, object->objectName, outer); }
 
 void INTERNAL_ObjectCoreAccessors::renameObject(Object *object, const String &newName) { setOuterAndName(object, newName, object->objOuter); }
-} // namespace CBE
+} // namespace cbe
 
-ObjectArchive &ObjectArchive::serialize(CBE::Object *&obj)
+ObjectArchive &ObjectArchive::serialize(cbe::Object *&obj)
 {
-    fatalAssert(false, "CBE::Object serialization not implemented!");
+    fatalAssertf(false, "cbe::Object serialization not implemented!");
     return *this;
 }
+void ObjectArchive::relinkSerializedPtr(void **objPtrPtr) const { fatalAssertf(false, "relinkSerializedPtr not implemented!"); }
+void ObjectArchive::relinkSerializedPtr(const void **objPtrPtr) const { fatalAssertf(false, "relinkSerializedPtr not implemented!"); }
 
 //////////////////////////////////////////////////////////////////////////
 /// ObjectPathHelper implementations
@@ -125,7 +148,7 @@ FORCE_INLINE String ObjectPathHelper::getOuterPathAndObjectName(String &outObjec
     return TCHAR("");
 }
 
-String ObjectPathHelper::getObjectPath(const CBE::Object *object, const CBE::Object *stopAt)
+String ObjectPathHelper::getObjectPath(const cbe::Object *object, const cbe::Object *stopAt)
 {
     debugAssert(stopAt != object);
 
@@ -137,7 +160,7 @@ String ObjectPathHelper::getObjectPath(const CBE::Object *object, const CBE::Obj
     std::vector<String> outers;
     // Since last path element must be this obj name
     outers.emplace_back(object->getName());
-    const CBE::Object *outer = object->getOuter();
+    const cbe::Object *outer = object->getOuter();
     while (outer != stopAt && outer->getOuter())
     {
         outers.emplace_back(outer->getName());
@@ -145,13 +168,14 @@ String ObjectPathHelper::getObjectPath(const CBE::Object *object, const CBE::Obj
     }
     if (outer != stopAt)
     {
+        debugAssertf(stopAt == nullptr, "Object %s is not subobject of %s", object->getFullPath(), stopAt->getFullPath());
         return outer->getName() + ObjectPathHelper::RootObjectSeparator
                + String::join(outers.crbegin(), outers.crend(), ObjectPathHelper::ObjectObjectSeparator);
     }
     return String::join(outers.crbegin(), outers.crend(), ObjectPathHelper::ObjectObjectSeparator);
 }
 
-FORCE_INLINE String ObjectPathHelper::getFullPath(const CBE::Object *object)
+FORCE_INLINE String ObjectPathHelper::getFullPath(const cbe::Object *object)
 {
     if (object->getOuter() == nullptr)
     {
@@ -161,7 +185,7 @@ FORCE_INLINE String ObjectPathHelper::getFullPath(const CBE::Object *object)
     std::vector<String> outers;
     // Since last path element must be this obj name
     outers.emplace_back(object->getName());
-    const CBE::Object *outer = object->getOuter();
+    const cbe::Object *outer = object->getOuter();
     while (outer->getOuter())
     {
         outers.emplace_back(outer->getName());
@@ -173,7 +197,7 @@ FORCE_INLINE String ObjectPathHelper::getFullPath(const CBE::Object *object)
     return objectPath;
 }
 
-String ObjectPathHelper::getFullPath(const TChar *objectName, const CBE::Object *outerObj)
+String ObjectPathHelper::getFullPath(const TChar *objectName, const cbe::Object *outerObj)
 {
     if (outerObj)
     {

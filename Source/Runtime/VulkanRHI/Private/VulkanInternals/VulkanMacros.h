@@ -61,6 +61,37 @@
     VariableName.waitSemaphoreCount = 0
 #endif
 
+#ifndef SUBMIT_INFO2
+#define SUBMIT_INFO2(VariableName)                                                                                                             \
+    VkSubmitInfo2 VariableName{};                                                                                                              \
+    VariableName.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;                                                                                      \
+    VariableName.pNext = nullptr;                                                                                                              \
+    VariableName.flags = 0;                                                                                                                    \
+    VariableName.waitSemaphoreInfoCount = 0;                                                                                                   \
+    VariableName.pWaitSemaphoreInfos = nullptr;                                                                                                \
+    VariableName.commandBufferInfoCount = 0;                                                                                                   \
+    VariableName.pCommandBufferInfos = nullptr;                                                                                                \
+    VariableName.signalSemaphoreInfoCount = 0;                                                                                                 \
+    VariableName.pSignalSemaphoreInfos = nullptr
+#endif
+
+#ifndef SEMAPHORE_SUBMIT_INFO
+#define SEMAPHORE_SUBMIT_INFO(VariableName)                                                                                                    \
+    VkSemaphoreSubmitInfo VariableName{};                                                                                                      \
+    VariableName.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;                                                                              \
+    VariableName.pNext = nullptr;                                                                                                              \
+    VariableName.value = 0;                                                                                                                    \
+    VariableName.deviceIndex = 0
+#endif
+
+#ifndef CMDBUFFER_SUBMIT_INFO
+#define CMDBUFFER_SUBMIT_INFO(VariableName)                                                                                                    \
+    VkCommandBufferSubmitInfo VariableName{};                                                                                                  \
+    VariableName.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;                                                                         \
+    VariableName.pNext = nullptr;                                                                                                              \
+    VariableName.deviceMask = 0
+#endif
+
 #ifndef CREATE_SWAPCHAIN_INFO
 #define CREATE_SWAPCHAIN_INFO(VariableName)                                                                                                    \
     VkSwapchainCreateInfoKHR VariableName{};                                                                                                   \
@@ -84,35 +115,49 @@
     VariableName.pNext = nullptr;
 #endif
 
-#ifndef PHYSICAL_DEVICE_SYNC_2_FEATURES_KHR
-#define PHYSICAL_DEVICE_SYNC_2_FEATURES_KHR(VariableName)                                                                                      \
-    VkPhysicalDeviceSynchronization2FeaturesKHR VariableName{};                                                                                \
-    VariableName.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR;                                                     \
+#ifndef PHYSICAL_DEVICE_SYNC_2_FEATURES
+#define PHYSICAL_DEVICE_SYNC_2_FEATURES(VariableName)                                                                                          \
+    VkPhysicalDeviceSynchronization2Features VariableName{};                                                                                   \
+    VariableName.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES;                                                         \
     VariableName.pNext = nullptr;
 #endif
 
-#ifndef IMAGE_MEMORY_BARRIER2_KHR
-#define IMAGE_MEMORY_BARRIER2_KHR(VariableName)                                                                                                \
+#ifndef IMAGE_MEMORY_BARRIER2
+#define IMAGE_MEMORY_BARRIER2(VariableName)                                                                                                    \
     VkImageMemoryBarrier2KHR VariableName{};                                                                                                   \
-    VariableName.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2_KHR;                                                                         \
+    VariableName.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;                                                                             \
     VariableName.pNext = nullptr;                                                                                                              \
     VariableName.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED
 #endif
 
-#ifndef BUFFER_MEMORY_BARRIER2_KHR
-#define BUFFER_MEMORY_BARRIER2_KHR(VariableName)                                                                                               \
-    VkBufferMemoryBarrier2KHR VariableName{};                                                                                                  \
-    VariableName.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2_KHR;                                                                        \
+#ifndef BUFFER_MEMORY_BARRIER2
+#define BUFFER_MEMORY_BARRIER2(VariableName)                                                                                                   \
+    VkBufferMemoryBarrier2 VariableName{};                                                                                                     \
+    VariableName.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;                                                                            \
     VariableName.pNext = nullptr;
 #endif
 
-#ifndef BARRIER_DEPENDENCY_INFO_KHR
-#define BARRIER_DEPENDENCY_INFO_KHR(VariableName)                                                                                              \
-    VkDependencyInfoKHR VariableName{};                                                                                                        \
-    VariableName.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR;                                                                                \
+#ifndef BARRIER_DEPENDENCY_INFO
+#define BARRIER_DEPENDENCY_INFO(VariableName)                                                                                                  \
+    VkDependencyInfo VariableName{};                                                                                                           \
+    VariableName.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;                                                                                    \
     VariableName.pNext = nullptr;                                                                                                              \
     VariableName.memoryBarrierCount = 0;                                                                                                       \
     VariableName.pMemoryBarriers = nullptr
+#endif
+
+#ifndef BUFFER_COPY2
+#define BUFFER_COPY2(VariableName)                                                                                                             \
+    VkBufferCopy2 VariableName{};                                                                                                              \
+    VariableName.sType = VK_STRUCTURE_TYPE_BUFFER_COPY_2;                                                                                      \
+    VariableName.pNext = nullptr
+#endif
+
+#ifndef COPY_BUFFER_INFO2
+#define COPY_BUFFER_INFO2(VariableName)                                                                                                        \
+    VkCopyBufferInfo2 VariableName{};                                                                                                          \
+    VariableName.sType = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2;                                                                                 \
+    VariableName.pNext = nullptr
 #endif
 
 #ifndef CREATE_DEBUG_UTILS_MESSENGER_INFO
@@ -141,7 +186,7 @@
 #ifndef PHYSICAL_DEVICE_FEATURES_2
 #define PHYSICAL_DEVICE_FEATURES_2(VariableName)                                                                                               \
     VkPhysicalDeviceFeatures2KHR VariableName{};                                                                                               \
-    VariableName.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR;                                                                     \
+    VariableName.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;                                                                         \
     VariableName.pNext = nullptr
 #endif
 
@@ -159,10 +204,17 @@
     VariableName.pNext = nullptr
 #endif
 
+#ifndef PHYSICAL_DEVICE_MAINTAINENCE4_FEATURES
+#define PHYSICAL_DEVICE_MAINTAINENCE4_FEATURES(VariableName)                                                                                   \
+    VkPhysicalDeviceMaintenance4Features VariableName{};                                                                                       \
+    VariableName.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_FEATURES;                                                             \
+    VariableName.pNext = nullptr
+#endif
+
 #ifndef PHYSICAL_DEVICE_PROPERTIES_2
 #define PHYSICAL_DEVICE_PROPERTIES_2(VariableName)                                                                                             \
     VkPhysicalDeviceProperties2KHR VariableName{};                                                                                             \
-    VariableName.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHR;                                                                   \
+    VariableName.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;                                                                       \
     VariableName.pNext = nullptr
 #endif
 
@@ -183,7 +235,7 @@
 #ifndef PHYSICAL_DEVICE_MEMORY_PROPERTIES_2
 #define PHYSICAL_DEVICE_MEMORY_PROPERTIES_2(VariableName)                                                                                      \
     VkPhysicalDeviceMemoryProperties2KHR VariableName{};                                                                                       \
-    VariableName.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PROPERTIES_2_KHR;                                                            \
+    VariableName.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PROPERTIES_2;                                                                \
     VariableName.pNext = nullptr
 #endif
 
@@ -464,51 +516,42 @@
     VariableName.flags = 0
 #endif
 
-// TODO(Jeslas)(API Update) : Change and remove this macro once driver providers update to Vulkan 1.2
-#if VK_VERSION_1_2
-#ifndef TIMELINE_SEMAPHORE_TYPE
-#define TIMELINE_SEMAPHORE_TYPE(VarType) VarType
-#endif
-#ifndef TIMELINE_SEMAPHORE_DEF
-#define TIMELINE_SEMAPHORE_DEF(Def) Def
-#endif
-#else
-#ifndef TIMELINE_SEMAPHORE_TYPE
-#define TIMELINE_SEMAPHORE_TYPE(VarType) VULKAN_KHR_TYPE(VarType)
-#endif
-#ifndef TIMELINE_SEMAPHORE_DEF
-#define TIMELINE_SEMAPHORE_DEF(Def) VULKAN_KHR_DEF(Def)
-#endif
-#endif
-
 #ifndef CREATE_TYPED_SEMAPHORE_INFO
 #define CREATE_TYPED_SEMAPHORE_INFO(VariableName)                                                                                              \
-    TIMELINE_SEMAPHORE_TYPE(VkSemaphoreTypeCreateInfo) VariableName{};                                                                         \
-    VariableName.sType = TIMELINE_SEMAPHORE_DEF(VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO);                                                 \
+    VkSemaphoreTypeCreateInfo VariableName{};                                                                                                  \
+    VariableName.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;                                                                         \
     VariableName.pNext = nullptr;                                                                                                              \
     VariableName.initialValue = 0;                                                                                                             \
-    VariableName.semaphoreType = TIMELINE_SEMAPHORE_DEF(VK_SEMAPHORE_TYPE_TIMELINE)
+    VariableName.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE
 #endif
 
 #ifndef SEMAPHORE_SIGNAL_INFO
 #define SEMAPHORE_SIGNAL_INFO(VariableName)                                                                                                    \
-    TIMELINE_SEMAPHORE_TYPE(VkSemaphoreSignalInfo) VariableName{};                                                                             \
-    VariableName.sType = TIMELINE_SEMAPHORE_DEF(VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO);                                                      \
+    VkSemaphoreSignalInfo VariableName{};                                                                                                      \
+    VariableName.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO;                                                                              \
     VariableName.pNext = nullptr
 #endif
 
 #ifndef SEMAPHORE_WAIT_INFO
 #define SEMAPHORE_WAIT_INFO(VariableName)                                                                                                      \
-    TIMELINE_SEMAPHORE_TYPE(VkSemaphoreWaitInfo) VariableName{};                                                                               \
-    VariableName.sType = TIMELINE_SEMAPHORE_DEF(VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO);                                                        \
+    VkSemaphoreWaitInfo VariableName{};                                                                                                        \
+    VariableName.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;                                                                                \
     VariableName.pNext = nullptr;                                                                                                              \
-    VariableName.flags = TIMELINE_SEMAPHORE_DEF(VK_SEMAPHORE_WAIT_ANY_BIT)
+    VariableName.flags = VK_SEMAPHORE_WAIT_ANY_BIT
 #endif
 
 #ifndef CREATE_FENCE_INFO
 #define CREATE_FENCE_INFO(VariableName)                                                                                                        \
     VkFenceCreateInfo VariableName{};                                                                                                          \
     VariableName.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;                                                                                  \
+    VariableName.flags = 0;                                                                                                                    \
+    VariableName.pNext = nullptr
+#endif
+
+#ifndef CREATE_EVENT_INFO
+#define CREATE_EVENT_INFO(VariableName)                                                                                                        \
+    VkEventCreateInfo VariableName{};                                                                                                          \
+    VariableName.sType = VK_STRUCTURE_TYPE_EVENT_CREATE_INFO;                                                                                  \
     VariableName.flags = 0;                                                                                                                    \
     VariableName.pNext = nullptr
 #endif

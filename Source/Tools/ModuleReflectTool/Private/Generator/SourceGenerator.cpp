@@ -17,6 +17,7 @@
 #include "Property/PropertyHelper.h"
 #include "Types/Platform/LFS/File/FileHelper.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
+#include "Types/Platform/LFS/PathFunctions.h"
 
 FORCE_INLINE std::vector<String> SourceGenerator::getTemplateFiles()
 {
@@ -61,6 +62,7 @@ void SourceGenerator::writeGeneratedFiles()
         }
 
         String headerFileID = PropertyHelper::getValidSymbolName(srcInfo->headerIncl);
+        String headerFileName = PathFunctions::stripExtension(PathFunctions::fileOrDirectoryName(srcInfo->headerIncl));
 
         // Generate header file
         MustacheContext headerContext;
@@ -72,8 +74,7 @@ void SourceGenerator::writeGeneratedFiles()
         if (!FileHelper::writeString(headerContent, srcInfo->generatedHeaderPath))
         {
             LOG_ERROR(
-                "SourceGenerator", "%s() : Could not write generated header(%s) for header %s", __func__, srcInfo->generatedHeaderPath,
-                srcInfo->headerIncl
+                "SourceGenerator", "Could not write generated header(%s) for header %s", srcInfo->generatedHeaderPath, srcInfo->headerIncl
             );
             bHasAnyError = true;
             continue;
@@ -81,6 +82,7 @@ void SourceGenerator::writeGeneratedFiles()
 
         // Generate source file
         MustacheContext sourceContext;
+        sourceContext.args[GeneratorConsts::REFLECTIONTUDEF_TAG] = headerFileName.toUpperCopy() + TCHAR("_GEN_TU");
         sourceContext.args[GeneratorConsts::HEADERFILEID_TAG] = headerFileID;
         sourceContext.args[GeneratorConsts::INCLUDEHEADER_TAG] = srcInfo->headerIncl;
         sourceContext.sectionContexts[GeneratorConsts::ALLREGISTERTYPES_SECTION_TAG] = srcGenCntxt.allRegisteredypes;
@@ -94,10 +96,7 @@ void SourceGenerator::writeGeneratedFiles()
         String sourceContent = sourceGenTemplates[GeneratorConsts::REFLECTSOURCE_TEMPLATE].render(sourceContext, sourceGenTemplates);
         if (!FileHelper::writeString(sourceContent, srcInfo->generatedTUPath))
         {
-            LOG_ERROR(
-                "SourceGenerator", "%s() : Could not write generated sources(%s) for header %s", __func__, srcInfo->generatedTUPath,
-                srcInfo->headerIncl
-            );
+            LOG_ERROR("SourceGenerator", "Could not write generated sources(%s) for header %s", srcInfo->generatedTUPath, srcInfo->headerIncl);
             bHasAnyError = true;
             continue;
         }

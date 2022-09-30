@@ -12,7 +12,6 @@
 #pragma once
 
 #include "Math/CoreMathTypedefs.h"
-#include "Serialization/ArchiveBase.h"
 #include "ProgramCoreExports.h"
 
 #include <glm/ext/vector_float3.hpp>
@@ -28,8 +27,8 @@ private:
 
 public:
     Rotation();
-    Rotation(const float &r, const float &p, const float &y);
-    explicit Rotation(const float &allValue);
+    Rotation(float r, float p, float y);
+    explicit Rotation(float allValue);
     Rotation(const Rotation &other);
     Rotation(Rotation &&other);
     Rotation &operator=(const Rotation &other);
@@ -57,14 +56,14 @@ public:
     Rotation &operator-=(const Rotation &b);
     Rotation operator+(const Rotation &b) const;
     Rotation &operator+=(const Rotation &b);
-    Rotation operator*(const float &scalar) const;
-    Rotation &operator*=(const float &scalar);
-    Rotation operator/(const float &scalar) const;
-    Rotation &operator/=(const float &scalar);
-    Rotation operator-(const float &scalar) const;
-    Rotation &operator-=(const float &scalar);
-    Rotation operator+(const float &scalar) const;
-    Rotation &operator+=(const float &scalar);
+    Rotation operator*(float scalar) const;
+    Rotation &operator*=(float scalar);
+    Rotation operator/(float scalar) const;
+    Rotation &operator/=(float scalar);
+    Rotation operator-(float scalar) const;
+    Rotation &operator-=(float scalar);
+    Rotation operator+(float scalar) const;
+    Rotation &operator+=(float scalar);
     bool isSame(const Rotation &b, float epsilon = SMALL_EPSILON) const;
     bool isFinite() const;
 
@@ -76,12 +75,6 @@ public:
     static Rotation ceil(const Rotation &value);
     static Rotation round(const Rotation &value);
     static Rotation mod(const Rotation &a, const Rotation &b);
-    static Rotation mod(const Rotation &a, const float &b);
+    static Rotation mod(const Rotation &a, float b);
     static Rotation modf(Rotation &wholePart, const Rotation &value);
 };
-
-template <ArchiveType ArchiveType>
-ArchiveType &operator<<(ArchiveType &archive, Rotation &value)
-{
-    return archive << value.roll() << value.pitch() << value.yaw();
-}

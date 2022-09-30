@@ -12,10 +12,7 @@
 #include "Types/Platform/LFS/File/GenericFile.h"
 #include "Logger/Logger.h"
 #include "Types/CoreDefines.h"
-#include "Types/Platform/LFS/File/GenericFileHandle.h"
 #include "Types/Platform/LFS/PathFunctions.h"
-
-void *GenericFile::getFileHandleRaw() const { return fileHandle ? fileHandle->getFileHandle() : nullptr; }
 
 void GenericFile::setPath(const String &fPath)
 {
@@ -37,7 +34,7 @@ void GenericFile::setPath(const String &fPath)
     }
     else // No directory separator found so it must be just file name
     {
-        LOG_ERROR("File", "%s() : File path \"%s\" is invalid", __func__, fPathTmp);
+        LOG_ERROR("File", "File path \"%s\" is invalid", fPathTmp);
         debugAssert(!"File path is invalid");
     }
 }
@@ -90,7 +87,6 @@ bool GenericFile::closeFile()
 {
     if (fileHandle && closeImpl())
     {
-        delete fileHandle;
         fileHandle = nullptr;
         return true;
     }

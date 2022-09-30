@@ -14,27 +14,23 @@
 #include "Math/RotationMatrix.h"
 #include "Math/Vector4D.h"
 
+Transform3D Transform3D::ZERO_TRANSFORM;
+
 Transform3D::Transform3D()
     : transformTranslation(0)
     , transformScale(1)
     , transformRotation(0)
-    , transformMatrixCache(Matrix4::IDENTITY)
-    , bCachedLatest(true)
 {}
 
 Transform3D::Transform3D(const Vector3D &translation, const Rotation &rotation, const Vector3D &scale)
     : transformTranslation(translation)
     , transformScale(scale)
     , transformRotation(rotation)
-    , transformMatrixCache()
-    , bCachedLatest(false)
 {}
 
 Transform3D::Transform3D(const Matrix4 &transformMatrix)
-    : transformMatrixCache(transformMatrix)
-    , bCachedLatest(true)
 {
-    // #TODO(Jeslas) : fix cases when non uniform scaled matrix inverse creates invalid Rotation values(
+    // TODO(Jeslas) : fix cases when non uniform scaled matrix inverse creates invalid Rotation values(
     // May be quaternion will fix it )?
     transformTranslation = Vector3D(transformMatrix[3].x, transformMatrix[3].y, transformMatrix[3].z);
     transformScale
@@ -60,164 +56,71 @@ Transform3D::Transform3D(const Transform3D &otherTransform)
     : transformTranslation(otherTransform.transformTranslation)
     , transformScale(otherTransform.transformScale)
     , transformRotation(otherTransform.transformRotation)
-    , transformMatrixCache(otherTransform.transformMatrixCache)
-    , bCachedLatest(otherTransform.bCachedLatest)
 {}
 
 Transform3D::Transform3D(Transform3D &&otherTransform)
     : transformTranslation(std::move(otherTransform.transformTranslation))
     , transformScale(std::move(otherTransform.transformScale))
     , transformRotation(std::move(otherTransform.transformRotation))
-    , transformMatrixCache(std::move(otherTransform.transformMatrixCache))
-    , bCachedLatest(std::move(otherTransform.bCachedLatest))
 {}
 
 Transform3D::Transform3D(const Rotation &rotation)
     : transformTranslation(Vector3D::ZERO)
     , transformScale(Vector3D::ONE)
     , transformRotation(rotation)
-    , transformMatrixCache()
-    , bCachedLatest(false)
 {}
 
-void Transform3D::operator=(const Transform3D &otherTransform)
+Transform3D &Transform3D::operator=(const Transform3D &otherTransform)
 {
     transformTranslation = otherTransform.transformTranslation;
     transformScale = otherTransform.transformScale;
     transformRotation = otherTransform.transformRotation;
-    transformMatrixCache = otherTransform.transformMatrixCache;
-    bCachedLatest = otherTransform.bCachedLatest;
+
+    return *this;
 }
 
-void Transform3D::operator=(Transform3D &&otherTransform)
+Transform3D &Transform3D::operator=(Transform3D &&otherTransform)
 {
     transformTranslation = std::move(otherTransform.transformTranslation);
     transformScale = std::move(otherTransform.transformScale);
     transformRotation = std::move(otherTransform.transformRotation);
-    transformMatrixCache = std::move(otherTransform.transformMatrixCache);
-    bCachedLatest = std::move(otherTransform.bCachedLatest);
+
+    return *this;
 }
 
-void Transform3D::operator=(const Matrix4 &transformMatrix)
+Transform3D &Transform3D::operator=(const Matrix4 &transformMatrix)
 {
     transformTranslation = Vector3D(transformMatrix[3].x, transformMatrix[3].y, transformMatrix[3].z);
     transformScale
         = Vector3D(Vector3D(transformMatrix[0]).length(), Vector3D(transformMatrix[1]).length(), Vector3D(transformMatrix[2]).length());
     transformRotation = RotationMatrix(transformMatrix / Matrix4(transformScale)).asRotation();
-    transformMatrixCache = transformMatrix;
-    bCachedLatest = true;
+
+    return *this;
+}
+
+bool Transform3D::isSame(const Transform3D &b, float epsilon /*= SMALL_EPSILON*/) const
+{
+    return transformTranslation.isSame(b.transformTranslation, epsilon) && transformRotation.isSame(b.transformRotation, epsilon)
+           && transformScale.isSame(b.transformScale, epsilon);
 }
 
 const Vector3D &Transform3D::getTranslation() const { return transformTranslation; }
 
-Vector3D &Transform3D::getTranslation()
-{
-    bCachedLatest = false;
-    return transformTranslation;
-}
+Vector3D &Transform3D::getTranslation() { return transformTranslation; }
 
 const Rotation &Transform3D::getRotation() const { return transformRotation; }
 
-Rotation &Transform3D::getRotation()
-{
-    bCachedLatest = false;
-    return transformRotation;
-}
+Rotation &Transform3D::getRotation() { return transformRotation; }
 
 const Vector3D &Transform3D::getScale() const { return transformScale; }
 
-Vector3D &Transform3D::getScale()
-{
-    bCachedLatest = false;
-    return transformScale;
-}
+Vector3D &Transform3D::getScale() { return transformScale; }
 
-void Transform3D::setTranslation(const Vector3D &newTranslation)
-{
-    transformTranslation = newTranslation;
-    bCachedLatest = false;
-}
+void Transform3D::setTranslation(const Vector3D &newTranslation) { transformTranslation = newTranslation; }
 
-void Transform3D::setRotation(const Rotation &newRotation)
-{
-    transformRotation = newRotation;
-    bCachedLatest = false;
-}
+void Transform3D::setRotation(const Rotation &newRotation) { transformRotation = newRotation; }
 
-void Transform3D::setScale(const Vector3D &newScale)
-{
-    transformScale = newScale;
-    bCachedLatest = false;
-}
-
-Matrix4 Transform3D::normalTransformMatrix() const
-{
-    Matrix4 normTranform;
-    RotationMatrix rotMatrix(transformRotation);
-    normTranform[0] = Matrix4Col(rotMatrix.matrix()[0], 0.0f);
-    normTranform[1] = Matrix4Col(rotMatrix.matrix()[1], 0.0f);
-    normTranform[2] = Matrix4Col(rotMatrix.matrix()[2], 0.0f);
-    // Inversing scale alone
-    normTranform *= Matrix4(invScaleSafe());
-    return normTranform;
-}
-
-const Matrix4 &Transform3D::getTransformMatrix()
-{
-    if (!bCachedLatest)
-    {
-        // Scales -> Rotate -> Translate all in transform existing space
-        RotationMatrix rotMatrix(transformRotation);
-        transformMatrixCache[0] = Matrix4Col(rotMatrix.matrix()[0], 0.0f);
-        transformMatrixCache[1] = Matrix4Col(rotMatrix.matrix()[1], 0.0f);
-        transformMatrixCache[2] = Matrix4Col(rotMatrix.matrix()[2], 0.0f);
-
-        transformMatrixCache *= Matrix4(transformScale);
-
-        transformMatrixCache[3] = Matrix4Col(transformTranslation.x(), transformTranslation.y(), transformTranslation.z(), 1.0);
-
-        bCachedLatest = true;
-    }
-
-    return transformMatrixCache;
-}
-
-Matrix4 Transform3D::getTransformMatrix() const
-{
-    if (bCachedLatest)
-    {
-        return transformMatrixCache;
-    }
-    Matrix4 transformMatrix;
-    RotationMatrix rotMatrix(transformRotation);
-    transformMatrix[0] = Matrix4Col(rotMatrix.matrix()[0], 0.0f);
-    transformMatrix[1] = Matrix4Col(rotMatrix.matrix()[1], 0.0f);
-    transformMatrix[2] = Matrix4Col(rotMatrix.matrix()[2], 0.0f);
-
-    transformMatrix *= Matrix4(transformScale);
-
-    transformMatrix[3] = Matrix4Col(transformTranslation.x(), transformTranslation.y(), transformTranslation.z(), 1.0);
-
-    return transformMatrix;
-}
-
-Vector3D Transform3D::invScaleSafe() const
-{
-    return Vector3D(
-        Math::isEqual(transformScale.x(), 0.0f) ? 0.0f : 1.0f / transformScale.x(),
-        Math::isEqual(transformScale.y(), 0.0f) ? 0.0f : 1.0f / transformScale.y(),
-        Math::isEqual(transformScale.z(), 0.0f) ? 0.0f : 1.0f / transformScale.z()
-    );
-}
-
-Vector3D Transform3D::invTranslation() const
-{
-    return Vector3D(
-        Math::isEqual(transformTranslation.x(), 0.0f) ? 0.0f : -transformTranslation.x(),
-        Math::isEqual(transformTranslation.y(), 0.0f) ? 0.0f : -transformTranslation.y(),
-        Math::isEqual(transformTranslation.z(), 0.0f) ? 0.0f : -transformTranslation.z()
-    );
-}
+void Transform3D::setScale(const Vector3D &newScale) { transformScale = newScale; }
 
 Vector3D Transform3D::transformNormal(const Vector3D &normal) const
 {
@@ -245,21 +148,61 @@ Vector3D Transform3D::invTransformPoint(const Vector3D &point) const
     return (RotationMatrix(transformRotation).matrix().transpose() * (point - transformTranslation)) * invScaleSafe();
 }
 
-Transform3D Transform3D::transform(const Transform3D &other) { return Transform3D{ getTransformMatrix() * other.getTransformMatrix() }; }
+Transform3D Transform3D::transform(const Transform3D &other) const { return Transform3D{ getTransformMatrix() * other.getTransformMatrix() }; }
 
-Transform3D Transform3D::invTransform(const Transform3D &other)
+Transform3D Transform3D::invTransform(const Transform3D &other) const
 {
-    return Transform3D{ (getTransformMatrix().inverse()) * other.getTransformMatrix() };
+    return Transform3D{ inverseNonUniformScaledMatrix() * other.getTransformMatrix() };
 }
 
 Transform3D Transform3D::inverse() const
 {
     Matrix3 invRot(RotationMatrix(transformRotation).matrix().transpose());
     Vector3D invScale(invScaleSafe());
+    // If inversing the transform we are going reverse.
+    // ie) Inverse scaling and Inverse rotating and then Inverse translating
+    // So the translation has to be scaled and rotated in reverse to compensate the added inverse rotation and scaling
     return Transform3D((invRot * (invScale * -transformTranslation)), RotationMatrix(invRot).asRotation(), invScale);
 }
 
 Transform3D Transform3D::inverseNonUniformScaled() const
+{
+    if (Math::isEqual(transformScale.x(), transformScale.y()) && Math::isEqual(transformScale.x(), transformScale.z()))
+    {
+        return inverse();
+    }
+    return Transform3D(inverseNonUniformScaledMatrix());
+}
+
+Matrix4 Transform3D::normalTransformMatrix() const
+{
+    Matrix4 normTranform;
+    RotationMatrix rotMatrix(transformRotation);
+    normTranform[0] = Matrix4Col(rotMatrix.matrix()[0], 0.0f);
+    normTranform[1] = Matrix4Col(rotMatrix.matrix()[1], 0.0f);
+    normTranform[2] = Matrix4Col(rotMatrix.matrix()[2], 0.0f);
+    // Inversing scale alone
+    normTranform *= Matrix4(invScaleSafe());
+    return normTranform;
+}
+
+Matrix4 Transform3D::getTransformMatrix() const
+{
+    Matrix4 transformMatrix;
+    // Scales -> Rotate -> Translate all in transform existing space
+    RotationMatrix rotMatrix(transformRotation);
+    transformMatrix[0] = Matrix4Col(rotMatrix.matrix()[0], 0.0f);
+    transformMatrix[1] = Matrix4Col(rotMatrix.matrix()[1], 0.0f);
+    transformMatrix[2] = Matrix4Col(rotMatrix.matrix()[2], 0.0f);
+
+    transformMatrix *= Matrix4(transformScale);
+
+    transformMatrix[3] = Matrix4Col(transformTranslation.x(), transformTranslation.y(), transformTranslation.z(), 1.0);
+
+    return transformMatrix;
+}
+
+Matrix4 Transform3D::inverseNonUniformScaledMatrix() const
 {
     // (Translate * Rotate * Scale) ^ -1 == InvScale * InvRotate * InvTranslate
     Matrix3 invRot(RotationMatrix(transformRotation).matrix().transpose());
@@ -273,8 +216,16 @@ Transform3D Transform3D::inverseNonUniformScaled() const
 
     Matrix4 invTranslationMatrx(Vector3D::ONE);
     invTranslationMatrx[3] = Matrix4Col(-transformTranslation.x(), -transformTranslation.y(), -transformTranslation.z(), 1.0f);
-
-    return Transform3D(transformMatrix * invTranslationMatrx);
+    return transformMatrix * invTranslationMatrx;
 }
 
-Transform3D Transform3D::ZERO_TRANSFORM;
+Vector3D Transform3D::invScaleSafe() const { return transformScale.safeInverse(); }
+
+Vector3D Transform3D::invTranslation() const
+{
+    return Vector3D(
+        Math::isEqual(transformTranslation.x(), 0.0f) ? 0.0f : -transformTranslation.x(),
+        Math::isEqual(transformTranslation.y(), 0.0f) ? 0.0f : -transformTranslation.y(),
+        Math::isEqual(transformTranslation.z(), 0.0f) ? 0.0f : -transformTranslation.z()
+    );
+}

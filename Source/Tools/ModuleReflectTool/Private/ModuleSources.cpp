@@ -19,6 +19,7 @@
 #include "String/StringRegex.h"
 #include "Types/Platform/LFS/File/FileHelper.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
+#include "Types/Platform/LFS/PathFunctions.h"
 
 #include "SampleCode.h"
 
@@ -28,6 +29,7 @@ void ModuleSources::printDiagnostics(CXDiagnostic diagnostic, uint32 formatOptio
     const uint32 childDiagsNum = clang_getNumDiagnosticsInSet(childDiags);
 
     String diagnosticStr(CXStringWrapper(clang_formatDiagnostic(diagnostic, formatOptions)).toString());
+    CXSourceLocation diagnosticLoc = clang_getDiagnosticLocation(diagnostic);
     // Ignore include failed on gen.h files
     static const StringRegex inclGenHeaderMatch(TCHAR(".*'.*.gen.h' file not found.*"), std::regex_constants::ECMAScript);
     if (std::regex_match(diagnosticStr, inclGenHeaderMatch))
@@ -35,7 +37,7 @@ void ModuleSources::printDiagnostics(CXDiagnostic diagnostic, uint32 formatOptio
         return;
     }
 
-    LOG_WARN("Diagnostics", "[%d]%s", idx, diagnosticStr);
+    LOG_WARN("Diagnostics", "%s%s", diagnosticLoc, diagnosticStr);
     for (int32 i = 0; i < childDiagsNum; ++i)
     {
         CXDiagnostic childDiagnostic = clang_getDiagnosticInSet(childDiags, i);
@@ -60,9 +62,11 @@ void ModuleSources::clearGenerated(const std::vector<String> &headers) const
     {
         String headerName = PathFunctions::stripExtension(PathFunctions::fileOrDirectoryName(headerFile));
 
-        String generatedFiles[] = { PathFunctions::combinePath(genDir, TCHAR("Private"), headerName + TCHAR(".gen.cpp")),
-                                    PathFunctions::combinePath(genDir, TCHAR("Public"), headerName + TCHAR(".gen.h")),
-                                    PathFunctions::combinePath(genDir, TCHAR("Private"), headerName + TCHAR(".gen.h")) };
+        String generatedFiles[] = { PathFunctions::combinePath(
+            genDir, TCHAR("Private"), headerName + TCHAR(".gen.cpp")),
+            PathFunctions::combinePath(
+                genDir, TCHAR("Public"), headerName + TCHAR(".gen.h")),
+                PathFunctions::combinePath(genDir, TCHAR("Private"), headerName + TCHAR(".gen.h")) };
 
         for (uint32 i = 0; i < ARRAY_LENGTH(generatedFiles); ++i)
         {
@@ -87,20 +91,20 @@ ModuleSources::ModuleSources()
     ProgramCmdLine::get()->getArg(intermediateDir, ReflectToolCmdLineConst::INTERMEDIATE_DIR);
     ProgramCmdLine::get()->getArg(includesFile, ReflectToolCmdLineConst::INCLUDE_LIST_FILE);
     ProgramCmdLine::get()->getArg(compileDefsFile, ReflectToolCmdLineConst::COMPILE_DEF_LIST_FILE);
-    LOG_DEBUG("ModuleReflectTool", "%s(): Reflecting source from %s", __func__, srcDir);
+    LOG_DEBUG("ModuleReflectTool", "Reflecting source from %s", srcDir);
 
-    fatalAssert(
+    fatalAssertf(
         (PlatformFile(includesFile).exists() && PlatformFile(compileDefsFile).exists()),
-        "%s() : Includes list file(%s) or Definitions(%s) list file does not exists, Configuring cmake "
+        "Includes list file(%s) or Definitions(%s) list file does not exists, Configuring cmake "
         "will fix this!",
-        __func__, includesFile, compileDefsFile
+        includesFile, compileDefsFile
     );
 
     String content;
     // Read includes file
     if (!FileHelper::readString(content, includesFile))
     {
-        fatalAssert(!"Failed to read include file", "Failed to read include file from %s", includesFile);
+        fatalAssertf(!"Failed to read include file", "Failed to read include file from %s", includesFile);
     }
     for (const String &includeList : content.splitLines())
     {
@@ -115,7 +119,7 @@ ModuleSources::ModuleSources()
     // Read compile defines
     if (!FileHelper::readString(content, compileDefsFile))
     {
-        fatalAssert(!"Failed to read compile definitions", "Failed to read compile definitions from %s", compileDefsFile);
+        fatalAssertf(!"Failed to read compile definitions", "Failed to read compile definitions from %s", compileDefsFile);
     }
     // Parsing compile definitions
     for (const String &compileDefsList : content.splitLines())
@@ -194,11 +198,17 @@ bool ModuleSources::compileAllSources(bool bFullCompile /*= false*/)
     addAdditionalCompileOpts(moduleArgs);
     for (const String &compileDef : compileDefs)
     {
-        moduleArgs.emplace_back("-D" + std::string(TCHAR_TO_ANSI(compileDef.getChar())));
+        if (!compileDefs.empty())
+        {
+            moduleArgs.emplace_back("-D" + std::string(TCHAR_TO_ANSI(compileDef.getChar())));
+        }
     }
     for (const String &incl : includes)
     {
-        moduleArgs.emplace_back("-I" + std::string(TCHAR_TO_ANSI(incl.getChar())));
+        if (!incl.empty())
+        {
+            moduleArgs.emplace_back("-I" + std::string(TCHAR_TO_ANSI(incl.getChar())));
+        }
     }
     std::vector<const AChar *> argsPtrs(moduleArgs.size());
     // Fill args pointers
@@ -224,8 +234,7 @@ bool ModuleSources::compileAllSources(bool bFullCompile /*= false*/)
         if (PathFunctions::isSubdirectory(sourceInfo.filePath, publicHeadersPath))
         {
             sourceInfo.generatedHeaderPath = PathFunctions::combinePath(
-                genDir, TCHAR("Public"), PathFunctions::stripExtension(headerFile.getFileName()) + TCHAR(".gen.h")
-            );
+                genDir, TCHAR("Public"), PathFunctions::stripExtension(headerFile.getFileName()) + TCHAR(".gen.h") );
             sourceInfo.headerIncl = PathFunctions::toRelativePath(sourceInfo.filePath, publicHeadersPath);
         }
         else
@@ -233,8 +242,7 @@ bool ModuleSources::compileAllSources(bool bFullCompile /*= false*/)
             // This private header case happens for file which are in Private folder of srcDir or
             // ones in srcDir itself, only files in Public folder is public
             sourceInfo.generatedHeaderPath = PathFunctions::combinePath(
-                genDir, TCHAR("Private"), PathFunctions::stripExtension(headerFile.getFileName()) + TCHAR(".gen.h")
-            );
+                genDir, TCHAR("Private"), PathFunctions::stripExtension(headerFile.getFileName()) + TCHAR(".gen.h") );
             if (PathFunctions::isSubdirectory(sourceInfo.filePath, privateHeadersPath))
             {
                 sourceInfo.headerIncl = PathFunctions::toRelativePath(sourceInfo.filePath, privateHeadersPath);
@@ -254,31 +262,30 @@ bool ModuleSources::compileAllSources(bool bFullCompile /*= false*/)
             // It is okay if we miss some insignificant includes as they are ignored and parsing
             // continues
             String headerPath = PathFunctions::combinePath(
-                headerFile.getHostDirectory(), PathFunctions::stripExtension(headerFile.getFileName()) + TCHAR(".H")
-            );
+                headerFile.getHostDirectory(), PathFunctions::stripExtension(headerFile.getFileName())
+                                                   + TCHAR(".H")
+                                               );
             CXTranslationUnit unit = clang_parseTranslationUnit(
-                index, TCHAR_TO_ANSI(headerPath.getChar()), argsPtrs.data(), int32(argsPtrs.size()), nullptr,
-                0
+                index, TCHAR_TO_ANSI(headerPath.getChar()), argsPtrs.data(), int32(argsPtrs.size()), nullptr, 0,
                 // Skipping function bodies for now, Enable if we are doing more that
                 // declaration parsing in future
-                ,
                 CXTranslationUnit_KeepGoing | CXTranslationUnit_SkipFunctionBodies
             );
 
             if (unit == nullptr)
             {
-                LOG_ERROR("CompileSource", "%s() : Unable to parse header %s. Quitting.", __func__, headerFile.getFullPath());
+                LOG_ERROR("CompileSource", "Unable to parse header %s. Quitting.", headerFile.getFullPath());
                 bAllClear = false;
             }
             else
             {
                 if (!ProgramCmdLine::get()->hasArg(ReflectToolCmdLineConst::NO_DIAGNOSTICS))
                 {
-                    uint32 formatOptions = CXDiagnostic_DisplaySourceLocation | CXDiagnostic_DisplayColumn | CXDiagnostic_DisplayCategoryName
-                                           | CXDiagnostic_DisplayOption;
+                    uint32 formatOptions = CXDiagnostic_DisplayCategoryName | CXDiagnostic_DisplayOption;
                     uint32 diagnosticsNum = clang_getNumDiagnostics(unit);
                     for (uint32 i = 0; i < diagnosticsNum; ++i)
                     {
+                        LOG_WARN("Diagnostics", "------ Diagnostics %u ------", i);
                         auto diagnostic = clang_getDiagnostic(unit, i);
                         printDiagnostics(diagnostic, formatOptions, i);
                         clang_disposeDiagnostic(diagnostic);
@@ -295,30 +302,41 @@ bool ModuleSources::compileAllSources(bool bFullCompile /*= false*/)
 
 void ModuleSources::injectGeneratedFiles(const std::vector<const SourceInformation *> &generatedSrcs)
 {
-    std::sort(
-        sources.begin(), sources.end(), [](const SourceInformation &lhs, const SourceInformation &rhs) { return lhs.fileSize > rhs.fileSize; }
-    );
-
     // Only if anything new is generated inject those sources
     if (!generatedSrcs.empty())
     {
+        // Sort sources in descending order of source size, This ensures all generated TU has uniform distributed includes
+        std::vector<const SourceInformation *> sortedSources;
+        sortedSources.reserve(sources.size());
+        for (const SourceInformation &source : sources)
+        {
+            sortedSources.emplace_back(&source);
+        }
+        std::sort(
+            sortedSources.begin(), sortedSources.end(),
+            [](const SourceInformation *lhs, const SourceInformation *rhs)
+            {
+                return lhs->fileSize > rhs->fileSize;
+            }
+        );
+
         // For each gen files
         for (uint32 i = 0; i < genFiles.size(); ++i)
         {
             std::vector<String> includeStmts;
             // Since stride is number of generated module files
-            for (uint32 j = i; j < sources.size(); j += genFiles.size())
+            for (uint32 j = i; j < sortedSources.size(); j += genFiles.size())
             {
                 includeStmts.emplace_back(
-                    StringFormat::format(TCHAR("#include \"%s\""), PathFunctions::fileOrDirectoryName(sources[j].generatedTUPath))
+                    StringFormat::format(TCHAR("#include \"%s\""), PathFunctions::fileOrDirectoryName(sortedSources[j]->generatedTUPath))
                 );
             }
 
-            String genFileContent = String::join(includeStmts.cbegin(), includeStmts.cend(), LINE_FEED_CHAR);
+            String genFileContent = String::join(includeStmts.cbegin(), includeStmts.cend(), LINE_FEED_TCHAR);
             if (!FileHelper::writeString(genFileContent, genFiles[i]))
             {
-                LOG_ERROR("GeneratingBuildTU", "%s() : Failed to write file %s", __func__, genFiles[i]);
-                std::exit(1);
+                LOG_ERROR("GeneratingBuildTU", "Failed to write file %s", genFiles[i]);
+                std::exit(-1);
                 return;
             }
         }

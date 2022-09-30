@@ -1,10 +1,10 @@
-include(${cmake_script_dir}/EngineProjectMacros.cmake)
+include(EngineProjectMacros)
 
 set(private_modules
-    ProgramCore
 )
 
-set(public_modules    
+set(public_modules 
+    ProgramCore   
 )
 
 set (interface_modules

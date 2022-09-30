@@ -13,7 +13,6 @@
 #include "Math/Rotation.h"
 #include "Math/RotationMatrix.h"
 #include "Math/Vector3D.h"
-#include "Serialization/ArchiveBase.h"
 
 class PROGRAMCORE_EXPORT Quat
 {
@@ -54,14 +53,14 @@ public:
     Quat &operator-=(const Quat &b);
     Quat operator+(const Quat &b) const;
     Quat &operator+=(const Quat &b);
-    Quat operator*(const float &scalar) const;
-    Quat &operator*=(const float &scalar);
-    Quat operator/(const float &scalar) const;
-    Quat &operator/=(const float &scalar);
-    Quat operator-(const float &scalar) const;
-    Quat &operator-=(const float &scalar);
-    Quat operator+(const float &scalar) const;
-    Quat &operator+=(const float &scalar);
+    Quat operator*(float scalar) const;
+    Quat &operator*=(float scalar);
+    Quat operator/(float scalar) const;
+    Quat &operator/=(float scalar);
+    Quat operator-(float scalar) const;
+    Quat &operator-=(float scalar);
+    Quat operator+(float scalar) const;
+    Quat &operator+=(float scalar);
     Quat operator-() const;
     bool isSame(const Quat &b, float epsilon = SMALL_EPSILON) const;
     bool isFinite() const;
@@ -71,7 +70,7 @@ public:
     float length() const;
     float sqrlength() const;
 
-    static float dot(const Vector3D &a, const Vector3D &b);
+    static float dot(const Quat &a, const Quat &b);
     static Quat clamp(const Quat &value, const Quat &min, const Quat &max);
     static Quat floor(const Quat &value);
     static Quat ceil(const Quat &value);
@@ -84,7 +83,6 @@ public:
     RotationMatrix toRotationMatrix() const;
     Vector3D rotateVector(const Vector3D &vector) const;
 
-    static float dot(const Quat &a, const Quat &b);
     FORCE_INLINE static Quat fromRotation(const Rotation &rotation)
     {
         Quat ret;
@@ -104,9 +102,3 @@ FORCE_INLINE Quat operator-(float n, const Quat &d) { return Quat(n - d.x, n - d
 FORCE_INLINE Quat operator*(float n, const Quat &d) { return d * n; }
 
 FORCE_INLINE Quat operator+(float n, const Quat &d) { return d + n; }
-
-template <ArchiveType ArchiveType>
-ArchiveType &operator<<(ArchiveType &archive, Quat &value)
-{
-    return archive << value.x << value.y << value.z << value.w;
-}

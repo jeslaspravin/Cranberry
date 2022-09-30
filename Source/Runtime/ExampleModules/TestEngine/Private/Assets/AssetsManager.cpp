@@ -15,11 +15,16 @@
 #include "Assets/AssetLoaderLibrary.h"
 #include "Logger/Logger.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
+#include "Types/Platform/LFS/Paths.h"
+#include "Types/Platform/LFS/PathFunctions.h"
 #include "Types/Time.h"
+#include "Types/Platform/Threading/CoPaT/JobSystem.h"
+#include "Types/Platform/Threading/CoPaT/CoroutineWait.h"
+#include "Types/Platform/Threading/CoPaT/CoroutineAwaitAll.h"
 
 void AssetManager::loadUnderPath(const String &scanPath)
 {
-    LOG_DEBUG("AssetManager", "%s(): Initial asset loaded started", __func__);
+    LOG_DEBUG("AssetManager", "Initial asset load started");
     StopWatch loadTime;
     std::vector<String> foundFiles = FileSystemFunctions::listAllFiles(scanPath, true);
     for (const String &filePath : foundFiles)
@@ -27,15 +32,52 @@ void AssetManager::loadUnderPath(const String &scanPath)
         AssetHeader header;
         header.assetPath = PathFunctions::asGenericPath(filePath);
         header.type = AssetLoaderLibrary::typeFromAssetPath(filePath);
-        loadAsset(header);
-        LOG_DEBUG(
-            "AssetManager", "%s(): Loaded asset %s in %0.3f Seconds(not including gpu copy)", __func__, header.assetPath.getChar(),
-            loadTime.thisLap()
-        );
+        for (AssetBase *asset : loadAsset(header))
+        {
+            assetsRegistered[asset->assetHeader] = asset;
+        }
+        LOG_DEBUG("AssetManager", "Loaded asset %s in %0.3f Seconds(not including gpu copy)", header.assetPath.getChar(), loadTime.thisLap());
         loadTime.lap();
     }
     loadTime.stop();
-    LOG_DEBUG("AssetManager", "%s(): Loaded all assets in %0.3f Seconds(not including gpu copy)", __func__, loadTime.duration());
+    LOG_DEBUG("AssetManager", "Loaded all assets in %0.3f Seconds(not including gpu copy)", loadTime.duration());
+}
+
+void AssetManager::loadUnderPathAsync(const String &scanPath)
+{
+    LOG("AssetManager", "Initial asset load started");
+    StopWatch loadTime;
+    std::vector<String> foundFiles = FileSystemFunctions::listAllFiles(scanPath, true);
+    std::vector<decltype(loadAssetAsync(std::declval<AssetHeader>()))> asyncTasks;
+    asyncTasks.reserve(foundFiles.size());
+    for (const String &filePath : foundFiles)
+    {
+        AssetHeader header;
+        header.assetPath = PathFunctions::asGenericPath(filePath);
+        header.type = AssetLoaderLibrary::typeFromAssetPath(filePath);
+        asyncTasks.emplace_back(loadAssetAsync(header));
+    }
+    copat::AwaitAllTasks<std::vector<decltype(loadAssetAsync(std::declval<AssetHeader>()))>> allAwaits
+        = copat::awaitAllTasks(std::move(asyncTasks));
+    for (auto &awaitable : copat::waitOnAwaitable(allAwaits))
+    {
+        for (AssetBase *asset : awaitable.getReturnValue())
+        {
+            assetsRegistered[asset->assetHeader] = asset;
+        }
+    }
+
+    loadTime.stop();
+    LOG("AssetManager", "Loaded all assets in %0.3f Seconds(not including gpu copy)", loadTime.duration());
+}
+
+copat::JobSystemReturnableTask<std::vector<AssetBase *>, true, copat::EJobThreadType::WorkerThreads>
+    AssetManager::loadAssetAsync(AssetHeader header)
+{
+    StopWatch loadTime;
+    std::vector<AssetBase *> assets = loadAsset(header);
+    LOG_DEBUG("AssetManager", "Loaded asset %s in %0.3f Seconds(not including gpu copy)", header.assetPath.getChar(), loadTime.duration());
+    co_return std::move(assets);
 }
 
 std::vector<AssetBase *> AssetManager::loadAsset(const AssetHeader &header)
@@ -66,7 +108,6 @@ std::vector<AssetBase *> AssetManager::loadAsset(const AssetHeader &header)
     {
         asset->assetHeader.assetPath = header.assetPath;
         asset->assetHeader.type = header.type;
-        assetsRegistered[asset->assetHeader] = asset;
         if (asset->cleanableAsset())
         {
             asset->cleanableAsset()->initAsset();
@@ -77,14 +118,14 @@ std::vector<AssetBase *> AssetManager::loadAsset(const AssetHeader &header)
 
 void AssetManager::load()
 {
-    String appPath;
-    appPath = FileSystemFunctions::applicationDirectory(appPath);
+    String appPath = Paths::applicationDirectory();
     // Default path
     addPathsToScan(TCHAR("Assets"));
     for (const String &scanPath : preloadingPaths)
     {
         String scanFullPath = PathFunctions::combinePath(appPath, scanPath);
-        loadUnderPath(scanFullPath);
+        loadUnderPathAsync(scanFullPath);
+        // loadUnderPath(scanFullPath);
     }
 }
 
@@ -113,16 +154,17 @@ void AssetManager::addPathsToScan(const String &scanPath)
     preloadingPaths.push_back(scanPath);
     if (bIsLoaded)
     {
-        loadUnderPath(scanPath);
+        loadUnderPathAsync(scanPath);
+        // loadUnderPath(scanPath);
     }
 }
 
 AssetBase *AssetManager::getOrLoadAsset(const String &relAssetPath)
 {
     String newRelPath = PathFunctions::asGenericPath(relAssetPath);
-    String appName;
+
     AssetHeader header;
-    header.assetPath = PathFunctions::combinePath(FileSystemFunctions::applicationDirectory(appName), TCHAR("Assets"), newRelPath);
+    header.assetPath = PathFunctions::combinePath(Paths::applicationDirectory(), TCHAR("Assets"), newRelPath);
     header.type = AssetLoaderLibrary::typeFromAssetPath(newRelPath);
     header.assetName = PlatformFile(header.assetPath).getFileName();
     header.assetName = PathFunctions::stripExtension(header.assetName);
@@ -151,6 +193,10 @@ AssetBase *AssetManager::getOrLoadAsset(const AssetHeader &header)
             break;
         }
     }
+    if (!returnVal)
+    {
+        LOG_ERROR("AssetManager", "Asset %s(%s) does not exists!", header.assetName, header.assetPath);
+    }
     return returnVal;
 }
 
@@ -163,5 +209,6 @@ AssetBase *AssetManager::getAsset(const String &assetName) const
             return asset.second;
         }
     }
+    LOG_ERROR("AssetManager", "Asset %s does not exists!", assetName);
     return nullptr;
 }

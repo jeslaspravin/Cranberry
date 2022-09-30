@@ -10,7 +10,7 @@
  */
 
 #pragma once
-#include "RenderInterface/Rendering/RenderingContexts.h"
+#include "RenderApi/Rendering/RenderingContexts.h"
 #include "RenderInterface/Resources/DeferredDeleter.h"
 
 #include <vulkan_core.h>
@@ -48,5 +48,7 @@ public:
     VkRenderPass getRenderPass(ERenderPassFormat::Type renderpassFormat, const RenderPassAdditionalProps &additionalProps);
     VkRenderPass getRenderPass(const GenericRenderPassProperties &renderpassProps, const RenderPassAdditionalProps &additionalProps);
 
+#if DEFER_DELETION
     FORCE_INLINE DeferredDeleter *getDeferredDeleter() { return &resourceDeleter; }
+#endif
 };

@@ -1,3 +1,5 @@
+#define {{ReflectionTUDefine}}
+
 #include "{{HeaderInclude}}"
 #include "Property/ContainerProperty.h"
 #include "Types/CoreMiscDefines.h"
@@ -32,9 +34,9 @@ struct HEADER_FILE_ID
     static void init_{{SanitizedName}}({{PropertyTypeName}}* typeProperty);{{/NoInit}}
     {{/AllRegisterTypes}}
     
-    {{#Classes}}{{^IsAbstract}}
+    {{#Classes}}{{^IsAbstract}}{{^DisableCtor}}
     template <typename... Args>
-    static {{TypeName}}* {{SanitizedName}}_CTor(void* ptr, Args&&... args);{{/IsAbstract}}{{/Classes}}
+    static {{TypeName}}* {{SanitizedName}}_CTor(void* ptr, Args... args);{{/DisableCtor}}{{/IsAbstract}}{{/Classes}}
 } COMBINE(HEADER_FILE_ID, _autoinit);
 
 HEADER_FILE_ID::HEADER_FILE_ID()
@@ -120,12 +122,12 @@ void HEADER_FILE_ID::init_{{SanitizedName}}(EnumProperty* typeProperty)
 }
 {{/EnumTypes}}
 
-{{#Classes}}{{^IsAbstract}}
+{{#Classes}}{{^IsAbstract}}{{^DisableCtor}}
 template <typename... Args>
-static {{TypeName}}* HEADER_FILE_ID::{{SanitizedName}}_CTor(void* ptr, Args&&... args)
+static {{TypeName}}* HEADER_FILE_ID::{{SanitizedName}}_CTor(void* ptr, Args... args)
 {
     return CtorPolicyHelper::constructObject<typename COMBINE({{TypeName}}::, CONSTRUCTION_POLICY_TYPEDEF_NAME), {{TypeName}}, Args...>(ptr, std::forward<Args>(args)...);
-}{{/IsAbstract}}
+}{{/DisableCtor}}{{/IsAbstract}}
 
 ClassProperty* HEADER_FILE_ID::create_{{SanitizedName}}()
 {
@@ -139,7 +141,7 @@ void HEADER_FILE_ID::init_{{SanitizedName}}(ClassProperty* typeProperty)
     typeProperty->setBaseClass(IReflectionRuntimeModule::getType<{{BaseClassTypeName}}>());{{/BaseClassTypeName}}
 {{#InterfaceTypes}}
     typeProperty->addInterface(TCHAR("{{InterfaceTypeName}}"), MI_VTABLE_OFFSET({{TypeName}}, {{InterfaceTypeName}}), typeInfoFrom<{{InterfaceTypeName}}>());{{/InterfaceTypes}}
-{{^IsAbstract}}{{#Ctors}}
+{{^IsAbstract}}{{^DisableCtor}}{{#Ctors}}
     typeProperty->addCtorPtr()
                 ->setFieldAccessor(EPropertyAccessSpecifier::{{AccessSpecifier}}){{#ParamsListContext}}
                 ->addFunctionParamProperty(STRID("{{ParamName}}"), TCHAR("{{ParamName}}"), IReflectionRuntimeModule::getType<{{ParamTypeName}}>()){{/ParamsListContext}}
@@ -152,13 +154,9 @@ void HEADER_FILE_ID::init_{{SanitizedName}}(ClassProperty* typeProperty)
                 ->setFunctionReturnProperty(IReflectionRuntimeModule::getType<{{TypeName}}*>())
                 ->constructFuncPointer<GlobalFunctionWrapperImpl<{{TypeName}} *, void *>>(&ThisType::{{SanitizedName}}_CTor<>);
 {{/Ctors}}
-    typeProperty->constructDtorPtr()
-                ->setFunctionReturnProperty(IReflectionRuntimeModule::getType<void>())
-                ->constructFuncPointer<GlobalFunctionWrapperImpl<void, void *>>(&ThisType::COMBINE(HEADER_FILE_ID, _DTor)<{{TypeName}}>);
-    typeProperty->constructAllocFuncPtr()
-                ->setFunctionReturnProperty(IReflectionRuntimeModule::getType<void *>())
-                ->constructFuncPointer<GlobalFunctionWrapperImpl<void *>>(&ThisType::COMBINE(HEADER_FILE_ID, _AllocFunc)<{{TypeName}}>);
-{{/IsAbstract}}{{#MemberFuncs}}
+    typeProperty->setDtorPtr(&ThisType::COMBINE(HEADER_FILE_ID, _DTor)<{{TypeName}}>);
+    typeProperty->setAllocFuncPtr(&ThisType::COMBINE(HEADER_FILE_ID, _AllocFunc)<{{TypeName}}>);
+{{/DisableCtor}}{{/IsAbstract}}{{#MemberFuncs}}
     typeProperty->addMemberFunc(STRID("{{FunctionName}}"), TCHAR("{{FunctionName}}"))
                 ->setFieldAccessor(EPropertyAccessSpecifier::{{AccessSpecifier}}){{#ParamsListContext}}
                 ->addFunctionParamProperty(STRID("{{ParamName}}"), TCHAR("{{ParamName}}"), IReflectionRuntimeModule::getType<{{ParamTypeName}}>()){{/ParamsListContext}}
@@ -188,3 +186,5 @@ void HEADER_FILE_ID::init_{{SanitizedName}}(ClassProperty* typeProperty)
 {{/StaticFields}}
 }
 {{/Classes}}
+
+#undef {{ReflectionTUDefine}}

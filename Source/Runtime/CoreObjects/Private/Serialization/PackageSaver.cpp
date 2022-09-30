@@ -11,7 +11,8 @@
 
 #include "Serialization/PackageSaver.h"
 #include "Types/Platform/LFS/PathFunctions.h"
-#include "Serialization/FileArchiveStream.h"
+#include "Types/Platform/LFS/File/FileHelper.h"
+#include "Serialization/ArrayArchiveStream.h"
 #include "ObjectPathHelpers.h"
 #include "CoreObjectsDB.h"
 #include "ICoreObjectsModule.h"
@@ -24,23 +25,46 @@ void PackageSaver::setupContainedObjs()
 
     // We peel the onion as parent must be create before child,
     // The getChildren from FlatTree already returns in ordered manner so we should be good without peeling manually here
-    std::vector<CBE::Object *> children;
+    std::vector<cbe::Object *> children;
     objsDb.getSubobjects(children, package->getStringID());
-    for (CBE::Object *child : children)
+    containedObjects.clear();
+    containedObjects.reserve(children.size());
+    for (cbe::Object *child : children)
     {
         // Package is final class so we just have compare, no need to go through isChild hierarchy
-        fatalAssert(child->getType() != CBE::Package::staticType(), "Package must not contain package object");
+        fatalAssertf(child->getType() != cbe::Package::staticType(), "Package must not contain package object");
+        if (ANY_BIT_SET(child->getFlags(), cbe::EObjectFlagBits::ObjFlag_MarkedForDelete | cbe::EObjectFlagBits::ObjFlag_Deleted))
+        {
+            continue;
+        }
 
         objToContObjsIdx[child->getStringID()] = containedObjects.size();
         PackageContainedData &containedObjData = containedObjects.emplace_back();
         containedObjData.object = child;
         containedObjData.objectPath = ObjectPathHelper::getObjectPath(child, package);
         containedObjData.objectFlags = child->getFlags();
-        containedObjData.className = child->getType()->name;
+        // No need for dirty flags to be serialized out
+        CLEAR_BITS(containedObjData.objectFlags, cbe::EObjectFlagBits::ObjFlag_PackageDirty);
+        containedObjData.clazz = child->getType();
     }
 }
 
-PackageSaver::PackageSaver(CBE::Package *savingPackage)
+void PackageSaver::serializeObject(cbe::WeakObjPtr<cbe::Object> obj)
+{
+    debugAssert(obj.isValid());
+
+    /**
+     * If transient we store the object as part of package but never serialize it.
+     * This is to allow us to do pointer fix ups if transient object is available while loading
+     * Collecting all parent object tree so that when loading we do not depend on transient object being available at object creation
+     */
+    if (NO_BITS_SET(obj->collectAllFlags(), cbe::EObjectFlagBits::ObjFlag_Transient))
+    {
+        obj->serialize(*this);
+    }
+}
+
+PackageSaver::PackageSaver(cbe::Package *savingPackage)
     : package(savingPackage)
 {
     debugAssert(package);
@@ -55,7 +79,7 @@ PackageSaver::PackageSaver(CBE::Package *savingPackage)
     setupContainedObjs();
 }
 
-bool PackageSaver::savePackage()
+EPackageLoadSaveResult PackageSaver::savePackage()
 {
     ArchiveSizeCounterStream archiveCounter;
     packageArchive.setStream(&archiveCounter);
@@ -66,14 +90,14 @@ bool PackageSaver::savePackage()
     for (PackageContainedData &containedObjData : containedObjects)
     {
         containedObjData.streamStart = archiveCounter.cursorPos();
-        containedObjData.object->serialize(*this);
+        serializeObject(containedObjData.object);
         containedObjData.streamSize = archiveCounter.cursorPos() - containedObjData.streamStart;
         // We must have custom version setup if present, Custom version keys must be from class property name
-        containedObjData.classVersion = getCustomVersion(uint32(containedObjData.object->getType()->name));
+        containedObjData.classVersion = ArchiveBase::getCustomVersion(uint32(containedObjData.object->getType()->name));
     }
 
     // Step 3 : Copy custom versions and other archive related property to actual packageArchive
-    for (const std::pair<const uint32, uint32> &customVersion : getCustomVersions())
+    for (const std::pair<const uint32, uint32> &customVersion : ArchiveBase::getCustomVersions())
     {
         packageArchive.setCustomVersion(customVersion.first, customVersion.second);
     }
@@ -92,16 +116,13 @@ bool PackageSaver::savePackage()
     {
         containedObjData.streamStart = (containedObjData.streamStart - dummyHeaderSize) + actualHeaderSize;
     }
+    SizeT finalPackageSize = containedObjects.back().streamStart + containedObjects.back().streamSize;
 
-    // Step 5 : Setup file stream to write
-    String packagePath = package->getPackageFilePath();
-    FileArchiveStream fileStream(packagePath, false);
-    if (!fileStream.isAvailable())
-    {
-        LOG_ERROR("PackageSaver", "Failed to open file stream to save package %s at %s", package->getName(), packagePath);
-        return false;
-    }
-    packageArchive.setStream(&fileStream);
+    // Step 5 : Setup Array stream to write
+    ArrayArchiveStream archiveStream;
+    ArrayArchiveStream *archiveStreamPtr = outStream ? outStream : &archiveStream;
+    archiveStreamPtr->allocate(finalPackageSize);
+    packageArchive.setStream(archiveStreamPtr);
 
     // Step 6 : Write into archive
     (*static_cast<ObjectArchive *>(this)) << *const_cast<StringID *>(&PACKAGE_ARCHIVE_MARKER);
@@ -109,18 +130,27 @@ bool PackageSaver::savePackage()
     (*static_cast<ObjectArchive *>(this)) << dependentObjects;
     for (PackageContainedData &containedObjData : containedObjects)
     {
-        containedObjData.object->serialize(*this);
+        serializeObject(containedObjData.object);
     }
     packageArchive.setStream(nullptr);
 
-    CoreObjectDelegates::broadcastPackageSaved(package);
+    if (outStream == nullptr)
+    {
+        String packagePath = package->getPackageFilePath();
+        if (!FileHelper::writeBytes(archiveStreamPtr->getBuffer(), packagePath))
+        {
+            LOG_ERROR("PackageSaver", "Failed to open file stream to save package %s at %s", package->getName(), packagePath);
+            return EPackageLoadSaveResult::IOError;
+        }
+        CoreObjectDelegates::broadcastPackageSaved(package);
+    }
 
-    return true;
+    return EPackageLoadSaveResult::Success;
 }
 
-ObjectArchive &PackageSaver::serialize(CBE::Object *&obj)
+ObjectArchive &PackageSaver::serialize(cbe::Object *&obj)
 {
-    // Push null object index
+    // Push null object index if object is null
     if (!obj)
     {
         (*static_cast<ObjectArchive *>(this)) << *const_cast<SizeT *>(&NULL_OBJECT_FLAG);
@@ -144,7 +174,7 @@ ObjectArchive &PackageSaver::serialize(CBE::Object *&obj)
             PackageDependencyData &objDepData = dependentObjects.emplace_back();
             objDepData.object = obj;
             objDepData.objectFullPath = obj->getFullPath();
-            objDepData.className = obj->getType()->name;
+            objDepData.clazz = obj->getType();
         }
         else
         {

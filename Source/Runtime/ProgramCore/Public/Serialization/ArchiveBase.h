@@ -12,6 +12,7 @@
 #pragma once
 
 #include "ProgramCoreExports.h"
+#include "Serialization/ArchiveTypes.h"
 #include "Math/Math.h"
 #include "Types/CoreDefines.h"
 #include "Types/CoreTypes.h"
@@ -27,8 +28,10 @@
 
 class String;
 
-// Source stream of data for archive to read or write
-// Each read or write pushes the stream forward or backwards
+/**
+ * Source stream of data for archive to read or write
+ * Each read or write pushes the stream forward or backwards
+ */
 class PROGRAMCORE_EXPORT ArchiveStream
 {
 public:
@@ -38,22 +41,28 @@ public:
     virtual ~ArchiveStream() = default;
 
 public:
-    // reads given length of data from cursor to the passed in pointer, Pointer must be pointing to data
-    // with at least len size Moves the stream cursor to start of next data stream
-    virtual void read(void *toPtr, SizeT len) = 0;
-    // writes given length of data from cursor from the passed in pointer to data stream, Pointer must be
-    // pointing to data with at least len size Moves the stream cursor to start of next write data
-    // stream. Allocates or extends any necessary extra stream data required for this write.
-    virtual void write(const void *ptr, SizeT len) = 0;
+    /**
+     * reads given length of data from cursor to the passed in pointer, Pointer must be pointing to data
+     * with at least len size Moves the stream cursor to start of next data stream
+     */
+    virtual void read(void *toPtr, SizeT byteLen) = 0;
+    /**
+     * writes given length of data from cursor from the passed in pointer to data stream, Pointer must be
+     * pointing to data with at least len size Moves the stream cursor to start of next write data
+     * stream. Allocates or extends any necessary extra stream data required for this write.
+     */
+    virtual void write(const void *ptr, SizeT byteLen) = 0;
 
-    // Moves the stream cursor forward by count bytes
-    // Allocates or extends any necessary extra stream data required for this write.
-    virtual void moveForward(SizeT count) = 0;
+    /**
+     * Moves the stream cursor forward by count bytes
+     * Allocates or extends any necessary extra stream data required for this write.
+     */
+    virtual void moveForward(SizeT byteCount) = 0;
     // Moves the stream cursor backward by count bytes
-    virtual void moveBackward(SizeT count) = 0;
+    virtual void moveBackward(SizeT byteCount) = 0;
 
     // Preallocates addition count bytes in buffered streams, Does not modify the stream cursor
-    virtual bool allocate(SizeT count) = 0;
+    virtual bool allocate(SizeT byteCount) = 0;
 
     // Reads byte at idx forward from current byte, Does not modify the stream cursor
     virtual uint8 readForwardAt(SizeT idx) const = 0;
@@ -63,7 +72,7 @@ public:
     virtual uint64 cursorPos() const = 0;
 
     virtual bool isAvailable() const = 0;
-    virtual bool hasMoreData(SizeT requiredSize) const = 0;
+    virtual bool hasMoreData(SizeT requiredByteCount) const = 0;
 };
 
 class PROGRAMCORE_EXPORT ArchiveSizeCounterStream final : public ArchiveStream
@@ -77,16 +86,16 @@ public:
     {}
 
     /* ArchiveStream overrides */
-    void read(void *toPtr, SizeT len) override;
-    FORCE_INLINE void write(const void *ptr, SizeT len) override { cursor += len; }
-    FORCE_INLINE void moveForward(SizeT count) override { cursor += count; }
-    FORCE_INLINE void moveBackward(SizeT count) override { cursor = Math::max(cursor - count, 0); }
-    FORCE_INLINE bool allocate(SizeT count) override { return false; }
+    void read(void *toPtr, SizeT byteLen) override;
+    void write(const void *ptr, SizeT byteLen) override { cursor += byteLen; }
+    void moveForward(SizeT byteCount) override { cursor += byteCount; }
+    void moveBackward(SizeT byteCount) override { cursor = Math::max(cursor - byteCount, 0); }
+    bool allocate(SizeT byteCount) override { return false; }
     uint8 readForwardAt(SizeT idx) const override;
     uint8 readBackwardAt(SizeT idx) const override;
     FORCE_INLINE uint64 cursorPos() const override { return cursor; }
     FORCE_INLINE bool isAvailable() const override { return true; }
-    FORCE_INLINE bool hasMoreData(SizeT requiredSize) const override { return true; }
+    bool hasMoreData(SizeT requiredByteCount) const override { return true; }
     /* overrides ends */
 };
 
@@ -96,9 +105,7 @@ class PROGRAMCORE_EXPORT ArchiveBase
 {
 private:
     constexpr static const uint32 ARCHIVE_VERSION = 0;
-    /*
-     * Lowest version supported
-     */
+    // Lowest version supported
     constexpr static const uint32 CUTOFF_VERSION = 0;
 
     // Custom versions that will be serialized in/from this archive
@@ -111,19 +118,28 @@ private:
     // Borrowed stream(Ownership must belong to creator)
     ArchiveStream *archiveStream = nullptr;
 
-private:
-    void serializeArchiveMeta();
-
 public:
     /**
      * All getters are virtual to allow overriding the behavior however setters are not as that needs to taken care by the user directly and set
-     * values to appropriate archives
+     * values to appropriate archives, Example check ObjectArchive and PackageSaver.
+     * It manually takes care of setting custom versions in each archive based on loading or saving
      */
     virtual bool ifSwapBytes() const { return bShouldSwapBytes; }
-    FORCE_INLINE void setSwapBytes(bool bSwapBytes) { bShouldSwapBytes = bSwapBytes; }
     virtual bool isLoading() const { return bIsLoading; }
-    FORCE_INLINE void setLoading(bool bLoad) { bIsLoading = bLoad; }
     virtual ArchiveStream *stream() const { return archiveStream; }
+    virtual uint32 getCustomVersion(uint32 customId) const
+    {
+        auto itr = customVersions.find(customId);
+        if (itr != customVersions.cend())
+        {
+            return itr->second;
+        }
+        return 0;
+    }
+    virtual const std::map<uint32, uint32> &getCustomVersions() const { return customVersions; }
+
+    FORCE_INLINE void setSwapBytes(bool bSwapBytes) { bShouldSwapBytes = bSwapBytes; }
+    FORCE_INLINE void setLoading(bool bLoad) { bIsLoading = bLoad; }
     FORCE_INLINE void setStream(ArchiveStream *inStream)
     {
         if (archiveStream == inStream)
@@ -147,42 +163,32 @@ public:
         }
     }
     FORCE_INLINE void setCustomVersion(uint32 customId, uint32 version) { customVersions[customId] = version; }
-    virtual uint32 getCustomVersion(uint32 customId) const
-    {
-        auto itr = customVersions.find(customId);
-        if (itr != customVersions.cend())
-        {
-            return itr->second;
-        }
-        return 0;
-    }
-    virtual const std::map<uint32, uint32> &getCustomVersions() const { return customVersions; }
     FORCE_INLINE void clearCustomVersions() { customVersions.clear(); }
 
     FOR_EACH_CORE_TYPES(SERIALIZE_VIRTUAL)
 
     virtual ArchiveBase &serialize(String &) = 0;
     virtual ArchiveBase &serialize(TChar *) = 0;
+
+private:
+    void serializeArchiveMeta();
 };
 
 #undef SERIALIZE_VIRTUAL
 
-template <typename Type>
-concept ArchiveType = std::is_base_of_v<ArchiveBase, Type>;
-
-template <ArchiveType ArchiveType, typename ValueType>
+template <ArchiveTypeName ArchiveType, typename ValueType>
 ArchiveType &operator<<(ArchiveType &archive, ValueType &value)
 {
     return static_cast<ArchiveType &>(archive.serialize(value));
 }
 
-template <ArchiveType ArchiveType, typename KeyType, typename ValueType>
+template <ArchiveTypeName ArchiveType, typename KeyType, typename ValueType>
 ArchiveType &operator<<(ArchiveType &archive, std::pair<KeyType, ValueType> &value)
 {
     return archive << value.first << value.second;
 }
 
-template <ArchiveType ArchiveType, typename ValueType, typename AllocType>
+template <ArchiveTypeName ArchiveType, typename ValueType, typename AllocType>
 ArchiveType &operator<<(ArchiveType &archive, std::vector<ValueType, AllocType> &value)
 {
     SizeT len = value.size();
@@ -199,7 +205,7 @@ ArchiveType &operator<<(ArchiveType &archive, std::vector<ValueType, AllocType> 
     return archive;
 }
 
-template <ArchiveType ArchiveType, typename KeyType, typename... Types>
+template <ArchiveTypeName ArchiveType, typename KeyType, typename... Types>
 ArchiveType &operator<<(ArchiveType &archive, std::set<KeyType, Types...> &value)
 {
     SizeT len = value.size();
@@ -224,7 +230,7 @@ ArchiveType &operator<<(ArchiveType &archive, std::set<KeyType, Types...> &value
     }
     return archive;
 }
-template <ArchiveType ArchiveType, typename KeyType, typename... Types>
+template <ArchiveTypeName ArchiveType, typename KeyType, typename... Types>
 ArchiveType &operator<<(ArchiveType &archive, std::unordered_set<KeyType, Types...> &value)
 {
     SizeT len = value.size();
@@ -251,7 +257,7 @@ ArchiveType &operator<<(ArchiveType &archive, std::unordered_set<KeyType, Types.
     return archive;
 }
 
-template <ArchiveType ArchiveType, typename KeyType, typename ValueType, typename... Types>
+template <ArchiveTypeName ArchiveType, typename KeyType, typename ValueType, typename... Types>
 ArchiveType &operator<<(ArchiveType &archive, std::map<KeyType, ValueType, Types...> &value)
 {
     SizeT len = value.size();
@@ -277,7 +283,7 @@ ArchiveType &operator<<(ArchiveType &archive, std::map<KeyType, ValueType, Types
     }
     return archive;
 }
-template <ArchiveType ArchiveType, typename KeyType, typename ValueType, typename... Types>
+template <ArchiveTypeName ArchiveType, typename KeyType, typename ValueType, typename... Types>
 ArchiveType &operator<<(ArchiveType &archive, std::unordered_map<KeyType, ValueType, Types...> &value)
 {
     SizeT len = value.size();

@@ -11,7 +11,7 @@
 
 #include "Property/CustomProperty.h"
 
-CustomProperty::CustomProperty(const StringID &propNameID, const String &propName, EPropertyType propType, const ReflectTypeInfo *propTypeInfo)
+CustomProperty::CustomProperty(const StringID &propNameID, const TChar *propName, EPropertyType propType, const ReflectTypeInfo *propTypeInfo)
     : TypedProperty(propNameID, propName, propType, propTypeInfo)
     , dataRetriever(nullptr)
 {}

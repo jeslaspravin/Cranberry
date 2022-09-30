@@ -13,8 +13,7 @@
 
 #include "Math/Matrix4.h"
 #include "RenderInterface/ShaderCore/ShaderParameters.h"
-
-#include <map>
+#include "RenderInterface/Resources/ShaderResources.h"
 
 struct ViewData
 {
@@ -24,9 +23,12 @@ struct ViewData
     Matrix4 invProjection;
 };
 
+// TODO(Jeslas) : Rename this file and class to RenderSceneData as I am using it only for view param info as view specialization constants
 class ENGINERENDERER_EXPORT RenderSceneBase
 {
 public:
-    static const std::map<String, ShaderBufferParamInfo *> &sceneViewParamInfo();
-    static void sceneViewSpecConsts(std::map<String, struct SpecializationConstantEntry> &specializationConst);
+    constexpr static const TChar *VIEW_PARAM_NAME = TCHAR("viewData");
+
+    static const std::map<StringID, ShaderBufferParamInfo *> &sceneViewParamInfo();
+    static void sceneViewSpecConsts(SpecConstantNamedMap &specializationConst);
 };

@@ -12,6 +12,7 @@
 #pragma once
 #include "EngineRendererExports.h"
 #include "Math/CoreMathTypedefs.h"
+#include "RenderInterface/Resources/Samplers/SamplerInterface.h"
 #include "RenderInterface/Rendering/FramebufferTypes.h"
 
 #include <unordered_map>
@@ -31,6 +32,7 @@ private:
     static ImageResourceRef dummyWhiteTexture;
     static ImageResourceRef dummyCubeTexture;
     static ImageResourceRef dummyNormalTexture;
+    static ImageResourceRef dummyDepthTexture;
 
     static ImageResourceRef integratedBRDF;
 
@@ -38,18 +40,15 @@ private:
     static std::pair<BufferResourceRef, BufferResourceRef> quadRectVertsInds;
     static std::pair<BufferResourceRef, BufferResourceRef> lineGizmoVertxInds;
 
-    static void createTextureCubes(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
-    static void destroyTextureCubes();
-
-    static void createTexture2Ds(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
-    // Generates using shaders or some other pipeline based technics
-    static void generateTexture2Ds();
-    static void destroyTexture2Ds();
-
-    static void createVertIndBuffers(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
-    static void destroyVertIndBuffers();
+    static SamplerRef nearestFiltering;
+    static SamplerRef linearFiltering;
+    static SamplerRef depthFiltering;
+    static SamplerRef shadowFiltering;
 
 public:
+    /**
+     * Both must be called from render thread
+     */
     static void initialize();
     static void destroy();
 
@@ -60,9 +59,30 @@ public:
     static ImageResourceRef dummyBlack2D() { return dummyBlackTexture; }
     static ImageResourceRef dummyCube() { return dummyCubeTexture; }
     static ImageResourceRef dummyNormal() { return dummyNormalTexture; }
+    static ImageResourceRef dummyDepth() { return dummyDepthTexture; }
     static ImageResourceRef integratedBrdfLUT() { return integratedBRDF; }
 
-    static const BufferResourceRef getQuadTriVertexBuffer() { return quadTriVerts; }
-    static std::pair<const BufferResourceRef, const BufferResourceRef> getQuadRectVertexIndexBuffers() { return quadRectVertsInds; }
-    static std::pair<const BufferResourceRef, const BufferResourceRef> getLineGizmoVertexIndexBuffers() { return lineGizmoVertxInds; }
+    static SamplerRef nearestSampler() { return nearestFiltering; }
+    static SamplerRef linearSampler() { return linearFiltering; }
+    static SamplerRef depthSampler() { return depthFiltering; }
+    static SamplerRef shadowSampler() { return shadowFiltering; }
+
+    static BufferResourceRef getQuadTriVertexBuffer() { return quadTriVerts; }
+    static std::pair<BufferResourceRef, BufferResourceRef> getQuadRectVertexIndexBuffers() { return quadRectVertsInds; }
+    static std::pair<BufferResourceRef, BufferResourceRef> getLineGizmoVertexIndexBuffers() { return lineGizmoVertxInds; }
+
+private:
+    static void createTextureCubes(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
+    static void destroyTextureCubes();
+
+    static void createTexture2Ds(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
+    // Generates using shaders or some other pipeline based techniqs
+    static void generateTexture2Ds(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
+    static void destroyTexture2Ds();
+
+    static void createVertIndBuffers(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
+    static void destroyVertIndBuffers();
+
+    static void createSamplers(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
+    static void destroySamplers();
 };

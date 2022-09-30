@@ -105,11 +105,11 @@ bool ShaderParameterUtility::fillRefToBufParamInfo(
     uint32 runtimeArrayOffset = 0;
     if (shaderBufferHasAnySpecializationConst(bufferField))
     {
-        std::map<String, ShaderBufferField *> attribNameToNode;
+        std::map<StringID, ShaderBufferField *> attribNameToNode;
         {
             for (ShaderBufferField *currentField : bufferParamInfo)
             {
-                attribNameToNode[currentField->paramName] = currentField;
+                attribNameToNode[StringID(currentField->paramName)] = currentField;
             }
         }
 
@@ -124,7 +124,7 @@ bool ShaderParameterUtility::fillRefToBufParamInfo(
             {
                 const ReflectBufferStructEntry &bufferStructField = bufferField.bufferStructFields[structIdx];
 
-                auto currFieldItr = attribNameToNode.find(UTF8_TO_TCHAR(bufferStructField.attributeName.c_str()));
+                auto currFieldItr = attribNameToNode.find(bufferStructField.attributeName.c_str());
                 debugAssert(
                     currFieldItr != attribNameToNode.end() && BIT_SET(currFieldItr->second->fieldDecorations, ShaderBufferField::IsStruct)
                 );
@@ -177,7 +177,7 @@ bool ShaderParameterUtility::fillRefToBufParamInfo(
             {
                 const ReflectBufferEntry &bufferInnerField = bufferField.bufferFields[innerFieldIdx];
 
-                auto currFieldItr = attribNameToNode.find(UTF8_TO_TCHAR(bufferInnerField.attributeName.c_str()));
+                auto currFieldItr = attribNameToNode.find(bufferInnerField.attributeName.c_str());
                 debugAssert(
                     currFieldItr != attribNameToNode.end() && BIT_SET(currFieldItr->second->fieldDecorations, ShaderBufferField::IsStruct)
                 );
@@ -236,7 +236,7 @@ bool ShaderParameterUtility::fillRefToBufParamInfo(
             {
                 for (const ReflectBufferStructEntry &bufferStructField : bufferField.bufferStructFields)
                 {
-                    String reflectStructFieldName{ UTF8_TO_TCHAR(bufferStructField.attributeName.c_str()) };
+                    StringID reflectStructFieldName{ bufferStructField.attributeName.c_str() };
                     if (reflectStructFieldName == currentField->paramName)
                     {
                         // If runtime array then update offset, else check offset to
@@ -250,11 +250,10 @@ bool ShaderParameterUtility::fillRefToBufParamInfo(
                         {
                             // Make sure we do not miss intended runtime array
                             debugAssert(bufferStructField.data.totalSize != 0 && !currentField->isPointer());
-                            fatalAssert(
+                            fatalAssertf(
                                 !bHasRuntimeArray || (runtimeArrayOffset >= bufferStructField.data.offset),
-                                "%s() : Runtime array(offset : %d) must be the "
-                                "last member of SoA. Member %s offset %d",
-                                __func__, runtimeArrayOffset, reflectStructFieldName, bufferStructField.data.offset
+                                "Runtime array(offset : %d) must be the last member of SoA. Member %s offset %d", runtimeArrayOffset,
+                                UTF8_TO_TCHAR(bufferStructField.attributeName.c_str()), bufferStructField.data.offset
                             );
                         }
 
@@ -275,7 +274,7 @@ bool ShaderParameterUtility::fillRefToBufParamInfo(
             {
                 for (const ReflectBufferEntry &bufferInnerField : bufferField.bufferFields)
                 {
-                    String reflectFieldName{ UTF8_TO_TCHAR(bufferInnerField.attributeName.c_str()) };
+                    StringID reflectFieldName{ bufferInnerField.attributeName.c_str() };
                     if (reflectFieldName == currentField->paramName)
                     {
                         // If runtime array then update offset, else check offset to
@@ -289,11 +288,10 @@ bool ShaderParameterUtility::fillRefToBufParamInfo(
                         {
                             // Make sure we do not miss intended runtime array
                             debugAssert(bufferInnerField.data.totalSize != 0 && !currentField->isPointer());
-                            fatalAssert(
+                            fatalAssertf(
                                 !bHasRuntimeArray || (runtimeArrayOffset >= bufferInnerField.data.offset),
-                                "%s() : Runtime array(offset : %d) must be the "
-                                "last member of SoA. Member %s offset %d",
-                                __func__, runtimeArrayOffset, reflectFieldName, bufferInnerField.data.offset
+                                "Runtime array(offset : %d) must be the last member of SoA. Member %s offset %d", runtimeArrayOffset,
+                                UTF8_TO_TCHAR(bufferInnerField.attributeName.c_str()), bufferInnerField.data.offset
                             );
                         }
 
@@ -329,7 +327,7 @@ bool ShaderParameterUtility::fillRefToVertexParamInfo(
     {
         for (const ReflectInputOutput &vertexAttribute : inputEntries)
         {
-            String reflectVertAttribName{ UTF8_TO_TCHAR(vertexAttribute.attributeName.c_str()) };
+            StringID reflectVertAttribName{ vertexAttribute.attributeName.c_str() };
             if (reflectVertAttribName == currentField->attributeName)
             {
                 currentField->location = vertexAttribute.data.location;
@@ -345,7 +343,7 @@ bool ShaderParameterUtility::fillRefToVertexParamInfo(
 
 uint32 ShaderParameterUtility::convertNamedSpecConstsToPerStage(
     std::vector<std::vector<SpecializationConstantEntry>> &stageSpecializationConsts,
-    const std::map<String, SpecializationConstantEntry> &namedSpecializationConsts, const struct ShaderReflected *shaderReflection
+    const std::map<StringID, SpecializationConstantEntry> &namedSpecializationConsts, const struct ShaderReflected *shaderReflection
 )
 {
     stageSpecializationConsts.resize(shaderReflection->stages.size());
@@ -356,8 +354,8 @@ uint32 ShaderParameterUtility::convertNamedSpecConstsToPerStage(
     {
         for (const ReflectSpecializationConstant &stageSpecConst : stageDesc.stageSpecializationEntries)
         {
-            String specConstAttribName{ UTF8_TO_TCHAR(stageSpecConst.attributeName.c_str()) };
-            std::map<String, SpecializationConstantEntry>::const_iterator specConstVal = namedSpecializationConsts.find(specConstAttribName);
+            StringID specConstAttribName{ stageSpecConst.attributeName.c_str() };
+            std::map<StringID, SpecializationConstantEntry>::const_iterator specConstVal = namedSpecializationConsts.find(specConstAttribName);
             if (specConstVal != namedSpecializationConsts.cend())
             {
                 SpecializationConstantEntry &entry = stageSpecializationConsts[stageIdx].emplace_back(specConstVal->second);
@@ -368,10 +366,8 @@ uint32 ShaderParameterUtility::convertNamedSpecConstsToPerStage(
                 if (!stageSpecConst.attributeName.empty())
                 {
                     LOG_WARN(
-                        "ShaderSetParametersLayout",
-                        "%s() : No specialization const value found for %s, using "
-                        "default",
-                        __func__, specConstAttribName
+                        "ShaderSetParametersLayout", "No specialization const value found for %s, using default",
+                        UTF8_TO_TCHAR(stageSpecConst.attributeName.c_str())
                     );
                 }
                 stageSpecializationConsts[stageIdx].emplace_back(stageSpecConst.data);
@@ -383,8 +379,8 @@ uint32 ShaderParameterUtility::convertNamedSpecConstsToPerStage(
     return specConstsCount;
 }
 
-std::map<String, uint32> &ShaderParameterUtility::unboundArrayResourcesCount()
+std::map<StringID, uint32> &ShaderParameterUtility::unboundArrayResourcesCount()
 {
-    static std::map<String, uint32> RUNTIME_BOUND_RESOURCES;
+    static std::map<StringID, uint32> RUNTIME_BOUND_RESOURCES;
     return RUNTIME_BOUND_RESOURCES;
 }

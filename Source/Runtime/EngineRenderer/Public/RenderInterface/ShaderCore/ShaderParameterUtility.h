@@ -75,10 +75,10 @@ public:
      */
     static uint32 convertNamedSpecConstsToPerStage(
         std::vector<std::vector<SpecializationConstantEntry>> &stageSpecializationConsts,
-        const std::map<String, SpecializationConstantEntry> &namedSpecializationConsts, const struct ShaderReflected *shaderReflection
+        const std::map<StringID, SpecializationConstantEntry> &namedSpecializationConsts, const struct ShaderReflected *shaderReflection
     );
 
-    static std::map<String, uint32> &unboundArrayResourcesCount();
+    static std::map<StringID, uint32> &unboundArrayResourcesCount();
 
     /**
      * ShaderParameterUtility::getArrayElementCount - converts the array dimension into linear count,
@@ -92,14 +92,14 @@ public:
      */
     template <uint32 MaxDimension>
     static constexpr uint32 getArrayElementCount(
-        const String &paramName, const std::vector<ArrayDefinition> &arraySize,
+        const StringID &paramName, const std::vector<ArrayDefinition> &arraySize,
         const std::vector<std::vector<SpecializationConstantEntry>> &specializationConsts
     );
 };
 
 template <uint32 MaxDimension>
-uint32 constexpr ShaderParameterUtility::getArrayElementCount(
-    const String &paramName, const std::vector<ArrayDefinition> &arraySize,
+constexpr uint32 ShaderParameterUtility::getArrayElementCount(
+    const StringID &paramName, const std::vector<ArrayDefinition> &arraySize,
     const std::vector<std::vector<SpecializationConstantEntry>> &specializationConsts
 )
 {
@@ -116,7 +116,7 @@ uint32 constexpr ShaderParameterUtility::getArrayElementCount(
         }
         else if (!SpecializationConstUtility::asValue(count, specializationConsts[arraySize[i].stageIdx][arraySize[i].dimension]))
         {
-            LOG_ERROR("ShaderParameters", "%s() : Specialized %s array count is invalid", __func__, paramName.getChar());
+            LOG_ERROR("ShaderParameters", "Specialized %s array count is invalid", paramName);
         }
 
         linearCount *= count;

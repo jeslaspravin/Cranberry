@@ -52,13 +52,13 @@ public:
     template <typename Type, typename... CtorArgs>
     static Type *newObject(CtorArgs &&...args)
     {
-        fatalAssert(false, "newObject is not supported interface and must not happen");
+        fatalAssertf(false, "newObject is not supported interface and must not happen");
         return nullptr;
     }
     template <typename Type>
     static void deleteObject(Type *ptr)
     {
-        fatalAssert(false, "deleteObject is not supported interface and must not happen");
+        fatalAssertf(false, "deleteObject is not supported interface and must not happen");
     }
 };
 
@@ -116,7 +116,7 @@ class META_ANNOTATE_API(RTTIEXAMPLE_EXPORT) BerrySecond : public TestNS::BerryOb
 {
     GENERATED_CODES();
 
-public:
+private:
     struct META_ANNOTATE() BerrySecondData
     {
         GENERATED_CODES();
@@ -128,6 +128,7 @@ public:
         bool operator==(const BerrySecondData &other) const noexcept { return value == other.value; }
     };
 
+public:
     META_ANNOTATE()
     BerrySecondData reflectedStruct;
     META_ANNOTATE()

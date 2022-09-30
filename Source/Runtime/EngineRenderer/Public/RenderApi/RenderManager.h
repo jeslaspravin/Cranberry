@@ -12,8 +12,9 @@
 #pragma once
 
 #include "EngineRendererExports.h"
+#include "RenderTaskHelpers.h"
 #include "RenderInterface/CoreGraphicsTypes.h"
-#include "Types/Delegates/Delegate.h"
+#include "Types/Containers/ArrayView.h"
 
 #include <queue>
 
@@ -23,70 +24,40 @@ class IRenderTargetTexture;
 struct GenericRenderPassProperties;
 class GraphicsHelperAPI;
 
+/**
+ * All graphics or rendering related state full resources will be present here
+ */
 class ENGINERENDERER_EXPORT RenderManager
 {
 private:
-    GlobalRenderingContextBase *globalContext;
     IGraphicsInstance *graphicsInstanceCache;
+    const GraphicsHelperAPI *graphicsHelperCache;
 
-    using ImmediateExecuteCommandType = SingleCastDelegate<void, class IRenderCommandList *, IGraphicsInstance *, const GraphicsHelperAPI *>;
+    GlobalRenderingContextBase *globalContext;
     class IRenderCommandList *renderCmds;
-    std::queue<class IRenderCommand *> commands;
-
-    // TODO(Jeslas) : Once multi threaded rendering is added this should be changed to some TLS value
-    bool bIsInsideRenderCommand = false;
-
     // TODO(Commented) DelegateHandle onVsyncChangeHandle;
-public:
-private:
-    // Helpers
-    //
-    // Get generic render pass properties from Render targets
-    GenericRenderPassProperties renderpassPropsFromRTs(const std::vector<IRenderTargetTexture *> &rtTextures) const;
-
-    void createSingletons();
-
-    void enqueueCommand(class IRenderCommand *renderCommand);
-    void immediateExecCommand(ImmediateExecuteCommandType &&immediateCmd) const;
-    void executeAllCmds();
 
 public:
     RenderManager() = default;
     MAKE_TYPE_NONCOPY_NONMOVE(RenderManager)
 
-    void initialize(IGraphicsInstance *graphicsInstance);
+    RenderThreadEnqTask initialize(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
     void finalizeInit();
-    void destroy();
+    RenderThreadEnqTask destroy();
 
-    void renderFrame(const float &timedelta);
+    void renderFrame(float timedelta);
     GlobalRenderingContextBase *getGlobalRenderingContext() const;
+    IRenderCommandList *getRenderCmds() const;
 
     // Fills pipelineContext with info necessary to render using this particular requested pipeline, with
     // given framebuffer attachments
-    void preparePipelineContext(class LocalPipelineContext *pipelineContext, const std::vector<IRenderTargetTexture *> &rtTextures);
+    void preparePipelineContext(class LocalPipelineContext *pipelineContext, ArrayView<const IRenderTargetTexture *> rtTextures);
     void preparePipelineContext(class LocalPipelineContext *pipelineContext);
-    // Hint on render pass format in case of non generic renderpass is necessary
+    // Hint on render pass format in case of non generic render pass is necessary
     void clearExternInitRtsFramebuffer(
-        const std::vector<IRenderTargetTexture *> &rtTextures, ERenderPassFormat::Type rpFormat = ERenderPassFormat::Generic
+        ArrayView<const IRenderTargetTexture *> rtTextures, ERenderPassFormat::Type rpFormat = ERenderPassFormat::Generic
     );
 
-    void waitOnCommands();
-    // If initializing we assume it is executing as well
-    bool isExecutingCommands() const { return bIsInsideRenderCommand; }
-
-    template <typename RenderCmdClass>
-    static void issueRenderCommand(RenderManager *renderApi, typename RenderCmdClass::RenderCmdFunc &&renderCommandFn);
+private:
+    void createSingletons();
 };
-
-template <typename RenderCmdClass>
-void RenderManager::issueRenderCommand(RenderManager *renderApi, typename RenderCmdClass::RenderCmdFunc &&renderCommandFn)
-{
-    if (renderApi->bIsInsideRenderCommand)
-    {
-        renderApi->immediateExecCommand(ImmediateExecuteCommandType::createLambda(std::forward<decltype(renderCommandFn)>(renderCommandFn)));
-    }
-    else
-    {
-        renderApi->enqueueCommand(new RenderCmdClass(std::forward<typename RenderCmdClass::RenderCmdFunc>(renderCommandFn)));
-    }
-}

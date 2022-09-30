@@ -10,72 +10,138 @@
  */
 
 #pragma once
-#include "Memory/SmartPointers.h"
 #include "ProgramCoreExports.h"
 #include "String/StringFormat.h"
+#include "Types/CompilerDefines.h"
+
+#if HAS_SOURCE_LOCATION_FEATURE
+#include <source_location>
+#endif
 
 class GenericFile;
+class LoggerImpl;
+class CBESpinLock;
 
 class PROGRAMCORE_EXPORT Logger
 {
 public:
+#if HAS_SOURCE_LOCATION_FEATURE
+    using SourceLocationType = std::source_location;
+#else
+    struct SourceLocationType
+    {
+        const TChar *fileName = "";
+        const TChar *funcName = "";
+        uint32 lineNum = {};
+
+        constexpr static SourceLocationType current(const TChar *file, const TChar *func, uint32 line)
+        {
+            SourceLocationType retVal;
+            retVal.fileName = file;
+            retVal.funcName = func;
+            retVal.lineNum = line;
+            return retVal;
+        }
+
+        // Signature and names to match std::source_location
+        NODISCARD constexpr uint32 line() const noexcept { return lineNum; }
+        NODISCARD constexpr const TChar *file_name() const noexcept { return fileName; }
+        NODISCARD constexpr const TChar *function_name() const noexcept { return funcName; }
+    };
+#endif
+
     enum ELogServerity : uint8
     {
-        Debug = 1,
-        Log = 2,
-        Warning = 4,
-        Error = 8
+        Verbose = 1,
+        Debug = 2,
+        Log = 4,
+        Warning = 8,
+        Error = 16
     };
 
-    static const uint8 AllServerity = ELogServerity::Debug | ELogServerity::Log | ELogServerity::Warning | ELogServerity::Error;
+    enum ELogOutputType : uint8
+    {
+        File = 1,
+        Console = 2
+    };
+
+    constexpr static const uint8 AllServerity
+        = ELogServerity::Verbose | ELogServerity::Debug | ELogServerity::Log | ELogServerity::Warning | ELogServerity::Error;
+    constexpr static const uint8 AllOutputType = ELogOutputType::File | ELogOutputType::Console;
+
+    constexpr static const TChar *CONSOLE_FOREGROUND_RED = TCHAR("\x1b[31m");
+    constexpr static const TChar *CONSOLE_FOREGROUND_YELLOW = TCHAR("\x1b[33m");
+    constexpr static const TChar *CONSOLE_FOREGROUND_DEFAULT = TCHAR("\x1b[0m");
 
 private:
     Logger() = default;
 
-    static OStringStream &loggerBuffer();
-    static GenericFile *getLogFile();
-    static std::vector<uint8> &muteFlags();
+    struct LoggerAutoShutdown
+    {
+        ~LoggerAutoShutdown() { shutdown(); }
+    };
+    static LoggerAutoShutdown autoShutdown;
 
-    static void debugInternal(const TChar *category, const String &message);
-    static void logInternal(const TChar *category, const String &message);
-    static void warnInternal(const TChar *category, const String &message);
-    static void errorInternal(const TChar *category, const String &message);
+    static LoggerImpl *loggerImpl;
+
+#if ENABLE_VERBOSE_LOG
+    static void verboseInternal(const SourceLocationType srcLoc, const TChar *category, const String &message);
+#endif
+    static void debugInternal(const SourceLocationType srcLoc, const TChar *category, const String &message);
+    static void logInternal(const SourceLocationType srcLoc, const TChar *category, const String &message);
+    static void warnInternal(const SourceLocationType srcLoc, const TChar *category, const String &message);
+    static void errorInternal(const SourceLocationType srcLoc, const TChar *category, const String &message);
+
+    static CBESpinLock &consoleOutputLock();
+    static bool canLog(ELogServerity severity, ELogOutputType output);
+    static bool canLogTime();
 
 public:
+#if ENABLE_VERBOSE_LOG
+    template <typename CatType, typename FmtType, typename... Args>
+    DEBUG_INLINE CONST_EXPR static void verbose(const SourceLocationType srcLoc, CatType &&category, FmtType &&fmt, Args &&...args)
+    {
+        verboseInternal(
+            srcLoc, StringFormat::getChar<CatType>(std::forward<CatType>(category)),
+            StringFormat::format<FmtType, Args...>(std::forward<FmtType>(fmt), std::forward<Args>(args)...)
+        );
+    }
+#endif
+
     // && (Not necessary but nice to have this)passes the type as it is from the caller like r-values as
     // well else r-values gets converted to l-values on this call
     template <typename CatType, typename FmtType, typename... Args>
-    DEBUG_INLINE CONST_EXPR static void debug(CatType &&category, FmtType &&fmt, Args &&...args)
+    DEBUG_INLINE CONST_EXPR static void debug(const SourceLocationType srcLoc, CatType &&category, FmtType &&fmt, Args &&...args)
     {
         debugInternal(
-            StringFormat::getChar<CatType>(std::forward<CatType>(category)),
+            srcLoc, StringFormat::getChar<CatType>(std::forward<CatType>(category)),
             StringFormat::format<FmtType, Args...>(std::forward<FmtType>(fmt), std::forward<Args>(args)...)
         );
     }
 
     template <typename CatType, typename FmtType, typename... Args>
-    DEBUG_INLINE CONST_EXPR static void log(CatType &&category, FmtType &&fmt, Args &&...args)
+    DEBUG_INLINE CONST_EXPR static void log(const SourceLocationType srcLoc, CatType &&category, FmtType &&fmt, Args &&...args)
     {
         logInternal(
-            StringFormat::getChar<CatType>(std::forward<CatType>(category)),
+            srcLoc, StringFormat::getChar<CatType>(std::forward<CatType>(category)),
             StringFormat::format<FmtType, Args...>(std::forward<FmtType>(fmt), std::forward<Args>(args)...)
         );
     }
 
     template <typename CatType, typename FmtType, typename... Args>
-    DEBUG_INLINE CONST_EXPR static void warn(CatType &&category, FmtType &&fmt, Args &&...args)
+    DEBUG_INLINE CONST_EXPR static void warn(const SourceLocationType srcLoc, CatType &&category, FmtType &&fmt, Args &&...args)
     {
         warnInternal(
-            StringFormat::getChar<CatType>(std::forward<CatType>(category)),
+            srcLoc, StringFormat::getChar<CatType>(std::forward<CatType>(category)),
             StringFormat::format<FmtType, Args...>(std::forward<FmtType>(fmt), std::forward<Args>(args)...)
         );
     }
 
     template <typename CatType, typename FmtType, typename... Args>
-    DEBUG_INLINE CONST_EXPR static void error(CatType &&category, FmtType &&fmt, Args &&...args)
+    DEBUG_INLINE CONST_EXPR static void error(const SourceLocationType srcLoc, CatType &&category, FmtType &&fmt, Args &&...args)
     {
         errorInternal(
-            StringFormat::getChar<CatType>(std::forward<CatType>(category)),
+            srcLoc, StringFormat::getChar<CatType>(std::forward<CatType>(category)),
             StringFormat::format<FmtType, Args...>(std::forward<FmtType>(fmt), std::forward<Args>(args)...)
         );
     }
@@ -83,12 +149,30 @@ public:
     static void flushStream();
     static void pushMuteSeverities(uint8 muteSeverities);
     static void popMuteSeverities();
+
+    static void initialize();
+    static void shutdown();
+
+    static void startLoggingTime();
+    static void stopLoggingTime();
 };
 
-#define LOG_DEBUG(Category, Fmt, ...) Logger::debug(TCHAR(Category), TCHAR(Fmt), __VA_ARGS__)
-#define LOG(Category, Fmt, ...) Logger::log(TCHAR(Category), TCHAR(Fmt), __VA_ARGS__)
-#define LOG_WARN(Category, Fmt, ...) Logger::warn(TCHAR(Category), TCHAR(Fmt), __VA_ARGS__)
-#define LOG_ERROR(Category, Fmt, ...) Logger::error(TCHAR(Category), TCHAR(Fmt), __VA_ARGS__)
+#if HAS_SOURCE_LOCATION_FEATURE
+#define CURRENT_SRC_LOC() Logger::SourceLocationType::current()
+#else
+#define CURRENT_SRC_LOC() Logger::SourceLocationType::current(__FILE__, __func__, __LINE__)
+#endif
+
+#if ENABLE_VERBOSE_LOG
+#define LOG_VERBOSE(Category, Fmt, ...) Logger::verbose(CURRENT_SRC_LOC(), TCHAR(Category), TCHAR(Fmt), __VA_ARGS__)
+#else
+#define LOG_VERBOSE(Category, Fmt, ...)
+#endif
+
+#define LOG_DEBUG(Category, Fmt, ...) Logger::debug(CURRENT_SRC_LOC(), TCHAR(Category), TCHAR(Fmt), __VA_ARGS__)
+#define LOG(Category, Fmt, ...) Logger::log(CURRENT_SRC_LOC(), TCHAR(Category), TCHAR(Fmt), __VA_ARGS__)
+#define LOG_WARN(Category, Fmt, ...) Logger::warn(CURRENT_SRC_LOC(), TCHAR(Category), TCHAR(Fmt), __VA_ARGS__)
+#define LOG_ERROR(Category, Fmt, ...) Logger::error(CURRENT_SRC_LOC(), TCHAR(Category), TCHAR(Fmt), __VA_ARGS__)
 
 struct ScopedMuteLogServerity
 {

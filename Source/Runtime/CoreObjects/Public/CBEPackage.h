@@ -15,9 +15,9 @@
 
 #include "CBEPackage.gen.h"
 
-namespace CBE
+namespace cbe
 {
-inline constexpr static const TChar *PACKAGE_EXT = TCHAR("berry");
+constexpr inline const TChar *PACKAGE_EXT = TCHAR("berry");
 
 class META_ANNOTATE_API(COREOBJECTS_EXPORT) Package final : public Object
 {
@@ -34,12 +34,25 @@ public:
     FORCE_INLINE const String &getPackageName() const { return packageName; }
     FORCE_INLINE const String &getPackagePath() const { return packagePath; }
     FORCE_INLINE const String &getPackageRoot() const { return packageRoot; }
-    FORCE_INLINE void setPackageRoot(const String &root) { packageRoot = root; }
+    void setPackageRoot(const String &root);
 
     String getPackageFilePath() const;
 
-    /* CBE::Object overrides */
+    /* cbe::Object overrides */
     void destroy() override;
     /* Overrides ends */
+
+    /**
+     * cbe::Package::createPackage
+     *
+     * Access: public static
+     *
+     * @param const String & relativePath - Package path relative to contentDir
+     * @param const String & contentDir - Root directory under which the package must be saved or loaded from
+     * @param bool bForLoading - If package is create to load a package from directory? If dynamically created package then it should be false
+     *
+     * @return cbe::Package *
+     */
+    static Package *createPackage(const String &relativePath, const String &contentDir, bool bForLoading);
 };
-} // namespace CBE
+} // namespace cbe

@@ -12,7 +12,9 @@
 #include "CmdLine/CmdLine.h"
 #include "Logger/Logger.h"
 #include "Types/Platform/LFS/File/FileHelper.h"
-#include "Types/Platform/LFS/PlatformLFS.h"
+#include "Types/Platform/LFS/PathFunctions.h"
+#include "Types/Platform/LFS/Paths.h"
+#include "Types/Platform/PlatformAssertionErrors.h"
 
 #include <unordered_map>
 
@@ -119,8 +121,7 @@ bool ProgramCmdLine::parseViews(const std::vector<StringView> &strViews)
 
 bool ProgramCmdLine::parseFromFile(const String &filePath)
 {
-    String appDir;
-    appDir = FileSystemFunctions::applicationDirectory(appDir);
+    String appDir = Paths::applicationDirectory();
     String argFilePath = PathFunctions::toAbsolutePath(filePath, appDir);
 
     if (FileHelper::readString(argsCache, argFilePath))
@@ -333,8 +334,7 @@ void ProgramCmdLine::printCommandLine() const
     // Remove mute in this scope if log is muted
     SCOPED_MUTE_LOG_SEVERITIES(0);
 
-    String appName;
-    FileSystemFunctions::applicationDirectory(appName);
+    String appName = Paths::applicationName();
 
     String cmdLine;
     for (uint32 i = 1; i < cmdLineElements.size(); ++i)
@@ -380,7 +380,7 @@ bool ProgramCmdLine::getArg(std::vector<String> &outValues, const String &argNam
 
 String ProgramCmdLine::atIdx(uint32 idx) const
 {
-    fatalAssert(cmdLineElements.size() > idx, "%s() : Cmd line value idx %d out of range %lu", __func__, idx, cmdLineElements.size());
+    fatalAssertf(cmdLineElements.size() > idx, "Cmd line value idx %d out of range %lu", idx, cmdLineElements.size());
     return cmdLineElements[idx];
 }
 

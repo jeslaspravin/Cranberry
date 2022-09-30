@@ -17,9 +17,10 @@
 #include "Types/CoreTypes.h"
 
 #include <map>
-#include <memory_resource>
+//#include <memory_resource>
 #include <tuple>
 #include <type_traits>
+#include <vector>
 
 template <typename ReturnType, typename... Params>
 class IDelegate
@@ -354,6 +355,7 @@ public:
     void unbind() { delegatePtr.reset(); }
 
     bool isBound() const { return bool(delegatePtr); }
+    operator bool() const { return isBound(); }
 
     template <typename ObjectType>
     bool isBoundTo(const ObjectType *object) const
@@ -364,6 +366,10 @@ public:
 
 template <typename... Params>
 class MultiCastDelegateBase;
+
+//////////////////////////////////////////////////////////////////////////
+// SingleCast delegate and event implementations
+//////////////////////////////////////////////////////////////////////////
 
 /* Does not handle life time of object in delegates, needs to be externally handled */
 template <typename ReturnType, typename... Params>
@@ -381,6 +387,7 @@ public:
     ~SingleCastDelegate() { unbind(); }
 
     ReturnType invoke(Params... params) const { return delegatePtr->invoke(std::forward<Params>(params)...); }
+    ReturnType operator()(Params... params) const { return invoke(std::forward<Params>(params)...); }
 
     template <typename ObjectType, typename... Variables>
     static std::enable_if_t<std::negation_v<std::is_const<ObjectType>>, SingleCastDelegate> createObject(
@@ -438,6 +445,10 @@ public:
     using SingleCastDelegateBase<ReturnType, Params...>::unbind;
     ~SingleCastEvent() { unbind(); }
 };
+
+//////////////////////////////////////////////////////////////////////////
+// Multicast delegates
+//////////////////////////////////////////////////////////////////////////
 
 template <typename... Params>
 class MultiCastDelegateBase
@@ -608,6 +619,7 @@ public:
     }
 
     bool isBound() const { return !allDelegates.empty(); }
+    operator bool() const { return isBound(); }
 
     void clear();
 };
@@ -618,19 +630,64 @@ void MultiCastDelegateBase<Params...>::clear()
     allDelegates.clear();
 }
 
+//////////////////////////////////////////////////////////////////////////
+// Delegate and Event implementations
+//////////////////////////////////////////////////////////////////////////
+
+template <typename... Params>
+FORCE_INLINE void invokeHelper(const std::map<int32, SharedPtr<IDelegate<void, Params...>>> &allDelegates, Params... params)
+{
+    if (allDelegates.empty())
+        return;
+
+    int32 buffer[128];
+    // <memory_resource> is huge header so not using it in delegate
+    // TODO(Jeslas) : Improve this with some form of inline allocator in the future
+    // std::pmr::monotonic_buffer_resource bufferRes(buffer, ARRAY_LENGTH(buffer) * sizeof(uint32));
+    // std::pmr::vector<int32> delegateIndices(&bufferRes);
+    int32 *delegateIndices = buffer;
+    if (allDelegates.size() > ARRAY_LENGTH(buffer))
+    {
+        delegateIndices = new int32[allDelegates.size()];
+    }
+
+    uint32 delegateIndicesIdx = 0;
+    for (const std::pair<const int32, SharedPtr<IDelegate<void, Params...>>> &delegateInterface : allDelegates)
+    {
+        delegateIndices[delegateIndicesIdx] = delegateInterface.first;
+        delegateIndicesIdx++;
+    }
+
+    uint32 allDelegatesCount = uint32(allDelegates.size());
+    for (delegateIndicesIdx = 0; delegateIndicesIdx < allDelegatesCount; ++delegateIndicesIdx)
+    {
+        auto itr = allDelegates.find(delegateIndices[delegateIndicesIdx]);
+        if (itr != allDelegates.cend())
+        {
+            itr->second->invoke(std::forward<Params>(params)...);
+        }
+    }
+
+    if (allDelegatesCount > ARRAY_LENGTH(buffer))
+    {
+        delete[] delegateIndices;
+    }
+}
+
 /* Does not handle life time of object in delegates, needs to be externally handled */
 template <typename... Params>
 class Delegate : public MultiCastDelegateBase<Params...>
 {
 private:
-    using MultiCastDelegateBase<Params...>::DelegateInterface;
+    using typename MultiCastDelegateBase<Params...>::DelegateInterface;
     using MultiCastDelegateBase<Params...>::allDelegates;
 
 public:
     using MultiCastDelegateBase<Params...>::clear;
     ~Delegate();
 
-    void invoke(Params... params) const;
+    void invoke(Params... params) const { invokeHelper<Params...>(allDelegates, std::forward<Params>(params)...); }
+    void operator()(Params... params) const { invoke(std::forward<Params>(params)...); }
 };
 
 using SimpleDelegate = Delegate<>;
@@ -641,42 +698,17 @@ Delegate<Params...>::~Delegate()
     clear();
 }
 
-template <typename... Params>
-void Delegate<Params...>::invoke(Params... params) const
-{
-    if (allDelegates.empty())
-        return;
-
-    uint32 buffer[128];
-    std::pmr::monotonic_buffer_resource bufferRes(buffer, ARRAY_LENGTH(buffer) * sizeof(uint32));
-    std::pmr::vector<int32> delegateIndices(&bufferRes);
-
-    for (const std::pair<const int32, SharedPtr<DelegateInterface>> &delegateInterface : allDelegates)
-    {
-        delegateIndices.emplace_back(delegateInterface.first);
-    }
-
-    for (const int32 &delegateIdx : delegateIndices)
-    {
-        auto itr = allDelegates.find(delegateIdx);
-        if (itr != allDelegates.cend())
-        {
-            itr->second->invoke(std::forward<Params>(params)...);
-        }
-    }
-}
-
 /* Does not handle life time of object delegates needs to be externally handled */
 template <typename OwnerType, typename... Params>
 class Event : public MultiCastDelegateBase<Params...>
 {
 private:
-    using MultiCastDelegateBase<Params...>::DelegateInterface;
+    using typename MultiCastDelegateBase<Params...>::DelegateInterface;
     using MultiCastDelegateBase<Params...>::allDelegates;
 
     friend OwnerType;
 
-    void invoke(Params... params) const;
+    void invoke(Params... params) const { invokeHelper<Params...>(allDelegates, std::forward<Params>(params)...); }
 
 public:
     using MultiCastDelegateBase<Params...>::clear;
@@ -687,31 +719,6 @@ template <typename OwnerType, typename... Params>
 Event<OwnerType, Params...>::~Event()
 {
     clear();
-}
-
-template <typename OwnerType, typename... Params>
-void Event<OwnerType, Params...>::invoke(Params... params) const
-{
-    if (allDelegates.empty())
-        return;
-
-    uint32 buffer[128];
-    std::pmr::monotonic_buffer_resource bufferRes(buffer, ARRAY_LENGTH(buffer) * sizeof(uint32));
-    std::pmr::vector<int32> delegateIndices(&bufferRes);
-
-    for (const std::pair<const int32, SharedPtr<DelegateInterface>> &delegateInterface : allDelegates)
-    {
-        delegateIndices.emplace_back(delegateInterface.first);
-    }
-
-    for (const int32 &delegateIdx : delegateIndices)
-    {
-        auto itr = allDelegates.find(delegateIdx);
-        if (itr != allDelegates.cend())
-        {
-            itr->second->invoke(std::forward<Params>(params)...);
-        }
-    }
 }
 
 using SimpleSingleCastDelegate = SingleCastDelegate<void>;

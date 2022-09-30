@@ -25,15 +25,15 @@ VulkanSemaphore::VulkanSemaphore(const VulkanDevice *deviceInstance)
     , semaphore(nullptr)
 {}
 
-void VulkanSemaphore::waitForSignal() const { LOG_WARN("VulkanSemaphore", "%s() : Cannot wait on binary semaphores from host", __func__); }
+void VulkanSemaphore::waitForSignal() const { LOG_WARN("VulkanSemaphore", "Cannot wait on binary semaphores from host"); }
 
 bool VulkanSemaphore::isSignaled() const
 {
-    LOG_WARN("VulkanSemaphore", "%s() : Cannot check state on binary semaphores from host", __func__);
+    LOG_WARN("VulkanSemaphore", "Cannot check state on binary semaphores from host");
     return false;
 }
 
-void VulkanSemaphore::resetSignal() { LOG_WARN("VulkanSemaphore", "%s() : Cannot reset state on binary semaphores from host", __func__); }
+void VulkanSemaphore::resetSignal() { LOG_WARN("VulkanSemaphore", "Cannot reset state on binary semaphores from host"); }
 
 void VulkanSemaphore::init()
 {
@@ -45,7 +45,7 @@ void VulkanSemaphore::reinitResources()
 {
     release();
     BaseType::reinitResources();
-    fatalAssert(ownerDevice && vulkanDevice, "Required devices cannot be null");
+    fatalAssertf(ownerDevice && vulkanDevice, "Required devices cannot be null");
     VkSemaphore nextSemaphore;
 
     CREATE_SEMAPHORE_INFO(semaphoreCreateInfo);
@@ -56,13 +56,13 @@ void VulkanSemaphore::reinitResources()
     }
     else
     {
-        LOG_ERROR("VulkanSemaphore", "%s() : Reinit failed to create new semaphore", __func__);
+        LOG_ERROR("VulkanSemaphore", "Reinit failed to create new semaphore");
     }
 }
 
 void VulkanSemaphore::release()
 {
-    fatalAssert(ownerDevice && vulkanDevice, "Required devices cannot be null");
+    fatalAssertf(ownerDevice && vulkanDevice, "Required devices cannot be null");
     if (semaphore)
     {
         vulkanDevice->vkDestroySemaphore(ownerDevice, semaphore, nullptr);
@@ -96,7 +96,7 @@ void VulkanTimelineSemaphore::waitForSignal(uint64 value) const
         waitInfo.pSemaphores = &semaphore;
         waitInfo.semaphoreCount = 1;
         waitInfo.pValues = &value;
-        vulkanDevice->TIMELINE_SEMAPHORE_TYPE(vkWaitSemaphores)(ownerDevice, &waitInfo, GlobalRenderVariables::MAX_SYNC_RES_WAIT_TIME.get());
+        vulkanDevice->vkWaitSemaphores(ownerDevice, &waitInfo, GlobalRenderVariables::MAX_SYNC_RES_WAIT_TIME.get());
     }
 }
 
@@ -112,9 +112,9 @@ void VulkanTimelineSemaphore::resetSignal(uint64 value)
         signalInfo.semaphore = semaphore;
         signalInfo.value = value;
 
-        if (vulkanDevice->TIMELINE_SEMAPHORE_TYPE(vkSignalSemaphore)(ownerDevice, &signalInfo) != VK_SUCCESS)
+        if (vulkanDevice->vkSignalSemaphore(ownerDevice, &signalInfo) != VK_SUCCESS)
         {
-            LOG_ERROR("VulkanTimelineSemaphore", "%s() : Signaling to value %d failed", __func__, value);
+            LOG_ERROR("VulkanTimelineSemaphore", "Signaling to value %d failed", value);
         }
     }
 }
@@ -124,7 +124,7 @@ uint64 VulkanTimelineSemaphore::currentValue() const
     uint64 counter = 0;
     if (GlobalRenderVariables::ENABLED_TIMELINE_SEMAPHORE.get())
     {
-        vulkanDevice->TIMELINE_SEMAPHORE_TYPE(vkGetSemaphoreCounterValue)(ownerDevice, semaphore, &counter);
+        vulkanDevice->vkGetSemaphoreCounterValue(ownerDevice, semaphore, &counter);
     }
     return counter;
 }
@@ -149,7 +149,7 @@ void VulkanTimelineSemaphore::reinitResources()
         semaphore = nullptr;
         return;
     }
-    fatalAssert(ownerDevice && vulkanDevice, "Required devices cannot be null");
+    fatalAssertf(ownerDevice && vulkanDevice, "Required devices cannot be null");
     VkSemaphore nextSemaphore;
 
     CREATE_SEMAPHORE_INFO(semaphoreCreateInfo);
@@ -163,13 +163,13 @@ void VulkanTimelineSemaphore::reinitResources()
     }
     else
     {
-        LOG_ERROR("VulkanSemaphore", "%s() : Reinit failed to create new semaphore", __func__);
+        LOG_ERROR("VulkanSemaphore", "Reinit failed to create new semaphore");
     }
 }
 
 void VulkanTimelineSemaphore::release()
 {
-    fatalAssert(ownerDevice && vulkanDevice, "Required devices cannot be null");
+    fatalAssertf(ownerDevice && vulkanDevice, "Required devices cannot be null");
     if (semaphore)
     {
         vulkanDevice->vkDestroySemaphore(ownerDevice, semaphore, nullptr);
@@ -198,7 +198,7 @@ void VulkanFence::waitForSignal() const
 
     if (result == VK_TIMEOUT)
     {
-        LOG_WARN("VulkanFence", "%s() : waiting for fence timedout", __func__);
+        LOG_WARN("VulkanFence", "waiting for fence timedout");
     }
 }
 
@@ -216,7 +216,7 @@ void VulkanFence::reinitResources()
 {
     release();
     BaseType::reinitResources();
-    fatalAssert(ownerDevice && vulkanDevice, "Required devices cannot be null");
+    fatalAssertf(ownerDevice && vulkanDevice, "Required devices cannot be null");
     VkFence nextFence;
 
     CREATE_FENCE_INFO(fenceCreateInfo);
@@ -228,7 +228,7 @@ void VulkanFence::reinitResources()
     }
     else
     {
-        LOG_ERROR("VulkanFence", "%s() : Failed recreating fence", __func__);
+        LOG_ERROR("VulkanFence", "Failed recreating fence");
     }
 }
 
@@ -245,3 +245,68 @@ void VulkanFence::release()
 String VulkanFence::getObjectName() const { return getResourceName(); }
 
 uint64 VulkanFence::getDispatchableHandle() const { return (uint64)fence; }
+
+//////////////////////////////////////////////////////////////////////////
+// VulkanEvent
+//////////////////////////////////////////////////////////////////////////
+
+DEFINE_VK_GRAPHICS_RESOURCE(VulkanEvent, VK_OBJECT_TYPE_EVENT)
+
+bool VulkanEvent::isSignaled() const
+{
+    debugAssertf(!bDeviceOnly, "Trying to get state of device only event!");
+    if (!bDeviceOnly && vulkanEvent != VK_NULL_HANDLE)
+    {
+        return vulkanDevice->vkGetEventStatus(ownerDevice, vulkanEvent) == VkResult::VK_EVENT_SET;
+    }
+    return false;
+}
+
+void VulkanEvent::resetSignal()
+{
+    if (vulkanEvent != VK_NULL_HANDLE)
+    {
+        vulkanDevice->vkResetEvent(ownerDevice, vulkanEvent);
+    }
+}
+
+void VulkanEvent::init()
+{
+    BaseType::init();
+    reinitResources();
+}
+
+void VulkanEvent::reinitResources()
+{
+    release();
+    BaseType::reinitResources();
+
+    fatalAssertf(ownerDevice && vulkanDevice, "Required devices cannot be null");
+    VkEvent newEvent;
+
+    CREATE_EVENT_INFO(eventCreateInfo);
+    eventCreateInfo.flags = bDeviceOnly ? VK_EVENT_CREATE_DEVICE_ONLY_BIT_KHR : 0;
+    if (vulkanDevice->vkCreateEvent(ownerDevice, &eventCreateInfo, nullptr, &newEvent) == VK_SUCCESS)
+    {
+        vulkanEvent = newEvent;
+        vulkanDevice->debugGraphics()->markObject(this);
+    }
+    else
+    {
+        LOG_ERROR("VulkanFence", "Failed recreating event %s", getResourceName());
+    }
+}
+
+void VulkanEvent::release()
+{
+    if (vulkanEvent && vulkanEvent != VK_NULL_HANDLE)
+    {
+        vulkanDevice->vkDestroyEvent(ownerDevice, vulkanEvent, nullptr);
+        vulkanEvent = nullptr;
+    }
+    BaseType::release();
+}
+
+String VulkanEvent::getObjectName() const { return getResourceName(); }
+
+uint64 VulkanEvent::getDispatchableHandle() const { return (uint64)vulkanEvent; }

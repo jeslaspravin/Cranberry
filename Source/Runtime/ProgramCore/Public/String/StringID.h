@@ -11,15 +11,17 @@
 
 #pragma once
 
-#include "Serialization/ArchiveBase.h"
+#include "Serialization/ArchiveTypes.h"
 #include "Types/xxHash/xxHashInclude.hpp"
 
 #if DEV_BUILD
 #define STRINGID_FUNCQUALIFIER FORCE_INLINE
 #define STRINGID_CONSTEXPR
+#define HAS_STRINGID_CONSTEXPR 0
 #else // DEV_BUILD
 #define STRINGID_FUNCQUALIFIER CONST_EXPR
 #define STRINGID_CONSTEXPR CONST_EXPR
+#define HAS_STRINGID_CONSTEXPR 1
 #endif // DEV_BUILD
 
 #ifndef STRINGID_HASHFUNC
@@ -31,8 +33,6 @@ inline namespace Literals
 {
 NODISCARD STRINGID_FUNCQUALIFIER StringID operator"" _sid(const TChar *str, SizeT len) noexcept;
 }
-template <ArchiveType ArchiveType>
-ArchiveType &operator<<(ArchiveType &archive, StringID &value);
 
 class PROGRAMCORE_EXPORT StringID
 {
@@ -43,7 +43,7 @@ private:
     IDType id;
 
     friend STRINGID_FUNCQUALIFIER StringID Literals::operator"" _sid(const TChar *str, SizeT len) noexcept;
-    template <ArchiveType ArchiveType>
+    template <ArchiveTypeName ArchiveType>
     friend ArchiveType &operator<<(ArchiveType &archive, StringID &value);
 
     CONST_INIT static const IDType Seed = STRINGID_HASHFUNC(TCHAR("Cranberry_StringID"), IDType(0));
@@ -67,6 +67,11 @@ private:
         : id(strId)
     {
         insertDbgStr(String(debugStr, len));
+    }
+    explicit StringID(IDType strId)
+        : id(strId)
+    {
+        debugStrings = &debugStringDB();
     }
 #else
     CONST_EXPR StringID(IDType strId)
@@ -95,7 +100,7 @@ public:
         : id(0)
     {}
     // Additional constructors
-    FORCE_INLINE StringID(const String &str)
+    FORCE_INLINE explicit StringID(const String &str)
         : id(STRINGID_HASHFUNC(str, Seed))
     {
         insertDbgStr(str);
@@ -111,18 +116,21 @@ public:
     STRINGID_FUNCQUALIFIER
     StringID(const WChar *str) { initFromAChar(TCHAR_TO_UTF8(WCHAR_TO_TCHAR(str))); }
     // Additional assignments
-    FORCE_INLINE StringID &operator=(const String &str)
+    FORCE_INLINE
+    StringID &operator=(const String &str)
     {
         id = STRINGID_HASHFUNC(str, Seed);
         insertDbgStr(str);
         return *this;
     }
-    STRINGID_FUNCQUALIFIER StringID &operator=(const AChar *str)
+    STRINGID_FUNCQUALIFIER
+    StringID &operator=(const AChar *str)
     {
         initFromAChar(str);
         return *this;
     }
-    STRINGID_FUNCQUALIFIER StringID &operator=(const WChar *str)
+    STRINGID_FUNCQUALIFIER
+    StringID &operator=(const WChar *str)
     {
         initFromAChar(TCHAR_TO_UTF8(WCHAR_TO_TCHAR(str)));
         return *this;
@@ -135,6 +143,7 @@ public:
     /**
      * toString will return id integer as string in release build
      * NOTE : Do not use this toString for any purpose other than debug logging
+     * Use NameString if you need toString() for logic
      */
     FORCE_INLINE String toString() const
     {
@@ -174,11 +183,5 @@ struct PROGRAMCORE_EXPORT std::hash<StringID>
 {
     NODISCARD SizeT operator()(const StringID &keyval) const noexcept { return keyval.getID(); }
 };
-
-template <ArchiveType ArchiveType>
-ArchiveType &operator<<(ArchiveType &archive, StringID &value)
-{
-    return archive << value.id;
-}
 
 #undef STRINGID_FUNCQUALIFIER

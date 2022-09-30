@@ -37,7 +37,7 @@ String ShaderCodeResource::getResourceName() const { return shaderFileName; }
 
 EShaderStage::Type ShaderCodeResource::shaderStage() const
 {
-    fatalAssert(false, "Not implemented");
+    fatalAssertf(false, "Not implemented");
     return EShaderStage::Compute /*0*/;
 }
 
@@ -95,12 +95,12 @@ void ShaderResource::release()
 
 String ShaderResource::getResourceName() const { return shaderConfig->getResourceName(); }
 
-void ShaderResource::bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const
+void ShaderResource::bindBufferParamInfo(std::map<StringID, struct ShaderBufferDescriptorType *> &bindingBuffers) const
 {
     shaderConfig->bindBufferParamInfo(bindingBuffers);
 }
 
-void ShaderResource::getSpecializationConsts(std::map<String, struct SpecializationConstantEntry> &specializationConst) const
+void ShaderResource::getSpecializationConsts(SpecConstantNamedMap &specializationConst) const
 {
     shaderConfig->getSpecializationConsts(specializationConst);
 }

@@ -14,13 +14,13 @@
 #include <vector> // TODO(Jeslas) : change vector ptrs to const ref vectors
 
 #include "EngineRendererExports.h"
+#include "Types/CoreTypes.h"
 #include "Memory/SmartPointers.h"
 #include "RenderInterface/Resources/DeferredDeleter.h"
 #include "RenderInterface/Resources/GenericWindowCanvas.h"
 #include "RenderInterface/Resources/GraphicsSyncResource.h"
 #include "RenderInterface/Resources/Samplers/SamplerInterface.h"
 #include "RenderInterface/ShaderCore/ShaderParameterResources.h"
-#include "Types/CoreTypes.h"
 
 class GlobalRenderingContextBase;
 class ShaderConfigCollector;
@@ -42,6 +42,10 @@ enum Type;
 }
 /* Fwd declarations end */
 
+/**
+ * Helper functions that are related to general helper functions and are stateless. Using instance to allow virtual calls to API specific
+ * functions
+ */
 class ENGINERENDERER_EXPORT GraphicsHelperAPI
 {
 public:
@@ -125,6 +129,9 @@ public:
     virtual void markForDeletion(
         class IGraphicsInstance *graphicsInstance, GraphicsResource *resource, EDeferredDelStrategy deleteStrategy, TickRep duration = 1
     ) const = 0;
+    virtual void markForDeletion(
+        class IGraphicsInstance *graphicsInstance, SimpleSingleCastDelegate deleter, EDeferredDelStrategy deleteStrategy, TickRep duration = 1
+    ) const = 0;
 
     // Pipelines
     virtual PipelineBase *createGraphicsPipeline(class IGraphicsInstance *graphicsInstance, const PipelineBase *parent) const = 0;
@@ -145,6 +152,7 @@ public:
     virtual void initializeSwapchainFb(class IGraphicsInstance *graphicsInstance, Framebuffer *fb, WindowCanvasRef canvas, uint32 swapchainIdx)
         const = 0;
 
+    // All write buffers are storage buffers, Read buffers means that can be used as Uniform
     virtual const GraphicsResourceType *readOnlyBufferType() const = 0;
     virtual const GraphicsResourceType *writeOnlyBufferType() const = 0;
     virtual const GraphicsResourceType *readWriteBufferType() const = 0;
@@ -155,6 +163,26 @@ public:
     virtual const GraphicsResourceType *readOnlyVertexBufferType() const = 0;
     virtual const GraphicsResourceType *readOnlyIndirectBufferType() const = 0;
     virtual const GraphicsResourceType *writeOnlyIndirectBufferType() const = 0;
+    FORCE_INLINE bool isReadOnlyBuffer(BufferResourceRef resource) const
+    {
+        return resource->getType()->isChildOf(readOnlyBufferType()) || resource->getType()->isChildOf(readOnlyTexelsType())
+               || resource->getType()->isChildOf(readOnlyIndexBufferType()) || resource->getType()->isChildOf(readOnlyVertexBufferType())
+               || resource->getType()->isChildOf(readOnlyIndirectBufferType());
+    }
+    FORCE_INLINE bool isWriteOnlyBuffer(BufferResourceRef resource) const
+    {
+        return resource->getType()->isChildOf(writeOnlyBufferType()) || resource->getType()->isChildOf(writeOnlyTexelsType())
+               || resource->getType()->isChildOf(writeOnlyIndirectBufferType());
+    }
+    FORCE_INLINE bool isRWBuffer(BufferResourceRef resource) const
+    {
+        return resource->getType()->isChildOf(readWriteBufferType()) || resource->getType()->isChildOf(readWriteTexelsType());
+    }
+    FORCE_INLINE bool isTexelBuffer(BufferResourceRef resource) const
+    {
+        return resource->getType()->isChildOf(readOnlyTexelsType()) || resource->getType()->isChildOf(writeOnlyTexelsType())
+               || resource->getType()->isChildOf(readWriteTexelsType());
+    }
 
     virtual const GraphicsResourceType *imageType() const = 0;
     virtual const GraphicsResourceType *cubeImageType() const = 0;

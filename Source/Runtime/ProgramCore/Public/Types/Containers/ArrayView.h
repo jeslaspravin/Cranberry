@@ -14,7 +14,13 @@
 #include "Math/Math.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 
-#include <vector>
+template <typename ElementType>
+class ArrayView;
+
+template <typename T>
+concept ArrayViewVectorQualifierInternal = IndexableCompound<T> &&(!std::same_as<T, ArrayView<typename T::value_type>>);
+template <typename T>
+concept ArrayViewVectorQualifier = ArrayViewVectorQualifierInternal<std::remove_cvref_t<T>>;
 
 template <typename ElementType>
 class ArrayView
@@ -22,7 +28,9 @@ class ArrayView
 public:
     using value_type = ElementType;
     using pointer = ElementType *;
+    using const_pointer = ElementType const *;
     using reference = ElementType &;
+    using const_reference = ElementType const &;
 
     template <bool bIsConst>
     class Iterator
@@ -49,7 +57,7 @@ public:
             : arrayView(&view)
             , idx(itrIdx)
         {
-            fatalAssert(arrayView && idx >= 0 && arrayView->length >= idx, "Invalid iterator data");
+            fatalAssertf(arrayView && idx >= 0 && arrayView->length >= idx, "Invalid iterator data");
         }
 
         pointer operator->() const noexcept
@@ -108,6 +116,8 @@ public:
 
         NODISCARD Iterator operator-(const difference_type off) const noexcept { return Iterator(*arrayView, idx - off); }
 
+        NODISCARD difference_type operator-(const Iterator &other) const noexcept { return idx - other.idx; }
+
         NODISCARD reference operator[](const difference_type off) const noexcept
         {
             debugAssert(arrayView && (idx + off) >= 0 && arrayView->length > (idx + off));
@@ -121,68 +131,83 @@ public:
     using const_reverse_iterator = std::reverse_iterator<Iterator<true>>;
 
 private:
-    pointer dataPtr;
-    SizeT offset;
-    SizeT length;
+    pointer dataPtr = nullptr;
+    SizeT offset = 0;
+    SizeT length = 0;
 
 public:
-    ArrayView()
-        : dataPtr(nullptr)
-        , offset(0)
-        , length(0)
+    ArrayView() = default;
+    MAKE_TYPE_DEFAULT_COPY_MOVE(ArrayView)
+
+    template <ArrayViewVectorQualifier T>
+    ArrayView(T &parent, SizeT inOffset = 0)
+        : dataPtr(parent.data())
+        , offset(Math::min(inOffset, SizeT(parent.size() - 1)))
+        , length(SizeT(parent.size() - offset))
+    {}
+    template <ArrayViewVectorQualifier T>
+    ArrayView(T &parent, SizeT inLength, SizeT inOffset = 0)
+        : dataPtr(parent.data())
+        , offset(Math::min(inOffset, SizeT(parent.size() - 1)))
+        , length(Math::min(inLength, SizeT(parent.size() - offset)))
+    {}
+    template <ArrayViewVectorQualifier T>
+    ArrayView &operator=(T &&parent)
+    {
+        dataPtr = parent.data();
+        offset = 0;
+        length = parent.size();
+        return *this;
+    }
+
+    CONST_EXPR ArrayView(pointer parentData, SizeT parentSize, SizeT inOffset = 0)
+        : dataPtr(parentData)
+        , offset(Math::min(inOffset, parentSize - 1))
+        , length(parentSize - offset)
     {}
 
-    ArrayView(std::vector<value_type> &parent, SizeT inOffset = 0)
-    {
-        dataPtr = parent.data();
-        offset = Math::min(inOffset, SizeT(parent.size() - 1));
-        length = SizeT(parent.size() - offset);
-    }
-
-    ArrayView(std::vector<value_type> &parent, SizeT inLength, SizeT inOffset = 0)
-    {
-        dataPtr = parent.data();
-        offset = Math::min(inOffset, SizeT(parent.size() - 1));
-        length = Math::min(inLength, SizeT(parent.size() - offset));
-    }
-
-    ArrayView(pointer parentData, SizeT parentSize, SizeT inOffset = 0)
+    template <typename T, SizeT N>
+    CONST_EXPR ArrayView(T (&parentData)[N])
+        : dataPtr(parentData)
+        , offset(0)
+        , length(N)
+    {}
+    template <typename T, SizeT N>
+    CONST_EXPR ArrayView &operator=(T (&parentData)[N])
     {
         dataPtr = parentData;
-        offset = Math::min(inOffset, parentSize - 1);
-        length = parentSize - offset;
+        offset = 0;
+        length = N;
+        return *this;
     }
 
-    SizeT size() const { return length; }
-
+    CONST_EXPR SizeT size() const { return length; }
     NODISCARD bool empty() const { return length == 0; }
+    CONST_EXPR pointer data() const { return dataPtr + offset; }
+    CONST_EXPR pointer ptr() const { return dataPtr; }
 
-    pointer data() { return dataPtr + offset; }
+    CONST_EXPR reference front() const { return *data(); }
+    CONST_EXPR reference back() const { return *(data() + (length - 1)); }
 
-    const pointer data() const { return dataPtr + offset; }
-
-    reference operator[](SizeT idx)
+    CONST_EXPR void reset()
     {
-        fatalAssert(idx < length, "Invalid index %d", idx);
+        offset = 0;
+        length = 0;
+        dataPtr = nullptr;
+    }
+
+    reference operator[](SizeT idx) const
+    {
+        fatalAssertf(idx < length, "Invalid index %d", idx);
         return dataPtr[offset + idx];
     }
 
-    const reference operator[](SizeT idx) const
-    {
-        fatalAssert(idx < length, "Invalid index %d", idx);
-        return dataPtr[offset + idx];
-    }
-
-    NODISCARD iterator begin() noexcept { return iterator(*this, 0); }
-    NODISCARD const_iterator begin() const noexcept { return const_iterator(*this, 0); }
-    NODISCARD iterator end() noexcept { return iterator(*this, length); }
-    NODISCARD const_iterator end() const noexcept { return const_iterator(*this, length); }
-    NODISCARD reverse_iterator rbegin() noexcept { return reverse_iterator(end()); }
-    NODISCARD const_reverse_iterator rbegin() const noexcept { return const_reverse_iterator(end()); }
-    NODISCARD reverse_iterator rend() noexcept { return reverse_iterator(begin()); }
-    NODISCARD const_reverse_iterator rend() const noexcept { return const_reverse_iterator(begin()); }
-    NODISCARD const_iterator cbegin() const noexcept { return begin(); }
-    NODISCARD const_iterator cend() const noexcept { return end(); }
-    NODISCARD const_reverse_iterator crbegin() const noexcept { return rbegin(); }
-    NODISCARD const_reverse_iterator crend() const noexcept { return rend(); }
+    NODISCARD iterator begin() const noexcept { return iterator(*this, 0); }
+    NODISCARD iterator end() const noexcept { return iterator(*this, length); }
+    NODISCARD reverse_iterator rbegin() const noexcept { return reverse_iterator(end()); }
+    NODISCARD reverse_iterator rend() const noexcept { return reverse_iterator(begin()); }
+    NODISCARD const_iterator cbegin() const noexcept { return const_iterator(*this, 0); }
+    NODISCARD const_iterator cend() const noexcept { return const_iterator(*this, length); }
+    NODISCARD const_reverse_iterator crbegin() const noexcept { return const_reverse_iterator(cend()); }
+    NODISCARD const_reverse_iterator crend() const noexcept { return const_reverse_iterator(cbegin()); }
 };

@@ -49,70 +49,6 @@ private:
     SparseVector<Node, BitArraySparsityPolicy> nodes;
     std::vector<ValueType> treeData;
 
-private:
-    FORCE_INLINE void resizeDataToIndex(NodeIdx idx)
-    {
-        if (idx >= treeData.size())
-            treeData.resize(idx + 1);
-    }
-
-    // Removes child from parent's child list, Assumes both parent and child idx are valid
-    void unlinkChildFrom(NodeIdx parentIdx, NodeIdx childIdx)
-    {
-        Node *currNode = &nodes[parentIdx];
-        // If parent has no child leave
-        if (currNode->firstChild == InvalidIdx)
-            return;
-        // If first child is the child we are looking for?
-        if (currNode->firstChild == childIdx)
-        {
-            Node &sibling = nodes[currNode->firstChild];
-            currNode->firstChild = sibling.nextSibling;
-            sibling.nextSibling = InvalidIdx; // Mark as invalid index, As if we are just changing
-                                              // hierarchy it is important
-            sibling.parent = InvalidIdx;
-            return;
-        }
-
-        // First child is not the expected so go through the nextSiblings until found/end
-        currNode = &nodes[currNode->firstChild];
-        while (currNode->nextSibling != InvalidIdx)
-        {
-            if (currNode->nextSibling == childIdx)
-            {
-                Node &sibling = nodes[currNode->nextSibling];
-                currNode->nextSibling = sibling.nextSibling;
-                sibling.nextSibling = InvalidIdx; // Mark as invalid index, As if we are just
-                                                  // changing hierarchy it is important
-                sibling.parent = InvalidIdx;
-                return;
-            }
-            currNode = &nodes[currNode->nextSibling];
-        }
-    }
-    void linkChildTo(NodeIdx parentIdx, NodeIdx childIdx)
-    {
-        nodes[childIdx].parent = parentIdx;
-        nodes[childIdx].nextSibling = InvalidIdx; // Just being double secure
-
-        Node *currNode = &nodes[parentIdx];
-        // No child for this parent
-        if (currNode->firstChild == InvalidIdx)
-        {
-            currNode->firstChild = childIdx;
-            return;
-        }
-
-        currNode = &nodes[currNode->firstChild];
-        while (currNode->nextSibling != InvalidIdx)
-        {
-            currNode = &nodes[currNode->nextSibling];
-        }
-        currNode->nextSibling = childIdx;
-    }
-
-    void printTree(OutputStream &stream, NodeIdx parent, const String &prefix) const;
-
 public:
     // Read functions
     FORCE_INLINE SizeType size() const { return (SizeType)nodes.size(); }
@@ -121,17 +57,17 @@ public:
 
     FORCE_INLINE reference operator[](NodeIdx index) noexcept
     {
-        fatalAssert(isValid(index), "Index %llu is invalid", index);
+        fatalAssertf(isValid(index), "Index %llu is invalid", index);
         return treeData[index];
     }
     FORCE_INLINE const_reference operator[](NodeIdx index) const noexcept
     {
-        fatalAssert(isValid(index), "Index %llu is invalid", index);
+        fatalAssertf(isValid(index), "Index %llu is invalid", index);
         return treeData[index];
     }
     FORCE_INLINE const Node &getNode(NodeIdx index) const noexcept
     {
-        fatalAssert(isValid(index), "Index %llu is invalid", index);
+        fatalAssertf(isValid(index), "Index %llu is invalid", index);
         return nodes[index];
     }
 
@@ -145,7 +81,7 @@ public:
         {
             return;
         }
-#if 0 // Minimum stack memory foot print but does depth first traversal
+#if 0 // Minimum stack memory foot print but does depth first traversal, This is not used as well
         const Node *currNode = &nodes[nodes[parent].firstChild];
         children.emplace_back(currNode->index);
         if (bRecurse)
@@ -191,6 +127,7 @@ public:
     }
     FORCE_INLINE void getAll(std::vector<NodeIdx> &outNodes) const
     {
+        outNodes.reserve(outNodes.size() + size());
         SizeType num = SizeType(nodes.totalCount());
         for (NodeIdx i = 0; i < num; ++i)
         {
@@ -307,6 +244,70 @@ public:
         }
         return stream;
     }
+
+private:
+    FORCE_INLINE void resizeDataToIndex(NodeIdx idx)
+    {
+        if (idx >= treeData.size())
+            treeData.resize(idx + 1);
+    }
+
+    // Removes child from parent's child list, Assumes both parent and child idx are valid
+    void unlinkChildFrom(NodeIdx parentIdx, NodeIdx childIdx)
+    {
+        Node *currNode = &nodes[parentIdx];
+        // If parent has no child leave
+        if (currNode->firstChild == InvalidIdx)
+            return;
+        // If first child is the child we are looking for?
+        if (currNode->firstChild == childIdx)
+        {
+            Node &sibling = nodes[currNode->firstChild];
+            currNode->firstChild = sibling.nextSibling;
+            sibling.nextSibling = InvalidIdx; // Mark as invalid index, As if we are just changing
+                                              // hierarchy it is important
+            sibling.parent = InvalidIdx;
+            return;
+        }
+
+        // First child is not the expected so go through the nextSiblings until found/end
+        currNode = &nodes[currNode->firstChild];
+        while (currNode->nextSibling != InvalidIdx)
+        {
+            if (currNode->nextSibling == childIdx)
+            {
+                Node &sibling = nodes[currNode->nextSibling];
+                currNode->nextSibling = sibling.nextSibling;
+                sibling.nextSibling = InvalidIdx; // Mark as invalid index, As if we are just
+                                                  // changing hierarchy it is important
+                sibling.parent = InvalidIdx;
+                return;
+            }
+            currNode = &nodes[currNode->nextSibling];
+        }
+    }
+    void linkChildTo(NodeIdx parentIdx, NodeIdx childIdx)
+    {
+        nodes[childIdx].parent = parentIdx;
+        nodes[childIdx].nextSibling = InvalidIdx; // Just being double secure
+
+        Node *currNode = &nodes[parentIdx];
+        // No child for this parent
+        if (currNode->firstChild == InvalidIdx)
+        {
+            currNode->firstChild = childIdx;
+            return;
+        }
+
+        currNode = &nodes[currNode->firstChild];
+        while (currNode->nextSibling != InvalidIdx)
+        {
+            currNode = &nodes[currNode->nextSibling];
+        }
+        currNode->nextSibling = childIdx;
+    }
+
+    void printTree(OutputStream &stream, NodeIdx parent, const String &prefix) const;
 };
 
 template <typename DataType, typename IndexType>

@@ -24,15 +24,13 @@ AllowShortEnumsOnASingleLine: false
 AllowShortBlocksOnASingleLine: Never
 AllowShortCaseLabelsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: All
-AllowShortLambdasOnASingleLine: All
+AllowShortLambdasOnASingleLine: Empty
 AllowShortIfStatementsOnASingleLine: Never
 AllowShortLoopsOnASingleLine: false
 AlwaysBreakAfterDefinitionReturnType: None
 AlwaysBreakAfterReturnType: None
 AlwaysBreakBeforeMultilineStrings: false
 AlwaysBreakTemplateDeclarations: Yes
-# AttributeMacros:
-#   - __capability
 BinPackArguments: true
 BinPackParameters: true
 BraceWrapping:
@@ -78,12 +76,6 @@ EmptyLineBeforeAccessModifier: LogicalBlock
 # PackConstructorInitializers: BinPack
 ConstructorInitializerAllOnOneLineOrOnePerLine: false
 FixNamespaceComments: true
-# ForEachMacros:
-#   - foreach
-#   - Q_FOREACH
-#   - BOOST_FOREACH
-# IfMacros:
-#   - KJ_IF_MAYBE
 SortIncludes: false
 IncludeBlocks:   Preserve
 IncludeCategories:
@@ -169,19 +161,29 @@ SpacesInSquareBrackets: false
 SpaceBeforeSquareBrackets: false
 BitFieldColonSpacing: Both
 Standard:        Latest
-StatementAttributeLikeMacros:
-  - Q_EMIT
-StatementMacros:
-  - Q_UNUSED
-  - QT_REQUIRE_VERSION
 TabWidth:        4
 UseCRLF:         true
 UseTab:          Never
+# ForEachMacros:
+#   - foreach
+#   - Q_FOREACH
+#   - BOOST_FOREACH
+IfMacros:
+  - KJ_IF_MAYBE
+# AttributeMacros:
+#   - __capability
+StatementAttributeLikeMacros:
+  - Q_EMIT
+StatementMacros:
+  - META_ANNOTATE
+  - GENERATED_CODES
+  - FirstMacroName
+  - MacroName
+  - LastMacroName
+  - OpMacro
 WhitespaceSensitiveMacros:
-  - STRINGIZE
-  - PP_STRINGIZE
-  - BOOST_PP_STRINGIZE
-  - NS_SWIFT_NAME
-  - CF_SWIFT_NAME
-...
+  - TCHAR
+  - STRID
+TypenameMacros :
 
+...

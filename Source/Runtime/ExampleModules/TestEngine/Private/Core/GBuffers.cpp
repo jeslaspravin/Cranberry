@@ -12,6 +12,8 @@
 #include "Core/GBuffers.h"
 #include "Core/Types/Textures/RenderTargetTextures.h"
 #include "ApplicationSettings.h"
+#include "IRenderInterfaceModule.h"
+#include "RenderApi/RenderManager.h"
 #include "RenderInterface/GlobalRenderVariables.h"
 #include "RenderInterface/Rendering/IRenderCommandList.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
@@ -92,7 +94,8 @@ void GBuffers::onSampleCountChanged(uint32 oldValue, uint32 newValue)
                 int32 swapchainIdx = 0;
                 for (GbufferWrapper &framebufferData : framebufferPair.second)
                 {
-                    renderManager->clearExternInitRtsFramebuffer(getGbufferRts(framebufferPair.first.rpFormat, swapchainIdx));
+                    std::vector<const IRenderTargetTexture *> rts = getGbufferRts(framebufferPair.first.rpFormat, swapchainIdx);
+                    renderManager->clearExternInitRtsFramebuffer(rts);
 
                     for (GBufferRenderTexture *rtTexture : framebufferData.rtTextures)
                     {
@@ -109,7 +112,7 @@ void GBuffers::onSampleCountChanged(uint32 oldValue, uint32 newValue)
                         rtCreateParam.dataFormat = framebufferFormat;
                         rtCreateParam.sampleCount = sampleCount;
                         rtCreateParam.textureSize = { screenSize.x, screenSize.y };
-                        rtCreateParam.textureName = TCHAR("GBuffer_") + EPixelDataFormat::getFormatInfo(framebufferFormat)->formatName;
+                        rtCreateParam.textureName = String(TCHAR("GBuffer_")) + EPixelDataFormat::getFormatInfo(framebufferFormat)->formatName;
 
                         GBufferRenderTexture *rtTexture = TextureBase::createTexture<GBufferRenderTexture>(rtCreateParam);
 
@@ -142,9 +145,8 @@ void GBuffers::onScreenResized(Size2D newSize)
                         rtTexture->setTextureSize({ newSize.x, newSize.y });
                     }
 
-                    renderManager->clearExternInitRtsFramebuffer(
-                        getGbufferRts(framebufferPair.first.rpFormat, swapchainIdx), framebufferPair.first.rpFormat
-                    );
+                    std::vector<const IRenderTargetTexture *> rts = getGbufferRts(framebufferPair.first.rpFormat, swapchainIdx);
+                    renderManager->clearExternInitRtsFramebuffer(rts, framebufferPair.first.rpFormat);
                     swapchainIdx++;
                 }
             }
@@ -176,7 +178,7 @@ void GBuffers::initialize(int32 swapchainCount)
                 rtCreateParam.dataFormat = framebufferFormat;
                 rtCreateParam.sampleCount = sampleCount;
                 rtCreateParam.textureSize = { initialSize.x, initialSize.y };
-                rtCreateParam.textureName = TCHAR("GBuffer_") + EPixelDataFormat::getFormatInfo(framebufferFormat)->formatName;
+                rtCreateParam.textureName = String(TCHAR("GBuffer_")) + EPixelDataFormat::getFormatInfo(framebufferFormat)->formatName;
 
                 GBufferRenderTexture *rtTexture = TextureBase::createTexture<GBufferRenderTexture>(rtCreateParam);
 
@@ -203,9 +205,9 @@ void GBuffers::destroy()
     gBuffers().clear();
 }
 
-std::vector<IRenderTargetTexture *> GBuffers::getGbufferRts(ERenderPassFormat::Type renderpassFormat, uint32 frameIdx)
+std::vector<const IRenderTargetTexture *> GBuffers::getGbufferRts(ERenderPassFormat::Type renderpassFormat, uint32 frameIdx)
 {
-    std::vector<IRenderTargetTexture *> rts;
+    std::vector<const IRenderTargetTexture *> rts;
     std::unordered_map<FramebufferFormat, std::vector<GbufferWrapper>>::const_iterator framebufferItr
         = gBuffers().find(FramebufferFormat(renderpassFormat));
     if (framebufferItr != gBuffers().cend() && (framebufferItr->second.size() > frameIdx))

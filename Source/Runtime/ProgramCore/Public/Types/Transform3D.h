@@ -10,6 +10,8 @@
  */
 
 #pragma once
+
+#include "Serialization/ArchiveTypes.h"
 #include "Math/Matrix4.h"
 #include "Math/Rotation.h"
 #include "Math/Vector3D.h"
@@ -21,18 +23,11 @@ private:
     Vector3D transformScale;
     Rotation transformRotation;
 
-    Matrix4 transformMatrixCache;
-    bool bCachedLatest;
-
-    template <ArchiveType ArchiveType>
+    template <ArchiveTypeName ArchiveType>
     friend ArchiveType &operator<<(ArchiveType &archive, Transform3D &value);
 
-private:
-    Matrix4 normalTransformMatrix() const;
-    Matrix4 getTransformMatrix() const;
-
-    Vector3D invScaleSafe() const;
-    Vector3D invTranslation() const;
+public:
+    static Transform3D ZERO_TRANSFORM;
 
 public:
     Transform3D();
@@ -43,9 +38,10 @@ public:
     Transform3D(const Matrix4 &transformMatrix);
     Transform3D(const Transform3D &otherTransform);
     Transform3D(Transform3D &&otherTransform);
-    void operator=(const Transform3D &otherTransform);
-    void operator=(Transform3D &&otherTransform);
-    void operator=(const Matrix4 &transformMatrix);
+    Transform3D &operator=(const Transform3D &otherTransform);
+    Transform3D &operator=(Transform3D &&otherTransform);
+    Transform3D &operator=(const Matrix4 &transformMatrix);
+    bool isSame(const Transform3D &b, float epsilon = SMALL_EPSILON) const;
 
     const Vector3D &getTranslation() const;
     const Rotation &getRotation() const;
@@ -57,30 +53,24 @@ public:
     void setRotation(const Rotation &newRotation);
     void setScale(const Vector3D &newScale);
 
-    const Matrix4 &getTransformMatrix();
+    Matrix4 getTransformMatrix() const;
     Vector3D transformNormal(const Vector3D &normal) const;
     Vector3D invTransformNormal(const Vector3D &normal) const;
     Vector3D transformPoint(const Vector3D &point) const;
     Vector3D invTransformPoint(const Vector3D &point) const;
-    Transform3D transform(const Transform3D &other);
-    Transform3D invTransform(const Transform3D &other);
+    Transform3D transform(const Transform3D &other) const;
+    Transform3D invTransform(const Transform3D &other) const;
     Transform3D inverseNonUniformScaled() const;
 
     // Below functions works only for uniform scale for non uniform scale use corresponding
     // *NonUniformScaled
     Transform3D inverse() const;
 
-public:
-    static Transform3D ZERO_TRANSFORM;
-};
+private:
+    Matrix4 normalTransformMatrix() const;
 
-template <ArchiveType ArchiveType>
-ArchiveType &operator<<(ArchiveType &archive, Transform3D &value)
-{
-    archive << value.transformTranslation << value.transformRotation << value.transformScale;
-    if (archive.isLoading())
-    {
-        value.bCachedLatest = false;
-    }
-    return archive;
-}
+    Vector3D invScaleSafe() const;
+    Vector3D invTranslation() const;
+
+    Matrix4 inverseNonUniformScaledMatrix() const;
+};

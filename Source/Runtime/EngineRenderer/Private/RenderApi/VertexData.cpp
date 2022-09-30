@@ -11,7 +11,6 @@
 
 #include <array>
 
-#include "IRenderInterfaceModule.h"
 #include "Math/Vector2D.h"
 #include "Math/Vector3D.h"
 #include "Math/Vector4D.h"
@@ -33,13 +32,6 @@ END_VERTEX_DEFINITION();
 struct VertexSimple2D
 {
     Vector2D position;
-};
-
-struct VertexUI
-{
-    Vector2D position;
-    Vector2D uv;
-    uint32 color;
 };
 
 struct VertexSimple3D
@@ -200,33 +192,33 @@ String toString(Type vertexType)
 }
 
 template <>
-void vertexSpecConsts<Simple2>(std::map<String, struct SpecializationConstantEntry> &specializationConst)
+void vertexSpecConsts<Simple2>(SpecConstantNamedMap &specializationConst)
 {}
 
 template <>
-void vertexSpecConsts<UI>(std::map<String, struct SpecializationConstantEntry> &specializationConst)
+void vertexSpecConsts<UI>(SpecConstantNamedMap &specializationConst)
 {}
 
 template <>
-void vertexSpecConsts<Simple3>(std::map<String, struct SpecializationConstantEntry> &specializationConst)
+void vertexSpecConsts<Simple3>(SpecConstantNamedMap &specializationConst)
 {}
 template <>
-void vertexSpecConsts<Simple3DColor>(std::map<String, struct SpecializationConstantEntry> &specializationConst)
+void vertexSpecConsts<Simple3DColor>(SpecConstantNamedMap &specializationConst)
 {}
 template <>
-void vertexSpecConsts<BasicMesh>(std::map<String, struct SpecializationConstantEntry> &specializationConst)
+void vertexSpecConsts<BasicMesh>(SpecConstantNamedMap &specializationConst)
 {}
 template <>
-void vertexSpecConsts<StaticMesh>(std::map<String, struct SpecializationConstantEntry> &specializationConst)
+void vertexSpecConsts<StaticMesh>(SpecConstantNamedMap &specializationConst)
 {}
 template <>
-void vertexSpecConsts<InstancedSimple3DColor>(std::map<String, struct SpecializationConstantEntry> &specializationConst)
+void vertexSpecConsts<InstancedSimple3DColor>(SpecConstantNamedMap &specializationConst)
 {}
 template <>
-void vertexSpecConsts<NoVertex>(std::map<String, SpecializationConstantEntry> &specializationConst)
+void vertexSpecConsts<NoVertex>(SpecConstantNamedMap &specializationConst)
 {}
 
-void vertexSpecConsts(Type vertexType, std::map<String, SpecializationConstantEntry> &specializationConst)
+void vertexSpecConsts(Type vertexType, SpecConstantNamedMap &specializationConst)
 {
     switch (vertexType)
     {

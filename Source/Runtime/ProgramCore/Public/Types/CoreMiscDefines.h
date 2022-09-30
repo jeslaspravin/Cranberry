@@ -38,6 +38,9 @@
 #define RELEASE_BUILD 0
 #endif
 
+/**
+ * If all libraries are built for editor
+ */
 #ifndef EDITOR_BUILD
 #define EDITOR_BUILD 0
 #endif
@@ -50,15 +53,32 @@
 #define LOG_TO_CONSOLE 0
 #endif
 
-#define ARRAY_LENGTH(ArrayVar) sizeof(ArrayVar) / sizeof(ArrayVar[0])
+#ifndef ENABLE_VERBOSE_LOG
+#define ENABLE_VERBOSE_LOG 0
+#endif
+
+#define ARRAY_LENGTH(ArrayVar) (sizeof(ArrayVar) / sizeof(ArrayVar[0]))
 #define MACRO_TO_STRING_internal(DefExpanded) #DefExpanded
 #define MACRO_TO_STRING(VarName) MACRO_TO_STRING_internal(VarName)
+
+#define MAKE_UNIQUE_VARNAME(BaseName) COMBINE(BaseName, COMBINE(_, __COUNTER__))
+
+#define CODE_BLOCK_BODY(...)                                                                                                                   \
+    {                                                                                                                                          \
+        __VA_ARGS__                                                                                                                            \
+    }
 
 #define MAKE_TYPE_NONCOPY_NONMOVE(TypeName)                                                                                                    \
     TypeName(TypeName &&) = delete;                                                                                                            \
     TypeName(const TypeName &) = delete;                                                                                                       \
     TypeName &operator=(TypeName &&) = delete;                                                                                                 \
     TypeName &operator=(const TypeName &) = delete;
+
+#define MAKE_TYPE_DEFAULT_COPY_MOVE(TypeName)                                                                                                  \
+    TypeName(TypeName &&) = default;                                                                                                           \
+    TypeName(const TypeName &) = default;                                                                                                      \
+    TypeName &operator=(TypeName &&) = default;                                                                                                \
+    TypeName &operator=(const TypeName &) = default;
 
 // If only one bit set in this unsigned integer
 #define ONE_BIT_SET(FlagStatement) ((FlagStatement) && !((FlagStatement) & ((FlagStatement)-1)))
@@ -70,7 +90,7 @@
 #define ANY_BIT_SET(FlagStatement, CheckFlags) (((FlagStatement) & (CheckFlags)) > 0)
 // If no bits of check bits is set in this unsigned integer
 #define NO_BITS_SET(FlagStatement, CheckFlags) (((FlagStatement) & (CheckFlags)) == 0)
-#define INDEX_TO_FLAG_MASK(Idx) (1 << (Idx))
+#define INDEX_TO_FLAG_MASK(Idx) (decltype(Idx)(1) << (Idx))
 // Sets all bits that are set in value and mask or already set
 #define SET_BITS_MASKED(SetTo, ValueFlags, FlagsMask) (SetTo) |= ((ValueFlags) & (FlagsMask))
 #define SET_BITS(SetTo, FlagsMask) (SetTo) |= (FlagsMask)
@@ -92,6 +112,8 @@
 #define MAKE_INITIALIZER(...) MAKE_INITIALIZER_internal(__VA_ARGS__)
 
 #define EXPAND_ARGS(...) __VA_ARGS__
+#define IGNORE_ARGS(...)
+
 #define FIRST(...) EXPAND_ARGS(FIRST_internal(__VA_ARGS__))
 #define TUPLE_TAIL(...) EXPAND_ARGS(TUPLE_TAIL_internal(__VA_ARGS__))
 #define VAR_COUNT(...) EXPAND_ARGS(VAR_COUNT_internal(__VA_ARGS__, 9, 8, 7, 6, 5, 4, 3, 2, 1))

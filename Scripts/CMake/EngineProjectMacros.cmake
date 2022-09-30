@@ -36,13 +36,11 @@ function (split_src_per_access)
     set (pub_srcs )
     set (pri_srcs )
     foreach (src ${split_src_per_access_SOURCES})
-        if(${src} MATCHES ".*/*Private/.*")
+        if(${src} MATCHES ".*/*Private/.*|.*\\.cpp") # Any sources in folder containing 'Private' name or if it is cpp file we mark it as private
             list (APPEND pri_srcs ${src})
         elseif (${src} MATCHES ".*/*Public/.*")
             list (APPEND pub_srcs ${src})
-        else (${src} MATCHES ".*/*Private/.*") # Case where source is in directory other than private or public
-            list (APPEND pri_srcs ${src})
-        endif(${src} MATCHES ".*/*Private/.*")
+        endif(${src} MATCHES ".*/*Private/.*|.*\\.cpp")
     endforeach (src ${split_src_per_access_SOURCES})
 
     set (${split_src_per_access_OUTPUT_PRIVATE} ${pri_srcs} PARENT_SCOPE)
@@ -108,56 +106,6 @@ function (set_target_sources)
     )
 endfunction ()
 
-# Recursively finds all engine modules that this target depends on
-# Use with
-# configure_file(${cmake_script_dir}/${configure_file_folder}/ModuleDependencies.list.in ${CMAKE_CURRENT_BINARY_DIR}/ModuleDependencies.list
-#     USE_SOURCE_PERMISSIONS 
-#     @ONLY
-# )
-#
-# DIRECT_MODULES Modules target depends on
-# OUT_ALL_MODULES
-function (find_all_modules_recursively)
-    set(one_value_args OUT_ALL_MODULES)
-    set(multi_value_args DIRECT_MODULES)
-    cmake_parse_arguments(all_modules "" "${one_value_args}" "${multi_value_args}" ${ARGN})
-
-    set (out_modules )
-    set (modules_tree ${all_modules_DIRECT_MODULES})
-    while (ON)
-        set (new_modules_tree )
-        foreach (module ${modules_tree})
-            # Skip if already visited module
-            list(FIND out_modules ${module} found_idx)
-            if (found_idx GREATER_EQUAL 0)
-                continue ()
-            endif ()
-            
-            list(APPEND out_modules ${module})
-            get_target_property(module_bin_dir ${module} BINARY_DIR)            
-            if (EXISTS ${module_bin_dir}/ModuleDependencies.list)
-                file(READ ${module_bin_dir}/ModuleDependencies.list dep_module_list)
-                foreach (new_item ${dep_module_list})
-                    STRING(STRIP ${new_item} new_module)
-                    # If not just empty spaces
-                    if(${new_module} MATCHES ".*")
-                        message ("Module ${new_module}")
-                        list (APPEND new_modules_tree ${new_module})
-                    endif ()
-                endforeach ()
-            endif ()
-        endforeach ()
-        
-        set (modules_tree ${new_modules_tree})        
-        list(LENGTH modules_tree modules_count)
-        if (modules_count EQUAL 0)
-            break ()
-        endif ()
-    endwhile ()
-    
-    set (${all_modules_OUT_ALL_MODULES} ${out_modules} PARENT_SCOPE)
-endfunction ()
-
 #
 # CPP Project related functions
 #
@@ -172,8 +120,6 @@ macro (cpp_common_options_and_defines)
             $<$<EQUAL:${CMAKE_SIZEOF_VOID_P},4>:PLATFORM_32=1>
     )
 
-    # POD/Variables in class has to initialized with {} to zero initialize if calling constructors that are not compiler generated
-    # target_compile_options(${target_name} PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/sdl>)        
 endmacro ()
 
 macro (cpp_common_includes)
@@ -230,6 +176,29 @@ macro (cpp_common_dependencies)
     endif ()
 endmacro()
 
+# Generates codes or file that will be used by modules/other tools regarding module dependencies. RIGHT NOW ITS NOT USED
+macro (generate_enginelib_depends)    
+    # Generating dependent module's directories. This is to walk the dependency tree if neccessary
+    # each line contains directories of a module in file named ${target_name}_PrivateEngineLibs.depend, ${target_name}_EngineLibs.depend
+    # Change in ModuleReflectTool if changing file description or name
+    set (private_engine_lib_dirs "")
+    set (public_engine_lib_dirs "")
+    foreach (module ${private_modules})
+        string(APPEND private_engine_lib_dirs "${module}=$<TARGET_PROPERTY:${module},BINARY_DIR>/$<CONFIG>;$<TARGET_FILE_DIR:${module}>\n")
+    endforeach()
+    foreach (module ${transitive_modules})
+        string(APPEND public_engine_lib_dirs "${module}=$<TARGET_PROPERTY:${module},BINARY_DIR>/$<CONFIG>;$<TARGET_FILE_DIR:${module}>\n")
+    endforeach()
+    file(GENERATE OUTPUT $<CONFIG>/${target_name}_PrivateEngineLibs.depend
+        CONTENT "${private_engine_lib_dirs}"
+        TARGET ${target_name}
+    )
+    file(GENERATE OUTPUT $<CONFIG>/${target_name}_EngineLibs.depend
+        CONTENT "${public_engine_lib_dirs}"
+        TARGET ${target_name}
+    )
+endmacro ()
+
 macro (engine_module_dependencies)
     # Private dependencies
     list (LENGTH private_modules private_modules_count)
@@ -267,6 +236,7 @@ macro (engine_module_dependencies)
                 $<TARGET_PROPERTY:${module},INTERFACE_COMPILE_DEFINITIONS>
         )
     endforeach ()
+    # generate_enginelib_depends()
     
     # Since we do not want all symbols that are not referenced removed as some were left out in local context like static initialized factory registers    
     if (${engine_static_modules})
@@ -279,65 +249,6 @@ macro (engine_module_dependencies)
             )
         endforeach ()
     endif ()
-endmacro ()
-
-# Converts engine modules as just includes for this target
-macro (engine_module_dependencies_includes)    
-    set(engine_module_pri_incls )
-    set(engine_module_pub_incls )
-    set(engine_module_interface_incls )
-
-    # Private dependencies
-    list (LENGTH private_modules private_modules_count)
-    if (${private_modules_count} GREATER 0)
-        foreach (module ${private_modules})
-            get_target_property(incl_src_dir ${module} SOURCE_DIR)
-            if (EXISTS ${incl_src_dir}/Public)
-                list (APPEND engine_module_pri_incls ${incl_src_dir}/Public)
-            endif ()
-            # Platform includes
-            if (EXISTS ${incl_src_dir}/${platform_folder}/Public)
-                list (APPEND engine_module_pri_incls ${incl_src_dir}/${platform_folder}/Public)
-            endif ()
-        endforeach ()
-    endif ()
-    # Public dependencies
-    list (LENGTH public_modules public_modules_count)
-    if (${public_modules_count} GREATER 0)        
-        foreach (module ${public_modules})
-            get_target_property(incl_src_dir ${module} SOURCE_DIR)
-            if (EXISTS ${incl_src_dir}/Public)
-                list (APPEND engine_module_pub_incls ${incl_src_dir}/Public)
-            endif ()
-            # Platform includes
-            if (EXISTS ${incl_src_dir}/${platform_folder}/Public)
-                list (APPEND engine_module_pub_incls ${incl_src_dir}/${platform_folder}/Public)
-            endif ()
-        endforeach ()
-    endif ()
-    # Interface dependencies
-    list (LENGTH interface_modules interface_modules_count)
-    if (${interface_modules_count} GREATER 0)
-        foreach (module ${interface_modules})
-            get_target_property(incl_src_dir ${module} SOURCE_DIR)
-            if (EXISTS ${incl_src_dir}/Public)
-                list (APPEND engine_module_pub_incls ${incl_src_dir}/Public)
-            endif ()
-            # Platform includes
-            if (EXISTS ${incl_src_dir}/${platform_folder}/Public)
-                list (APPEND engine_module_interface_incls ${incl_src_dir}/${platform_folder}/Public)
-            endif ()
-        endforeach ()
-    endif ()
-    
-    target_include_directories(${target_name} 
-        PRIVATE
-            ${engine_module_pri_incls}
-        PUBLIC
-            ${engine_module_pub_incls}
-        INTERFACE
-            ${engine_module_interface_incls}
-    )
 endmacro ()
 
 macro (mark_delay_loaded_dlls)
@@ -367,14 +278,10 @@ macro (mark_delay_loaded_dlls)
         endif ()
         
         # ProgramCore module must be skipped as it has all base code for loading modules,
-        # So instead we add POST_BUILD copy here
+        # So instead we add POST_BUILD copy in ProgramCore
         set (program_core_module "ProgramCore")
         list (FIND delay_load_list ${program_core_module} program_core_idx)
         if (${program_core_idx} GREATER_EQUAL 0)
-            add_custom_command(TARGET ${target_name} POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:${program_core_module}> $<TARGET_FILE_DIR:${target_name}>
-                COMMAND_EXPAND_LISTS
-            )
             # Remove ProgramCore
             list (REMOVE_ITEM delay_load_list ${program_core_module})
         endif (${program_core_idx} GREATER_EQUAL 0)
@@ -394,8 +301,18 @@ macro (mark_delay_loaded_dlls)
     endif ()
 endmacro ()
 
+# TARGET_NAME arg to override target_name obtained from directory name
 macro (generate_cpp_console_project)
-    get_filename_component(target_name ${CMAKE_CURRENT_LIST_DIR} NAME)
+    set(one_value_args TARGET_NAME)
+    cmake_parse_arguments(console_project "" "${one_value_args}" "" ${ARGN})
+    
+    # For C++ application alone we could allow overriding target_name
+    if (DEFINED console_project_TARGET_NAME)
+        set (target_name ${console_project_TARGET_NAME})
+    else (DEFINED console_project_TARGET_NAME)
+        get_filename_component(target_name ${CMAKE_CURRENT_LIST_DIR} NAME)
+    endif (DEFINED console_project_TARGET_NAME)
+
     gather_all_cpp_srcs(src_files)
 
     source_group(TREE ${CMAKE_CURRENT_LIST_DIR} PREFIX Sources FILES ${src_files})
@@ -495,7 +412,7 @@ endmacro()
 # C# related functions
 ########################################################################################################
 macro(generate_csharp_console_project)
-    include(${cmake_script_dir}/EngineFileUtilities.cmake)
+    include(EngineFileUtilities)
 
     get_filename_component(target_name ${CMAKE_CURRENT_LIST_DIR} NAME)
 
@@ -551,7 +468,7 @@ function(shader_outputs)
             if(NOT ${src_wo_glsl} MATCHES ".*[.inl]$")
                 # Replace any .vert, .frag ... but capturing matches before .extension
                 string(REGEX REPLACE "(.*)[.].*" "\\1" src_wo_ext ${src_wo_glsl})
-                list(APPEND unique_shaders ${shader_outputs_OUTPUT_DIR}/$<CONFIG>/Shaders/${src_wo_ext}.ref ${shader_outputs_OUTPUT_DIR}/$<CONFIG>/Shaders/${src_wo_ext}.shader)
+                list(APPEND unique_shaders "${shader_outputs_OUTPUT_DIR}/Shaders/${src_wo_ext}.ref" "${shader_outputs_OUTPUT_DIR}/Shaders/${src_wo_ext}.shader")
             endif()
         endif(${src_file} MATCHES ".*[.glsl]$")
     endforeach()

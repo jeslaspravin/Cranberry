@@ -19,29 +19,13 @@
 #include <unordered_map>
 #include <vector>
 
-namespace CBE
+namespace cbe
 {
 class Object;
 }
+class IReferenceCollector;
 
 #define COREOBJCTGC_METRICS DEV_BUILD
-
-class IReferenceCollector
-{
-public:
-    /**
-     * IReferenceCollector::clearReferences - Must clear holding references to passed in objects as they
-     * will be deleted
-     *
-     * Access: virtual public
-     *
-     * @param const std::vector<CBE::Object * > & deletedObjects
-     *
-     * @return void
-     */
-    virtual void clearReferences(const std::vector<CBE::Object *> &deletedObjects) = 0;
-    virtual void collectReferences(std::vector<CBE::Object *> &outObjects) const = 0;
-};
 
 // Garbage collection proceeds through the each class's object allocators and collects and clears
 class CoreObjectGC
@@ -54,8 +38,10 @@ private:
         Clearing    // Collection is finished now clearing based on collection results
     };
 
-    // Maps directly to CBE::ObjectAllocatorBase's allocValidity indices and holds true if an object is
-    // referenced, if not referenced it will be detroyed If marked for destroy it will be unreferenced
+    // number of objects cleared during last clear
+    uint64 lastClearCount = 0;
+    // Maps directly to cbe::ObjectAllocatorBase's allocValidity indices and holds true if an object is
+    // referenced, if not referenced it will be destroyed If marked for destroy it will be unreferenced
     // and destroyed
     std::unordered_map<CBEClass, BitArray<uint64>> objUsedFlags;
     // In collecting state classes that left to be crawled and collected, In clearing stage classes that
@@ -73,7 +59,7 @@ private:
 #endif
 
 private:
-    void deleteObject(CBE::Object *obj) const;
+    uint64 deleteObject(cbe::Object *obj) const;
 
     void collectFromRefCollectors(TickRep &budgetTicks);
     void markObjectsAsValid(TickRep &budgetTicks);
@@ -94,10 +80,17 @@ public:
      */
     void collect(TimeConvType budget)
     {
-        TickRep budgetTicks = Time::fromSeconds(budget);
+        TickRep budgetTicks = std::numeric_limits<TickRep>::max();
+        if (budget > 0.0f)
+        {
+            budgetTicks = Time::fromSeconds(budget);
+        }
         collect(budgetTicks);
     }
     COREOBJECTS_EXPORT void collect(TickRep budgetTicks);
+
+    FORCE_INLINE bool isGcComplete() const { return state == EGCState::NewGC; }
+    FORCE_INLINE uint64 getLastClearCount() const { return lastClearCount; }
 
     COREOBJECTS_EXPORT void registerReferenceCollector(IReferenceCollector *collector);
     COREOBJECTS_EXPORT void unregisterReferenceCollector(IReferenceCollector *collector);

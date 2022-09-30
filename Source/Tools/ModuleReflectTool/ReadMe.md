@@ -76,6 +76,10 @@ Currently there are following build flags
 
 > `Interface` - If a class needs to act as an interface it needs to be marked with this flag and must add `GENERATED_INTERFACE_CODES()` macro in it. Interface must only have another Interface as its inherited parent.
 
+> `Abstract` - If a class has to be explicitly marked as abstract. Class will not have contructor, destructors generated for it
+
+> `DisableCtor` - To skip generating constructor/desctructor or any alloc function for this class/struct. This must be used over `Abstract` if you are sure that a class/struct will never be dynamically allocated
+
 ## Advanced ##
 ### Constructor ##
 The constructor of any type is invoked via a `Construction policy`. This policy gets defined in the Class marked as `BaseType` to `DefaultConstructionPolicy`. 

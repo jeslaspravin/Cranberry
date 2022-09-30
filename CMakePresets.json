@@ -23,12 +23,17 @@
                 {
                     "type": "BOOL",
                     "value": "OFF"
+                },
+                "editor_build":
+                {
+                    "type": "BOOL",
+                    "value": "ON"
                 }
             }
         },
         {
-            "name": "Engine-DynamicLinked",
-            "description": "Creates dynamically linked engine libraries",
+            "name": "Editor-DynamicLinked",
+            "description": "Creates dynamically linked engine editor libraries",
             "generator": "Visual Studio 17 2022",
             "inherits": "BasePreset",
             "architecture":
@@ -56,10 +61,38 @@
             }
         },
         {
-            "name": "Engine-StaticLinked",
-            "description": "Creates statically linked engine libraries",
-            "inherits": "Engine-DynamicLinked",
+            "name": "Editor-StaticLinked",
+            "description": "Creates statically linked engine editor libraries",
+            "inherits": "Editor-DynamicLinked",
             "binaryDir": "${sourceDir}/StaticBuild",
+            "cacheVariables":
+            {
+                "engine_static_modules":
+                {
+                    "type": "BOOL",
+                    "value": "ON"
+                }
+            }
+        },
+        {
+            "name": "Runtime-DynamicLinked",
+            "description": "Creates dynamically linked engine runtime libraries",
+            "inherits": "Editor-DynamicLinked",
+            "binaryDir": "${sourceDir}/RuntimeBuild",
+            "cacheVariables":
+            {
+                "editor_build":
+                {
+                    "type": "BOOL",
+                    "value": "OFF"
+                }
+            }
+        },
+        {
+            "name": "Runtime-StaticLinked",
+            "description": "Creates statically linked engine runtime libraries",
+            "inherits": "Runtime-DynamicLinked",
+            "binaryDir": "${sourceDir}/RuntimeStaticBuild",
             "cacheVariables":
             {
                 "engine_static_modules":
@@ -72,12 +105,8 @@
     ],
     "buildPresets": [
         {
-            "name": "Engine-DynamicLinked",
-            "configurePreset": "Engine-DynamicLinked"
-        },
-        {
-            "name": "Engine-StaticLinked",
-            "configurePreset": "Engine-StaticLinked"
+            "name": "Editor-DynamicLinked",
+            "configurePreset": "Editor-DynamicLinked"
         }
     ],
     "testPresets": [

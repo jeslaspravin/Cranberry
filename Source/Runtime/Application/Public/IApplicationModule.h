@@ -23,33 +23,45 @@ class WindowManager;
 
 using AppWindowDelegate = Delegate<GenericAppWindow *>;
 
-class APPLICATION_EXPORT IApplicationModule : public IModuleBase
+class IApplicationModule : public IModuleBase
 {
+protected:
+    virtual void startAndRun(ApplicationInstance *appInst, const AppInstanceCreateInfo &appCI) = 0;
+
 public:
-    static IApplicationModule *get();
+    APPLICATION_EXPORT static IApplicationModule *get();
 
-    virtual ApplicationInstance *createApplication(const AppInstanceCreateInfo &appCI) = 0;
-    virtual const ApplicationInstance *getApplication() const = 0;
-    virtual GenericAppWindow *mainWindow() = 0;
-    virtual WindowManager *getWindowManager() = 0;
-    virtual bool pollWindows() = 0;
+    template <typename ApplicationType>
+    requires std::is_base_of_v<ApplicationInstance, ApplicationType>
+    void startApplication(const AppInstanceCreateInfo &appCI)
+    {
+        ApplicationType appInstance(appCI);
+        startAndRun(&appInstance, appCI);
+    }
 
-    virtual DelegateHandle registerOnWindowCreated(AppWindowDelegate::SingleCastDelegateType callback) = 0;
-    virtual void unregisterOnWindowCreated(const DelegateHandle &callbackHandle) = 0;
+    APPLICATION_EXPORT virtual ApplicationInstance *getApplication() const = 0;
+
+    virtual void windowCreated(GenericAppWindow *createdWindow) const = 0;
+    APPLICATION_EXPORT virtual DelegateHandle registerOnWindowCreated(AppWindowDelegate::SingleCastDelegateType callback) = 0;
+    APPLICATION_EXPORT virtual void unregisterOnWindowCreated(const DelegateHandle &callbackHandle) = 0;
 
     // Called before window property change has lead to surface reinitialization
-    virtual DelegateHandle registerPreWindowSurfaceUpdate(AppWindowDelegate::SingleCastDelegateType callback) = 0;
-    virtual void unregisterPreWindowSurfaceUpdate(const DelegateHandle &callbackHandle) = 0;
+    virtual void preWindowSurfaceUpdate(GenericAppWindow *window) const = 0;
+    APPLICATION_EXPORT virtual DelegateHandle registerPreWindowSurfaceUpdate(AppWindowDelegate::SingleCastDelegateType callback) = 0;
+    APPLICATION_EXPORT virtual void unregisterPreWindowSurfaceUpdate(const DelegateHandle &callbackHandle) = 0;
 
     // When resized/updated that lead to underlying surface/canvas to be updated
-    virtual DelegateHandle registerOnWindowSurfaceUpdated(AppWindowDelegate::SingleCastDelegateType callback) = 0;
-    virtual void unregisterOnWindowSurfaceUpdated(const DelegateHandle &callbackHandle) = 0;
+    virtual void windowSurfaceUpdated(GenericAppWindow *window) const = 0;
+    APPLICATION_EXPORT virtual DelegateHandle registerOnWindowSurfaceUpdated(AppWindowDelegate::SingleCastDelegateType callback) = 0;
+    APPLICATION_EXPORT virtual void unregisterOnWindowSurfaceUpdated(const DelegateHandle &callbackHandle) = 0;
 
-    // Called just before windows is finalized to be destroyed
-    virtual DelegateHandle registerOnWindowDestroyed(AppWindowDelegate::SingleCastDelegateType callback) = 0;
-    virtual void unregisterOnWindowDestroyed(const DelegateHandle &callbackHandle) = 0;
+    // Called just before windows is finalized to be0 destroyed
+    virtual void windowDestroyed(GenericAppWindow *window) const = 0;
+    APPLICATION_EXPORT virtual DelegateHandle registerOnWindowDestroyed(AppWindowDelegate::SingleCastDelegateType callback) = 0;
+    APPLICATION_EXPORT virtual void unregisterOnWindowDestroyed(const DelegateHandle &callbackHandle) = 0;
 
     // After all windows are destroyed
-    virtual DelegateHandle registerAllWindowDestroyed(SimpleDelegate::SingleCastDelegateType callback) = 0;
-    virtual void unregisterAllWindowDestroyed(const DelegateHandle &callbackHandle) = 0;
+    virtual void allWindowDestroyed() const = 0;
+    APPLICATION_EXPORT virtual DelegateHandle registerAllWindowDestroyed(SimpleDelegate::SingleCastDelegateType callback) = 0;
+    APPLICATION_EXPORT virtual void unregisterAllWindowDestroyed(const DelegateHandle &callbackHandle) = 0;
 };

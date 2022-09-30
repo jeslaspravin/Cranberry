@@ -14,9 +14,9 @@
 #if PLATFORM_WINDOWS
 #include "WindowsCoreTypes.h"
 #elif PLATFORM_LINUX
-static_assert(false, "Platform not supported!");
+#error "Platform not supported!"
 #elif PLATFORM_APPLE
-static_assert(false, "Platform not supported!");
+#error "Platform not supported!"
 #endif
 
 using uint8 = PlatformCoreTypes::uint8;
@@ -90,21 +90,18 @@ STATIC_ASSERT(sizeof(UInt64) == 8);
 #undef STATIC_ASSERT
 #pragma pop_macro("STATIC_ASSERT")
 
-// clang-format off
-#define FOR_EACH_CORE_TYPES_UNIQUE_FIRST_LAST(FirstMacroName, MacroName, LastMacroName) \
-    FirstMacroName(uint8)   \
-    MacroName(uint16)       \
-    MacroName(uint32)       \
-    MacroName(uint64)       \
-    MacroName(int8)         \
-    MacroName(int16)        \
-    MacroName(int32)        \
-    MacroName(int64)        \
-    MacroName(float)        \
-    MacroName(double)       \
+#define FOR_EACH_CORE_TYPES_UNIQUE_FIRST_LAST(FirstMacroName, MacroName, LastMacroName)                                                        \
+    FirstMacroName(uint8)                                                                                                                      \
+    MacroName(uint16)                                                                                                                          \
+    MacroName(uint32)                                                                                                                          \
+    MacroName(uint64)                                                                                                                          \
+    MacroName(int8)                                                                                                                            \
+    MacroName(int16)                                                                                                                           \
+    MacroName(int32)                                                                                                                           \
+    MacroName(int64)                                                                                                                           \
+    MacroName(float)                                                                                                                           \
+    MacroName(double)                                                                                                                          \
     LastMacroName(bool)
-
-// clang-format on
 
 #define FOR_EACH_CORE_TYPES(MacroName) FOR_EACH_CORE_TYPES_UNIQUE_FIRST_LAST(MacroName, MacroName, MacroName)
 
@@ -120,4 +117,10 @@ enum EInitType
     InitType_DefaultInit,
     InitType_ForceInit,
     InitType_NoInit
+};
+
+enum EThreadSharing
+{
+    ThreadSharing_Exclusive,
+    ThreadSharing_Shared
 };

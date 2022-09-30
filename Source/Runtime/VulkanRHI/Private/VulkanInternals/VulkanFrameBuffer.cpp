@@ -12,7 +12,6 @@
 #include <array>
 
 #include "Logger/Logger.h"
-#include "RenderApi/GBuffersAndTextures.h"
 #include "RenderInterface/Rendering/FramebufferTypes.h"
 #include "Resources/VulkanWindowCanvas.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
@@ -64,7 +63,7 @@ void VulkanGraphicsHelper::initializeFb(class IGraphicsInstance *graphicsInstanc
                         : fb->textures[0]->getLayerCount();
     // if texture is having more layers or 3D then we need view types
     int32 imgViewType = (layers == 1) ? -1 : VkImageViewType::VK_IMAGE_VIEW_TYPE_2D_ARRAY;
-    for (ImageResourceRef imgRes : fb->textures)
+    for (ImageResourceRef &imgRes : fb->textures)
     {
         imageViews.push_back(static_cast<VulkanImageResource *>(imgRes.reference())->getImageView(imageViewInfo, imgViewType));
     }
@@ -91,6 +90,7 @@ void VulkanGraphicsHelper::initializeSwapchainFb(
 {
     const auto *vulkanWindowCanvas = static_cast<const VulkanWindowCanvas *>(canvas.reference());
     ImageResourceRef dummyImageResource(new ImageResource(ImageResourceCreateInfo{ vulkanWindowCanvas->windowCanvasFormat() }));
+    dummyImageResource->setResourceName(TCHAR("FB_DummyTexture_NoInit"));
 
     auto *vulkanFb = static_cast<VulkanFrameBuffer *>(fb);
     vulkanFb->textures.push_back(dummyImageResource);
@@ -132,7 +132,7 @@ VkRenderPass VulkanGraphicsHelper::createDummyRenderPass(class IGraphicsInstance
 
     for (uint32 attachmentIdx = 0; attachmentIdx < framebuffer->textures.size();)
     {
-        const ImageResourceRef resource = framebuffer->textures[attachmentIdx];
+        const ImageResourceRef &resource = framebuffer->textures[attachmentIdx];
 
         VkAttachmentDescription attachmentDesc;
         attachmentDesc.flags = 0;
@@ -149,7 +149,7 @@ VkRenderPass VulkanGraphicsHelper::createDummyRenderPass(class IGraphicsInstance
         // resolve attachment for depth
         if (EPixelDataFormat::isDepthFormat(resource->imageFormat()))
         {
-            fatalAssert(depthAttachmentRef.size() == 0, "More than one depth attachment is not allowed");
+            fatalAssertf(depthAttachmentRef.size() == 0, "More than one depth attachment is not allowed");
             depthAttachmentRef.push_back({ attachmentIdx, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL });
             ++attachmentIdx;
         }
@@ -186,11 +186,20 @@ VkRenderPass VulkanGraphicsHelper::createDummyRenderPass(class IGraphicsInstance
     dummySubpass.pPreserveAttachments = nullptr;
     dummySubpass.pDepthStencilAttachment = depthAttachmentRef.empty() ? nullptr : &depthAttachmentRef[0];
 
+    // TODO(Jeslas) : Non parallel renderpass modify in future to support async passes.
+    std::array<VkSubpassDependency, 2> dependencies;
+    dependencies[0].dependencyFlags = dependencies[1].dependencyFlags = VkDependencyFlagBits::VK_DEPENDENCY_BY_REGION_BIT;
+    dependencies[0].dstSubpass = dependencies[1].srcSubpass = 0;
+    dependencies[0].srcSubpass = dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
+    dependencies[0].srcStageMask = dependencies[1].srcStageMask = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;
+    dependencies[0].dstStageMask = dependencies[1].dstStageMask = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+    dependencies[0].srcAccessMask = dependencies[1].srcAccessMask = dependencies[0].dstAccessMask = dependencies[1].dstAccessMask = 0;
+
     RENDERPASS_CREATE_INFO(renderPassCreateInfo);
     renderPassCreateInfo.attachmentCount = uint32(renderPassAttachments.size());
     renderPassCreateInfo.pAttachments = renderPassAttachments.data();
-    renderPassCreateInfo.dependencyCount = 0;
-    renderPassCreateInfo.pDependencies = nullptr;
+    renderPassCreateInfo.dependencyCount = uint32(dependencies.size());
+    renderPassCreateInfo.pDependencies = dependencies.data();
     renderPassCreateInfo.subpassCount = 1;
     renderPassCreateInfo.pSubpasses = &dummySubpass;
 
@@ -199,7 +208,7 @@ VkRenderPass VulkanGraphicsHelper::createDummyRenderPass(class IGraphicsInstance
 
     if (device->vkCreateRenderPass(device->logicalDevice, &renderPassCreateInfo, nullptr, &renderPass) != VK_SUCCESS)
     {
-        LOG_ERROR("VulkanGraphicsHelper", "%s() : Failed creating render pass", __func__);
+        LOG_ERROR("VulkanGraphicsHelper", "Failed creating render pass");
         renderPass = nullptr;
     }
     return renderPass;
@@ -211,7 +220,7 @@ VkRenderPass VulkanGraphicsHelper::createRenderPass(
 )
 {
     using namespace EAttachmentOp;
-    fatalAssert(
+    fatalAssertf(
         !additionalProps.bUsedAsPresentSource
             || (renderpassProps.bOneRtPerFormat && renderpassProps.renderpassAttachmentFormat.attachments.size() == 1),
         "Presentable swapchain attachments cannot have more than one attachments or more than 1 sample "
@@ -242,7 +251,7 @@ VkRenderPass VulkanGraphicsHelper::createRenderPass(
         // resolve attachment for depth
         if (EPixelDataFormat::isDepthFormat(attachmentFormat))
         {
-            fatalAssert(depthAttachmentRef.size() == 0, "More than one depth attachment is not allowed");
+            fatalAssertf(depthAttachmentRef.size() == 0, "More than one depth attachment is not allowed");
 
             attachmentDesc.loadOp = EngineToVulkanAPI::vulkanLoadOp(additionalProps.depthLoadOp);
             attachmentDesc.storeOp = EngineToVulkanAPI::vulkanStoreOp(additionalProps.depthStoreOp);
@@ -313,7 +322,6 @@ VkRenderPass VulkanGraphicsHelper::createRenderPass(
     renderPassCreateInfo.attachmentCount = uint32(renderPassAttachments.size());
     renderPassCreateInfo.pAttachments = renderPassAttachments.data();
     renderPassCreateInfo.dependencyCount = uint32(dependencies.size());
-    ;
     renderPassCreateInfo.pDependencies = dependencies.data();
     renderPassCreateInfo.subpassCount = 1;
     renderPassCreateInfo.pSubpasses = &dummySubpass;
@@ -323,7 +331,7 @@ VkRenderPass VulkanGraphicsHelper::createRenderPass(
 
     if (device->vkCreateRenderPass(device->logicalDevice, &renderPassCreateInfo, nullptr, &renderPass) != VK_SUCCESS)
     {
-        LOG_ERROR("VulkanGraphicsHelper", "%s() : Failed creating render pass", __func__);
+        LOG_ERROR("VulkanGraphicsHelper", "Failed creating render pass");
         renderPass = nullptr;
     }
     return renderPass;

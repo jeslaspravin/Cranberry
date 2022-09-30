@@ -11,16 +11,20 @@
 
 #include "RenderInterface/ShaderCore/ShaderParameters.h"
 
-ShaderBufferField::ShaderBufferField(const String &pName)
+ShaderBufferField::ShaderBufferField(const TChar *pName, FieldDecorationFlags decorations)
     : paramName(pName)
-{}
+    , fieldDecorations(decorations)
+{
+    alertOncef(NO_BITS_SET(decorations, INFERRED_DECO_FLAGS), "Inferred decoration flags cannot be explicitly set");
+    CLEAR_BITS(fieldDecorations, INFERRED_DECO_FLAGS);
+}
 
-ShaderVertexField::ShaderVertexField(const String &attribName, const uint32 &offsetVal)
+ShaderVertexField::ShaderVertexField(const TChar *attribName, const uint32 &offsetVal)
     : attributeName(attribName)
     , offset(offsetVal)
 {}
 
-ShaderVertexField::ShaderVertexField(const String &attribName, const uint32 &offsetVal, EShaderInputAttribFormat::Type overrideFormat)
+ShaderVertexField::ShaderVertexField(const TChar *attribName, const uint32 &offsetVal, EShaderInputAttribFormat::Type overrideFormat)
     : attributeName(attribName)
     , offset(offsetVal)
     , format(overrideFormat)

@@ -46,7 +46,7 @@ bool PropertyHelper::isChildOf(const ClassProperty *childClassProp, const ClassP
 {
     if (!childClassProp || !parentClassProp)
     {
-        alertIf(childClassProp && parentClassProp, "Null class properties are not valid input for isChildOf function");
+        alertAlwaysf(childClassProp && parentClassProp, "Null class properties are not valid input for isChildOf function");
         return false;
     }
 
@@ -71,7 +71,7 @@ const InterfaceInfo *PropertyHelper::getMatchingInterfaceInfo(const ClassPropert
 {
     if (!childClassProp || !interfaceType)
     {
-        alertIf(childClassProp && interfaceType, "Null class properties are not valid input for implementsInterface function");
+        alertAlwaysf(childClassProp && interfaceType, "Null class properties are not valid input for implementsInterface function");
         return nullptr;
     }
 

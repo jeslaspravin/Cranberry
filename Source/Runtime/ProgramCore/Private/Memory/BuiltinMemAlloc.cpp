@@ -88,7 +88,7 @@ void *CBEBuiltinMemAlloc::tryMalloc(SizeT size, uint32 alignment /*= DEFAULT_ALI
 void *CBEBuiltinMemAlloc::memAlloc(SizeT size, uint32 alignment /*= DEFAULT_ALIGNMENT*/)
 {
     void *ptr = tryMalloc(size, alignment);
-    fatalAssert(size == 0 || ptr, "Allocation failed!");
+    fatalAssertf(size == 0 || ptr, "Allocation failed!");
     return ptr;
 }
 
@@ -121,7 +121,7 @@ void *CBEBuiltinMemAlloc::tryRealloc(void *currentPtr, SizeT size, uint32 alignm
 void *CBEBuiltinMemAlloc::memRealloc(void *currentPtr, SizeT size, uint32 alignment /*= DEFAULT_ALIGNMENT*/)
 {
     void *ptr = tryRealloc(currentPtr, size, alignment);
-    fatalAssert(size == 0 || ptr, "Reallocation failed!");
+    fatalAssertf(size == 0 || ptr, "Reallocation failed!");
     return ptr;
 }
 
@@ -134,7 +134,7 @@ void CBEBuiltinMemAlloc::memFree(void *ptr)
 
     AllocHeader allocInfo;
     void *actualPtr = getAllocationInfo(ptr, allocInfo.size, allocInfo.alignment);
-    fatalAssert(allocInfo.size > 0 && allocInfo.alignment > 0, "Possible memFree invokation on freed object");
+    fatalAssertf(allocInfo.size > 0 && allocInfo.alignment > 0, "Possible memFree invokation on freed object");
 
     AllocHeader &allocHeader = *(((AllocHeader *)ptr) - 1);
     // 0 it so that if there is any immediate free calls again with can detect it

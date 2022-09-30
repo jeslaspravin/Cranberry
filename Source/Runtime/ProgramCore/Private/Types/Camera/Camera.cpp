@@ -15,6 +15,7 @@
 #include "Math/Vector2D.h"
 #include "Math/Vector4D.h"
 #include "Types/Transform3D.h"
+#include "Math/Quaternion.h"
 
 const float Camera::MAX_FOV(175.f);
 const float Camera::MIN_NEAR_FAR_DIFF(1.f);
@@ -155,7 +156,7 @@ Vector3D Camera::screenToWorld(const Vector2D &screenPos) const
     return { worldCoord };
 }
 
-Vector3D Camera::screenToWorldFwd(const Vector2D &screenPos) const { return (screenToWorld(screenPos) - camTranslation).safeNormalize(); }
+Vector3D Camera::screenToWorldFwd(const Vector2D &screenPos) const { return (screenToWorld(screenPos) - camTranslation).safeNormalized(); }
 
 Matrix4 Camera::viewMatrix() const
 {
@@ -164,12 +165,22 @@ Matrix4 Camera::viewMatrix() const
     transform.setTranslation(camTranslation);
 
     // Since in view space fwd is Z axis so cyclically rotating axis to make real fwd as up
+    Matrix4 tfMatrix = transform.getTransformMatrix();
     Matrix4 viewMat;
-    viewMat[0] = transform.getTransformMatrix()[1];
-    viewMat[1] = transform.getTransformMatrix()[2];
-    viewMat[2] = transform.getTransformMatrix()[0];
-    viewMat[3] = transform.getTransformMatrix()[3];
+    viewMat[0] = tfMatrix[1];
+    viewMat[1] = tfMatrix[2];
+    viewMat[2] = tfMatrix[0];
+    viewMat[3] = tfMatrix[3];
 
+    return viewMat;
+}
+
+Matrix4 Camera::viewMatrix(Matrix4 &outInvView) const
+{
+    Matrix4 viewMat = viewMatrix();
+    Matrix3 viewInv = { Vector3D(viewMat[0]), Vector3D(viewMat[1]), Vector3D(viewMat[2]) };
+    viewInv = viewInv.transpose();
+    outInvView = { Vector3D(viewInv[0]), Vector3D(viewInv[1]), Vector3D(viewInv[2]), -(viewInv * Vector3D(viewMat[3])) };
     return viewMat;
 }
 

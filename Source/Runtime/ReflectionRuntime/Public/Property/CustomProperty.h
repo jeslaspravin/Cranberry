@@ -47,7 +47,7 @@ public:
     const PropertyDataRetriever *dataRetriever;
 
 public:
-    CustomProperty(const StringID &propNameID, const String &propName, EPropertyType propType, const ReflectTypeInfo *propTypeInfo);
+    CustomProperty(const StringID &propNameID, const TChar *propName, EPropertyType propType, const ReflectTypeInfo *propTypeInfo);
     ~CustomProperty();
 
     template <typename ConstructType, typename... CTorArgs>
@@ -104,7 +104,7 @@ public:
     const BaseProperty *valueProp;
 
 public:
-    PairProperty(const StringID &propNameID, const String &propName, const ReflectTypeInfo *propTypeInfo)
+    PairProperty(const StringID &propNameID, const TChar *propName, const ReflectTypeInfo *propTypeInfo)
         : CustomProperty(propNameID, propName, EPropertyType::PairType, propTypeInfo)
         , keyProp(nullptr)
         , valueProp(nullptr)
@@ -267,7 +267,7 @@ public:
     uint32 secondOffset;
 
 public:
-    MapProperty(const StringID &propNameID, const String &propName, const ReflectTypeInfo *propTypeInfo)
+    MapProperty(const StringID &propNameID, const TChar *propName, const ReflectTypeInfo *propTypeInfo)
         : CustomProperty(propNameID, propName, EPropertyType::MapType, propTypeInfo)
         , keyProp(nullptr)
         , valueProp(nullptr)
@@ -399,7 +399,7 @@ public:
                 return true;
             }
         }
-        alertIf(std::equality_comparable<ContainerType::value_type>, "LOGICAL ERROR: Type does not have equality check!");
+        alertAlwaysf(std::equality_comparable<ContainerType::value_type>, "LOGICAL ERROR: Type does not have equality check!");
         return false;
     }
 
@@ -425,7 +425,7 @@ public:
         {
             return (*reinterpret_cast<const ContainerType::value_type *>(lhs)) == (*reinterpret_cast<const ContainerType::value_type *>(rhs));
         }
-        alertIf(std::equality_comparable<ContainerType::value_type>, "LOGICAL ERROR: Type does not have equality check!");
+        alertAlwaysf(std::equality_comparable<ContainerType::value_type>, "LOGICAL ERROR: Type does not have equality check!");
         return false;
     }
 };
@@ -481,7 +481,7 @@ public:
     const BaseProperty *elementProp;
 
 public:
-    ContainerProperty(const StringID &propNameID, const String &propName, EPropertyType propType, const ReflectTypeInfo *propTypeInfo)
+    ContainerProperty(const StringID &propNameID, const TChar *propName, EPropertyType propType, const ReflectTypeInfo *propTypeInfo)
         : CustomProperty(propNameID, propName, propType, propTypeInfo)
         , elementProp(nullptr)
     {}

@@ -31,7 +31,7 @@
 #endif
 
 // Aligned platform specific memory allocators macro
-// #TODO(Jeslas) : Check if this is MSVC specific or specific to Windows(Found it in windows sdk so
+// TODO(Jeslas) : Check if this is MSVC specific or specific to Windows(Found it in windows sdk so
 // probably windows specific check however)
 #ifndef PLATFORM_ALIGNED_MALLOC
 #define PLATFORM_ALIGNED_MALLOC _aligned_malloc
@@ -58,8 +58,8 @@
 #define DLL_IMPORT __declspec(dllimport)
 #endif
 
-#ifndef LINE_FEED_CHAR
-#define LINE_FEED_CHAR TCHAR("\r\n")
+#ifndef LINE_FEED_ACHAR
+#define LINE_FEED_ACHAR "\r\n"
 #endif
 
 // File System path separator

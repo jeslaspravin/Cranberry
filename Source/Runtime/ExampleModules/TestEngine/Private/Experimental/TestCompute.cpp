@@ -13,7 +13,8 @@
 #include "Math/Vector4D.h"
 #include "RenderInterface/Resources/Pipelines.h"
 #include "RenderInterface/ShaderCore/ShaderParameterResources.h"
-#include "RenderInterface/Shaders/Base/UtilityShaders.h"
+#include "RenderApi/Rendering/PipelineRegistration.h"
+#include "RenderApi/Shaders/Base/UtilityShaders.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 
 #define TESTCOMPUTE_SHADER_NAME TCHAR("TestCompute")
@@ -51,14 +52,14 @@ public:
         : BaseType(Byte3D(16, 16, 1), TESTCOMPUTE_SHADER_NAME)
     {}
 
-    void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const override
+    void bindBufferParamInfo(std::map<StringID, struct ShaderBufferDescriptorType *> &bindingBuffers) const override
     {
         static TestAOSBufferParamInfo TESTAOS_INFO;
-        static const std::map<String, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{
+        static const std::map<StringID, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{
             {TCHAR("inData"), &TESTAOS_INFO}
         };
 
-        for (const std::pair<const String, ShaderBufferParamInfo *> &bufferInfo : SHADER_PARAMS_INFO)
+        for (const std::pair<const StringID, ShaderBufferParamInfo *> &bufferInfo : SHADER_PARAMS_INFO)
         {
             auto foundDescBinding = bindingBuffers.find(bufferInfo.first);
             debugAssert(foundDescBinding != bindingBuffers.end());

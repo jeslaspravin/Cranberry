@@ -30,30 +30,47 @@ concept StaticCastable = requires(FromType value)
         } -> std::same_as<ToType>;
 };
 
-// Indexable checks for dynamic pointer array and native array only
-template <typename DataType>
-using IsIndexable = std::disjunction<std::is_array<DataType>, std::is_pointer<DataType>>;
-template <typename DataType>
-using IndexableElementType
-    = std::conditional_t<std::is_pointer_v<DataType>, std::remove_pointer_t<DataType>, std::remove_all_extents_t<DataType>>;
-
 // Indexable checks for both compound types and dynamic pointer array and native array
 template <typename DataType>
-concept IndexableCompound = requires(DataType val, uint64 idx)
+concept IndexableCompoundInternal = requires(DataType val, uint64 idx)
 {
-    DataType::value_type;
+    typename DataType::value_type;
     {
         val[idx]
         } -> std::convertible_to<typename DataType::value_type>;
+    {
+        val.size()
+        } -> std::convertible_to<SizeT>;
 };
 template <typename DataType>
-concept Indexable = std::disjunction_v<std::is_array<DataType>, std::is_pointer<DataType>> || IndexableCompound<DataType>;
+concept IndexableCompound = IndexableCompoundInternal<std::remove_cvref_t<DataType>>;
+
+template <typename DataType>
+concept IndexableInternal = std::disjunction_v<std::is_array<DataType>, std::is_pointer<DataType>> || IndexableCompound<DataType>;
+template <typename DataType>
+concept Indexable = IndexableInternal<std::remove_cvref_t<DataType>>;
+
+template <typename DataType>
+struct IndexableTypeDeducer
+{
+    using type = std::conditional_t<std::is_pointer_v<DataType>, std::remove_pointer_t<DataType>, std::remove_all_extents_t<DataType>>;
+};
+template <IndexableCompound DataType>
+struct IndexableTypeDeducer<DataType>
+{
+    using type = typename DataType::value_type;
+};
+template <typename DataType>
+using IndexableElementType = typename IndexableTypeDeducer<DataType>::type;
 
 template <typename Type, typename... OtherTypes>
-concept IsConvertible = std::conjunction_v<std::is_convertible<Type, OtherTypes>...>;
+concept TypeConvertibleTo = std::conjunction_v<std::is_convertible<Type, OtherTypes>...>;
 
 template <typename Type>
 concept NotAnIntegral = std::negation_v<std::is_integral<Type>>;
+
+template <typename Type>
+concept TypeIsPointer = std::is_pointer_v<Type>;
 
 // Removes ref(Don't have to remove cv as remove_ptr removes pointer const), then removes ptr, then again
 // removes cv & ref of underlying type to get plain type

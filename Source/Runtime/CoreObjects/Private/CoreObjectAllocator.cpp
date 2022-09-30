@@ -10,10 +10,11 @@
  */
 
 #include "CoreObjectAllocator.h"
+#include "Property/Property.h"
 
-std::unordered_map<CBEClass, CBE::ObjectAllocatorBase *> *gCBEObjectAllocators = nullptr;
+std::unordered_map<CBEClass, cbe::ObjectAllocatorBase *> *gCBEObjectAllocators = nullptr;
 
-namespace CBE
+namespace cbe
 {
 std::unordered_map<CBEClass, ObjectAllocatorBase *> &createGObjectAllocators()
 {
@@ -38,4 +39,4 @@ ObjectAllocatorBase *getObjAllocator(CBEClass classType)
     auto itr = gCBEObjectAllocators->find(classType);
     return itr != gCBEObjectAllocators->end() ? itr->second : nullptr;
 }
-} // namespace CBE
+} // namespace cbe

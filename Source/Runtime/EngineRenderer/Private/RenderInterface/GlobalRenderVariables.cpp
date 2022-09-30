@@ -43,8 +43,12 @@ ProgramGlobalVar<uint64> MAX_TIMELINE_OFFSET(0);
 ProgramGlobalVar<uint64> MAX_SYNC_RES_WAIT_TIME(500000000); /*500ms*/
 
 /**
- * 
+ *
  */
+ProgramGlobalVar<bool> GPU_DEVICE_INITIALIZED{ false };
+ProgramGlobalVar<bool> PRESENTING_ENABLED{ false };
+ProgramGlobalVar<bool> GPU_IS_COMPUTE_ONLY{ false };
+
 ProgramGlobalVar<uint32> MIN_SAMPLINE_MIP_LEVEL(10u);
 ProgramGlobalVar<uint32> MAX_PREFILTERED_CUBE_MIPS(8u);
 ProgramGlobalVar<uint32> MAX_ENV_MAP_SIZE(1024u);

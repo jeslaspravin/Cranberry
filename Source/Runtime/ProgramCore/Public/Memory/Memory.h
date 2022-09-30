@@ -30,7 +30,7 @@ private:
     FORCE_INLINE void create()
     {
         static bool bSuccess = AllocatorCreatePolicy::create(&allocator);
-        fatalAssert(bSuccess, "Failed to create global allocator");
+        fatalAssertf(bSuccess, "Failed to create global allocator");
     }
     FORCE_INLINE void destroy()
     {
@@ -42,7 +42,7 @@ public:
     FORCE_INLINE MemAllocTypePtr operator->()
     {
         create();
-        fatalAssert(allocator, "Invalid memory allocator!");
+        fatalAssertf(allocator, "Invalid memory allocator!");
         return allocator;
     }
 };
@@ -136,23 +136,25 @@ public:
     NODISCARD __VA_ARGS__ void *operator new[](size_t count, std::align_val_t al, void *allocatedPtr) noexcept { return allocatedPtr; }
 
 #define CBE_NOALLOC_PLACEMENT_DELETE_OPERATOR(...)                                                                                             \
-    /* No Idea how to clear and we do not allow exception in our code base so this should crash the                                            \
-     * application */                                                                                                                          \
+    /*                                                                                                                                         \
+     * No Idea how to delete placement alloc here(It must be handled in its specialization) and we do not allow exception in our code base so  \
+     * this should crash the application                                                                                                       \
+     */                                                                                                                                        \
     __VA_ARGS__ void operator delete(void *ptr, void *allocatedPtr) noexcept                                                                   \
     {                                                                                                                                          \
-        fatalAssert(false, "This placement delete is not meant to be invoked here");                                                           \
+        fatalAssertf(false, "This placement delete is not meant to be invoked here");                                                          \
     }                                                                                                                                          \
     __VA_ARGS__ void operator delete[](void *ptr, void *allocatedPtr) noexcept                                                                 \
     {                                                                                                                                          \
-        fatalAssert(false, "This placement delete is not meant to be invoked here");                                                           \
+        fatalAssertf(false, "This placement delete is not meant to be invoked here");                                                          \
     }                                                                                                                                          \
     __VA_ARGS__ void operator delete(void *ptr, std::align_val_t al, void *allocatedPtr) noexcept                                              \
     {                                                                                                                                          \
-        fatalAssert(false, "This placement delete is not meant to be invoked here");                                                           \
+        fatalAssertf(false, "This placement delete is not meant to be invoked here");                                                          \
     }                                                                                                                                          \
     __VA_ARGS__ void operator delete[](void *ptr, std::align_val_t al, void *allocatedPtr) noexcept                                            \
     {                                                                                                                                          \
-        fatalAssert(false, "This placement delete is not meant to be invoked here");                                                           \
+        fatalAssertf(false, "This placement delete is not meant to be invoked here");                                                          \
     }
 
 #define CBE_GLOBAL_NEWDELETE_OVERRIDES                                                                                                         \
@@ -164,9 +166,7 @@ public:
 #define CBE_CLASS_NEWDELETE_OVERRIDES(ClassName)                                                                                               \
 private:                                                                                                                                       \
     static void *ClassName##_Alloc(SizeT size, uint32 alignment) { return CBEMemory::memAlloc(size, alignment); }                              \
-                                                                                                                                               \
     static void *ClassName##_Alloc(SizeT size) { return CBEMemory::memAlloc(size); }                                                           \
-                                                                                                                                               \
     static void ClassName##_Free(void *ptr) { CBEMemory::memFree(ptr); }                                                                       \
                                                                                                                                                \
 public:                                                                                                                                        \

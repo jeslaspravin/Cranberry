@@ -678,7 +678,10 @@ void squashDuplicates(ReflectBufferShaderField &shaderBufferField)
 
         sort(
             shaderBufferField.bufferFields.begin(), shaderBufferField.bufferFields.end(),
-            [](const ReflectBufferEntry &rhs, const ReflectBufferEntry &lhs) { return offsetSortFunc(rhs.data, lhs.data); }
+            [](const ReflectBufferEntry &rhs, const ReflectBufferEntry &lhs)
+            {
+                return offsetSortFunc(rhs.data, lhs.data);
+            }
         );
 
         for (uint32_t i = 0; i < shaderBufferField.bufferFields.size();)
@@ -706,7 +709,10 @@ void squashDuplicates(ReflectBufferShaderField &shaderBufferField)
 
         sort(
             shaderBufferField.bufferStructFields.begin(), shaderBufferField.bufferStructFields.end(),
-            [](const ReflectBufferStructEntry &rhs, const ReflectBufferStructEntry &lhs) { return offsetSortFunc(rhs.data, lhs.data); }
+            [](const ReflectBufferStructEntry &rhs, const ReflectBufferStructEntry &lhs)
+            {
+                return offsetSortFunc(rhs.data, lhs.data);
+            }
         );
 
         for (uint32_t i = 0; i < shaderBufferField.bufferStructFields.size();)
@@ -980,7 +986,10 @@ void printDescriptorsSet(const ReflectDescriptorBody &descriptorsSet)
     printf("Descriptors Set = %d Combined stages usage = %d\n", descriptorsSet.set, descriptorsSet.combinedSetUsage);
     for (const uint32_t &binding : descriptorsSet.usedBindings)
     {
-        auto finderFunc = [&binding](const auto &descriptor) { return descriptor.data.binding == binding; };
+        auto finderFunc = [&binding](const auto &descriptor)
+        {
+            return descriptor.data.binding == binding;
+        };
 
         {
             auto itr = std::find_if(descriptorsSet.uniforms.cbegin(), descriptorsSet.uniforms.cend(), finderFunc);
@@ -1179,7 +1188,9 @@ void PipelineShaderStageProcessor::processStages(std::vector<std::map<uint32_t, 
         ShaderStageDescription stageDesc = shaderStage->getStageDesc();
 
         SmallVector<SpecializationConstant> specializationConsts = shaderStage->compiledData->get_specialization_constants();
-        stageDesc.stageSpecializationEntries.resize(specializationConsts.size());
+
+        std::map<uint32_t, uint32_t> specConstIdToEntryIdx;
+        stageDesc.stageSpecializationEntries.reserve(specializationConsts.size());
         for (uint32_t constIdx = 0; constIdx < specializationConsts.size(); ++constIdx)
         {
             const SPIRConstant &specEntryType = shaderStage->compiledData->get_constant(specializationConsts[constIdx].id);
@@ -1193,8 +1204,18 @@ void PipelineShaderStageProcessor::processStages(std::vector<std::map<uint32_t, 
                 reflectConst.data.type = getReflectPrimitiveType(typeRef.basetype);
                 setSpecializationConstDefault(reflectConst.data.defaultValue, specEntryType, typeRef);
 
-                specConstsMaps[i][uint32_t(specializationConsts[constIdx].id)] = constIdx;
-                stageDesc.stageSpecializationEntries[constIdx] = reflectConst;
+                // In vulkan1.3 target environment, Using local_size_(x/y/z)_id creates more than one spec const pointing to same constant ID
+                if (specConstIdToEntryIdx.contains(reflectConst.data.constantId))
+                {
+                    specConstsMaps[i][uint32_t(specializationConsts[constIdx].id)] = specConstIdToEntryIdx[reflectConst.data.constantId];
+                }
+                else
+                {
+                    uint32_t specConstIdx = uint32_t(stageDesc.stageSpecializationEntries.size());
+                    specConstsMaps[i][uint32_t(specializationConsts[constIdx].id)] = specConstIdx;
+                    specConstIdToEntryIdx[reflectConst.data.constantId] = specConstIdx;
+                    stageDesc.stageSpecializationEntries.emplace_back(std::move(reflectConst));
+                }
 
                 printf(
                     "\tSpecialization constant %s Type ID %d , Primitive type %d\n", reflectConst.attributeName.c_str(),

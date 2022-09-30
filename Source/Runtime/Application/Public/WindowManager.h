@@ -13,6 +13,7 @@
 
 #include "ApplicationExports.h"
 #include "RenderInterface/Resources/GenericWindowCanvas.h"
+#include "Types/Platform/PlatformTypes.h"
 #include "Types/CoreTypes.h"
 
 #include <map>
@@ -31,23 +32,25 @@ private:
     struct ManagerData
     {
         WindowCanvasRef windowCanvas = nullptr;
+        int32 order = 0;
     };
 
     std::map<GenericAppWindow *, ManagerData> windowsOpened;
     // For now Will be valid only inside pollWindows
-    std::set<GenericAppWindow *> windowsToDestroy;
-
-    void activateWindow(GenericAppWindow *window);
-    void deactivateWindow(GenericAppWindow *window);
-    void onWindowResize(uint32 width, uint32 height, GenericAppWindow *window);
-    void requestDestroyWindow(GenericAppWindow *window);
+    std::vector<GenericAppWindow *> windowsToDestroy;
 
 public:
     GenericAppWindow *getMainWindow() const;
     WindowCanvasRef getWindowCanvas(GenericAppWindow *window) const;
+    FORCE_INLINE GenericAppWindow *getActiveWindow() const { return activeWindow; }
+    FORCE_INLINE bool hasActiveWindow() const { return getActiveWindow() != nullptr; }
+    std::vector<GenericAppWindow *> getArrangedWindows() const;
+    GenericAppWindow *findNativeHandleWindow(WindowHandle wndHnd) const;
+    GenericAppWindow *findWindowUnder(Short2D screenPos) const;
 
     void init();
     void destroy();
+    GenericAppWindow *createWindow(Size2D size, const TChar *name, GenericAppWindow *parent);
     void destroyWindow(GenericAppWindow *window);
     void updateWindowCanvas();
     /*
@@ -57,4 +60,14 @@ public:
     bool pollWindows();
     // One time only function
     void postInitGraphicCore();
+
+private:
+    void activateWindow(GenericAppWindow *window);
+    void deactivateWindow(GenericAppWindow *window);
+    void onWindowResize(uint32 width, uint32 height, GenericAppWindow *window);
+    void requestDestroyWindow(GenericAppWindow *window);
+    void destroyPendingWindows();
+
+    // If any child window is present under the point then returns that window else returns this window, Recurses through childs
+    GenericAppWindow *findChildWindowUnder(GenericAppWindow *window, Short2D screenPos) const;
 };

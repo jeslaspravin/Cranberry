@@ -12,7 +12,6 @@
 #pragma once
 
 #include "Math/CoreMathTypedefs.h"
-#include "Serialization/ArchiveBase.h"
 #include "ProgramCoreExports.h"
 #include "Types/CoreDefines.h"
 
@@ -36,8 +35,8 @@ public:
 public:
     Vector2D();
     explicit Vector2D(const Matrix2Col &vector2d);
-    Vector2D(const float &x, const float &y);
-    explicit Vector2D(const float &allValue);
+    Vector2D(float x, float y);
+    explicit Vector2D(float allValue);
     Vector2D(const Vector2D &other);
     Vector2D(const Vector3D &other);
     Vector2D(Vector2D &&other);
@@ -64,20 +63,21 @@ public:
     Vector2D &operator-=(const Vector2D &b);
     Vector2D operator+(const Vector2D &b) const;
     Vector2D &operator+=(const Vector2D &b);
-    Vector2D operator*(const float &scalar) const;
-    Vector2D &operator*=(const float &scalar);
-    Vector2D operator/(const float &scalar) const;
-    Vector2D &operator/=(const float &scalar);
-    Vector2D operator-(const float &scalar) const;
-    Vector2D &operator-=(const float &scalar);
-    Vector2D operator+(const float &scalar) const;
-    Vector2D &operator+=(const float &scalar);
+    Vector2D operator*(float scalar) const;
+    Vector2D &operator*=(float scalar);
+    Vector2D operator/(float scalar) const;
+    Vector2D &operator/=(float scalar);
+    Vector2D operator-(float scalar) const;
+    Vector2D &operator-=(float scalar);
+    Vector2D operator+(float scalar) const;
+    Vector2D &operator+=(float scalar);
     Vector2D operator-() const;
 
     bool isSame(const Vector2D &b, float epsilon = SMALL_EPSILON) const;
     bool isFinite() const;
+    Vector2D safeInverse() const;
     Vector2D normalized() const;
-    Vector2D safeNormalize(float threshold = SMALL_EPSILON) const;
+    Vector2D safeNormalized(float threshold = SMALL_EPSILON) const;
     float length() const;
     float sqrlength() const;
 
@@ -104,7 +104,7 @@ public:
     static Vector2D ceil(const Vector2D &value);
     static Vector2D round(const Vector2D &value);
     static Vector2D mod(const Vector2D &a, const Vector2D &b);
-    static Vector2D mod(const Vector2D &a, const float &b);
+    static Vector2D mod(const Vector2D &a, float b);
     static Vector2D modf(Vector2D &wholePart, const Vector2D &value);
 };
 
@@ -115,9 +115,3 @@ FORCE_INLINE Vector2D operator-(float n, const Vector2D &d) { return Vector2D(n 
 FORCE_INLINE Vector2D operator*(float n, const Vector2D &d) { return d * n; }
 
 FORCE_INLINE Vector2D operator+(float n, const Vector2D &d) { return d + n; }
-
-template <ArchiveType ArchiveType>
-ArchiveType &operator<<(ArchiveType &archive, Vector2D &value)
-{
-    return archive << value.x() << value.y();
-}

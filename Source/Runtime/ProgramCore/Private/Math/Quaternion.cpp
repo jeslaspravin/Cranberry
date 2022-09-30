@@ -139,7 +139,7 @@ void Quat::fromAngleAxisImpl(float angle, Vector3D axis)
     const float hAngleSin = Math::sin(hAngleRad);
 
     float sqrLen = axis.sqrlength();
-    alertIf(sqrLen >= SMALL_EPSILON, "Invalid axis square length %f", sqrLen);
+    alertAlwaysf(sqrLen >= SMALL_EPSILON, "Invalid axis square length %f", sqrLen);
     if (sqrLen >= SMALL_EPSILON && !Math::isEqual(1.0f, sqrLen, SMALL_EPSILON))
     {
         axis = axis.normalized();
@@ -183,9 +183,9 @@ Quat &Quat::operator*=(const Quat &b)
     return (*this);
 }
 
-Quat Quat::operator*(const float &scalar) const { return Quat(x * scalar, y * scalar, z * scalar, w * scalar); }
+Quat Quat::operator*(float scalar) const { return Quat(x * scalar, y * scalar, z * scalar, w * scalar); }
 
-Quat &Quat::operator*=(const float &scalar)
+Quat &Quat::operator*=(float scalar)
 {
     x *= scalar;
     y *= scalar;
@@ -194,9 +194,9 @@ Quat &Quat::operator*=(const float &scalar)
     return *this;
 }
 
-Quat Quat::operator/(const float &scalar) const { return Quat(x / scalar, y / scalar, z / scalar, w / scalar); }
+Quat Quat::operator/(float scalar) const { return Quat(x / scalar, y / scalar, z / scalar, w / scalar); }
 
-Quat &Quat::operator/=(const float &scalar)
+Quat &Quat::operator/=(float scalar)
 {
     x /= scalar;
     y /= scalar;
@@ -216,9 +216,9 @@ Quat &Quat::operator-=(const Quat &b)
     return *this;
 }
 
-Quat Quat::operator-(const float &scalar) const { return Quat(x - scalar, y - scalar, z - scalar, w - scalar); }
+Quat Quat::operator-(float scalar) const { return Quat(x - scalar, y - scalar, z - scalar, w - scalar); }
 
-Quat &Quat::operator-=(const float &scalar)
+Quat &Quat::operator-=(float scalar)
 {
     x -= scalar;
     y -= scalar;
@@ -240,9 +240,9 @@ Quat &Quat::operator+=(const Quat &b)
     return *this;
 }
 
-Quat Quat::operator+(const float &scalar) const { return Quat(x + scalar, y + scalar, z + scalar, w + scalar); }
+Quat Quat::operator+(float scalar) const { return Quat(x + scalar, y + scalar, z + scalar, w + scalar); }
 
-Quat &Quat::operator+=(const float &scalar)
+Quat &Quat::operator+=(float scalar)
 {
     x += scalar;
     y += scalar;

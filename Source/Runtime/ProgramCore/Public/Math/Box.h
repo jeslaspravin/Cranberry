@@ -20,21 +20,26 @@ class Vector2D;
 class Vector3D;
 
 // Usage AABB
-template <class T, uint32 d>
+template <typename T, uint32 d>
 class Box
 {
 public:
     using PointType = T;
     using PointElementType = typename PointType::value_type;
+    using NumericLimits = std::numeric_limits<PointElementType>;
     CONST_EXPR static const uint32 Dim = d;
 
     using value_type = PointType;
 
 public:
+    // Both are inclusive
     T minBound;
     T maxBound;
 
-    Box() = default;
+    Box()
+        : minBound(NumericLimits::max())
+        , maxBound(NumericLimits::lowest())
+    {}
 
     Box(const T &min, const T &max)
         : minBound(min)
@@ -50,7 +55,7 @@ public:
         : minBound(0)
         , maxBound(0)
     {
-        fatalAssert(points.size() > 0, "Points must have atleast one point");
+        fatalAssertf(points.size() > 0, "Points must have atleast one point");
         offset(points[0]);
         for (uint32 i = 1; i < points.size(); ++i)
         {
@@ -204,7 +209,7 @@ public:
         }
         return true;
     }
-    bool contains(const Box<T, d> &other)
+    bool contains(const Box<T, d> &other) const
     {
         for (uint32 i = 0; i < d; i++)
         {
@@ -234,7 +239,7 @@ public:
         }
         return bIsOnBorder ? 2u : 1u;
     }
-    uint8 encloses(const Box<T, d> &other)
+    uint8 encloses(const Box<T, d> &other) const
     {
         PointElementType thisVolume = 1, otherVolume = 1;
         for (uint32 i = 0; i < d; i++)
@@ -253,10 +258,10 @@ public:
 
     T center() const { return (maxBound + minBound) * 0.5f; }
 
-    void boundCorners(ArrayView<T> &corners) const
+    void boundCorners(const ArrayView<T> &corners) const
     {
         uint32 totalCorners = Math::pow(2, d);
-        fatalAssert(corners.size() >= totalCorners, "Corners must be greater or equal to %d", totalCorners);
+        fatalAssertf(corners.size() >= totalCorners, "Corners must be greater or equal to %d", totalCorners);
 
         const T boundCenter = center();
         const T boundHalfExtend = size() * 0.5f;
@@ -287,7 +292,7 @@ public:
     // Ensure start point is outside the box
     // Out Lengths are portion of ray segment to reach the point
     bool raycast(
-        const T &startPoint, const T &dir, const float &length, float &invLength, float &outEnterLength, T &outEnterPoint, float &outExitLength,
+        const T &startPoint, const T &dir, float length, float invLength, float &outEnterLength, T &outEnterPoint, float &outExitLength,
         T &outExitPoint
     ) const
     {
@@ -305,9 +310,27 @@ public:
         );
     }
 
+    /**
+     * Box<T, d>::raycastFast
+     *
+     * Access: public
+     *
+     * @param const T & startPoint
+     * @param const T & dir
+     * @param const T & invDir
+     * @param float length
+     * @param float invLength
+     * @param const bool * const parallel
+     * @param float & outEnterLength - Fraction of total length at which ray enters the volume. Valid if ray enters the volume
+     * @param T & outEnterPoint
+     * @param float & outExitLength - Fraction of total length at which ray exits the volume. Valid if ray exits the volume
+     * @param T & outExitPoint
+     *
+     * @return bool
+     */
     bool raycastFast(
-        const T &startPoint, const T &dir, const T &invDir, const float &length, float &invLength, const bool *const parallel,
-        float &outEnterLength, T &outEnterPoint, float &outExitLength, T &outExitPoint
+        const T &startPoint, const T &dir, const T &invDir, float length, float invLength, const bool *const parallel, float &outEnterLength,
+        T &outEnterPoint, float &outExitLength, T &outExitPoint
     ) const
     {
         T s2Min = minBound - startPoint;
@@ -363,21 +386,26 @@ public:
     }
 };
 
-template <class T>
+template <typename T>
 class Box<T, 1>
 {
 public:
     using PointType = T;
     using PointElementType = T;
+    using NumericLimits = std::numeric_limits<PointElementType>;
     CONST_EXPR static const uint32 Dim = 1;
 
     using value_type = PointType;
 
 public:
+    // Both are inclusive
     T minBound;
     T maxBound;
 
-    Box() = default;
+    Box()
+        : minBound(NumericLimits::max())
+        , maxBound(NumericLimits::lowest())
+    {}
 
     Box(const T &min, const T &max)
     {

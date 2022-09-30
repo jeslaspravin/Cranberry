@@ -16,6 +16,7 @@
 #include "Reflections/Functions.h"
 #include "String/String.h"
 #include "Types/Delegates/Delegate.h"
+#include "Types/Platform/PlatformTypes.h"
 
 struct ApplicationInstance;
 
@@ -26,10 +27,10 @@ class APPLICATION_EXPORT GenericAppWindow
 protected:
     uint32 windowWidth;
     uint32 windowHeight;
-    // Inverse of percent to scale the application interfaces. Example if dpi is 150% this will be
-    // 100/150. This allows us to just multiply this value to render target resolution to get actual
+    // Percent to scale the application interfaces to match RT size. Example if dpi is 150% this will be
+    // 150/100. This allows us to just divide this value to render target resolution to get actual
     // resolution to work Example if we are rendering to 3840x2160 RT texts will be very small however
-    // multiplying 150% scale factor gives virtual scaled resolution as 2560x1440
+    // dividing 150% scale factor gives virtual scaled resolution as 2560x1440
     float dpiScaling = 1.f;
 
     String windowName;
@@ -55,18 +56,26 @@ protected:
 public:
     void windowSize(uint32 &width, uint32 &height) const;
     void setWindowSize(const uint32 &width, const uint32 &height, bool updateResources);
+    FORCE_INLINE bool isMinimized() const { return windowWidth == 0 || windowHeight == 0; }
 
     float dpiScale() const { return dpiScaling; }
 
     /* Below set functions are initialize functions and are not usable after creating window */
     void setWindowMode(bool bIsFullScreen);
-    void setWindowName(const String &wndName);
+    void setWindowName(const TChar *wndName);
+    void setParent(GenericAppWindow *window);
     const String &getWindowName() const { return windowName; }
 
     virtual void createWindow(const ApplicationInstance *appInstance) = 0;
     virtual void updateWindow();
     virtual void destroyWindow();
-    virtual Rect windowClientRect() const = 0;
+    // All Rect or positions are in unscaled desktop screen space
+    virtual QuantShortBox2D windowClientRect() const = 0;
+    virtual QuantShortBox2D windowRect() const = 0;
     virtual bool isValidWindow() const = 0;
-    virtual void *getWindowHandle() const = 0;
+    virtual WindowHandle getWindowHandle() const = 0;
+
+public:
+    // Helpers
+    static WindowHandle getWindowUnderPoint(Short2D point) { return nullptr; }
 };

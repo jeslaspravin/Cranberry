@@ -9,7 +9,7 @@
  *  License can be read in LICENSE file at this repository's root
  */
 
-#include "Engine/GameEngine.h"
+#include "Engine/TestGameEngine.h"
 
 #if EXPERIMENTAL
 
@@ -18,16 +18,15 @@
 #include "../Core/Types/Textures/RenderTargetTextures.h"
 #include "../Core/Types/Textures/Texture2D.h"
 #include "../Core/Types/Textures/TexturesBase.h"
-#include "../Editor/Core/ImGui/IImGuiLayer.h"
-#include "../Editor/Core/ImGui/ImGuiLib/imgui.h"
-#include "../Editor/Core/ImGui/ImGuiLib/implot.h"
-#include "../Editor/Core/ImGui/ImGuiManager.h"
 #include "ApplicationInstance.h"
+#include "Widgets/ImGui/ImGuiLib/imgui.h"
+#include "Widgets/ImGui/IImGuiLayer.h"
+#include "Widgets/ImGui/ImGuiManager.h"
+#include "Widgets/ImGui/ImGuiLib/implot.h"
 #include "Core/GBuffers.h"
-#include "EngineInputCoreModule.h"
 #include "IApplicationModule.h"
-#include "InputSystem.h"
-#include "Keys.h"
+#include "InputSystem/InputSystem.h"
+#include "InputSystem/Keys.h"
 #include "Math/Math.h"
 #include "Math/RotationMatrix.h"
 #include "Math/Vector3D.h"
@@ -40,17 +39,18 @@
 #include "RenderInterface/GraphicsHelper.h"
 #include "RenderInterface/Rendering/CommandBuffer.h"
 #include "RenderInterface/Rendering/IRenderCommandList.h"
-#include "RenderInterface/Rendering/RenderingContexts.h"
+#include "RenderApi/Rendering/RenderingContexts.h"
+#include "RenderInterface/Rendering/RenderInterfaceContexts.h"
 #include "RenderInterface/Resources/BufferedResources.h"
 #include "RenderInterface/Resources/MemoryResources.h"
 #include "RenderInterface/Resources/QueueResource.h"
 #include "RenderInterface/Resources/Samplers/SamplerInterface.h"
 #include "RenderInterface/ShaderCore/ShaderParameterUtility.h"
 #include "RenderInterface/ShaderCore/ShaderParameters.h"
-#include "RenderInterface/Shaders/Base/DrawMeshShader.h"
-#include "RenderInterface/Shaders/Base/UtilityShaders.h"
-#include "RenderInterface/Shaders/EngineShaders/GoochModelShader.h"
-#include "RenderInterface/Shaders/EngineShaders/SingleColorShader.h"
+#include "RenderApi/Shaders/Base/DrawMeshShader.h"
+#include "RenderApi/Shaders/Base/UtilityShaders.h"
+#include "RenderApi/Shaders/EngineShaders/GoochModelShader.h"
+#include "RenderApi/Shaders/EngineShaders/SingleColorShader.h"
 #include "Types/Camera/Camera.h"
 #include "Types/Colors.h"
 #include "Types/Containers/ReferenceCountPtr.h"
@@ -59,6 +59,10 @@
 #include "Types/Transform3D.h"
 #include "WindowManager.h"
 #include "ApplicationSettings.h"
+#include "FontManager.h"
+#include "GenericAppWindow.h"
+#include "Types/Platform/LFS/Paths.h"
+#include "Types/Platform/LFS/PathFunctions.h"
 
 #include "Math/MathGeom.h"
 #include "RenderInterface/Resources/Pipelines.h"
@@ -203,7 +207,7 @@ struct FrameResource
 };
 
 class ExperimentalEngineGoochModel
-    : public GameEngine
+    : public TestGameEngine
     , public IImGuiLayer
 {
     SamplerRef nearestFiltering = nullptr;
@@ -253,7 +257,6 @@ class ExperimentalEngineGoochModel
     void
         createShaderParameters(class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
     void setupShaderParameterParams(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
-    void updateShaderParameters(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance);
     void destroyShaderParameters();
 
     void resizeLightingRts(const Size2D &size);
@@ -293,6 +296,7 @@ class ExperimentalEngineGoochModel
     // Test compute
     bool bAnimateX;
     bool bAnimateY;
+    bool bCompute = false;
     float timeAccum = 0;
     uint32 texturesCount;
     uint32 testBindlessTextureIdx;
@@ -347,7 +351,7 @@ void ExperimentalEngineGoochModel::createImages(IGraphicsInstance *graphicsInsta
     SamplerCreateInfo samplerCI{
         .filtering = ESamplerFiltering::Nearest,
         .mipFiltering = ESamplerFiltering::Nearest,
-        .tilingMode = {ESamplerTilingMode::Repeat,                       ESamplerTilingMode::Repeat, ESamplerTilingMode::Repeat },
+        .tilingMode = {ESamplerTilingMode::Repeat,                                 ESamplerTilingMode::Repeat, ESamplerTilingMode::Repeat },
         .mipLodRange = {                         0, float(GlobalRenderVariables::MIN_SAMPLINE_MIP_LEVEL.get())                          },
         .resourceName = TCHAR("NearestSampler")
     };
@@ -449,12 +453,11 @@ void ExperimentalEngineGoochModel::createDrawCmdsBuffer(IGraphicsInstance *graph
             // Resizing material parameters
             sceneShaderUniqParams[pipeMeshPairToBatchEntity.first]->resizeRuntimeBuffer(TCHAR("materials"), materialCount);
             totalDrawCalls += pipelineDrawCalls;
-            LOG("ExperimentalEnginePBR", "%s() : %s Pipeline's Material's count %d", __func__,
-                pipeMeshPairToBatchEntity.first->materialName.getChar(), materialCount);
-            LOG("ExperimentalEnginePBR", "%s() : %s Pipeline's instanced draw calls %d", __func__,
-                pipeMeshPairToBatchEntity.first->materialName.getChar(), pipelineDrawCalls);
+            LOG("ExperimentalEnginePBR", "%s Pipeline's Material's count %d", pipeMeshPairToBatchEntity.first->materialName, materialCount);
+            LOG("ExperimentalEnginePBR", "%s Pipeline's instanced draw calls %d", pipeMeshPairToBatchEntity.first->materialName,
+                pipelineDrawCalls);
         }
-        LOG("ExperimentalEnginePBR", "%s() : Total instanced draw calls %d", __func__, totalDrawCalls);
+        LOG("ExperimentalEnginePBR", "Total instanced draw calls %d", totalDrawCalls);
 
         // Resize instance parameters
         instanceParameters->resizeRuntimeBuffer(TCHAR("instancesWrapper"), instanceCount);
@@ -477,8 +480,12 @@ void ExperimentalEngineGoochModel::createDrawCmdsBuffer(IGraphicsInstance *graph
     }
 
     ENQUEUE_COMMAND(CreateAllEntityDrawCmds)
-    ([drawCmds, this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
-     { cmdList->copyToBuffer(allEntityDrawCmds, 0, drawCmds.data(), uint32(allEntityDrawCmds->getResourceSize())); });
+    (
+        [drawCmds, this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        {
+            cmdList->copyToBuffer(allEntityDrawCmds, 0, drawCmds.data(), uint32(allEntityDrawCmds->getResourceSize()));
+        }
+    );
 }
 
 void ExperimentalEngineGoochModel::destroyDrawCmdsBuffer() { allEntityDrawCmds.reset(); }
@@ -645,7 +652,7 @@ void ExperimentalEngineGoochModel::createShaderParameters(
     singleColShaderParams->setResourceName(TCHAR("SingleColorShaderParams"));
     sceneShaderUniqParams[&drawSmPipelineContext] = singleColShaderParams;
 
-    WindowCanvasRef windowCanvas = applicationModule->getWindowManager()->getWindowCanvas(applicationModule->mainWindow());
+    WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(application->windowManager->getMainWindow());
     uint32 swapchainCount = windowCanvas->imagesCount();
     lightTextures.setNewSwapchain(windowCanvas);
     drawQuadTextureDescs.setNewSwapchain(windowCanvas);
@@ -665,9 +672,7 @@ void ExperimentalEngineGoochModel::createShaderParameters(
         // as 1 and 2 are light common and textures
         lightData[i] = graphicsHelper->createShaderParameters(graphicsInstance, goochModelDescLayout, { 1, 2 });
         lightData[i]->setResourceName(
-            TCHAR("Light_") + String::toString(i * ARRAY_LENGTH(GoochModelLightArray::lights)) + TCHAR("to")
-            + String::toString(i * ARRAY_LENGTH(GoochModelLightArray::lights) + ARRAY_LENGTH(GoochModelLightArray::lights))
-        );
+            TCHAR("Light_") + String::toString(i * ARRAY_LENGTH(GoochModelLightArray::lights)) + TCHAR("to") + String::toString(i * ARRAY_LENGTH(GoochModelLightArray::lights) + ARRAY_LENGTH(GoochModelLightArray::lights)));
     }
 
     const GraphicsResource *drawQuadDescLayout = drawQuadPipelineContext.getPipeline()->getParamLayoutAtSet(0);
@@ -705,7 +710,7 @@ void ExperimentalEngineGoochModel::setupShaderParameterParams(IGraphicsInstance 
     viewData.invView = viewData.view.inverse();
     viewData.projection = camera.projectionMatrix();
     viewData.invProjection = viewData.projection.inverse();
-    viewParameters->setBuffer(TCHAR("viewData"), viewData);
+    viewParameters->setBuffer(RenderSceneBase::VIEW_PARAM_NAME, viewData);
     viewParameters->init();
 
     // Setting values to instance params and material shader params happens along with global draw
@@ -720,7 +725,7 @@ void ExperimentalEngineGoochModel::setupShaderParameterParams(IGraphicsInstance 
         shaderUniqParams.second->init();
     }
 
-    lightCommon->setBuffer(TCHAR("viewData"), viewData);
+    lightCommon->setBuffer(RenderSceneBase::VIEW_PARAM_NAME, viewData);
     lightCommon->setIntParam(TCHAR("lightsCount"), uint32(sceneLightData.size()));
     lightCommon->setFloatParam(TCHAR("invLightsCount"), 1.0f / sceneLightData.size());
     lightCommon->init();
@@ -738,7 +743,7 @@ void ExperimentalEngineGoochModel::setupShaderParameterParams(IGraphicsInstance 
         lightStartIdx += ARRAY_LENGTH(GoochModelLightArray::lights);
     }
 
-    WindowCanvasRef windowCanvas = applicationModule->getWindowManager()->getWindowCanvas(applicationModule->mainWindow());
+    WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(application->windowManager->getMainWindow());
     uint32 swapchainCount = windowCanvas->imagesCount();
     ImageViewInfo depthImageViewInfo;
     depthImageViewInfo.componentMapping.g = depthImageViewInfo.componentMapping.b = depthImageViewInfo.componentMapping.a
@@ -805,33 +810,9 @@ void ExperimentalEngineGoochModel::setupShaderParameterParams(IGraphicsInstance 
     testComputeParams->init();
 }
 
-void ExperimentalEngineGoochModel::updateShaderParameters(class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance)
-{
-    // const bool canUpdate = timeData.frameCounter % frameResources.size() == 0;
-
-    // Update once every swapchain cycles are presented
-    // if(canUpdate)
-    {
-        // for (const FrameResource& frameRes : frameResources)
-        //{
-        //     if (!frameRes.recordingFence->isSignaled())
-        //     {
-        //         frameRes.recordingFence->waitForSignal();
-        //     }
-        // }
-
-        std::vector<GraphicsResource *> shaderParams;
-        ShaderParameters::staticType()->allRegisteredResources(shaderParams, true, true);
-        for (GraphicsResource *resource : shaderParams)
-        {
-            static_cast<ShaderParameters *>(resource)->updateParams(cmdList, graphicsInstance);
-        }
-    }
-}
-
 void ExperimentalEngineGoochModel::reupdateTextureParamsOnResize()
 {
-    WindowCanvasRef windowCanvas = applicationModule->getWindowManager()->getWindowCanvas(applicationModule->mainWindow());
+    WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(application->windowManager->getMainWindow());
     uint32 swapchainCount = windowCanvas->imagesCount();
 
     for (uint32 i = 0; i < swapchainCount; ++i)
@@ -904,20 +885,23 @@ void ExperimentalEngineGoochModel::destroyShaderParameters()
 
 void ExperimentalEngineGoochModel::resizeLightingRts(const Size2D &size)
 {
-    WindowCanvasRef windowCanvas = applicationModule->getWindowManager()->getWindowCanvas(applicationModule->mainWindow());
+    WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(application->windowManager->getMainWindow());
 
     for (int32 i = 0; i < windowCanvas->imagesCount(); ++i)
     {
         frameResources[i].lightingPassRt->setTextureSize(size);
         frameResources[i].lightingPassResolved->setTextureSize(size);
-        rendererModule->getRenderManager()->clearExternInitRtsFramebuffer({ frameResources[i].lightingPassRt });
-        rendererModule->getRenderManager()->clearExternInitRtsFramebuffer({ frameResources[i].lightingPassResolved });
+
+        const IRenderTargetTexture *rtPtr = frameResources[i].lightingPassRt;
+        rendererModule->getRenderManager()->clearExternInitRtsFramebuffer({ &rtPtr, 1 });
+        rtPtr = frameResources[i].lightingPassResolved;
+        rendererModule->getRenderManager()->clearExternInitRtsFramebuffer({ &rtPtr, 1 });
     }
 }
 
 void ExperimentalEngineGoochModel::createFrameResources(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
 {
-    WindowCanvasRef windowCanvas = applicationModule->getWindowManager()->getWindowCanvas(applicationModule->mainWindow());
+    WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(application->windowManager->getMainWindow());
 
     RenderTextureCreateParams rtCreateParams;
     rtCreateParams.bSameReadWriteTexture = true;
@@ -934,7 +918,7 @@ void ExperimentalEngineGoochModel::createFrameResources(IGraphicsInstance *graph
         frameResources[i].usageWaitSemaphore.push_back(graphicsHelper->createSemaphore(graphicsInstance, (name + TCHAR("QueueSubmit")).c_str())
         );
         frameResources[i].usageWaitSemaphore.back()->init();
-        frameResources[i].recordingFence = graphicsHelper->createFence(graphicsInstance, (name + TCHAR("RecordingGaurd")).c_str(), true);
+        frameResources[i].recordingFence = graphicsHelper->createFence(graphicsInstance, (name + TCHAR("RecordingGaurd")).c_str());
         frameResources[i].recordingFence->init();
 
         rtCreateParams.textureName = TCHAR("LightingRT_") + String::toString(i);
@@ -953,7 +937,8 @@ void ExperimentalEngineGoochModel::destroyFrameResources()
         frameResources[i].usageWaitSemaphore[0].reset();
         frameResources[i].recordingFence.reset();
 
-        rendererModule->getRenderManager()->clearExternInitRtsFramebuffer({ frameResources[i].lightingPassRt });
+        const IRenderTargetTexture *rtPtr = frameResources[i].lightingPassRt;
+        rendererModule->getRenderManager()->clearExternInitRtsFramebuffer({ &rtPtr, 1 });
         TextureBase::destroyTexture<RenderTargetTexture>(frameResources[i].lightingPassRt);
         TextureBase::destroyTexture<RenderTargetTexture>(frameResources[i].lightingPassResolved);
     }
@@ -961,7 +946,7 @@ void ExperimentalEngineGoochModel::destroyFrameResources()
 
 void ExperimentalEngineGoochModel::getPipelineForSubpass()
 {
-    WindowCanvasRef windowCanvas = applicationModule->getWindowManager()->getWindowCanvas(applicationModule->mainWindow());
+    WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(application->windowManager->getMainWindow());
     auto multibufferRts = GBuffers::getGbufferRts(ERenderPassFormat::Multibuffer, 0);
 
     drawSmPipelineContext.forVertexType = EVertexType::StaticMesh;
@@ -973,15 +958,18 @@ void ExperimentalEngineGoochModel::getPipelineForSubpass()
     // Gooch model
     drawGoochPipelineContext.renderpassFormat = ERenderPassFormat::Generic;
     drawGoochPipelineContext.materialName = TCHAR("GoochModel");
-    rendererModule->getRenderManager()->preparePipelineContext(&drawGoochPipelineContext, { frameResources[0].lightingPassRt });
+    const IRenderTargetTexture *rtPtr = frameResources[0].lightingPassRt;
+    rendererModule->getRenderManager()->preparePipelineContext(&drawGoochPipelineContext, { &rtPtr, 1 });
 
     clearQuadPipelineContext.renderpassFormat = ERenderPassFormat::Generic;
     clearQuadPipelineContext.materialName = TCHAR("ClearRT");
-    rendererModule->getRenderManager()->preparePipelineContext(&clearQuadPipelineContext, { frameResources[0].lightingPassResolved });
+    rtPtr = frameResources[0].lightingPassResolved;
+    rendererModule->getRenderManager()->preparePipelineContext(&clearQuadPipelineContext, { &rtPtr, 1 });
 
     resolveLightRtPipelineContext.renderpassFormat = ERenderPassFormat::Generic;
     resolveLightRtPipelineContext.materialName = TCHAR("DrawQuadFromTexture");
-    rendererModule->getRenderManager()->preparePipelineContext(&resolveLightRtPipelineContext, { frameResources[0].lightingPassResolved });
+    rtPtr = frameResources[0].lightingPassResolved;
+    rendererModule->getRenderManager()->preparePipelineContext(&resolveLightRtPipelineContext, { &rtPtr, 1 });
 
     drawQuadPipelineContext.windowCanvas = windowCanvas;
     drawQuadPipelineContext.materialName = TCHAR("DrawQuadFromTexture");
@@ -994,7 +982,8 @@ void ExperimentalEngineGoochModel::getPipelineForSubpass()
 
     imguiShaderCntxt.materialName = TCHAR("DrawImGui");
     imguiShaderCntxt.renderpassFormat = ERenderPassFormat::Generic;
-    rendererModule->getRenderManager()->preparePipelineContext(&imguiShaderCntxt, { frameResources[0].lightingPassRt });
+    rtPtr = frameResources[0].lightingPassRt;
+    rendererModule->getRenderManager()->preparePipelineContext(&imguiShaderCntxt, { &rtPtr, 1 });
 }
 
 void ExperimentalEngineGoochModel::clearPipelineContexts()
@@ -1029,9 +1018,9 @@ void ExperimentalEngineGoochModel::createTextRenderResources(
     class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
 )
 {
-    FontManager &fontManager = application->fontManager;
+    FontManager &fontManager = *application->fontManager;
     FontManager::FontIndex idx
-        = fontManager.addFont(TCHAR("D:/Workspace/VisualStudio/Cranberry/Build/Debug/Assets/Fonts/CascadiaMono-Bold.ttf"));
+        = fontManager.addFont(PathFunctions::combinePath(Paths::engineRuntimeRoot(), TCHAR("Assets/Fonts/CascadiaMono-Bold.ttf")));
 
     fontManager.addGlyphs(
         idx,
@@ -1069,7 +1058,7 @@ void ExperimentalEngineGoochModel::updateTextRenderData(
     class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
 )
 {
-    FontManager &fontManager = application->fontManager;
+    FontManager &fontManager = *application->fontManager;
     std::vector<FontVertex> fontVerts;
     fontManager.draw(fontVerts, textBB, textToRender, 0, textHeight, wrapSize);
     Color fontCol{ textCol };
@@ -1136,39 +1125,39 @@ void ExperimentalEngineGoochModel::updateCameraParams()
 {
     ViewData viewDataTemp;
 
-    if (inputModule->getInputSystem()->isKeyPressed(Keys::RMB))
+    if (application->inputSystem->isKeyPressed(Keys::RMB))
     {
         cameraRotation.yaw()
-            += inputModule->getInputSystem()->analogState(AnalogStates::RelMouseX)->currentValue * timeData.activeTimeDilation * 0.25f;
+            += application->inputSystem->analogState(AnalogStates::RelMouseX)->currentValue * timeData.activeTimeDilation * 0.25f;
         cameraRotation.pitch()
-            += inputModule->getInputSystem()->analogState(AnalogStates::RelMouseY)->currentValue * timeData.activeTimeDilation * 0.25f;
+            += application->inputSystem->analogState(AnalogStates::RelMouseY)->currentValue * timeData.activeTimeDilation * 0.25f;
     }
 
-    if (inputModule->getInputSystem()->isKeyPressed(Keys::A))
+    if (application->inputSystem->isKeyPressed(Keys::A))
     {
         cameraTranslation -= cameraRotation.rightVector() * timeData.deltaTime * timeData.activeTimeDilation * 100.f;
     }
-    if (inputModule->getInputSystem()->isKeyPressed(Keys::D))
+    if (application->inputSystem->isKeyPressed(Keys::D))
     {
         cameraTranslation += cameraRotation.rightVector() * timeData.deltaTime * timeData.activeTimeDilation * 100.f;
     }
-    if (inputModule->getInputSystem()->isKeyPressed(Keys::W))
+    if (application->inputSystem->isKeyPressed(Keys::W))
     {
         cameraTranslation += cameraRotation.fwdVector() * timeData.deltaTime * timeData.activeTimeDilation * 100.f;
     }
-    if (inputModule->getInputSystem()->isKeyPressed(Keys::S))
+    if (application->inputSystem->isKeyPressed(Keys::S))
     {
         cameraTranslation -= cameraRotation.fwdVector() * timeData.deltaTime * timeData.activeTimeDilation * 100.f;
     }
-    if (inputModule->getInputSystem()->isKeyPressed(Keys::Q))
+    if (application->inputSystem->isKeyPressed(Keys::Q))
     {
         cameraTranslation -= Vector3D::UP * timeData.deltaTime * timeData.activeTimeDilation * 100.f;
     }
-    if (inputModule->getInputSystem()->isKeyPressed(Keys::E))
+    if (application->inputSystem->isKeyPressed(Keys::E))
     {
         cameraTranslation += Vector3D::UP * timeData.deltaTime * timeData.activeTimeDilation * 100.f;
     }
-    if (inputModule->getInputSystem()->keyState(Keys::R)->keyWentUp)
+    if (application->inputSystem->keyState(Keys::R)->keyWentUp)
     {
         cameraRotation = RotationMatrix::fromZX(Vector3D::UP, cameraRotation.fwdVector()).asRotation();
     }
@@ -1198,7 +1187,7 @@ void ExperimentalEngineGoochModel::updateCameraParams()
 
 void ExperimentalEngineGoochModel::onStartUp()
 {
-    GameEngine::onStartUp();
+    TestGameEngine::onStartUp();
 
     ENQUEUE_COMMAND(EngineStartUp)
     (
@@ -1214,14 +1203,14 @@ void ExperimentalEngineGoochModel::onStartUp()
     camera.setClippingPlane(0.1f, 6000.f);
     camera.setFOV(110.f, 90.f);
 
-    cameraTranslation = Vector3D(0.f, -1.f, 0.0f).safeNormalize() * (500);
+    cameraTranslation = Vector3D(0.f, -1.f, 0.0f).safeNormalized() * (500);
     cameraTranslation.z() += 200;
 
     camera.setTranslation(cameraTranslation);
     camera.lookAt(Vector3D::ZERO);
     cameraRotation = camera.rotation();
 
-    imguiManager.addLayer(this);
+    getImGuiManager().addLayer(std::static_pointer_cast<IImGuiLayer>(shared_from_this()));
     createScene();
 
     std::vector<ShortSizeBox2D> bxs{
@@ -1249,7 +1238,7 @@ void ExperimentalEngineGoochModel::startUpRenderInit(
     class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
 )
 {
-    WindowCanvasRef windowCanvas = applicationModule->getWindowManager()->getWindowCanvas(applicationModule->mainWindow());
+    WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(application->windowManager->getMainWindow());
     frameResources.resize(windowCanvas->imagesCount());
     GBuffers::initialize(windowCanvas->imagesCount());
 
@@ -1271,8 +1260,8 @@ void ExperimentalEngineGoochModel::onQuit()
         }
     );
 
-    imguiManager.removeLayer(this);
-    GameEngine::onQuit();
+    getImGuiManager().removeLayer(std::static_pointer_cast<IImGuiLayer>(shared_from_this()));
+    TestGameEngine::onQuit();
 }
 
 void ExperimentalEngineGoochModel::renderQuit()
@@ -1293,27 +1282,23 @@ void ExperimentalEngineGoochModel::frameRender(
     class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
 )
 {
-    WindowCanvasRef windowCanvas = applicationModule->getWindowManager()->getWindowCanvas(applicationModule->mainWindow());
+    WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(application->windowManager->getMainWindow());
     SemaphoreRef waitSemaphore;
     uint32 index = windowCanvas->requestNextImage(&waitSemaphore, nullptr);
     drawQuadPipelineContext.swapchainIdx = index;
     rendererModule->getRenderManager()->preparePipelineContext(&drawQuadPipelineContext);
 
-    rendererModule->getRenderManager()->preparePipelineContext(
-        &drawSmPipelineContext, GBuffers::getGbufferRts(ERenderPassFormat::Multibuffer, index)
-    );
-    rendererModule->getRenderManager()->preparePipelineContext(&drawGoochPipelineContext, { frameResources[index].lightingPassRt });
-    rendererModule->getRenderManager()->preparePipelineContext(&resolveLightRtPipelineContext, { frameResources[index].lightingPassResolved });
+    auto gbufferRts = GBuffers::getGbufferRts(ERenderPassFormat::Multibuffer, index);
+    rendererModule->getRenderManager()->preparePipelineContext(&drawSmPipelineContext, gbufferRts);
+
+    const IRenderTargetTexture *rtPtr = frameResources[index].lightingPassRt;
+    rendererModule->getRenderManager()->preparePipelineContext(&drawGoochPipelineContext, { &rtPtr, 1 });
+    rtPtr = frameResources[index].lightingPassResolved;
+    rendererModule->getRenderManager()->preparePipelineContext(&resolveLightRtPipelineContext, { &rtPtr, 1 });
 
     GraphicsPipelineQueryParams queryParam;
     queryParam.cullingMode = ECullingMode::BackFace;
     queryParam.drawMode = EPolygonDrawMode::Fill;
-
-    if (!frameResources[index].recordingFence->isSignaled())
-    {
-        frameResources[index].recordingFence->waitForSignal();
-    }
-    frameResources[index].recordingFence->resetSignal();
 
     QuantizedBox2D viewport;
     // Since view matrix positive y is along up while vulkan positive y in view is down
@@ -1329,29 +1314,8 @@ void ExperimentalEngineGoochModel::frameRender(
     String cmdName = TCHAR("FrameRender") + String::toString(index);
     cmdList->finishCmd(cmdName);
 
-    //{
-    //    cmdList->finishCmd(cmdName + "_Comp");
-    //    auto temp = cmdList->startCmd(cmdName + "_Comp"), EQueueFunction::Compute, true);
-    //    cmdList->cmdBindComputePipeline(temp, testComputePipelineContext);
-    //    cmdList->cmdBindDescriptorsSets(temp, testComputePipelineContext, { testComputeParams.get() });
-    //    cmdList->cmdBarrierResources(temp, { testComputeParams.get() });
-    //    cmdList->cmdDispatch(temp
-    //        , writeTexture.image->getTextureSize().x / static_cast<const
-    //        ComputeShader*>(testComputePipelineContext.getPipeline()->getShaderResource())->getSubGroupSize().x
-    //        , writeTexture.image->getTextureSize().y / static_cast<const
-    //        ComputeShader*>(testComputePipelineContext.getPipeline()->getShaderResource())->getSubGroupSize().y
-    //    );
-    //    cmdList->endCmd(temp);
-
-    //    CommandSubmitInfo2 cs2;
-    //    cs2.cmdBuffers = { temp };
-    //    cmdList->submitCmd(EQueuePriority::High, cs2);
-    //}
-    const GraphicsResource *cmdBuffer = cmdList->startCmd(cmdName, EQueueFunction::Graphics, true);
+    if (bCompute)
     {
-        SCOPED_CMD_MARKER(cmdList, cmdBuffer, ExperimentalEngineFrame);
-        cmdList->cmdBindComputePipeline(cmdBuffer, testComputePipelineContext);
-
         if (bAnimateX || bAnimateY)
         {
             timeAccum += timeData.deltaTime;
@@ -1359,16 +1323,19 @@ void ExperimentalEngineGoochModel::frameRender(
             testBindlessTextureIdx %= texturesCount;
             timeAccum = Math::mod(timeAccum, 2.0f);
         }
-        std::vector<std::pair<String, std::any>> pushConsts = {
+        std::vector<std::pair<String, std::any>> computePushConsts = {
             {    TCHAR("time"),                                    { Time::asSeconds(Time::timeNow()) }},
-            {   TCHAR("flags"), { uint32((bAnimateX ? 0x00000001 : 0) | (bAnimateY ? 0x00000010 : 0)) }},
-            {TCHAR("srcIndex"),                                              { testBindlessTextureIdx }}
+              {   TCHAR("flags"), { uint32((bAnimateX ? 0x00000001 : 0) | (bAnimateY ? 0x00000010 : 0)) }},
+                {TCHAR("srcIndex"),                                              { testBindlessTextureIdx }}
         };
-        cmdList->cmdPushConstants(cmdBuffer, testComputePipelineContext, pushConsts);
-        cmdList->cmdBindDescriptorsSets(cmdBuffer, testComputePipelineContext, { testComputeParams });
-        cmdList->cmdBarrierResources(cmdBuffer, { testComputeParams });
+        cmdList->finishCmd(cmdName + "_Comp");
+        auto temp = cmdList->startCmd(cmdName + "_Comp", EQueueFunction::Compute, true);
+        cmdList->cmdBindComputePipeline(temp, testComputePipelineContext);
+        cmdList->cmdPushConstants(temp, testComputePipelineContext, computePushConsts);
+        cmdList->cmdBindDescriptorsSets(temp, testComputePipelineContext, testComputeParams);
+        cmdList->cmdBarrierResources(temp, { &testComputeParams, 1 });
         cmdList->cmdDispatch(
-            cmdBuffer,
+            temp,
             writeTexture->getTextureSize().x
                 / static_cast<const ComputeShaderConfig *>(testComputePipelineContext.getPipeline()->getShaderResource()->getShaderConfig())
                       ->getSubGroupSize()
@@ -1378,22 +1345,47 @@ void ExperimentalEngineGoochModel::frameRender(
                       ->getSubGroupSize()
                       .y
         );
+        cmdList->cmdReleaseQueueResources(temp, EQueueFunction::Graphics);
+        cmdList->endCmd(temp);
+
+        CommandSubmitInfo2 cs2;
+        cs2.cmdBuffers = { temp };
+        cmdList->submitCmd(EQueuePriority::High, cs2);
+    }
+    const GraphicsResource *cmdBuffer = cmdList->startCmd(cmdName, EQueueFunction::Graphics, true);
+    {
+        SCOPED_CMD_MARKER(cmdList, cmdBuffer, ExperimentalEngineFrame);
+        // cmdList->cmdBindComputePipeline(cmdBuffer, testComputePipelineContext);
+        // cmdList->cmdPushConstants(cmdBuffer, testComputePipelineContext, computerPushConsts);
+        // cmdList->cmdBindDescriptorsSets(cmdBuffer, testComputePipelineContext, testComputeParams);
+        // cmdList->cmdBarrierResources(cmdBuffer, { &testComputeParams, 1 });
+        // cmdList->cmdDispatch(
+        //     cmdBuffer,
+        //     writeTexture->getTextureSize().x
+        //         / static_cast<const ComputeShaderConfig *>(testComputePipelineContext.getPipeline()->getShaderResource()->getShaderConfig())
+        //               ->getSubGroupSize()
+        //               .x,
+        //     writeTexture->getTextureSize().y
+        //         / static_cast<const ComputeShaderConfig *>(testComputePipelineContext.getPipeline()->getShaderResource()->getShaderConfig())
+        //               ->getSubGroupSize()
+        //               .y
+        //);
 
         cmdList->cmdBeginRenderPass(cmdBuffer, drawSmPipelineContext, scissor, {}, clearValues);
         {
             SCOPED_CMD_MARKER(cmdList, cmdBuffer, MainUnlitPass);
 
             cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
-            cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { sceneVertexBuffer }, { 0 });
+            cmdList->cmdBindVertexBuffer(cmdBuffer, 0, sceneVertexBuffer, 0);
             cmdList->cmdBindIndexBuffer(cmdBuffer, sceneIndexBuffer);
             for (const auto &pipelineToOffsetCount : pipelineToDrawCmdOffsetCount)
             {
                 cmdList->cmdBindGraphicsPipeline(cmdBuffer, *pipelineToOffsetCount.first, { queryParam });
+
                 // Shader material params set
-                cmdList->cmdBindDescriptorsSets(
-                    cmdBuffer, *pipelineToOffsetCount.first,
-                    { viewParameters.get(), instanceParameters.get(), sceneShaderUniqParams[pipelineToOffsetCount.first].get() }
-                );
+                ShaderParametersRef descSets[]
+                    = { viewParameters.get(), instanceParameters.get(), sceneShaderUniqParams[pipelineToOffsetCount.first].get() };
+                cmdList->cmdBindDescriptorsSets(cmdBuffer, *pipelineToOffsetCount.first, descSets);
 
                 cmdList->cmdDrawIndexedIndirect(
                     cmdBuffer, allEntityDrawCmds, pipelineToOffsetCount.second.first, pipelineToOffsetCount.second.second,
@@ -1407,7 +1399,7 @@ void ExperimentalEngineGoochModel::frameRender(
         viewport.minBound = Int2D(0, 0);
         viewport.maxBound = ApplicationSettings::screenSize.get();
 
-        cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { GlobalBuffers::getQuadTriVertexBuffer() }, { 0 });
+        cmdList->cmdBindVertexBuffer(cmdBuffer, 0, GlobalBuffers::getQuadTriVertexBuffer(), 0);
         cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
         if (frameVisualizeId == 0)
         {
@@ -1432,7 +1424,8 @@ void ExperimentalEngineGoochModel::frameRender(
                     SCOPED_CMD_MARKER(cmdList, cmdBuffer, DrawLight);
                     cmdList->cmdBindGraphicsPipeline(cmdBuffer, drawGoochPipelineContext, { queryParam });
 
-                    cmdList->cmdBindDescriptorsSets(cmdBuffer, drawGoochPipelineContext, { lightCommon.get(), *lightTextures, light.get() });
+                    ShaderParametersRef descSets[] = { lightCommon.get(), *lightTextures, light.get() };
+                    cmdList->cmdBindDescriptorsSets(cmdBuffer, drawGoochPipelineContext, descSets);
                     cmdList->cmdDrawVertices(cmdBuffer, 0, 3);
                 }
                 cmdList->cmdEndRenderPass(cmdBuffer);
@@ -1473,11 +1466,10 @@ void ExperimentalEngineGoochModel::frameRender(
                 break;
             }
 
-            if (drawQuadDescs)
+            if (drawQuadDescs.isValid())
             {
-                rendererModule->getRenderManager()->preparePipelineContext(
-                    &resolveLightRtPipelineContext, { frameResources[index].lightingPassRt }
-                );
+                rtPtr = frameResources[index].lightingPassRt;
+                rendererModule->getRenderManager()->preparePipelineContext(&resolveLightRtPipelineContext, { &rtPtr, 1 });
 
                 cmdList->cmdBeginRenderPass(cmdBuffer, resolveLightRtPipelineContext, scissor, {}, clearValues);
                 {
@@ -1495,11 +1487,13 @@ void ExperimentalEngineGoochModel::frameRender(
         // Drawing IMGUI
         ImGuiDrawingContext drawingContext;
         drawingContext.cmdBuffer = cmdBuffer;
-        drawingContext.rtTextures = { frameResources[index].lightingPassRt };
-        imguiManager.draw(cmdList, graphicsInstance, graphicsHelper, drawingContext);
+        drawingContext.rtTexture = frameResources[index].lightingPassRt;
+        getImGuiManager().draw(cmdList, graphicsInstance, graphicsHelper, drawingContext);
+        cmdList->cmdReleaseQueueResources(cmdBuffer, EQueueFunction::Compute);
 
         // Drawing text
-        rendererModule->getRenderManager()->preparePipelineContext(&imguiShaderCntxt, { frameResources[index].lightingPassRt });
+        rtPtr = frameResources[index].lightingPassRt;
+        rendererModule->getRenderManager()->preparePipelineContext(&imguiShaderCntxt, { &rtPtr, 1 });
         if (!textToRender.empty())
         {
             RenderPassAdditionalProps additionalProps;
@@ -1519,7 +1513,7 @@ void ExperimentalEngineGoochModel::frameRender(
 
                 cmdList->cmdBindGraphicsPipeline(cmdBuffer, imguiShaderCntxt, { queryParam });
                 cmdList->cmdBindDescriptorsSets(cmdBuffer, imguiShaderCntxt, textRenderParams);
-                cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { textVertsBuffer }, { 0 });
+                cmdList->cmdBindVertexBuffer(cmdBuffer, 0, textVertsBuffer, 0);
                 cmdList->cmdBindIndexBuffer(cmdBuffer, textIndexBuffer);
                 cmdList->cmdDrawIndexed(cmdBuffer, 0, textIdxCount);
             }
@@ -1529,7 +1523,7 @@ void ExperimentalEngineGoochModel::frameRender(
         // Drawing final quad
         viewport.maxBound = scissor.maxBound = ApplicationSettings::surfaceSize.get();
 
-        cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { GlobalBuffers::getQuadTriVertexBuffer() }, { 0 });
+        cmdList->cmdBindVertexBuffer(cmdBuffer, 0, GlobalBuffers::getQuadTriVertexBuffer(), 0);
         cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
 
         RenderPassAdditionalProps renderPassAdditionalProps;
@@ -1549,38 +1543,47 @@ void ExperimentalEngineGoochModel::frameRender(
 
     CommandSubmitInfo submitInfo;
     submitInfo.waitOn = {
-        CommandSubmitInfo::WaitInfo{waitSemaphore, INDEX_TO_FLAG_MASK(EPipelineStages::FragmentShaderStage)}
+        {waitSemaphore, INDEX_TO_FLAG_MASK(EPipelineStages::FragmentShaderStage)}
     };
-    submitInfo.signalSemaphores = { frameResources[index].usageWaitSemaphore[0] };
+    submitInfo.signalSemaphores = {
+        {frameResources[index].usageWaitSemaphore[0], EPipelineStages::ColorAttachmentOutput}
+    };
     submitInfo.cmdBuffers = { cmdBuffer };
 
     cmdList->submitCmd(EQueuePriority::High, submitInfo, frameResources[index].recordingFence);
 
     std::vector<WindowCanvasRef> canvases = { windowCanvas };
     std::vector<uint32> indices = { index };
-    cmdList->presentImage(canvases, indices, {});
+    cmdList->presentImage(canvases, indices, { frameResources[index].usageWaitSemaphore });
 }
 
 void ExperimentalEngineGoochModel::tickEngine()
 {
-    GameEngine::tickEngine();
+    TestGameEngine::tickEngine();
     updateCameraParams();
 
-    if (inputModule->getInputSystem()->isKeyPressed(Keys::ONE))
+    if (application->inputSystem->isKeyPressed(Keys::ONE))
     {
         frameVisualizeId = 0;
     }
-    else if (inputModule->getInputSystem()->isKeyPressed(Keys::TWO))
+    else if (application->inputSystem->isKeyPressed(Keys::TWO))
     {
         frameVisualizeId = 1;
     }
-    else if (inputModule->getInputSystem()->isKeyPressed(Keys::THREE))
+    else if (application->inputSystem->isKeyPressed(Keys::THREE))
     {
         frameVisualizeId = 2;
     }
-    else if (inputModule->getInputSystem()->isKeyPressed(Keys::FOUR))
+    else if (application->inputSystem->isKeyPressed(Keys::FOUR))
     {
         frameVisualizeId = 3;
+    }
+
+    if (!application->windowManager->getMainWindow()->isMinimized())
+    {
+        ENQUEUE_COMMAND_NODEBUG(
+            TickFrame, { frameRender(cmdList, graphicsInstance, graphicsHelper); }, this
+        );
     }
 
     if (renderSize != ApplicationSettings::screenSize.get())
@@ -1596,15 +1599,6 @@ void ExperimentalEngineGoochModel::tickEngine()
             this
         );
     }
-
-    ENQUEUE_COMMAND_NODEBUG(
-        TickFrame,
-        {
-            updateShaderParameters(cmdList, graphicsInstance);
-            frameRender(cmdList, graphicsInstance, graphicsHelper);
-        },
-        this
-    );
 
     tempTestPerFrame();
 }
@@ -1638,10 +1632,10 @@ void ExperimentalEngineGoochModel::draw(class ImGuiDrawInterface *drawInterface)
             ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
-            const InputAnalogState *rmxState = inputModule->getInputSystem()->analogState(AnalogStates::RelMouseX);
-            const InputAnalogState *rmyState = inputModule->getInputSystem()->analogState(AnalogStates::RelMouseY);
-            const InputAnalogState *amxState = inputModule->getInputSystem()->analogState(AnalogStates::AbsMouseX);
-            const InputAnalogState *amyState = inputModule->getInputSystem()->analogState(AnalogStates::AbsMouseY);
+            const InputAnalogState *rmxState = application->inputSystem->analogState(AnalogStates::RelMouseX);
+            const InputAnalogState *rmyState = application->inputSystem->analogState(AnalogStates::RelMouseY);
+            const InputAnalogState *amxState = application->inputSystem->analogState(AnalogStates::AbsMouseX);
+            const InputAnalogState *amyState = application->inputSystem->analogState(AnalogStates::AbsMouseY);
             ImGui::Text(
                 "Cursor pos (%.0f, %.0f) Delta (%0.1f, %0.1f)", amxState->currentValue, amyState->currentValue, rmxState->currentValue,
                 rmyState->currentValue
@@ -1709,6 +1703,7 @@ void ExperimentalEngineGoochModel::draw(class ImGuiDrawInterface *drawInterface)
             ImGui::NextColumn();
             if (ImGui::CollapsingHeader("Compute"))
             {
+                bCompute = true;
                 ImGui::Text("Animate");
                 ImGui::NextColumn();
                 ImGui::Checkbox("X", &bAnimateX);
@@ -1719,8 +1714,14 @@ void ExperimentalEngineGoochModel::draw(class ImGuiDrawInterface *drawInterface)
 
                 ImGui::Separator();
                 ImGui::NextColumn();
-                ImGui::Image(writeTexture, ImVec2(ImGui::GetWindowContentRegionWidth(), ImGui::GetWindowContentRegionWidth()));
+                ImGui::Image(
+                    writeTexture->getTextureResource().get(), ImVec2(ImGui::GetWindowContentRegionWidth(), ImGui::GetWindowContentRegionWidth())
+                );
                 ImGui::Separator();
+            }
+            else
+            {
+                bCompute = false;
             }
 
             if (ImGui::CollapsingHeader("Bitonic Sort"))
@@ -1838,8 +1839,12 @@ void ExperimentalEngineGoochModel::draw(class ImGuiDrawInterface *drawInterface)
                 if (bAnyModified)
                 {
                     ENQUEUE_COMMAND(UpdateTextData)
-                    ([this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
-                     { updateTextRenderData(cmdList, graphicsInstance, graphicsHelper); });
+                    (
+                        [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+                        {
+                            updateTextRenderData(cmdList, graphicsInstance, graphicsHelper);
+                        }
+                    );
                 }
             }
 
@@ -1849,9 +1854,9 @@ void ExperimentalEngineGoochModel::draw(class ImGuiDrawInterface *drawInterface)
     }
 }
 
-// GameEngine* GameEngineWrapper::createEngineInstance()
-//{
-//     static ExperimentalEngineGoochModel gameEngine;
-//     return &gameEngine;
-// }
+TestGameEngine *GameEngineWrapper::createEngineInstance()
+{
+    static SharedPtr<ExperimentalEngineGoochModel> engineInst = std::make_shared<ExperimentalEngineGoochModel>();
+    return engineInst.get();
+}
 #endif

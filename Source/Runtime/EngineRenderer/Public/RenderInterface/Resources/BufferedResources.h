@@ -10,8 +10,86 @@
  */
 
 #pragma once
+
 #include "RenderInterface/Resources/GenericWindowCanvas.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
+
+#include <array>
+
+template <typename ResourceType, uint32 Count>
+requires std::is_default_constructible_v<ResourceType>
+class RingBufferedResource
+{
+public:
+    constexpr static const uint32 BUFFER_COUNT = Count;
+    static_assert(BUFFER_COUNT > 1, "Only 1 buffer is not supported");
+
+private:
+    std::array<ResourceType, BUFFER_COUNT> resources;
+    int32 head = 0;
+    int32 tail = -1;
+
+public:
+    RingBufferedResource() = default;
+
+    void push(ResourceType resource)
+    {
+        if (tail == -1)
+        {
+            resources[0] = resource;
+            tail = 1;
+            return;
+        }
+
+        debugAssertf(tail != head, "Push must be paired with pop");
+        if (tail != head)
+        {
+            resources[tail] = resource;
+            tail = (tail + 1) % BUFFER_COUNT;
+        }
+    }
+    ResourceType peek(uint32 offset = 0) const
+    {
+        offset %= BUFFER_COUNT;
+        if (offset < size())
+        {
+            return resources[(head + offset) % BUFFER_COUNT];
+        }
+        return {};
+    }
+    ResourceType pop()
+    {
+        debugAssertf(tail != -1, "Push must be paired with pop");
+        if (tail != -1)
+        {
+            ResourceType res = resources[head];
+            resources[head] = {};
+            head = (head + 1) % BUFFER_COUNT;
+            if (head == tail)
+            {
+                tail = -1;
+                head = 0;
+            }
+            return res;
+        }
+        return {};
+    }
+    void reset()
+    {
+        for (uint32 i = 0; i != BUFFER_COUNT; ++i)
+        {
+            resources[i] = {};
+        }
+    }
+    uint32 size() const
+    {
+        if (tail < 0)
+        {
+            return 0;
+        }
+        return head >= tail ? BUFFER_COUNT - (head - tail) : tail - head;
+    }
+};
 
 template <typename ResourceType>
 class SwapchainBufferedResource

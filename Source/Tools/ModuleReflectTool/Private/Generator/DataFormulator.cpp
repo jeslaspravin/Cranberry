@@ -42,8 +42,10 @@ void parseFailed(CXCursor cursor, SourceGeneratorContext *srcGenContext, const T
 {
     // Just push and pop debug here to enable log level
     SCOPED_MUTE_LOG_SEVERITIES(Logger::Debug);
-    LOG("SourceGenerator", "%s ERROR %s() : Reflection parsing failed - %s", clang_getCursorLocation(cursor), funcName,
-        StringFormat::format(std::forward<FmtType>(fmtMsg), std::forward<Args>(args)...));
+    LOG_ERROR(
+        "SourceGenerator", "%s error ParseFailed: %s() Reflection parsing failed - %s", clang_getCursorLocation(cursor), funcName,
+        StringFormat::format(std::forward<FmtType>(fmtMsg), std::forward<Args>(args)...)
+    );
     srcGenContext->bGenerated = false;
 }
 
@@ -239,8 +241,9 @@ void visitMemberCppMethods(CXCursor cursor, LocalContext &localCntxt)
     if (clang_CXXMethod_isDefaulted(cursor))
     {
         parseFailed(
-            cursor, localCntxt.srcGenContext, __func__, TCHAR("Default functions/Constructors are not allowed for reflected types %s"), funcName
-        );
+            cursor, localCntxt.srcGenContext, __func__,
+            TCHAR("Default functions/Constructors are not allowed for reflected types %s"), funcName
+            );
         return;
     }
 
@@ -358,9 +361,9 @@ void visitClassMember(CXCursor cursor, LocalContext &localCntxt)
             if (classParseCntxt && clang_Cursor_isNull(classParseCntxt->baseClass))
             {
                 parseFailed(
-                    cursor, localCntxt.srcGenContext, __func__, TCHAR("Base class must be the first extended class[Before any interface %s]"),
-                    clang_getCursorSpelling(baseClass)
-                );
+                    cursor, localCntxt.srcGenContext, __func__,
+                    TCHAR("Base class must be the first extended class[Before any interface %s]"), clang_getCursorSpelling(baseClass)
+                    );
                 break;
             }
 
@@ -422,7 +425,11 @@ void visitStructs(CXCursor cursor, SourceGeneratorContext *srcGenContext)
     CXSourceLocation generatedCodesSrcLoc = clang_getCursorLocation(ParserHelper::getGeneratedCodeCursor(cursor));
     uint32 genCodesLineNum = 0;
     clang_getFileLocation(generatedCodesSrcLoc, nullptr, &genCodesLineNum, nullptr, nullptr);
-    bool bIsAbstract = !!clang_CXXRecord_isAbstract(cursor);
+    const bool bIsAbstract
+        = !!clang_CXXRecord_isAbstract(cursor)
+          || (std::find(buildFlags.cbegin(), buildFlags.cend(), GeneratorConsts::ABSTRACT_FLAG.toString()) != buildFlags.cend());
+    const bool bDisableCtor
+        = std::find(buildFlags.cbegin(), buildFlags.cend(), GeneratorConsts::DISABLE_CTOR_FLAG.toString()) != buildFlags.cend();
     const bool bNoExport = std::find(buildFlags.cbegin(), buildFlags.cend(), GeneratorConsts::NOEXPORT_FLAG.toString()) != buildFlags.cend();
     const bool bHasOverridenCtorPolicy = ParserHelper::hasOverridenCtorPolicy(cursor); // Needed for construction from heap allocated struct
 
@@ -447,6 +454,7 @@ void visitStructs(CXCursor cursor, SourceGeneratorContext *srcGenContext)
 
     setTypeMetaInfo<GeneratorConsts::TYPEMETADATA_TAG.Literal, GeneratorConsts::TYPEMETAFLAGS_TAG.Literal>(structCntxt, metaData, metaFlags);
     structCntxt.args[GeneratorConsts::ISABSTRACT_TAG] = bIsAbstract;
+    structCntxt.args[GeneratorConsts::DISABLECTOR_TAG] = bDisableCtor;
     structCntxt.args[GeneratorConsts::TYPENAME_TAG] = structCanonicalTypeName;
     structCntxt.args[GeneratorConsts::SANITIZEDNAME_TAG] = sanitizedTypeName;
 
@@ -501,9 +509,8 @@ void visitClasses(CXCursor cursor, SourceGeneratorContext *srcGenContext)
     {
         parseFailed(
             cursor, srcGenContext, __func__,
-            TCHAR("Interface %s must not be reflected, Remove GENERATED_CODES() and remove any field/function META_ANNOTATIONs"),
-            clang_getTypeSpelling(clang_getCursorType(cursor))
-        );
+            TCHAR("Interface %s must not be reflected, Remove GENERATED_CODES() and remove any field/function META_ANNOTATIONs"), clang_getTypeSpelling(clang_getCursorType(cursor))
+            );
         return;
     }
 
@@ -514,7 +521,11 @@ void visitClasses(CXCursor cursor, SourceGeneratorContext *srcGenContext)
     CXSourceLocation generatedCodesSrcLoc = clang_getCursorLocation(ParserHelper::getGeneratedCodeCursor(cursor));
     uint32 genCodesLineNum = 0;
     clang_getFileLocation(generatedCodesSrcLoc, nullptr, &genCodesLineNum, nullptr, nullptr);
-    const bool bIsAbstract = !!clang_CXXRecord_isAbstract(cursor);
+    const bool bIsAbstract
+        = !!clang_CXXRecord_isAbstract(cursor)
+          || (std::find(buildFlags.cbegin(), buildFlags.cend(), GeneratorConsts::ABSTRACT_FLAG.toString()) != buildFlags.cend());
+    const bool bDisableCtor
+        = std::find(buildFlags.cbegin(), buildFlags.cend(), GeneratorConsts::DISABLE_CTOR_FLAG.toString()) != buildFlags.cend();
     const bool bIsBaseType = std::find(buildFlags.cbegin(), buildFlags.cend(), GeneratorConsts::BASETYPE_FLAG.toString()) != buildFlags.cend();
     const bool bNoExport = std::find(buildFlags.cbegin(), buildFlags.cend(), GeneratorConsts::NOEXPORT_FLAG.toString()) != buildFlags.cend();
     const bool bHasOverridenCtorPolicy = ParserHelper::hasOverridenCtorPolicy(cursor);
@@ -538,6 +549,7 @@ void visitClasses(CXCursor cursor, SourceGeneratorContext *srcGenContext)
 
     setTypeMetaInfo<GeneratorConsts::TYPEMETADATA_TAG.Literal, GeneratorConsts::TYPEMETAFLAGS_TAG.Literal>(classCntxt, metaData, metaFlags);
     classCntxt.args[GeneratorConsts::ISABSTRACT_TAG] = bIsAbstract;
+    classCntxt.args[GeneratorConsts::DISABLECTOR_TAG] = bDisableCtor;
     classCntxt.args[GeneratorConsts::TYPENAME_TAG] = classCanonicalTypeName;
     classCntxt.args[GeneratorConsts::SANITIZEDNAME_TAG] = sanitizedTypeName;
 
@@ -569,6 +581,10 @@ void visitClasses(CXCursor cursor, SourceGeneratorContext *srcGenContext)
     );
 
     headerReflectTypeCntxt.args[GeneratorConsts::IFGENERATECTOR_BRANCH_TAG] = !classParseCntx.bHasConstructor;
+    if (!clang_Cursor_isNull(classParseCntx.baseClass))
+    {
+        headerReflectTypeCntxt.args[GeneratorConsts::BASECLASSTYPENAME_TAG] = classCntxt.args[GeneratorConsts::BASECLASSTYPENAME_TAG];
+    }
 
     for (CXCursor c : classLocalCtx.unhandledSibilings)
     {
@@ -631,7 +647,7 @@ void generatePrereqTypes(CXType type, SourceGeneratorContext *srcGenContext)
         }
         else
         {
-            LOG_ERROR("SourceGenerator", "%s() : Type %s is not fully supported custom type", __func__, clang_getTypeSpelling(referredType));
+            LOG_ERROR("SourceGenerator", "Type %s is not fully supported custom type", clang_getTypeSpelling(referredType));
             srcGenContext->bGenerated = false;
             return;
         }
@@ -695,10 +711,7 @@ void generatePrereqTypes(CXType type, SourceGeneratorContext *srcGenContext)
         CXCursor typeDecl = clang_getTypeDeclaration(referredType);
         if (clang_Cursor_isNull(typeDecl))
         {
-            LOG_ERROR(
-                "SourceGenerator", "%s() : Type %s do not have any declaration and cannot be reflected", __func__,
-                clang_getTypeSpelling(referredType)
-            );
+            LOG_ERROR("SourceGenerator", "Type %s do not have any declaration and cannot be reflected", clang_getTypeSpelling(referredType));
             srcGenContext->bGenerated = false;
             return;
         }

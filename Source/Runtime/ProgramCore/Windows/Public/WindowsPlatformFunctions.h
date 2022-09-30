@@ -11,22 +11,30 @@
 
 #pragma once
 #include "Types/Platform/GenericPlatformFunctions.h"
-#include "Types/Platform/GenericPlatformTypes.h"
 
 class PROGRAMCORE_EXPORT WindowsPlatformFunctions : public GenericPlatformFunctions<WindowsPlatformFunctions>
 {
+private:
+    static void bindCrtHandlesToStdHandles(bool bBindStdIn, bool bBindStdOut, bool bBindStdErr);
 
 public:
-    static LibPointer *openLibrary(String libName);
-    static void releaseLibrary(const LibPointer *libraryHandle);
-    static void *getProcAddress(const LibPointer *libraryHandle, String symName);
-    static void getModuleInfo(void *processHandle, LibPointer *libraryHandle, LibraryData &moduleData);
-    static bool isSame(const LibPointer *leftHandle, const LibPointer *rightHandle);
+    static LibHandle openLibrary(const TChar *libName);
+    static void releaseLibrary(LibHandle libraryHandle);
+    static ProcAddress getProcAddress(LibHandle libraryHandle, const TChar *symName);
+    static void getModuleInfo(PlatformHandle processHandle, LibHandle libraryHandle, LibraryData &moduleData);
 
-    static void *getCurrentThreadHandle();
-    static void *getCurrentProcessHandle();
-    static void closeProcessHandle(void *handle);
-    static void getAllModules(void *processHandle, LibPointerPtr *modules, uint32 &modulesSize);
+    static PlatformHandle
+        createProcess(const String &applicationPath, const String &cmdLine, const String &environment, const String &workingDirectory);
+    static PlatformHandle getCurrentProcessHandle();
+    static void closeProcessHandle(PlatformHandle handle);
+
+    static void getAllModules(PlatformHandle processHandle, LibHandle *modules, uint32 &modulesSize);
+    static LibHandle getAddressModule(void *address);
+
+    static void setConsoleForegroundColor(uint8 r, uint8 g, uint8 b);
+    static bool hasAttachedConsole();
+    static void setupAvailableConsole();
+    static void detachCosole();
 
     static String getClipboard();
     static bool setClipboard(const String &text);

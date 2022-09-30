@@ -410,7 +410,7 @@ requires(!std::same_as<ToCharType, AChar>) struct StringConv<AChar, ToCharType>
 //////////////////////////////////////////////////////////////////////////
 
 template <typename Type>
-FORCE_INLINE String String::toString(Type &&value)
+STRING_FUNCQUALIFIER String String::toString(Type &&value)
 {
     return ToStringImpl<String::value_type>::toString(std::forward<Type>(value));
 }

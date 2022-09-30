@@ -10,16 +10,14 @@
  */
 
 #pragma once
+
 #include "EngineRendererExports.h"
-#include "Modules/ModuleManager.h"
-#include "RenderApi/RenderManager.h"
-#include "Types/Containers/ReferenceCountPtr.h"
+#include "Modules/IModuleBase.h"
 #include "Types/Delegates/Delegate.h"
 
 class IGraphicsInstance;
 class GraphicsHelperAPI;
-
-class GenericWindowCanvas;
+class RenderManager;
 
 enum class ERenderStateEvent
 {
@@ -54,27 +52,17 @@ class ENGINERENDERER_EXPORT IRenderInterfaceModule : public IModuleBase
 public:
     static IRenderInterfaceModule *get();
 
+    /**
+     * These are supposed to be used only inside rendering thread.
+     * Do not cache this results If you are not sure of your intentions
+     */
     virtual IGraphicsInstance *currentGraphicsInstance() const = 0;
     virtual const GraphicsHelperAPI *currentGraphicsHelper() const = 0;
-
-    virtual void initializeGraphics() = 0;
-    virtual void finalizeGraphicsInitialization() = 0;
     virtual RenderManager *getRenderManager() const = 0;
+
+    virtual void initializeGraphics(bool bComputeOnly = false) = 0;
+    virtual void finalizeGraphicsInitialization() = 0;
 
     virtual DelegateHandle registerToStateEvents(RenderStateDelegate::SingleCastDelegateType callback) = 0;
     virtual void unregisterToStateEvents(const DelegateHandle &handle) = 0;
-
-    template <typename RenderCmdClass>
-    static void issueRenderCommand(typename RenderCmdClass::RenderCmdFunc &&renderCommandFn);
 };
-
-template <typename RenderCmdClass>
-void IRenderInterfaceModule::issueRenderCommand(typename RenderCmdClass::RenderCmdFunc &&renderCommandFn)
-{
-    if (IRenderInterfaceModule *riModule = get())
-    {
-        RenderManager::issueRenderCommand<RenderCmdClass>(
-            riModule->getRenderManager(), std::forward<typename RenderCmdClass::RenderCmdFunc>(renderCommandFn)
-        );
-    }
-}

@@ -71,18 +71,22 @@ function (reflect_target)
         CONTENT "$<TARGET_PROPERTY:COMPILE_DEFINITIONS>"
         TARGET ${reflect_target_TARGET_NAME}
     )
+
     # Did not used file(GENERATE) with custom dependency via custom target as it was dirty(Shows up as a project in solution), Maybe find a way to create target without showing in solution
     add_custom_command(TARGET ${reflect_target_TARGET_NAME} PRE_BUILD
         COMMAND ModuleReflectTool   --generatedList ${gen_files_arg} --filterDiagnostics
                                     --generatedDir "${CMAKE_CURRENT_BINARY_DIR}/${target_generated_path}" 
                                     --moduleSrcDir "${CMAKE_CURRENT_LIST_DIR}" 
+                                    --moduleName ${reflect_target_TARGET_NAME}
                                     --moduleExportMacro $<UPPER_CASE:${reflect_target_TARGET_NAME}>_EXPORT
                                     --intermediateDir "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>" 
                                     --includeList "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${reflect_target_TARGET_NAME}_incls.list" 
                                     --compileDefList "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${reflect_target_TARGET_NAME}_defs.list"
                                     --logFileName ${reflect_target_TARGET_NAME}
+                                    # --logVerbose
         BYPRODUCTS ${gen_files}
         USES_TERMINAL
+        COMMAND_EXPAND_LISTS
         # VERBATIM not needed as we took care of quotes manually
         COMMENT "${reflect_target_TARGET_NAME} : Generating reflection codes..."
     )

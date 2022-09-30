@@ -10,11 +10,12 @@
  */
 
 #pragma once
-#include "String/String.h"
+
 #include "Types/CoreTypes.h"
-#include "Types/Platform/GenericPlatformTypes.h"
+#include "Types/Platform/PlatformTypes.h"
 
 struct CBEGuid;
+class String;
 
 template <typename PlatformClass>
 class GenericPlatformFunctions
@@ -22,38 +23,64 @@ class GenericPlatformFunctions
 
 protected:
 public:
-    // Extensions are auto appended by api to platform default
-    static LibPointer *openLibrary(String libName) { return PlatformClass::openLibrary(libName); }
+    /**
+     * Extensions are auto appended by api to platform default
+     * Module/Lib handle must be manually freed with releaseLibrary()
+     */
+    FORCE_INLINE static LibHandle openLibrary(const TChar *libName) { return PlatformClass::openLibrary(libName); }
 
-    static void releaseLibrary(const LibPointer *libraryHandle) { PlatformClass::releaseLibrary(libraryHandle); }
+    FORCE_INLINE static void releaseLibrary(LibHandle libraryHandle) { PlatformClass::releaseLibrary(libraryHandle); }
 
-    static void *getProcAddress(const LibPointer *libraryHandle, String symName)
+    FORCE_INLINE static ProcAddress getProcAddress(LibHandle libraryHandle, const TChar *symName)
     {
         return PlatformClass::getProcAddress(libraryHandle, symName);
     }
 
-    static bool isSame(const LibPointer *leftHandle, const LibPointer *rightHandle) { return PlatformClass::isSame(leftHandle, rightHandle); }
+    // Process related functions
 
-    static void *getCurrentThreadHandle() { return PlatformClass::getCurrentThreadHandle(); }
+    // Must be closed with closeProcessHandle()
+    FORCE_INLINE static PlatformHandle
+        createProcess(const String &applicationPath, const String &cmdLine, const String &environment, const String &workingDirectory)
+    {
+        return PlatformClass::createProcess(applicationPath, cmdLine, environment, workingDirectory);
+    }
+    FORCE_INLINE static PlatformHandle getCurrentProcessHandle() { return PlatformClass::getCurrentProcessHandle(); }
+    FORCE_INLINE static void closeProcessHandle(PlatformHandle handle) { PlatformClass::closeProcessHandle(handle); }
 
-    static void *getCurrentProcessHandle() { return PlatformClass::getCurrentProcessHandle(); }
-    static void closeProcessHandle(void *handle) { PlatformClass::closeProcessHandle(handle); }
-
-    static void getAllModules(void *processHandle, LibPointerPtr *modules, uint32 &modulesSize)
+    // Do not close LibHandles from this method
+    FORCE_INLINE static void getAllModules(PlatformHandle processHandle, LibHandle *modules, uint32 &modulesSize)
     {
         PlatformClass::getAllModules(processHandle, modules, modulesSize);
     }
+    // Do not close LibHandles from this method
+    FORCE_INLINE static LibHandle getAddressModule(void *address) { return PlatformClass::getAddressModule(address); }
+    // Do not close LibHandles from this method, Be careful when calling this from header
+    template <typename... Args>
+    FORCE_INLINE static LibHandle getCallerModule(Args... args)
+    {
+        return getAddressModule(&GenericPlatformFunctions<PlatformClass>::getCallerModule<Args...>);
+    }
 
-    static void getModuleInfo(void *processHandle, LibPointer *libraryHandle, LibraryData &moduleData)
+    FORCE_INLINE static void getModuleInfo(PlatformHandle processHandle, LibHandle libraryHandle, LibraryData &moduleData)
     {
         PlatformClass::getModuleInfo(processHandle, libraryHandle, moduleData);
     }
 
+    // Console related functions
+    FORCE_INLINE static bool hasAttachedConsole() { return PlatformClass::hasAttachedConsole(); }
+    FORCE_INLINE static void setConsoleForegroundColor(uint8 r, uint8 g, uint8 b) { return PlatformClass::setConsoleForegroundColor(r, g, b); }
+    /**
+     * Attaches to console/terminal that is available either in parent process or in executing IDE output and performs some initial setup
+     * Does only setting to use console-virtual-terminal-sequence and UTF-8 if console is already present for this application
+     */
+    FORCE_INLINE static void setupAvailableConsole() { PlatformClass::setupAvailableConsole(); }
+    FORCE_INLINE static void detachCosole() { PlatformClass::detachCosole(); }
+
     // Platform tools
 
-    static String getClipboard() { return PlatformClass::getClipboard(); }
+    FORCE_INLINE static String getClipboard() { return PlatformClass::getClipboard(); }
 
-    static bool setClipboard(const String &text) { return PlatformClass::setClipboard(text); }
+    FORCE_INLINE static bool setClipboard(const String &text) { return PlatformClass::setClipboard(text); }
 
     // Utilities
 
@@ -61,8 +88,7 @@ public:
      * We need to remove ref and const here as we use perfect forwarding and type will be either const appended l/r value reference
      */
     template <typename UnsignedType>
-    requires std::unsigned_integral<std::remove_cvref_t<UnsignedType>>
-    static uint32 getSetBitCount(UnsignedType &&value)
+    requires std::unsigned_integral<std::remove_cvref_t<UnsignedType>> FORCE_INLINE static uint32 getSetBitCount(UnsignedType &&value)
     {
         // Switch statement is not working as const_expr
         if CONST_EXPR (sizeof(value) == 1)

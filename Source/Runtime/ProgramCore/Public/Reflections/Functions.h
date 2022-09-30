@@ -12,8 +12,15 @@
 #pragma once
 
 #include "Types/CoreDefines.h"
+#include "Types/CoreTypes.h"
 
+#define USE_STDFUNC_FOR_LAMDA 0
+
+#if USE_STDFUNC_FOR_LAMDA
 #include <functional>
+#else
+#include <type_traits>
+#endif
 
 template <typename ReturnType, typename... Parameters>
 struct Function
@@ -39,7 +46,7 @@ struct Function
         staticDelegate = std::move(otherFuncPtr.staticDelegate);
         otherFuncPtr.staticDelegate = nullptr;
     }
-    bool operator==(const Function &otherFuncPtr) { return staticDelegate == otherFuncPtr.staticDelegate; }
+    bool operator==(const Function &otherFuncPtr) const { return staticDelegate == otherFuncPtr.staticDelegate; }
     // End class default constructors and operators
 
     CONST_EXPR Function(const StaticDelegate &functionPointer)
@@ -80,7 +87,7 @@ struct ClassFunction<false, ClassType, ReturnType, Parameters...>
         classDelegate = std::move(otherFuncPtr.classDelegate);
         otherFuncPtr.classDelegate = nullptr;
     }
-    bool operator==(const ClassFunction &otherFuncPtr) { return classDelegate == otherFuncPtr.classDelegate; }
+    bool operator==(const ClassFunction &otherFuncPtr) const { return classDelegate == otherFuncPtr.classDelegate; }
     // End class default constructors and operators
 
     CONST_EXPR ClassFunction(const ClassDelegate &functionPointer)
@@ -125,7 +132,7 @@ struct ClassFunction<true, ClassType, ReturnType, Parameters...>
         classDelegate = std::move(otherFuncPtr.classDelegate);
         otherFuncPtr.classDelegate = nullptr;
     }
-    bool operator==(const ClassFunction &otherFuncPtr) { return classDelegate == otherFuncPtr.classDelegate; }
+    bool operator==(const ClassFunction &otherFuncPtr) const { return classDelegate == otherFuncPtr.classDelegate; }
     // End class default constructors and operators
 
     CONST_EXPR ClassFunction(const ClassDelegate &functionPointer)
@@ -147,51 +154,52 @@ struct ClassFunction<true, ClassType, ReturnType, Parameters...>
     operator bool() const { return classDelegate != nullptr; }
 };
 
+#if USE_STDFUNC_FOR_LAMDA
 template <typename ReturnType, typename... Parameters>
-struct LambdaFunction
+struct LambdaFunctionUsingStdFunction
 {
     typedef std::function<ReturnType(Parameters...)> LambdaDelegate;
 
     template <typename Callable, typename Type = void>
     using IsCallable = std::enable_if_t<
         std::conjunction_v<
-            std::negation<std::is_same<std::decay_t<Callable>, LambdaFunction>>,
+            std::negation<std::is_same<std::decay_t<Callable>, LambdaFunctionUsingStdFunction>>,
             std::negation<std::is_same<std::decay_t<Callable>, LambdaDelegate>>, std::is_invocable_r<ReturnType, Callable, Parameters...>>,
         Type>;
 
     LambdaDelegate lambdaDelegate = nullptr;
 
     // Class default constructors and operators
-    LambdaFunction() = default;
-    LambdaFunction(const LambdaFunction &otherFuncPtr)
+    LambdaFunctionUsingStdFunction() = default;
+    LambdaFunctionUsingStdFunction(const LambdaFunctionUsingStdFunction &otherFuncPtr)
         : lambdaDelegate(otherFuncPtr.lambdaDelegate)
     {}
-    LambdaFunction(LambdaFunction &&otherFuncPtr)
+    LambdaFunctionUsingStdFunction(LambdaFunctionUsingStdFunction &&otherFuncPtr)
         : lambdaDelegate(std::move(otherFuncPtr.lambdaDelegate))
     {
         otherFuncPtr.lambdaDelegate = nullptr;
     }
 
-    void operator=(const LambdaFunction &otherFuncPtr) { lambdaDelegate = otherFuncPtr.lambdaDelegate; }
-    void operator=(LambdaFunction &&otherFuncPtr)
+    void operator=(const LambdaFunctionUsingStdFunction &otherFuncPtr) { lambdaDelegate = otherFuncPtr.lambdaDelegate; }
+    void operator=(LambdaFunctionUsingStdFunction &&otherFuncPtr)
     {
         lambdaDelegate = std::move(otherFuncPtr.lambdaDelegate);
         otherFuncPtr.lambdaDelegate = nullptr;
     }
 
-    bool operator==(const LambdaFunction &otherFuncPtr) { return lambdaDelegate == otherFuncPtr.lambdaDelegate; }
+    bool operator==(const LambdaFunctionUsingStdFunction &otherFuncPtr) const { return lambdaDelegate == otherFuncPtr.lambdaDelegate; }
     // End class default constructors and operators
 
     template <typename Callable, IsCallable<Callable, int> = 0>
-    CONST_EXPR LambdaFunction(Callable &&lambda)
+    CONST_EXPR LambdaFunctionUsingStdFunction(Callable &&lambda)
         : lambdaDelegate(std::forward<decltype(lambda)>(lambda))
     {}
 
-    LambdaFunction(const LambdaDelegate &functionPointer)
+    LambdaFunctionUsingStdFunction(const LambdaDelegate &functionPointer)
         : lambdaDelegate(functionPointer)
     {}
 
-    LambdaFunction(LambdaDelegate &&functionPointer)
+    LambdaFunctionUsingStdFunction(LambdaDelegate &&functionPointer)
         : lambdaDelegate(std::forward<LambdaDelegate>(functionPointer))
     {}
 
@@ -204,41 +212,191 @@ struct LambdaFunction
     operator bool() const { return bool(lambdaDelegate); }
 };
 
-// Working impl for lightweight lambda alternative using trampoline redirection
-// #TODO(Jeslas) : Improve and clean up, Must be renamed to LambdaFunction after matching all signatures
-// #WARNING Not read for usage
-template <typename RetType, typename... Params>
+template <typename ReturnType, typename... Parameters>
+using LambdaFunction = LambdaFunctionUsingStdFunction<ReturnType, Parameters...>;
+
+#else // USE_STDFUNC_FOR_LAMDA
+
+template <typename ReturnType, typename... Parameters>
 struct CapturedFunctor
 {
-    unsigned char *data;
-    using TrampolineFunc = RetType (*)(const CapturedFunctor &, Params...);
-    TrampolineFunc trampolineFunc;
+    template <typename Callable, typename Type = void>
+    using IsCallableLambda = std::enable_if_t<
+        std::conjunction_v<
+            std::negation<std::is_same<std::decay_t<Callable>, CapturedFunctor>>, std::is_invocable_r<ReturnType, Callable, Parameters...>>,
+        Type>;
 
-    template <typename Callable, typename CallableType = std::remove_cvref_t<Callable>>
-    CapturedFunctor(Callable &&func)
-        : data(nullptr)
-        , trampolineFunc(nullptr)
+    class LambdaFunctionCapInterface
     {
-        if (data)
-            delete[] data;
+    public:
+        virtual void copy(CapturedFunctor &copyTo, const CapturedFunctor &copyFrom) const = 0;
+        virtual void move(CapturedFunctor &moveTo, CapturedFunctor &&moveFrom) const = 0;
+        virtual void destruct(CapturedFunctor &) const = 0;
+    };
 
-        data = new unsigned char[sizeof(CallableType)];
-        memcpy(data, &func, sizeof(CallableType));
-
-        struct Trampoline
+    /**
+     * Actual data
+     */
+    constexpr static const SizeT MAX_INLINED_SIZE = 128;
+    union
+    {
+        alignas(16) uint8 data[MAX_INLINED_SIZE] = {};
+        struct
         {
-            static RetType invoke(const CapturedFunctor &thisFunctor, Params... params)
-            {
-                (*reinterpret_cast<CallableType *>(thisFunctor.data))(std::forward<Params>(params)...);
-            }
+            UPtrInt nullptrs[(MAX_INLINED_SIZE / sizeof(UPtrInt)) - 1];
+            void *dataPtr;
         };
-        trampolineFunc = &Trampoline::invoke;
+    };
+    LambdaFunctionCapInterface *lambdaDataInterface = nullptr;
+    using TrampolineFunc = ReturnType (*)(const CapturedFunctor &, Parameters...);
+    TrampolineFunc trampolineFunc = nullptr;
+
+    // Class default constructors and operators
+    CapturedFunctor() = default;
+    CapturedFunctor(const CapturedFunctor &otherFuncPtr)
+        : lambdaDataInterface(otherFuncPtr.lambdaDataInterface)
+        , trampolineFunc(otherFuncPtr.trampolineFunc)
+    {
+        lambdaDataInterface->copy(*this, otherFuncPtr);
     }
+    CapturedFunctor(CapturedFunctor &&otherFuncPtr)
+        : lambdaDataInterface(otherFuncPtr.lambdaDataInterface)
+        , trampolineFunc(otherFuncPtr.trampolineFunc)
+    {
+        lambdaDataInterface->move(*this, std::forward<CapturedFunctor>(otherFuncPtr));
+        otherFuncPtr.lambdaDataInterface = nullptr;
+        otherFuncPtr.trampolineFunc = nullptr;
+    }
+
+    void operator=(const CapturedFunctor &otherFuncPtr)
+    {
+        lambdaDataInterface = otherFuncPtr.lambdaDataInterface;
+        trampolineFunc = otherFuncPtr.trampolineFunc;
+        lambdaDataInterface->copy(*this, otherFuncPtr);
+    }
+    void operator=(CapturedFunctor &&otherFuncPtr)
+    {
+        lambdaDataInterface = otherFuncPtr.lambdaDataInterface;
+        trampolineFunc = otherFuncPtr.trampolineFunc;
+        lambdaDataInterface->move(*this, std::forward<CapturedFunctor>(otherFuncPtr));
+
+        otherFuncPtr.lambdaDataInterface = nullptr;
+        otherFuncPtr.trampolineFunc = nullptr;
+    }
+
     ~CapturedFunctor()
     {
-        delete[] data;
-        data = nullptr;
+        if (lambdaDataInterface)
+        {
+            lambdaDataInterface->destruct(*this);
+        }
+        trampolineFunc = nullptr;
     }
 
-    RetType operator()(Params... params) const { return (*trampolineFunc)(*this, std::forward<Params>(params)...); }
+    bool operator==(const CapturedFunctor &otherFuncPtr) const
+    {
+        // Since two trampoline function will be same in same lambda only, We could may be compare data's memory using memcmp()
+        return lambdaDataInterface == otherFuncPtr.lambdaDataInterface && trampolineFunc == otherFuncPtr.trampolineFunc;
+    }
+    // End class default constructors and operators
+    ReturnType operator()(Parameters... params) const { return (*trampolineFunc)(*this, std::forward<Parameters>(params)...); }
+
+    operator bool() const { return trampolineFunc && lambdaDataInterface; }
+
+    // Handling inline or heap allocated lambda data
+
+    template <typename CallableType>
+    struct IsLambdaInlineable : std::conditional_t<sizeof(CallableType) <= MAX_INLINED_SIZE, std::true_type, std::false_type>
+    {};
+
+    template <typename CallableType>
+    class LambdaFunctionCaptureImpl;
+
+    template <typename CallableType>
+    requires(IsLambdaInlineable<CallableType>::value) class LambdaFunctionCaptureImpl<CallableType> : public LambdaFunctionCapInterface
+    {
+    public:
+        void copy(CapturedFunctor &copyTo, const CapturedFunctor &copyFrom) const override
+        {
+            construct(copyTo, *reinterpret_cast<const CallableType *>(&copyFrom.data[0]));
+        }
+        void move(CapturedFunctor &moveTo, CapturedFunctor &&moveFrom) const override
+        {
+            construct(moveTo, std::move(*reinterpret_cast<CallableType *>(&moveFrom.data[0])));
+        }
+        void destruct(CapturedFunctor &functor) const override { reinterpret_cast<CallableType *>(&functor.data[0])->~CallableType(); }
+
+        template <typename Callable>
+        static void construct(CapturedFunctor &functor, Callable &&func)
+        {
+            new (functor.data) CallableType(std::forward<Callable>(func));
+        }
+        static ReturnType invoke(const CapturedFunctor &thisFunctor, Parameters... params)
+        {
+            (*reinterpret_cast<CallableType *>(const_cast<uint8 *>(&thisFunctor.data[0])))(std::forward<Parameters>(params)...);
+        }
+    };
+    template <typename CallableType>
+    requires(!IsLambdaInlineable<CallableType>::value) class LambdaFunctionCaptureImpl<CallableType> : public LambdaFunctionCapInterface
+    {
+    public:
+        void copy(CapturedFunctor &copyTo, const CapturedFunctor &copyFrom) const override
+        {
+            construct(copyTo, *reinterpret_cast<CallableType *>(copyFrom.dataPtr));
+        }
+        void move(CapturedFunctor &moveTo, CapturedFunctor &&moveFrom) const override
+        {
+            if (moveTo.dataPtr)
+            {
+                delete reinterpret_cast<CallableType *>(moveTo.dataPtr);
+            }
+            moveTo.dataPtr = moveFrom.dataPtr;
+            moveFrom.dataPtr = nullptr;
+        }
+        void destruct(CapturedFunctor &functor) const override { delete reinterpret_cast<CallableType *>(functor.dataPtr); }
+
+        template <typename Callable>
+        static void construct(CapturedFunctor &functor, Callable &&func)
+        {
+            if (functor.dataPtr)
+            {
+                new (functor.dataPtr) CallableType(std::forward<Callable>(func));
+            }
+            else
+            {
+                functor.dataPtr = new CallableType(std::forward<Callable>(func));
+            }
+        }
+        static ReturnType invoke(const CapturedFunctor &thisFunctor, Parameters... params)
+        {
+            (*reinterpret_cast<CallableType *>(thisFunctor.dataPtr))(std::forward<Parameters>(params)...);
+        }
+    };
+
+    template <typename Callable>
+    CapturedFunctor(Callable &&func)
+        : lambdaDataInterface(nullptr)
+        , trampolineFunc(nullptr)
+    {
+        this->operator=(std::forward<Callable>(func));
+    }
+
+    template <typename Callable, typename CallableType = std::remove_cvref_t<Callable>, IsCallableLambda<Callable, int> = 0>
+    CapturedFunctor &operator=(Callable &&func)
+    {
+        using LambdaCaptureImplType = LambdaFunctionCaptureImpl<CallableType>;
+        static LambdaCaptureImplType lambdaCaptureImpl;
+
+        lambdaDataInterface = &lambdaCaptureImpl;
+        trampolineFunc = &LambdaCaptureImplType::invoke;
+
+        LambdaCaptureImplType::construct(*this, std::forward<Callable>(func));
+
+        return *this;
+    }
 };
+
+template <typename ReturnType, typename... Parameters>
+using LambdaFunction = CapturedFunctor<ReturnType, Parameters...>;
+
+#endif // USE_STDFUNC_FOR_LAMDA

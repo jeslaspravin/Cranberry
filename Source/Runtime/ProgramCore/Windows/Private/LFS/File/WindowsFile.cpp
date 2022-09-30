@@ -10,12 +10,112 @@
  */
 
 #include "LFS/File/WindowsFile.h"
-#include "LFS/File/WindowsFileHandle.h"
 #include "Logger/Logger.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
+#include "Types/Platform/LFS/PathFunctions.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 #include "Types/Platform/PlatformFunctions.h"
 #include "WindowsCommonHeaders.h"
+
+#define FLAG_CHECK_ASSIGN(OutFlags, InFlags, CheckAgainst, Result) OutFlags |= (InFlags & CheckAgainst) > 0 ? Result : 0
+PlatformHandle openWindowsFile(const String &filePath, uint8 fileFlags, uint8 fileSharing, uint32 fileExtraFlags, uint64 rawFileFlags)
+{
+    uint32 desiredAccess = 0;
+    uint32 shareMode = 0;
+    uint32 creationAction = OPEN_ALWAYS;
+    uint32 attributsAndFlags = 0;
+
+    {
+        if ((FileFlags::ACCESS_FLAGS & fileFlags) == FileFlags::ACCESS_FLAGS)
+        {
+            desiredAccess |= GENERIC_ALL;
+        }
+        else
+        {
+            FLAG_CHECK_ASSIGN(desiredAccess, fileFlags, EFileFlags::Read, GENERIC_READ);
+            FLAG_CHECK_ASSIGN(desiredAccess, fileFlags, EFileFlags::Write, GENERIC_WRITE);
+            FLAG_CHECK_ASSIGN(desiredAccess, fileFlags, EFileFlags::Execute, GENERIC_EXECUTE);
+        }
+    }
+
+    {
+        FLAG_CHECK_ASSIGN(shareMode, fileSharing, EFileSharing::DeleteOnly, FILE_SHARE_DELETE);
+        FLAG_CHECK_ASSIGN(shareMode, fileSharing, EFileSharing::ReadOnly, FILE_SHARE_READ);
+        FLAG_CHECK_ASSIGN(shareMode, fileSharing, EFileSharing::WriteOnly, FILE_SHARE_WRITE);
+    }
+
+    {
+        uint8 actionsFlags = fileFlags & FileFlags::OPEN_ACTION_FLAGS;
+
+        if (ONE_BIT_SET(actionsFlags)) // If only one bit is set
+        {
+            uint8 currentFlag = EFileFlags::CreateNew;
+            uint32 count = 1;
+            while (FileFlags::OPEN_ACTION_FLAGS & currentFlag)
+            {
+                if (actionsFlags & currentFlag)
+                {
+                    creationAction = count; // Since the order is same as int value in windows API
+                    break;
+                }
+                currentFlag <<= 1;
+                count++;
+            }
+        }
+    }
+
+    {
+        FLAG_CHECK_ASSIGN(attributsAndFlags, fileExtraFlags, EFileAdditionalFlags::Normal, FILE_ATTRIBUTE_NORMAL);
+        FLAG_CHECK_ASSIGN(attributsAndFlags, fileExtraFlags, EFileAdditionalFlags::Archive, FILE_ATTRIBUTE_ARCHIVE);
+        FLAG_CHECK_ASSIGN(attributsAndFlags, fileExtraFlags, EFileAdditionalFlags::Encrypted, FILE_ATTRIBUTE_ENCRYPTED);
+        FLAG_CHECK_ASSIGN(attributsAndFlags, fileExtraFlags, EFileAdditionalFlags::Hidden, FILE_ATTRIBUTE_HIDDEN);
+        FLAG_CHECK_ASSIGN(attributsAndFlags, fileExtraFlags, EFileAdditionalFlags::ReadOnly, FILE_ATTRIBUTE_READONLY);
+        FLAG_CHECK_ASSIGN(attributsAndFlags, fileExtraFlags, EFileAdditionalFlags::System, FILE_ATTRIBUTE_SYSTEM);
+        FLAG_CHECK_ASSIGN(attributsAndFlags, fileExtraFlags, EFileAdditionalFlags::Temporary, FILE_ATTRIBUTE_TEMPORARY);
+        FLAG_CHECK_ASSIGN(attributsAndFlags, fileExtraFlags, EFileAdditionalFlags::Backup, FILE_FLAG_BACKUP_SEMANTICS);
+        FLAG_CHECK_ASSIGN(attributsAndFlags, fileExtraFlags, EFileAdditionalFlags::TemporaryDelete, FILE_FLAG_DELETE_ON_CLOSE);
+        FLAG_CHECK_ASSIGN(attributsAndFlags, fileExtraFlags, EFileAdditionalFlags::NoBuffering, FILE_FLAG_NO_BUFFERING);
+        FLAG_CHECK_ASSIGN(attributsAndFlags, fileExtraFlags, EFileAdditionalFlags::OpenRemoteOnly, FILE_FLAG_OPEN_NO_RECALL);
+        FLAG_CHECK_ASSIGN(attributsAndFlags, fileExtraFlags, EFileAdditionalFlags::AsyncOverlapped, FILE_FLAG_OVERLAPPED);
+        FLAG_CHECK_ASSIGN(attributsAndFlags, fileExtraFlags, EFileAdditionalFlags::Posix, FILE_FLAG_POSIX_SEMANTICS);
+        FLAG_CHECK_ASSIGN(attributsAndFlags, fileExtraFlags, EFileAdditionalFlags::RandomAccess, FILE_FLAG_RANDOM_ACCESS);
+        FLAG_CHECK_ASSIGN(attributsAndFlags, fileExtraFlags, EFileAdditionalFlags::SequentialAccess, FILE_FLAG_SEQUENTIAL_SCAN);
+        FLAG_CHECK_ASSIGN(attributsAndFlags, fileExtraFlags, EFileAdditionalFlags::WriteDirectDisk, FILE_FLAG_WRITE_THROUGH);
+
+        attributsAndFlags |= rawFileFlags;
+    }
+
+    HANDLE fileHandle = ::CreateFile(filePath.getChar(), desiredAccess, shareMode, nullptr, creationAction, attributsAndFlags, nullptr);
+
+    if (fileHandle == INVALID_HANDLE_VALUE)
+    {
+        LOG_ERROR("WindowsFileHandle", "File handle creation/opening failed for %s", filePath.getChar());
+        return nullptr;
+    }
+    return fileHandle;
+}
+#undef FLAG_CHECK_ASSIGN
+
+bool closeWindowsFile(PlatformHandle fileHandle)
+{
+    bool success = false;
+    if (!fileHandle)
+    {
+        return success;
+    }
+
+    success = ::CloseHandle((HANDLE)fileHandle) != 0;
+
+    if (success)
+    {
+        fileHandle = nullptr;
+    }
+    return success;
+}
+
+//////////////////////////////////////////////////////////////////////////
+/// WindowsFile implementation
+//////////////////////////////////////////////////////////////////////////
 
 WindowsFile::WindowsFile(WindowsFile &&otherFile)
     : GenericFile()
@@ -78,9 +178,9 @@ WindowsFile::~WindowsFile()
 
 void WindowsFile::flush() const
 {
-    if (getFileHandleRaw())
+    if (getFileHandle())
     {
-        ::FlushFileBuffers(getFileHandleRaw());
+        ::FlushFileBuffers(getFileHandle());
     }
 }
 
@@ -111,9 +211,9 @@ uint64 WindowsFile::fileSize() const
     UInt64 fSize;
     fSize.quadPart = 0;
 
-    if (getFileHandleRaw())
+    if (getFileHandle())
     {
-        fSize.lowPart = ::GetFileSize(getFileHandleRaw(), &fSize.highPart);
+        fSize.lowPart = ::GetFileSize(getFileHandle(), &fSize.highPart);
     }
     else
     {
@@ -139,9 +239,9 @@ uint64 WindowsFile::filePointer() const
     uint64 fPointer = 0;
     LARGE_INTEGER largePointer;
     largePointer.QuadPart = 0;
-    if (getFileHandleRaw())
+    if (getFileHandle())
     {
-        largePointer.LowPart = ::SetFilePointer(getFileHandleRaw(), largePointer.LowPart, &largePointer.HighPart, FILE_CURRENT);
+        largePointer.LowPart = ::SetFilePointer(getFileHandle(), largePointer.LowPart, &largePointer.HighPart, FILE_CURRENT);
         fPointer = largePointer.LowPart == INVALID_SET_FILE_POINTER ? 0u : (uint64)(largePointer.QuadPart);
     }
     return fPointer;
@@ -149,47 +249,47 @@ uint64 WindowsFile::filePointer() const
 
 void WindowsFile::seekEnd() const
 {
-    if (getFileHandleRaw())
+    if (getFileHandle())
     {
-        ::SetFilePointer(getFileHandleRaw(), 0, nullptr, FILE_END);
+        ::SetFilePointer(getFileHandle(), 0, nullptr, FILE_END);
         debugAssert(filePointer() == fileSize());
     }
 }
 
 void WindowsFile::seekBegin() const
 {
-    if (getFileHandleRaw())
+    if (getFileHandle())
     {
-        ::SetFilePointer(getFileHandleRaw(), 0, nullptr, FILE_BEGIN);
+        ::SetFilePointer(getFileHandle(), 0, nullptr, FILE_BEGIN);
         debugAssert(filePointer() == 0);
     }
 }
 
 void WindowsFile::seek(const int64 &pointer) const
 {
-    if (getFileHandleRaw())
+    if (getFileHandle())
     {
         LARGE_INTEGER newPointer;
         newPointer.QuadPart = pointer;
 
-        ::SetFilePointer(getFileHandleRaw(), newPointer.LowPart, &newPointer.HighPart, FILE_BEGIN);
+        ::SetFilePointer(getFileHandle(), newPointer.LowPart, &newPointer.HighPart, FILE_BEGIN);
     }
 }
 
 void WindowsFile::offsetCursor(const int64 &offset) const
 {
-    if (getFileHandleRaw())
+    if (getFileHandle())
     {
         LARGE_INTEGER newOffset;
         newOffset.QuadPart = offset;
 
-        ::SetFilePointer(getFileHandleRaw(), newOffset.LowPart, &newOffset.HighPart, FILE_CURRENT);
+        ::SetFilePointer(getFileHandle(), newOffset.LowPart, &newOffset.HighPart, FILE_CURRENT);
     }
 }
 
 bool WindowsFile::setFileSize(const int64 &newSize) const
 {
-    if (!getFileHandleRaw() || BIT_NOT_SET(fileFlags, EFileFlags::Write))
+    if (!getFileHandle() || BIT_NOT_SET(fileFlags, EFileFlags::Write))
     {
         return false;
     }
@@ -198,7 +298,7 @@ bool WindowsFile::setFileSize(const int64 &newSize) const
     seek(newSize);
 
     bool bResized = false;
-    if (::SetEndOfFile((HANDLE)getFileHandleRaw()) == TRUE)
+    if (::SetEndOfFile((HANDLE)getFileHandle()) == TRUE)
     {
         filePointerCache = Math::min(newSize, filePointerCache);
         bResized = true;
@@ -209,7 +309,7 @@ bool WindowsFile::setFileSize(const int64 &newSize) const
 
 void WindowsFile::read(std::vector<uint8> &readTo, const uint32 &bytesToRead /*= (~0u)*/) const
 {
-    if (!getFileHandleRaw() || BIT_NOT_SET(fileFlags, EFileFlags::Read))
+    if (!getFileHandle() || BIT_NOT_SET(fileFlags, EFileFlags::Read))
     {
         return;
     }
@@ -227,7 +327,7 @@ void WindowsFile::read(std::vector<uint8> &readTo, const uint32 &bytesToRead /*=
 
 void WindowsFile::read(uint8 *readTo, const uint32 &bytesToRead) const
 {
-    if (!getFileHandleRaw() || BIT_NOT_SET(fileFlags, EFileFlags::Read))
+    if (!getFileHandle() || BIT_NOT_SET(fileFlags, EFileFlags::Read))
     {
         return;
     }
@@ -243,8 +343,8 @@ void WindowsFile::read(uint8 *readTo, const uint32 &bytesToRead) const
     while (bytesLeftToRead > 0)
     {
         ::ReadFile(
-            getFileHandleRaw(), readTo + filePointerOffset, (bytesLeftToRead > readBufferSize) ? readBufferSize : bytesLeftToRead,
-            &bytesLastRead, nullptr
+            getFileHandle(), readTo + filePointerOffset, (bytesLeftToRead > readBufferSize) ? readBufferSize : bytesLeftToRead, &bytesLastRead,
+            nullptr
         );
 
         bytesLeftToRead -= bytesLastRead;
@@ -257,7 +357,7 @@ void WindowsFile::read(uint8 *readTo, const uint32 &bytesToRead) const
 
 void WindowsFile::write(const ArrayView<const uint8> &writeBytes) const
 {
-    if (!getFileHandleRaw() || BIT_NOT_SET(fileFlags, EFileFlags::Write))
+    if (!getFileHandle() || BIT_NOT_SET(fileFlags, EFileFlags::Write))
     {
         return;
     }
@@ -273,7 +373,7 @@ void WindowsFile::write(const ArrayView<const uint8> &writeBytes) const
     while (sizeLeft > 0)
     {
         writeSize = writeBufferSize > sizeLeft ? (uint32)sizeLeft : writeBufferSize;
-        ::WriteFile(getFileHandleRaw(), pData + writeFrom, writeSize, &bytesWritten, nullptr);
+        ::WriteFile(getFileHandle(), pData + writeFrom, writeSize, &bytesWritten, nullptr);
 
         writeFrom += bytesWritten;
         sizeLeft -= bytesWritten;
@@ -283,7 +383,7 @@ void WindowsFile::write(const ArrayView<const uint8> &writeBytes) const
 
 bool WindowsFile::deleteFile()
 {
-    if (getFileHandle() && getFileHandleRaw())
+    if (getFileHandle())
     {
         closeFile();
     }
@@ -300,7 +400,7 @@ bool WindowsFile::renameFile(String newName)
     }
 
     bool reopenFile = false;
-    if (getFileHandle() && getFileHandleRaw())
+    if (getFileHandle())
     {
         closeFile();
         reopenFile = true;
@@ -332,10 +432,10 @@ TickRep WindowsFile::lastWriteTimeStamp() const
 {
     UInt64 timeStamp;
     timeStamp.quadPart = 0;
-    if (getFileHandleRaw())
+    if (getFileHandle())
     {
         FILETIME writeTime;
-        ::GetFileTime(getFileHandleRaw(), nullptr, nullptr, &writeTime);
+        ::GetFileTime(getFileHandle(), nullptr, nullptr, &writeTime);
         timeStamp.lowPart = writeTime.dwLowDateTime;
         timeStamp.highPart = writeTime.dwHighDateTime;
     }
@@ -357,7 +457,7 @@ TickRep WindowsFile::lastWriteTimeStamp() const
 
 bool WindowsFile::setLastWriteTimeStamp(TickRep timeTick) const
 {
-    if (!getFileHandleRaw() || BIT_NOT_SET(fileFlags, EFileFlags::Write))
+    if (!getFileHandle() || BIT_NOT_SET(fileFlags, EFileFlags::Write))
     {
         return false;
     }
@@ -369,7 +469,7 @@ bool WindowsFile::setLastWriteTimeStamp(TickRep timeTick) const
     writeTime.dwLowDateTime = timeStamp.lowPart;
     writeTime.dwHighDateTime = timeStamp.highPart;
 
-    ::SetFileTime(getFileHandleRaw(), nullptr, nullptr, &writeTime);
+    ::SetFileTime(getFileHandle(), nullptr, nullptr, &writeTime);
     return true;
 }
 
@@ -377,10 +477,10 @@ TickRep WindowsFile::createTimeStamp() const
 {
     UInt64 timeStamp;
     timeStamp.quadPart = 0;
-    if (getFileHandleRaw())
+    if (getFileHandle())
     {
         FILETIME createdTime;
-        ::GetFileTime(getFileHandleRaw(), &createdTime, nullptr, nullptr);
+        ::GetFileTime(getFileHandle(), &createdTime, nullptr, nullptr);
         timeStamp.lowPart = createdTime.dwLowDateTime;
         timeStamp.highPart = createdTime.dwHighDateTime;
     }
@@ -399,7 +499,7 @@ TickRep WindowsFile::createTimeStamp() const
     return Time::fromPlatformTime(int64(timeStamp.quadPart));
 }
 
-GenericFileHandle *WindowsFile::openOrCreateImpl()
+PlatformHandle WindowsFile::openOrCreateImpl()
 {
     WindowsFile hostDirectoryFile{ getHostDirectory() };
     if (!hostDirectoryFile.exists())
@@ -433,24 +533,12 @@ GenericFileHandle *WindowsFile::openOrCreateImpl()
     return openImpl();
 }
 
-GenericFileHandle *WindowsFile::openImpl() const
-{
-    WindowsFileHandle *fHandle = new WindowsFileHandle(fileFlags, sharingMode, attributes, advancedFlags);
-
-    if (!fHandle->openFile(getFullPath()))
-    {
-        delete fHandle;
-        fHandle = nullptr;
-    }
-
-    return fHandle;
-}
+PlatformHandle WindowsFile::openImpl() const { return openWindowsFile(getFullPath(), fileFlags, sharingMode, attributes, advancedFlags); }
 
 bool WindowsFile::closeImpl() const
 {
-    WindowsFileHandle *fHandle = static_cast<WindowsFileHandle *>(getFileHandle());
     flush();
-    return fHandle->closeFile();
+    return closeWindowsFile(getFileHandle());
 }
 
 bool WindowsFile::dirDelete() const { return RemoveDirectory(getFullPath().getChar()); }

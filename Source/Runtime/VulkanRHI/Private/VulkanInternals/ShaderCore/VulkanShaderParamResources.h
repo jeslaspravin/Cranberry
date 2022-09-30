@@ -66,7 +66,7 @@ public:
 
     /* ShaderParametersLayout overrides */
 protected:
-    void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const final;
+    void bindBufferParamInfo(std::map<StringID, struct ShaderBufferDescriptorType *> &bindingBuffers) const;
     /* Override ends */
 };
 
@@ -85,7 +85,7 @@ public:
 
     /* ShaderParametersLayout overrides */
 protected:
-    void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const final;
+    void bindBufferParamInfo(std::map<StringID, struct ShaderBufferDescriptorType *> &bindingBuffers) const;
     /* Override ends */
 };
 
@@ -104,7 +104,7 @@ public:
 
     /* ShaderParametersLayout overrides */
 protected:
-    void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const final;
+    void bindBufferParamInfo(std::map<StringID, struct ShaderBufferDescriptorType *> &bindingBuffers) const;
     /* Override ends */
 };
 

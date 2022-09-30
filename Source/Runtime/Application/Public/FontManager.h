@@ -56,6 +56,8 @@ public:
     FontManager(const FontManager &otherManager) = delete;
     FontManager &operator=(const FontManager &otherManager) = delete;
 
+    void clear();
+
     void broadcastPreTextureAtlasUpdate() const { preTextureAtlasUpdate.invoke(); }
     void broadcastTextureAtlasUpdated() const { textureAltasUpdated.invoke(); }
 

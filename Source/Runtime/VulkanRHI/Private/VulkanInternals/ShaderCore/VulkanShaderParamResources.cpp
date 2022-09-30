@@ -10,16 +10,17 @@
  */
 
 #include "VulkanShaderParamResources.h"
+#include "Types/Platform/PlatformAssertionErrors.h"
 #include "Math/Math.h"
+#include "IRenderInterfaceModule.h"
 #include "RenderApi/Material/MaterialCommonUniforms.h"
 #include "RenderApi/Scene/RenderScene.h"
+#include "RenderApi/RenderManager.h"
 #include "RenderInterface/GlobalRenderVariables.h"
-#include "RenderInterface/Rendering/IRenderCommandList.h"
 #include "RenderInterface/Resources/ShaderResources.h"
 #include "RenderInterface/ShaderCore/ShaderParameterUtility.h"
-#include "RenderInterface/Shaders/Base/DrawMeshShader.h"
+#include "RenderApi/Shaders/Base/DrawMeshShader.h"
 #include "ShaderReflected.h"
-#include "Types/Platform/PlatformAssertionErrors.h"
 #include "VulkanGraphicsHelper.h"
 #include "VulkanInternals/Debugging.h"
 #include "VulkanInternals/Resources/VulkanMemoryResources.h"
@@ -63,7 +64,7 @@ void fillDescriptorsSet(
                 uint32 tempDim;
                 if (!SpecializationConstUtility::asValue(tempDim, stageSpecializationConsts[arrayDimInfo.stageIdx][arrayDimInfo.dimension]))
                 {
-                    fatalAssert(false, "Specialized data retrieval failed");
+                    fatalAssertf(false, "Specialized data retrieval failed");
                 }
                 descCount *= tempDim;
             }
@@ -75,11 +76,11 @@ void fillDescriptorsSet(
         // 0 means unbound array
         if (descCount == 0)
         {
-            String attribName{ UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str()) };
+            StringID attribName{ descriptorInfo.attributeName.c_str() };
             auto itr = std::as_const(ShaderParameterUtility::unboundArrayResourcesCount()).find(attribName);
-            fatalAssert(
+            fatalAssertf(
                 itr != ShaderParameterUtility::unboundArrayResourcesCount().cend(),
-                "Unbound image(texel) buffer array is not allowed for parameter %s", attribName
+                "Unbound image(texel) buffer array is not allowed for parameter %s", UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str())
             );
             descCount = itr->second;
             runtimeArray[descriptorInfo.data.binding] = true;
@@ -103,7 +104,7 @@ void fillDescriptorsSet(
                 uint32 tempDim;
                 if (!SpecializationConstUtility::asValue(tempDim, stageSpecializationConsts[arrayDimInfo.stageIdx][arrayDimInfo.dimension]))
                 {
-                    fatalAssert(false, "Specialized data retrieval failed");
+                    fatalAssertf(false, "Specialized data retrieval failed");
                 }
                 descCount *= tempDim;
             }
@@ -115,11 +116,11 @@ void fillDescriptorsSet(
         // 0 means unbound array
         if (descCount == 0)
         {
-            String attribName{ UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str()) };
+            StringID attribName{ descriptorInfo.attributeName.c_str() };
             auto itr = std::as_const(ShaderParameterUtility::unboundArrayResourcesCount()).find(attribName);
-            fatalAssert(
+            fatalAssertf(
                 itr != ShaderParameterUtility::unboundArrayResourcesCount().cend(),
-                "Unbound sampled(texel) buffer array is not allowed for parameter %s", attribName
+                "Unbound sampled(texel) buffer array is not allowed for parameter %s", UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str())
             );
             descCount = itr->second;
             runtimeArray[descriptorInfo.data.binding] = true;
@@ -143,7 +144,7 @@ void fillDescriptorsSet(
                 uint32 tempDim;
                 if (!SpecializationConstUtility::asValue(tempDim, stageSpecializationConsts[arrayDimInfo.stageIdx][arrayDimInfo.dimension]))
                 {
-                    fatalAssert(false, "Specialized data retrieval failed");
+                    fatalAssertf(false, "Specialized data retrieval failed");
                 }
                 descCount *= tempDim;
             }
@@ -155,11 +156,11 @@ void fillDescriptorsSet(
         // 0 means unbound array
         if (descCount == 0)
         {
-            String attribName{ UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str()) };
+            StringID attribName{ descriptorInfo.attributeName.c_str() };
             auto itr = std::as_const(ShaderParameterUtility::unboundArrayResourcesCount()).find(attribName);
-            fatalAssert(
+            fatalAssertf(
                 itr != ShaderParameterUtility::unboundArrayResourcesCount().cend(),
-                "Unbound array of images or imageArray is not allowed for parameter %s", attribName
+                "Unbound array of images or imageArray is not allowed for parameter %s", UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str())
             );
             descCount = itr->second;
             runtimeArray[descriptorInfo.data.binding] = true;
@@ -183,7 +184,7 @@ void fillDescriptorsSet(
                 uint32 tempDim;
                 if (!SpecializationConstUtility::asValue(tempDim, stageSpecializationConsts[arrayDimInfo.stageIdx][arrayDimInfo.dimension]))
                 {
-                    fatalAssert(false, "Specialized data retrieval failed");
+                    fatalAssertf(false, "Specialized data retrieval failed");
                 }
                 descCount *= tempDim;
             }
@@ -195,11 +196,11 @@ void fillDescriptorsSet(
         // 0 means unbound array
         if (descCount == 0)
         {
-            String attribName{ UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str()) };
+            StringID attribName{ descriptorInfo.attributeName.c_str() };
             auto itr = std::as_const(ShaderParameterUtility::unboundArrayResourcesCount()).find(attribName);
-            fatalAssert(
+            fatalAssertf(
                 itr != ShaderParameterUtility::unboundArrayResourcesCount().cend(),
-                "Unbound array of textures or textureArray is not allowed for parameter %s", attribName
+                "Unbound array of textures or textureArray is not allowed for parameter %s", UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str())
             );
             descCount = itr->second;
             runtimeArray[descriptorInfo.data.binding] = true;
@@ -223,7 +224,7 @@ void fillDescriptorsSet(
                 uint32 tempDim;
                 if (!SpecializationConstUtility::asValue(tempDim, stageSpecializationConsts[arrayDimInfo.stageIdx][arrayDimInfo.dimension]))
                 {
-                    fatalAssert(false, "Specialized data retrieval failed");
+                    fatalAssertf(false, "Specialized data retrieval failed");
                 }
                 descCount *= tempDim;
             }
@@ -235,13 +236,12 @@ void fillDescriptorsSet(
         // 0 means unbound array
         if (descCount == 0)
         {
-            String attribName{ UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str()) };
+            StringID attribName{ descriptorInfo.attributeName.c_str() };
             auto itr = std::as_const(ShaderParameterUtility::unboundArrayResourcesCount()).find(attribName);
-            fatalAssert(
+            fatalAssertf(
                 itr != ShaderParameterUtility::unboundArrayResourcesCount().cend(),
-                "Unbound array of sampled textures or sampled textureArray is not allowed for "
-                "parameter %s",
-                attribName
+                "Unbound array of sampled textures or sampled textureArray is not allowed for parameter %s",
+                UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str())
             );
             descCount = itr->second;
             runtimeArray[descriptorInfo.data.binding] = true;
@@ -265,7 +265,7 @@ void fillDescriptorsSet(
                 uint32 tempDim;
                 if (!SpecializationConstUtility::asValue(tempDim, stageSpecializationConsts[arrayDimInfo.stageIdx][arrayDimInfo.dimension]))
                 {
-                    fatalAssert(false, "Specialized data retrieval failed");
+                    fatalAssertf(false, "Specialized data retrieval failed");
                 }
                 descCount *= tempDim;
             }
@@ -314,7 +314,7 @@ void VulkanShaderSetParamsLayout::init()
 
     std::vector<std::vector<SpecializationConstantEntry>> specializationConsts;
     {
-        std::map<String, SpecializationConstantEntry> specConsts;
+        SpecConstantNamedMap specConsts;
         respectiveShaderRes->getSpecializationConsts(specConsts);
         ShaderParameterUtility::convertNamedSpecConstsToPerStage(specializationConsts, specConsts, respectiveShaderRes->getReflection());
     }
@@ -355,7 +355,10 @@ void VulkanShaderSetParamsLayout::init()
     // sort and merge type duplicate descriptor pool size
     std::sort(
         poolAllocation.begin(), poolAllocation.end(),
-        [](const VkDescriptorPoolSize &lhs, const VkDescriptorPoolSize &rhs) { return lhs.type < rhs.type; }
+        [](const VkDescriptorPoolSize &lhs, const VkDescriptorPoolSize &rhs)
+        {
+            return lhs.type < rhs.type;
+        }
     );
     for (std::vector<VkDescriptorPoolSize>::iterator itr = poolAllocation.begin(); itr != poolAllocation.end();)
     {
@@ -371,7 +374,10 @@ void VulkanShaderSetParamsLayout::init()
     // Sort bindings so that it will be easier when querying for descriptors
     std::sort(
         layoutBindings.begin(), layoutBindings.end(),
-        [](const VkDescriptorSetLayoutBinding &lhs, const VkDescriptorSetLayoutBinding &rhs) { return lhs.binding < rhs.binding; }
+        [](const VkDescriptorSetLayoutBinding &lhs, const VkDescriptorSetLayoutBinding &rhs)
+        {
+            return lhs.binding < rhs.binding;
+        }
     );
 
     // reinitResources();
@@ -446,7 +452,7 @@ VulkanShaderUniqDescLayout::VulkanShaderUniqDescLayout(const ShaderResource *sha
     : BaseType(shaderResource, descSetIdx)
 {}
 
-void VulkanShaderUniqDescLayout::bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const
+void VulkanShaderUniqDescLayout::bindBufferParamInfo(std::map<StringID, struct ShaderBufferDescriptorType *> &bindingBuffers) const
 {
     respectiveShaderRes->bindBufferParamInfo(bindingBuffers);
 }
@@ -468,17 +474,17 @@ VulkanVertexUniqDescLayout::VulkanVertexUniqDescLayout(const ShaderResource *sha
 
 String VulkanVertexUniqDescLayout::getObjectName() const
 {
-    return respectiveShaderRes->getResourceName() + TCHAR("_DescriptorsSetLayout")
-           + String::toString(ShaderParameterUtility::INSTANCE_UNIQ_SET);
+    return respectiveShaderRes->getResourceName()
+           + TCHAR("_DescriptorsSetLayout") + String::toString(ShaderParameterUtility::INSTANCE_UNIQ_SET);
 }
 
-void VulkanVertexUniqDescLayout::bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const
+void VulkanVertexUniqDescLayout::bindBufferParamInfo(std::map<StringID, struct ShaderBufferDescriptorType *> &bindingBuffers) const
 {
-    const std::map<String, ShaderBufferParamInfo *> &vertexSpecificBufferInfo = MaterialVertexUniforms::bufferParamInfo(
+    const std::map<StringID, ShaderBufferParamInfo *> &vertexSpecificBufferInfo = MaterialVertexUniforms::bufferParamInfo(
         static_cast<const DrawMeshShaderConfig *>(respectiveShaderRes->getShaderConfig())->vertexUsage()
     );
 
-    for (const std::pair<const String, ShaderBufferParamInfo *> &bufferInfo : vertexSpecificBufferInfo)
+    for (const std::pair<const StringID, ShaderBufferParamInfo *> &bufferInfo : vertexSpecificBufferInfo)
     {
         auto foundDescBinding = bindingBuffers.find(bufferInfo.first);
 
@@ -503,11 +509,11 @@ String VulkanViewUniqDescLayout::getObjectName() const
     return respectiveShaderRes->getResourceName() + TCHAR("_DescriptorsSetLayout") + String::toString(ShaderParameterUtility::VIEW_UNIQ_SET);
 }
 
-void VulkanViewUniqDescLayout::bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const
+void VulkanViewUniqDescLayout::bindBufferParamInfo(std::map<StringID, struct ShaderBufferDescriptorType *> &bindingBuffers) const
 {
-    const std::map<String, ShaderBufferParamInfo *> &viewSpecificBufferInfo = RenderSceneBase::sceneViewParamInfo();
+    const std::map<StringID, ShaderBufferParamInfo *> &viewSpecificBufferInfo = RenderSceneBase::sceneViewParamInfo();
 
-    for (const std::pair<const String, ShaderBufferParamInfo *> &bufferInfo : viewSpecificBufferInfo)
+    for (const std::pair<const StringID, ShaderBufferParamInfo *> &bufferInfo : viewSpecificBufferInfo)
     {
         auto foundDescBinding = bindingBuffers.find(bufferInfo.first);
 
@@ -529,8 +535,8 @@ VulkanBindlessDescLayout::VulkanBindlessDescLayout(const ShaderResource *shaderR
 
 String VulkanBindlessDescLayout::getObjectName() const
 {
-    return respectiveShaderRes->getResourceName() + TCHAR("_BindlessDescriptorsSetLayout")
-           + String::toString(ShaderParameterUtility::BINDLESS_SET);
+    return respectiveShaderRes->getResourceName()
+           + TCHAR("_BindlessDescriptorsSetLayout") + String::toString(ShaderParameterUtility::BINDLESS_SET);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -552,7 +558,7 @@ void VulkanShaderParametersLayout::init()
 
     std::vector<std::vector<SpecializationConstantEntry>> specializationConsts;
     {
-        std::map<String, SpecializationConstantEntry> specConsts;
+        SpecConstantNamedMap specConsts;
         respectiveShaderRes->getSpecializationConsts(specConsts);
         ShaderParameterUtility::convertNamedSpecConstsToPerStage(specializationConsts, specConsts, respectiveShaderRes->getReflection());
     }
@@ -594,7 +600,10 @@ void VulkanShaderParametersLayout::init()
         // sort and merge type duplicate descriptor pool size
         std::sort(
             descSetLayoutInfo.poolAllocation.begin(), descSetLayoutInfo.poolAllocation.end(),
-            [](const VkDescriptorPoolSize &lhs, const VkDescriptorPoolSize &rhs) { return lhs.type < rhs.type; }
+            [](const VkDescriptorPoolSize &lhs, const VkDescriptorPoolSize &rhs)
+            {
+                return lhs.type < rhs.type;
+            }
         );
         for (std::vector<VkDescriptorPoolSize>::iterator itr = descSetLayoutInfo.poolAllocation.begin();
              itr != descSetLayoutInfo.poolAllocation.end();)
@@ -611,7 +620,10 @@ void VulkanShaderParametersLayout::init()
         // Sort bindings so that it will be easier when querying for descriptors
         std::sort(
             descSetLayoutInfo.layoutBindings.begin(), descSetLayoutInfo.layoutBindings.end(),
-            [](const VkDescriptorSetLayoutBinding &lhs, const VkDescriptorSetLayoutBinding &rhs) { return lhs.binding < rhs.binding; }
+            [](const VkDescriptorSetLayoutBinding &lhs, const VkDescriptorSetLayoutBinding &rhs)
+            {
+                return lhs.binding < rhs.binding;
+            }
         );
 
         // Create descriptors set
@@ -730,7 +742,7 @@ void VulkanShaderSetParameters::init()
     bufferDescWrites.reserve(shaderBuffers.size());
     std::vector<VkDescriptorBufferInfo> bufferInfos(shaderBuffers.size());
     uint32 descWriteIdx = 0;
-    for (const std::pair<const String, BufferParametersData> &bufferParam : shaderBuffers)
+    for (const std::pair<const StringID, BufferParametersData> &bufferParam : shaderBuffers)
     {
         WRITE_RESOURCE_TO_DESCRIPTORS_SET(writeDescSet);
         writeDescSet.dstSet = descriptorsSet;
@@ -748,7 +760,7 @@ void VulkanShaderSetParameters::init()
     }
 
     VulkanGraphicsHelper::updateDescriptorsSet(graphicsInstance, bufferDescWrites, {});
-    ENQUEUE_COMMAND_NODEBUG(FinalizeShaderParams, LAMBDA_BODY(updateParams(cmdList, graphicsInstance);), this);
+    updateParams(IRenderInterfaceModule::get()->getRenderManager()->getRenderCmds(), IRenderInterfaceModule::get()->currentGraphicsInstance());
 }
 
 void VulkanShaderSetParameters::release()
@@ -781,7 +793,7 @@ void VulkanShaderSetParameters::updateParams(IRenderCommandList *cmdList, IGraph
     std::vector<VkDescriptorImageInfo> imageAndSamplerInfos;
     imageAndSamplerInfos.reserve(textureUpdates.size() + samplerUpdates.size());
 
-    for (const String &bufferParamName : bufferResourceUpdates)
+    for (const StringID &bufferParamName : bufferResourceUpdates)
     {
         DescriptorWriteData &bufferWriteData = writeDescs.emplace_back();
         bufferWriteData.ParamData.buffer = &shaderBuffers.at(bufferParamName);
@@ -793,7 +805,7 @@ void VulkanShaderSetParameters::updateParams(IRenderCommandList *cmdList, IGraph
         bufferInfo.range = bufferWriteData.ParamData.buffer->gpuBuffer->getResourceSize();
         bufferInfos.emplace_back(bufferInfo);
     }
-    for (const std::pair<String, uint32> &texelBufferUpdate : texelUpdates)
+    for (const std::pair<StringID, uint32> &texelBufferUpdate : texelUpdates)
     {
         DescriptorWriteData &texelWriteData = writeDescs.emplace_back();
         texelWriteData.ParamData.texel = &shaderTexels.at(texelBufferUpdate.first);
@@ -805,7 +817,7 @@ void VulkanShaderSetParameters::updateParams(IRenderCommandList *cmdList, IGraph
                 ->getBufferView({})
         );
     }
-    for (const std::pair<String, uint32> &textureUpdate : textureUpdates)
+    for (const std::pair<StringID, uint32> &textureUpdate : textureUpdates)
     {
         DescriptorWriteData &texWriteData = writeDescs.emplace_back();
         texWriteData.ParamData.texture = &shaderTextures.at(textureUpdate.first);
@@ -828,7 +840,7 @@ void VulkanShaderSetParameters::updateParams(IRenderCommandList *cmdList, IGraph
                       texWriteData.ParamData.texture->descriptorInfo->textureEntryPtr->data.data.imageViewType
                   );
     }
-    for (const std::pair<String, uint32> &samplerUpdate : samplerUpdates)
+    for (const std::pair<StringID, uint32> &samplerUpdate : samplerUpdates)
     {
         DescriptorWriteData &samplerWriteData = writeDescs.emplace_back();
         samplerWriteData.ParamData.sampler = &shaderSamplers.at(samplerUpdate.first);
@@ -940,8 +952,7 @@ void VulkanShaderParameters::init()
             else
             {
                 LOG_ERROR(
-                    "VulkanShaderParameters", "%s() : Allocation of descriptors set %d failed %s", __func__, descriptorsBody.set,
-                    getResourceName().getChar()
+                    "VulkanShaderParameters", "Allocation of descriptors set %d failed %s", descriptorsBody.set, getResourceName().getChar()
                 );
                 return;
             }
@@ -952,7 +963,7 @@ void VulkanShaderParameters::init()
     bufferDescWrites.reserve(shaderBuffers.size());
     std::vector<VkDescriptorBufferInfo> bufferInfos(shaderBuffers.size());
     uint32 descWriteIdx = 0;
-    for (const std::pair<const String, BufferParametersData> &bufferParam : shaderBuffers)
+    for (const std::pair<const StringID, BufferParametersData> &bufferParam : shaderBuffers)
     {
         WRITE_RESOURCE_TO_DESCRIPTORS_SET(writeDescSet);
         writeDescSet.dstSet = descriptorsSets[static_cast<const ShaderParametersLayout *>(paramLayout)->getSetID(bufferParam.first)];
@@ -970,9 +981,7 @@ void VulkanShaderParameters::init()
     }
 
     VulkanGraphicsHelper::updateDescriptorsSet(graphicsInstance, bufferDescWrites, {});
-    ENQUEUE_COMMAND(FinalizeShaderParams)
-    ([this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
-     { updateParams(cmdList, graphicsInstance); });
+    updateParams(IRenderInterfaceModule::get()->getRenderManager()->getRenderCmds(), IRenderInterfaceModule::get()->currentGraphicsInstance());
 }
 
 void VulkanShaderParameters::release()
@@ -1010,7 +1019,7 @@ void VulkanShaderParameters::updateParams(IRenderCommandList *cmdList, IGraphics
     std::vector<VkDescriptorImageInfo> imageAndSamplerInfos;
     imageAndSamplerInfos.reserve(textureUpdates.size() + samplerUpdates.size());
 
-    for (const String &bufferParamName : bufferResourceUpdates)
+    for (const StringID &bufferParamName : bufferResourceUpdates)
     {
         DescriptorWriteData &bufferWriteData = writeDescs.emplace_back();
         bufferWriteData.ParamData.buffer = &shaderBuffers.at(bufferParamName);
@@ -1023,7 +1032,7 @@ void VulkanShaderParameters::updateParams(IRenderCommandList *cmdList, IGraphics
         bufferInfo.range = bufferWriteData.ParamData.buffer->gpuBuffer->getResourceSize();
         bufferInfos.emplace_back(bufferInfo);
     }
-    for (const std::pair<String, uint32> &texelBufferUpdate : texelUpdates)
+    for (const std::pair<StringID, uint32> &texelBufferUpdate : texelUpdates)
     {
         DescriptorWriteData &texelWriteData = writeDescs.emplace_back();
         texelWriteData.ParamData.texel = &shaderTexels.at(texelBufferUpdate.first);
@@ -1036,7 +1045,7 @@ void VulkanShaderParameters::updateParams(IRenderCommandList *cmdList, IGraphics
                 ->getBufferView({})
         );
     }
-    for (const std::pair<String, uint32> &textureUpdate : textureUpdates)
+    for (const std::pair<StringID, uint32> &textureUpdate : textureUpdates)
     {
         DescriptorWriteData &texWriteData = writeDescs.emplace_back();
         texWriteData.ParamData.texture = &shaderTextures.at(textureUpdate.first);
@@ -1060,7 +1069,7 @@ void VulkanShaderParameters::updateParams(IRenderCommandList *cmdList, IGraphics
                       texWriteData.ParamData.texture->descriptorInfo->textureEntryPtr->data.data.imageViewType
                   );
     }
-    for (const std::pair<String, uint32> &samplerUpdate : samplerUpdates)
+    for (const std::pair<StringID, uint32> &samplerUpdate : samplerUpdates)
     {
         DescriptorWriteData &samplerWriteData = writeDescs.emplace_back();
         samplerWriteData.ParamData.sampler = &shaderSamplers.at(samplerUpdate.first);

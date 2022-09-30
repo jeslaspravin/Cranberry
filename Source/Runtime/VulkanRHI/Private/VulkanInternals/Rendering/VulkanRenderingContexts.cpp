@@ -12,12 +12,13 @@
 #include "VulkanInternals/Rendering/VulkanRenderingContexts.h"
 #include "Logger/Logger.h"
 #include "RenderApi/GBuffersAndTextures.h"
+#include "RenderApi/Rendering/ShaderObject.h"
+#include "RenderApi/Rendering/ShaderObjectFactory.h"
+#include "RenderApi/Rendering/PipelineRegistration.h"
 #include "RenderInterface/GlobalRenderVariables.h"
 #include "RenderInterface/Resources/ShaderResources.h"
-#include "RenderInterface/ShaderCore/ShaderObject.h"
-#include "RenderInterface/ShaderCore/ShaderObjectFactory.h"
-#include "RenderInterface/Shaders/Base/DrawMeshShader.h"
-#include "RenderInterface/Shaders/Base/UtilityShaders.h"
+#include "RenderApi/Shaders/Base/DrawMeshShader.h"
+#include "RenderApi/Shaders/Base/UtilityShaders.h"
 #include "ShaderReflected.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 #include "VulkanGraphicsHelper.h"
@@ -40,8 +41,12 @@ void VulkanGlobalRenderingContext::initializeApiContext()
 {
     IGraphicsInstance *graphicsInstance = IVulkanRHIModule::get()->getGraphicsInstance();
 
-    ShaderDataCollection &defaultShaderCollection = rawShaderObjects[DEFAULT_SHADER_NAME];
+    auto defaultShaderCollectionItr = rawShaderObjects.find(DEFAULT_SHADER_NAME);
+    if (defaultShaderCollectionItr != rawShaderObjects.end())
     {
+        debugAssert(!GlobalRenderVariables::GPU_IS_COMPUTE_ONLY.get());
+        ShaderDataCollection &defaultShaderCollection = defaultShaderCollectionItr->second;
+
         const DrawMeshShaderObject::ShaderResourceList &defaultShaders
             = static_cast<DrawMeshShaderObject *>(defaultShaderCollection.shaderObject)->getAllShaders();
         for (const DrawMeshShaderObject::ShaderResourceInfo &defaultShader : defaultShaders)
@@ -63,15 +68,17 @@ void VulkanGlobalRenderingContext::initializeApiContext()
         }
     }
 
-    for (std::pair<const String, ShaderDataCollection> &shaderCollection : rawShaderObjects)
+    for (std::pair<const StringID, ShaderDataCollection> &shaderCollection : rawShaderObjects)
     {
-        if (shaderCollection.first == String(DEFAULT_SHADER_NAME))
+        if (shaderCollection.first == StringID(DEFAULT_SHADER_NAME))
         {
             continue;
         }
 
         if (shaderCollection.second.shaderObject->baseShaderType() == DrawMeshShaderConfig::staticType())
         {
+            debugAssert(!GlobalRenderVariables::GPU_IS_COMPUTE_ONLY.get());
+
             const DrawMeshShaderObject::ShaderResourceList &allShaders
                 = static_cast<DrawMeshShaderObject *>(shaderCollection.second.shaderObject)->getAllShaders();
 
@@ -83,18 +90,18 @@ void VulkanGlobalRenderingContext::initializeApiContext()
 
                 FramebufferFormat fbFormat(renderPassUsage);
                 GraphicsPipelineBase *defaultGraphicsPipeline;
-                const ShaderResource *defaultShader = static_cast<DrawMeshShaderObject *>(defaultShaderCollection.shaderObject)
+                const ShaderResource *defaultShader = static_cast<DrawMeshShaderObject *>(defaultShaderCollectionItr->second.shaderObject)
                                                           ->getShader(vertUsage, fbFormat, &defaultGraphicsPipeline);
 
                 if (defaultShader == nullptr)
                 {
                     LOG_ERROR(
                         "VulkanGlobalRenderingContext",
-                        "%s : Default shader must contain all the permutations, Missing "
+                        "Default shader must contain all the permutations, Missing "
                         "for [%s %s]",
-                        __func__, EVertexType::toString(vertUsage).getChar(), ERenderPassFormat::toString(renderPassUsage).getChar()
+                        EVertexType::toString(vertUsage).getChar(), ERenderPassFormat::toString(renderPassUsage).getChar()
                     );
-                    fatalAssert(defaultShader, "Default shader missing!");
+                    fatalAssertf(defaultShader, "Default shader missing!");
                 }
 
                 shaderPair.pipeline->setParentPipeline(defaultGraphicsPipeline);
@@ -108,6 +115,8 @@ void VulkanGlobalRenderingContext::initializeApiContext()
         }
         else if (shaderCollection.second.shaderObject->baseShaderType() == UniqueUtilityShaderConfig::staticType())
         {
+            debugAssert(!GlobalRenderVariables::GPU_IS_COMPUTE_ONLY.get());
+
             UniqueUtilityShaderObject *shaderObject = static_cast<UniqueUtilityShaderObject *>(shaderCollection.second.shaderObject);
             VulkanGraphicsPipeline *graphicsPipeline = static_cast<VulkanGraphicsPipeline *>(shaderObject->getDefaultPipeline());
             graphicsPipeline->pipelineLayout = VulkanGraphicsHelper::createPipelineLayout(graphicsInstance, graphicsPipeline);
@@ -315,17 +324,16 @@ VkPipelineLayout VulkanGraphicsHelper::createPipelineLayout(class IGraphicsInsta
     VkPipelineLayout pipelineLayout;
     if (device->vkCreatePipelineLayout(device->logicalDevice, &layoutCreateInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
     {
-        LOG_ERROR(
-            "VulkanGraphicsHelper", "%s : Pipeline layout creation failed for shader %s", __func__, shaderResource->getResourceName().getChar()
-        );
+        LOG_ERROR("VulkanGraphicsHelper", "Pipeline layout creation failed for shader %s", shaderResource->getResourceName().getChar());
         pipelineLayout = nullptr;
     }
     else
     {
         VulkanGraphicsHelper::debugGraphics(graphicsInstance)
             ->markObject(
-                uint64(pipelineLayout), pipeline->getResourceName() + TCHAR("_PipelineLayout"), VkObjectType::VK_OBJECT_TYPE_PIPELINE_LAYOUT
-            );
+                uint64(pipelineLayout), pipeline->getResourceName()
+                                            + TCHAR("_PipelineLayout"), VkObjectType::VK_OBJECT_TYPE_PIPELINE_LAYOUT
+                                        );
     }
 
     return pipelineLayout;

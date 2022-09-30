@@ -13,7 +13,6 @@
 
 #include "Math/CoreMathTypes.h"
 #include "Types/CoreTypes.h"
-#include "Serialization/ArchiveBase.h"
 
 class LinearColor;
 
@@ -106,36 +105,32 @@ namespace ColorConst
 {
 PROGRAMCORE_EXPORT Color random(uint8 alpha = 255);
 
-extern PROGRAMCORE_EXPORT const Color Transparent;
+extern PROGRAMCORE_EXPORT const Color WHITE_Transparent;
+extern PROGRAMCORE_EXPORT const Color BLACK_Transparent;
 extern PROGRAMCORE_EXPORT const Color WHITE;
 extern PROGRAMCORE_EXPORT const Color GRAY;
 extern PROGRAMCORE_EXPORT const Color BLACK;
 extern PROGRAMCORE_EXPORT const Color RED;
 extern PROGRAMCORE_EXPORT const Color BLUE;
+extern PROGRAMCORE_EXPORT const Color PALE_BLUE;
 extern PROGRAMCORE_EXPORT const Color GREEN;
+
+extern PROGRAMCORE_EXPORT const Color CYAN;
 } // namespace ColorConst
 
 namespace LinearColorConst
 {
 PROGRAMCORE_EXPORT LinearColor random(float alpha = 1.0f);
 
-extern PROGRAMCORE_EXPORT const LinearColor Transparent;
+extern PROGRAMCORE_EXPORT const LinearColor WHITE_Transparent;
+extern PROGRAMCORE_EXPORT const LinearColor BLACK_Transparent;
 extern PROGRAMCORE_EXPORT const LinearColor WHITE;
 extern PROGRAMCORE_EXPORT const LinearColor GRAY;
 extern PROGRAMCORE_EXPORT const LinearColor BLACK;
 extern PROGRAMCORE_EXPORT const LinearColor RED;
 extern PROGRAMCORE_EXPORT const LinearColor BLUE;
+extern PROGRAMCORE_EXPORT const LinearColor PALE_BLUE;
 extern PROGRAMCORE_EXPORT const LinearColor GREEN;
+
+extern PROGRAMCORE_EXPORT const LinearColor CYAN;
 } // namespace LinearColorConst
-
-template <ArchiveType ArchiveType>
-ArchiveType &operator<<(ArchiveType &archive, Color &value)
-{
-    return archive << value.getColorValue().r << value.getColorValue().g << value.getColorValue().b << value.getColorValue().a;
-}
-
-template <ArchiveType ArchiveType>
-ArchiveType &operator<<(ArchiveType &archive, LinearColor &value)
-{
-    return archive << value.getColorValue().r << value.getColorValue().g << value.getColorValue().b << value.getColorValue().a;
-}

@@ -14,12 +14,14 @@
 #include "Math/CoreMathTypes.h"
 #include "Math/Math.h"
 #include "Math/MathGeom.h"
+#include "Types/CoreDefines.h"
+#include "Types/Platform/LFS/PlatformLFS.h"
+#include "Types/Platform/LFS/PathFunctions.h"
+#include "Types/Platform/PlatformAssertionErrors.h"
+#include "RenderApi/RenderTaskHelpers.h"
 #include "RenderInterface/GraphicsHelper.h"
 #include "RenderInterface/Rendering/IRenderCommandList.h"
 #include "RenderInterface/Resources/MemoryResources.h"
-#include "Types/CoreDefines.h"
-#include "Types/Platform/LFS/PlatformLFS.h"
-#include "Types/Platform/PlatformAssertionErrors.h"
 
 #include <array>
 #include <unordered_set>
@@ -236,8 +238,14 @@ public:
         int32 bitmapStride
     ) const
     {
-        stbtt_MakeGlyphBitmapSubpixel(
-            &allFonts[font].stbFont, outBitmap, glyphWidth, glyphHeight, bitmapStride, scale, scale, xShift, yShift, glyph.glyphIdx
+        // stbtt_MakeGlyphBitmapSubpixel(
+        //     &allFonts[font].stbFont, outBitmap, glyphWidth, glyphHeight, bitmapStride, scale, scale, xShift, yShift, glyph.glyphIdx
+        //);
+
+        float subX, subY;
+        stbtt_MakeGlyphBitmapSubpixelPrefilter(
+            &allFonts[font].stbFont, outBitmap, glyphWidth, glyphHeight, bitmapStride, scale, scale, xShift, yShift, 2, 2, &subX, &subY,
+            glyph.glyphIdx
         );
     }
 
@@ -318,7 +326,7 @@ public:
         }
         default:
         {
-            alertIf(!isSpaceCode(codepoint), "Unhandled space %lu", codepoint);
+            alertAlwaysf(!isSpaceCode(codepoint), "Unhandled space %lu", codepoint);
             return false;
         }
         };
@@ -336,7 +344,7 @@ DEBUG_INLINE uint32 FontManagerContext::findFallbackCodepoint(FontIndex font)
             return codePt;
         }
     }
-    fatalAssert(false, "No fall-back code point found for font at %d", font);
+    fatalAssertf(false, "No fall-back code point found for font at %d", font);
     return UNKNOWN_GLYPH;
 }
 
@@ -421,7 +429,7 @@ void FontManagerContext::updatePendingGlyphs()
     std::vector<std::vector<Color>> atlasTexels;
     if (MathGeom::packRectangles(packedBins, ShortSizeBox2D::PointType(ATLAS_MAX_SIZE), packRects))
     {
-        alertIf(
+        alertAlwaysf(
             packedBins.size() <= ARRAY_LENGTH(textureAtlases),
             "Packing fonts in unsuccessful in %d texture atlases extend atlas count if necessary", ARRAY_LENGTH(textureAtlases)
         );
@@ -466,7 +474,7 @@ void FontManagerContext::updatePendingGlyphs()
     }
     else
     {
-        fatalAssert(false, "Packing fonts failed");
+        fatalAssertf(false, "Packing fonts failed");
         return;
     }
 
@@ -515,7 +523,9 @@ FontManager &FontManager::operator=(FontManager &&otherManager)
     return (*this);
 }
 
-FontManager::~FontManager()
+FontManager::~FontManager() { clear(); }
+
+void FontManager::clear()
 {
     if (context)
     {
@@ -530,7 +540,7 @@ FontManager::FontIndex FontManager::addFont(const String &fontPath) const
     fontFile.setFileFlags(EFileFlags::Read);
     fontFile.setCreationAction(EFileFlags::OpenExisting);
     fontFile.setSharingMode(EFileSharing::ReadOnly);
-    fatalAssert(fontFile.exists(), "Font file %s not found", fontPath);
+    fatalAssertf(fontFile.exists(), "Font file %s not found", fontPath);
 
     fontFile.openFile();
     std::vector<uint8> fontData;
@@ -615,7 +625,11 @@ void FontManager::setupTextureAtlas(ShaderParameters *shaderParams, const String
         {
             for (int32 i = 0; i < ARRAY_LENGTH(context->textureAtlases); ++i)
             {
-                shaderParams->setTextureParam(paramName, context->textureAtlases[i], i);
+                shaderParams->setTextureParam(paramName.getChar(), context->textureAtlases[i], i);
+                static ImageViewInfo fontTextureView = {
+                    .componentMapping = {.g = EPixelComponentMapping::R, .b = EPixelComponentMapping::R, .a = EPixelComponentMapping::R}
+                };
+                shaderParams->setTextureParamViewInfo(paramName.getChar(), fontTextureView);
             }
         }
     );
@@ -639,7 +653,7 @@ uint32 FontManager::calculateRenderWidth(const String &text, FontIndex font, uin
     float fontToGlyphScale = context->scaleToPixelHeight(font, FontManagerContext::heightToPixels(contextHeight));
 
     const FontManagerContext::FontGlyph *spaceGlyph = context->findGlyph(SPACE_CHAR, font, contextHeight);
-    alertIf(spaceGlyph, "Invalid space glyph! Add glyphs to fontmanager for font, height combination");
+    alertAlwaysf(spaceGlyph, "Invalid space glyph! Add glyphs to fontmanager for font, height combination");
 
     // Max width in case there is line feed character
     int32 width = 0, maxWidth = 0;
@@ -697,7 +711,7 @@ uint32 FontManager::calculateRenderHeight(const String &text, FontIndex font, ui
     float glyphToHeightScale = FontManagerContext::scaleHeightToPixelHeight(height, contextHeight);
 
     const FontManagerContext::FontGlyph *spaceGlyph = context->findGlyph(SPACE_CHAR, font, contextHeight);
-    alertIf(spaceGlyph, "Invalid space glyph! Add glyphs to fontmanager for font, height combination");
+    alertAlwaysf(spaceGlyph, "Invalid space glyph! Add glyphs to fontmanager for font, height combination");
 
     // Always return at least 1 line worth of height
     int32 outHeight = (context->allFonts[font].ascent - context->allFonts[font].descent);
@@ -772,7 +786,7 @@ void FontManager::draw(
     float glyphToHeightScale = FontManagerContext::scaleHeightToPixelHeight(height, contextHeight);
 
     const FontManagerContext::FontGlyph *spaceGlyph = context->findGlyph(SPACE_CHAR, font, contextHeight);
-    alertIf(spaceGlyph, "Invalid space glyph! Add glyphs to fontmanager for font, height combination");
+    alertAlwaysf(spaceGlyph, "Invalid space glyph! Add glyphs to fontmanager for font, height combination");
 
     outBB.reset(
         QuantizedBox2D::PointType{ std::numeric_limits<QuantizedBox2D::PointElementType>::max() },

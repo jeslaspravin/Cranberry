@@ -10,8 +10,15 @@
  */
 
 #include "Modules/ModuleManager.h"
+#include "Types/ProgramCoreDelegates.h"
 
 class ProgramCoreModule : public ModuleNoImpl
 {};
 
 DECLARE_MODULE(ProgramCore, ProgramCoreModule)
+
+//////////////////////////////////////////////////////////////////////////
+/// ProgramCoreDelegates implementations
+//////////////////////////////////////////////////////////////////////////
+
+ProgramCoreDelegates::ApplicationCrashEvent ProgramCoreDelegates::onApplicationCrash;

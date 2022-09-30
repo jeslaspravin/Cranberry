@@ -21,12 +21,14 @@
 
 class GenericAppWindow;
 class GraphicsSemaphore;
+class GraphicsTimelineSemaphore;
 class GraphicsFence;
 
 using SemaphoreRef = ReferenceCountPtr<GraphicsSemaphore>;
+using TimelineSemaphoreRef = ReferenceCountPtr<GraphicsTimelineSemaphore>;
 using FenceRef = ReferenceCountPtr<GraphicsFence>;
 
-// Wrapper for VkSurface and related kind of objects
+// Wrapper for VkSurface and VkSwapchainKHR
 class ENGINERENDERER_EXPORT GenericWindowCanvas : public GraphicsResource
 {
     DECLARE_GRAPHICS_RESOURCE(GenericWindowCanvas, , GraphicsResource, )

@@ -1,4 +1,5 @@
-include(${cmake_script_dir}/EngineProjectMacros.cmake)
+include(EngineProjectMacros)
+include(EngineCMakeHelpers)
 
 set(private_libraries )
 set(public_libraries )
@@ -18,6 +19,7 @@ if (${enable_mimalloc})
     find_package(mimalloc 1.7
         REQUIRED CONFIG
         HINTS ${mimalloc_hints} ${mimalloc_debug_hints})
+    map_imported_targets_config(TARGETS ${mimalloc_lib_name})
     
     get_target_property(lib_path ${mimalloc_lib_name} IMPORTED_LOCATION_RELEASE)
     get_target_property(dbg_lib_path ${mimalloc_lib_name} IMPORTED_LOCATION_DEBUG)
@@ -43,12 +45,20 @@ target_compile_definitions(${target_name}
     PUBLIC 
         ${engine_def} 
         ${experimental_def} 
-        # Path where all engine modules exists for use with delayed loaded dlls
-        ENGINE_MODULES_PATH="$<TARGET_FILE_DIR:${target_name}>"
         $<$<BOOL:${enable_console_log}>:LOG_TO_CONSOLE=1>
+        $<$<BOOL:${enable_verbose_log}>:ENABLE_VERBOSE_LOG=1>
     PRIVATE
         ${private_compile_defs}
 )
+# Copying to other directories like Editor and Tools, In dynamic libraries
+if (NOT ${engine_static_modules})
+    get_engine_root($<TARGET_FILE_DIR:${target_name}> engine_root)
+    add_custom_command(TARGET ${target_name} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:${target_name}> ${engine_root}/Tools
+        COMMAND_EXPAND_LISTS
+    )
+endif (NOT ${engine_static_modules})
+
 
 # it is okay here as this will be base of all module and so no other modules exists yet
 mark_delay_loaded_dlls(IGNORE_MODULES)

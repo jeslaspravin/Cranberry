@@ -10,6 +10,7 @@
  */
 
 #include "Serialization/ObjectSerializationHelpers.h"
+#include "Serialization/CommonTypesSerialization.h"
 #include "Property/CustomProperty.h"
 #include "Visitors/FieldVisitors.h"
 
@@ -17,7 +18,11 @@ using FieldSizeDataType = SizeT;
 
 inline constexpr static const uint32 OBJECTFIELD_SER_VERSION = 0;
 inline constexpr static const uint32 OBJECTFIELD_SER_CUTOFF_VERSION = 0;
-inline STRINGID_CONSTEXPR static const StringID OBJECTFIELD_SER_CUSTOM_VERSION_ID = STRID("ObjectFieldsSerializer");
+inline STRINGID_CONSTEXPR static const StringID FIELDS_SER_CUSTOM_VERSION_ID = STRID("ObjectOrStructFieldsSerializer");
+
+// Serializes fields of a reflected struct/class
+ObjectArchive &readFieldsHelper(void *ptr, CBEClass clazz, ObjectArchive &ar);
+ObjectArchive &writeFieldsHelper(void *ptr, CBEClass clazz, ObjectArchive &ar, const std::unordered_set<StringID> *fieldsToSerialize);
 
 //////////////////////////////////////////////////////////////////////////
 // Reading visitors
@@ -40,7 +45,7 @@ struct ReadFieldVisitable
     template <UnsupportedFundamentalOrSpecial Type>
     static void visit(Type *val, const PropertyInfo &propInfo, void *userData)
     {
-        alertIf(false, "Why?! This isn't supposed to be invoked %s", propInfo.thisProperty->nameString);
+        alertAlwaysf(false, "Why?! This isn't supposed to be invoked %s", propInfo.thisProperty->nameString);
     }
 
     // above UnsupportedFundamentalOrSpecial takes precedence over below generic support
@@ -152,7 +157,7 @@ struct ReadFieldVisitable
         {
             CBEClass clazz = static_cast<CBEClass>(prop);
             debugAssert(PropertyHelper::isStruct(clazz));
-            FieldVisitor::visitFields<ReadFieldVisitable>(clazz, val, userData);
+            readFieldsHelper(val, clazz, *readUserData->ar);
             break;
         }
         case EPropertyType::EnumType:
@@ -173,7 +178,7 @@ struct ReadFieldVisitable
     // Ignoring const types
     static void visit(const void *val, const PropertyInfo &propInfo, void *userData)
     {
-        alertIf(false, "Why?! This isn't supposed to be invoked %s", propInfo.thisProperty->nameString);
+        alertAlwaysf(false, "Why?! This isn't supposed to be invoked %s", propInfo.thisProperty->nameString);
     }
     static void visit(void **ptr, const PropertyInfo &propInfo, void *userData)
     {
@@ -189,9 +194,9 @@ struct ReadFieldVisitable
         {
         case EPropertyType::ClassType:
         {
-            debugAssert(PropertyHelper::isChildOf(static_cast<CBEClass>(prop), CBE::Object::staticType()));
+            debugAssert(PropertyHelper::isChildOf(static_cast<CBEClass>(prop), cbe::Object::staticType()));
 
-            CBE::Object **objPtrPtr = reinterpret_cast<CBE::Object **>(ptr);
+            cbe::Object **objPtrPtr = reinterpret_cast<cbe::Object **>(ptr);
             (*readUserData->ar) << (*objPtrPtr);
             break;
         }
@@ -201,7 +206,9 @@ struct ReadFieldVisitable
         case EPropertyType::ArrayType:
         case EPropertyType::PairType:
         default:
-            alertIf(false, "Unhandled ptr to ptr Field name %s, type %s", propInfo.fieldProperty->nameString, *propInfo.thisProperty->typeInfo);
+            alertAlwaysf(
+                false, "Unhandled ptr to ptr Field name %s, type %s", propInfo.fieldProperty->nameString, *propInfo.thisProperty->typeInfo
+            );
             break;
         }
     }
@@ -216,6 +223,7 @@ struct ReadFieldVisitable
 struct WriteObjectFieldUserData
 {
     ObjectArchive *ar;
+    const std::unordered_set<StringID> *fieldsToSerialize = nullptr;
 };
 
 struct WriteFieldVisitable
@@ -224,7 +232,7 @@ struct WriteFieldVisitable
     template <UnsupportedFundamentalOrSpecial Type>
     static void visit(Type *val, const PropertyInfo &propInfo, void *userData)
     {
-        alertIf(false, "Why?! This isn't supposed to be invoked %s", propInfo.thisProperty->nameString);
+        alertAlwaysf(false, "Why?! This isn't supposed to be invoked %s", propInfo.thisProperty->nameString);
     }
 
     // above UnsupportedFundamentalOrSpecial takes precedence over below generic support
@@ -292,7 +300,7 @@ struct WriteFieldVisitable
         {
             CBEClass clazz = static_cast<CBEClass>(prop);
             debugAssert(PropertyHelper::isStruct(clazz));
-            FieldVisitor::visitFields<WriteFieldVisitable>(clazz, val, userData);
+            writeFieldsHelper(val, clazz, *writeUserData->ar, nullptr);
             break;
         }
         case EPropertyType::EnumType:
@@ -312,7 +320,7 @@ struct WriteFieldVisitable
     // Ignoring const types
     static void visit(const void *val, const PropertyInfo &propInfo, void *userData)
     {
-        alertIf(false, "Why?! This isn't supposed to be invoked %s", propInfo.thisProperty->nameString);
+        alertAlwaysf(false, "Why?! This isn't supposed to be invoked %s", propInfo.thisProperty->nameString);
     }
     static void visit(void **ptr, const PropertyInfo &propInfo, void *userData)
     {
@@ -321,10 +329,10 @@ struct WriteFieldVisitable
         {
         case EPropertyType::ClassType:
         {
-            debugAssert(PropertyHelper::isChildOf(static_cast<CBEClass>(prop), CBE::Object::staticType()));
+            debugAssert(PropertyHelper::isChildOf(static_cast<CBEClass>(prop), cbe::Object::staticType()));
 
             WriteObjectFieldUserData *writeUserData = (WriteObjectFieldUserData *)(userData);
-            CBE::Object **objPtrPtr = reinterpret_cast<CBE::Object **>(ptr);
+            cbe::Object **objPtrPtr = reinterpret_cast<cbe::Object **>(ptr);
             (*writeUserData->ar) << (*objPtrPtr);
             break;
         }
@@ -334,7 +342,9 @@ struct WriteFieldVisitable
         case EPropertyType::ArrayType:
         case EPropertyType::PairType:
         default:
-            alertIf(false, "Unhandled ptr to ptr Field name %s, type %s", propInfo.fieldProperty->nameString, *propInfo.thisProperty->typeInfo);
+            alertAlwaysf(
+                false, "Unhandled ptr to ptr Field name %s, type %s", propInfo.fieldProperty->nameString, *propInfo.thisProperty->typeInfo
+            );
             break;
         }
     }
@@ -352,6 +362,7 @@ struct WriteFieldVisitable
  *
  * 3rd serialized field's data itself
  */
+template <bool bOnlySelectedFields>
 struct StartWriteFieldVisitable
 {
     // Ignore const type
@@ -370,6 +381,15 @@ struct StartWriteFieldVisitable
         WriteObjectFieldUserData *writeUserData = (WriteObjectFieldUserData *)(userData);
 
         StringID fieldNameId = propInfo.fieldProperty->name;
+        if constexpr (bOnlySelectedFields)
+        {
+            debugAssert(writeUserData->fieldsToSerialize);
+            if (!writeUserData->fieldsToSerialize->contains(fieldNameId))
+            {
+                return;
+            }
+        }
+        // Start writing
         (*writeUserData->ar) << fieldNameId;
         // We do not know size yet so just skip now and fill later
         writeUserData->ar->stream()->moveForward(sizeof(FieldSizeDataType));
@@ -391,55 +411,105 @@ struct StartWriteFieldVisitable
 // Helper implementations
 //////////////////////////////////////////////////////////////////////////
 
-ObjectArchive &ObjectSerializationHelpers::serializeAllFields(CBE::Object *obj, ObjectArchive &ar)
+ObjectArchive &readFieldsHelper(void *ptr, CBEClass clazz, ObjectArchive &ar)
+{
+    ReadObjectFieldUserData userData{ .ar = &ar };
+    while (ar.stream()->hasMoreData(sizeof(StringID::IDType)))
+    {
+        StringID fieldNameId;
+        FieldSizeDataType fieldDataSize;
+        ar << fieldNameId;
+        // Invalid StringID is used to mark end of all serialized fields for this object
+        if (fieldNameId == StringID::INVALID)
+        {
+            break;
+        }
+        ar << fieldDataSize;
+
+        SizeT dataStartCursor = ar.stream()->cursorPos();
+        userData.fieldEndCursor = dataStartCursor + fieldDataSize;
+        if (const FieldProperty *fieldProp = PropertyHelper::findField(clazz, fieldNameId))
+        {
+            void *val = static_cast<const MemberFieldWrapper *>(fieldProp->fieldPtr)->get(ptr);
+            FieldVisitor::visit<ReadFieldVisitable>(static_cast<const TypedProperty *>(fieldProp->field), val, &userData);
+        }
+
+        // Why would archive stream be moving backward?
+        debugAssert(ar.stream()->cursorPos() >= dataStartCursor);
+        // Moving cursor back to end of this field so next field can be serialized.
+        // Not using already calculated fieldEndCursor as new cursor might end up less that fieldEndCursor which is against above assert
+        ar.stream()->moveBackward(ar.stream()->cursorPos() - dataStartCursor);
+        ar.stream()->moveForward(fieldDataSize);
+    }
+    return ar;
+}
+
+ObjectArchive &writeFieldsHelper(void *ptr, CBEClass clazz, ObjectArchive &ar, const std::unordered_set<StringID> *fieldsToSerialize)
+{
+    WriteObjectFieldUserData userData{ .ar = &ar };
+    if (fieldsToSerialize)
+    {
+        userData.fieldsToSerialize = fieldsToSerialize;
+        FieldVisitor::visitFields<StartWriteFieldVisitable<true>>(clazz, ptr, &userData);
+    }
+    else
+    {
+        FieldVisitor::visitFields<StartWriteFieldVisitable<false>>(clazz, ptr, &userData);
+    }
+
+    // Append an invalid StringID to make finding end of fields
+    StringID invalidID = StringID::INVALID;
+    ar << invalidID;
+    return ar;
+}
+
+ObjectArchive &serializeObjectFieldsHelper(cbe::Object *obj, ObjectArchive &ar, const std::unordered_set<StringID> *fieldsToSerialize)
 {
     if (ar.isLoading())
     {
-        uint32 objectFieldSerVersion = ar.getCustomVersion((uint32)(OBJECTFIELD_SER_CUSTOM_VERSION_ID));
-        fatalAssert(
+        uint32 objectFieldSerVersion = ar.getCustomVersion((uint32)(FIELDS_SER_CUSTOM_VERSION_ID));
+        fatalAssertf(
             objectFieldSerVersion >= OBJECTFIELD_SER_CUTOFF_VERSION,
             "Unsupport version %d of serialized object fields of object %s! Minimum supported version %d", objectFieldSerVersion,
             obj->getFullPath(), OBJECTFIELD_SER_CUTOFF_VERSION
         );
-
-        ReadObjectFieldUserData userData{ .ar = &ar };
-        while (ar.stream()->hasMoreData(sizeof(StringID::IDType)))
-        {
-            StringID fieldNameId;
-            FieldSizeDataType fieldDataSize;
-            ar << fieldNameId;
-            // Invalid StringID is used to mark end of all serialized fields for this object
-            if (fieldNameId == StringID::INVALID)
-            {
-                break;
-            }
-            ar << fieldDataSize;
-
-            SizeT dataStartCursor = ar.stream()->cursorPos();
-            userData.fieldEndCursor = dataStartCursor + fieldDataSize;
-            if (const FieldProperty *fieldProp = PropertyHelper::findField(obj->getType(), fieldNameId))
-            {
-                void *val = static_cast<const MemberFieldWrapper *>(fieldProp->fieldPtr)->get(obj);
-                FieldVisitor::visit<ReadFieldVisitable>(static_cast<const TypedProperty *>(fieldProp->field), val, &userData);
-            }
-
-            // Why would archive stream be moving backward?
-            debugAssert(ar.stream()->cursorPos() >= dataStartCursor);
-            // Moving cursor back to end of this field so next field can be serialized.
-            // Not using already calculated fieldEndCursor as new cursor might end up less that fieldEndCursor which is against above assert
-            ar.stream()->moveBackward(ar.stream()->cursorPos() - dataStartCursor);
-            ar.stream()->moveForward(fieldDataSize);
-        }
+        return readFieldsHelper(obj, obj->getType(), ar);
     }
     else
     {
-        ar.setCustomVersion(uint32(OBJECTFIELD_SER_CUSTOM_VERSION_ID), OBJECTFIELD_SER_VERSION);
-
-        WriteObjectFieldUserData userData{ .ar = &ar };
-        FieldVisitor::visitFields<StartWriteFieldVisitable>(obj->getType(), obj, &userData);
-        // Append an invalid StringID to make finding end of fields
-        StringID invalidID = StringID::INVALID;
-        ar << invalidID;
+        ar.setCustomVersion(uint32(FIELDS_SER_CUSTOM_VERSION_ID), OBJECTFIELD_SER_VERSION);
+        return writeFieldsHelper(obj, obj->getType(), ar, fieldsToSerialize);
     }
     return ar;
+}
+
+ObjectArchive &ObjectSerializationHelpers::serializeAllFields(cbe::Object *obj, ObjectArchive &ar)
+{
+    return serializeObjectFieldsHelper(obj, ar, nullptr);
+}
+
+ObjectArchive &
+    ObjectSerializationHelpers::serializeOnlyFields(cbe::Object *obj, ObjectArchive &ar, const std::unordered_set<StringID> &fieldsToSerialize)
+{
+    return serializeObjectFieldsHelper(obj, ar, &fieldsToSerialize);
+}
+
+ObjectArchive &ObjectSerializationHelpers::serializeStructFields(void *structObj, CBEClass structType, ObjectArchive &ar)
+{
+    debugAssert(PropertyHelper::isStruct(structType));
+    if (ar.isLoading())
+    {
+        uint32 objectFieldSerVersion = ar.getCustomVersion((uint32)(FIELDS_SER_CUSTOM_VERSION_ID));
+        fatalAssertf(
+            objectFieldSerVersion >= OBJECTFIELD_SER_CUTOFF_VERSION,
+            "Unsupport version %d of serialized fields of object/struct! Minimum supported version %d", objectFieldSerVersion,
+            OBJECTFIELD_SER_CUTOFF_VERSION
+        );
+        return readFieldsHelper(structObj, structType, ar);
+    }
+    else
+    {
+        ar.setCustomVersion(uint32(FIELDS_SER_CUSTOM_VERSION_ID), OBJECTFIELD_SER_VERSION);
+        return writeFieldsHelper(structObj, structType, ar, nullptr);
+    }
 }

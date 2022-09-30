@@ -11,9 +11,11 @@
 
 #pragma once
 
-#include "Types/Platform/LFS/PathFunctions.h"
-
 class GenericFile;
+class String;
+
+template <class _Ty, class _Alloc>
+class std::vector;
 
 template <typename FileSystemType>
 class GenericFileSystemFunctions
@@ -22,7 +24,7 @@ private:
     GenericFileSystemFunctions() = default;
 
 public:
-    static String applicationDirectory(String &appName) { return FileSystemType::applicationDirectory(appName); }
+    static String applicationPath() { return FileSystemType::applicationPath(); }
 
     NODISCARD static std::vector<String> listAllFiles(const String &directory, bool bRecursive)
     {

@@ -15,11 +15,10 @@
 #include "LFS/File/WindowsFile.h"
 #include "LFS/WindowsFileSystemFunctions.h"
 #elif PLATFORM_LINUX
-static_assert(false, "Platform not supported!");
+#error "Platform not supported!"
 #elif PLATFORM_APPLE
-static_assert(false, "Platform not supported!");
+#error "Platform not supported!"
 #endif
-#include "File/GenericFileHandle.h"
 
 using FileSystemFunctions = LFS::FileSystemFunctions;
 using PlatformFile = LFS::PlatformFile;

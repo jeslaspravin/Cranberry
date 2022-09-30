@@ -16,7 +16,7 @@
 #include "PlatformAppInstanceBase.h"
 #include "Logger/Logger.h"
 #include "Math/Vector2D.h"
-#include "RenderInterface/Resources/GenericWindowCanvas.h"
+#include "Types/CompilerDefines.h"
 
 #include <set>
 
@@ -29,41 +29,48 @@ void WindowsAppWindow::createWindow(const ApplicationInstance *appInstance)
     // https://docs.microsoft.com/en-us/archive/msdn-magazine/2014/february/windows-with-c-write-high-dpi-apps-for-windows-8-1
     if (!parentWindow)
     {
-        bool bSetDpiAwarness = ::SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE);
-        fatalAssert(bSetDpiAwarness, "DPI awareness setup failed");
+        CALL_ONCE(
+            []()
+            {
+                bool bSetDpiAwarness = ::SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE);
+                fatalAssertf(bSetDpiAwarness, "DPI awareness setup failed");
+            }
+        );
     }
 
     WNDCLASS windowClass{};
-    if (::GetClassInfo(instanceHandle, windowName.getChar(), &windowClass) == 0)
+    if (::GetClassInfo(instanceHandle, appInstance->getAppName().getChar(), &windowClass) == 0)
     {
         windowClass = {};
         windowClass.lpfnWndProc = &WindowProc;
         windowClass.hInstance = instanceHandle;
-        windowClass.lpszClassName = windowName.getChar();
+        windowClass.lpszClassName = appInstance->getAppName().getChar();
 
         RegisterClass(&windowClass);
     }
 
-    dword style = bIsWindowed ? WS_OVERLAPPED | WS_THICKFRAME | WS_SYSMENU | WS_CAPTION | WS_MAXIMIZEBOX : WS_POPUP | WS_MAXIMIZE;
+    dword style
+        = bIsWindowed ? WS_OVERLAPPED | WS_THICKFRAME | WS_SYSMENU | WS_CAPTION | WS_MAXIMIZEBOX | WS_MINIMIZEBOX : WS_POPUP | WS_MAXIMIZE;
 
     RECT windowRect{ 0, 0, (LONG)windowWidth, (LONG)windowHeight };
 
     ::AdjustWindowRect(&windowRect, style, false);
 
-    windowsHandle = CreateWindow(
-        windowName.getChar(), windowName.getChar(), style, 0, 0, windowRect.right - windowRect.left, windowRect.bottom - windowRect.top,
-        parentWindow ? (HWND) static_cast<WindowsAppWindow *>(parentWindow)->windowsHandle : nullptr, nullptr, instanceHandle, this
+    windowHandle = CreateWindow(
+        appInstance->getAppName().getChar(), windowName.getChar(), style, 0, 0, windowRect.right - windowRect.left,
+        windowRect.bottom - windowRect.top, parentWindow ? (HWND) static_cast<WindowsAppWindow *>(parentWindow)->windowHandle : nullptr,
+        nullptr, instanceHandle, this
     );
 
-    if (windowsHandle == nullptr)
+    if (windowHandle == nullptr)
     {
-        LOG_ERROR("WindowsAppWindow", "%s() : Failed creating window, Error code %d", __func__, GetLastError());
+        LOG_ERROR("WindowsAppWindow", "Failed creating window, Error code %d", GetLastError());
         return;
     }
 
-    ::ShowWindow((HWND)windowsHandle, SW_SHOW);
+    ::ShowWindow((HWND)windowHandle, SW_SHOW);
     // Get window's dpi for a monitor
-    windowDpiChanged(::GetDpiForWindow((HWND)windowsHandle));
+    windowDpiChanged(::GetDpiForWindow((HWND)windowHandle));
 }
 
 void WindowsAppWindow::updateWindow()
@@ -74,10 +81,10 @@ void WindowsAppWindow::updateWindow()
     auto peekMsgsLambda = [this](uint32 minFilter, uint32 maxFilter, uint32 removeFlag)
     {
         MSG msg;
-        while (PeekMessage(&msg, (HWND)windowsHandle, minFilter, maxFilter, removeFlag) > 0)
+        while (::PeekMessage(&msg, (HWND)windowHandle, minFilter, maxFilter, removeFlag) > 0)
         {
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
+            ::TranslateMessage(&msg);
+            ::DispatchMessage(&msg);
         }
     };
 
@@ -94,15 +101,19 @@ void WindowsAppWindow::updateWindow()
 
 void WindowsAppWindow::destroyWindow()
 {
-    GenericAppWindow::destroyWindow();
+    ::DestroyWindow((HWND)windowHandle);
+    windowHandle = nullptr;
 
-    DestroyWindow((HWND)windowsHandle);
-    windowsHandle = nullptr;
+    // Doing after destroying native handle to allow processing native events like WM_ACTIVATE at WindowProc
+    GenericAppWindow::destroyWindow();
 }
 
-bool WindowsAppWindow::isValidWindow() const { return windowsHandle != nullptr && windowsHandle != nullptr; }
+bool WindowsAppWindow::isValidWindow() const { return windowHandle != nullptr && windowHandle != nullptr; }
 
-void WindowsAppWindow::pushEvent(uint32 eventType, LambdaFunction<void> function) { accumulatedEvents[eventType] = function; }
+void WindowsAppWindow::pushEvent(uint32 eventType, LambdaFunction<void> &&function)
+{
+    accumulatedEvents[eventType] = std::forward<LambdaFunction<void>>(function);
+}
 
 void WindowsAppWindow::activateWindow() const
 {
@@ -130,7 +141,7 @@ void WindowsAppWindow::windowResizing(uint32 width, uint32 height) const
 void WindowsAppWindow::windowDpiChanged(uint32 newDpi)
 {
     CONST_EXPR int32 WINDOWS_DEFAULT_DPI = 96;
-    dpiScaling = float(WINDOWS_DEFAULT_DPI) / float(newDpi);
+    dpiScaling = float(newDpi) / float(WINDOWS_DEFAULT_DPI);
 }
 
 void WindowsAppWindow::windowDestroyRequested() const
@@ -141,15 +152,42 @@ void WindowsAppWindow::windowDestroyRequested() const
     }
 }
 
-Rect WindowsAppWindow::windowClientRect() const
+QuantShortBox2D WindowsAppWindow::windowClientRect() const
 {
-    Rect retVal(Vector2D::ZERO, Vector2D::ZERO);
+    QuantShortBox2D retVal(Short2D(0), Short2D(0));
     RECT clientArea;
     POINT clientOrigin{ 0, 0 };
-    if (GetClientRect((HWND)windowsHandle, &clientArea) && ClientToScreen((HWND)windowsHandle, &clientOrigin))
+    if (::GetClientRect((HWND)windowHandle, &clientArea) && ::ClientToScreen((HWND)windowHandle, &clientOrigin))
     {
-        retVal.minBound = Vector2D(float(clientArea.left + clientOrigin.x), float(clientArea.top + clientOrigin.y));
-        retVal.maxBound = Vector2D(float(clientArea.right + clientOrigin.x), float(clientArea.bottom + clientOrigin.y));
+        RECT clientBox = RECT{ .left = (clientArea.left + clientOrigin.x),
+                               .top = (clientArea.top + clientOrigin.y),
+                               .right = (clientArea.right + clientOrigin.x),
+                               .bottom = (clientArea.bottom + clientOrigin.y) };
+        fatalAssertf(
+            clientBox.left < 0xFFFF && clientBox.top < 0xFFFF && clientBox.right < 0xFFFF && clientBox.bottom < 0xFFFF,
+            "Window client area(lefttop=[%d %d] rightbottom=[%d %d]) exceeded capacity of int16 change to int32 rectangle", clientBox.left,
+            clientBox.top, clientBox.right, clientBox.bottom
+        );
+        retVal.minBound = Short2D(int16(clientBox.left), int16(clientBox.top));
+        retVal.maxBound = Short2D(int16(clientBox.right), int16(clientBox.bottom));
+    }
+    return retVal;
+}
+
+QuantShortBox2D WindowsAppWindow::windowRect() const
+{
+    QuantShortBox2D retVal(Short2D(0), Short2D(0));
+    RECT windowRect;
+    if (::GetWindowRect((HWND)windowHandle, &windowRect))
+    {
+        fatalAssertf(
+            windowRect.left < 0xFFFF && windowRect.top < 0xFFFF && windowRect.right < 0xFFFF && windowRect.bottom < 0xFFFF,
+            "Window rect area(lefttop=[%d %d] rightbottom=[%d %d]) exceeded capacity of int16 change to int32 rectangle", windowRect.left,
+            windowRect.top, windowRect.right, windowRect.bottom
+        );
+
+        retVal.minBound = Short2D(int16(windowRect.left), int16(windowRect.top));
+        retVal.maxBound = Short2D(int16(windowRect.right), int16(windowRect.bottom));
     }
     return retVal;
 }
@@ -163,31 +201,37 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         const WindowsAppWindow *const windowPtr
             = reinterpret_cast<const WindowsAppWindow *>(reinterpret_cast<LPCREATESTRUCTA>(lParam)->lpCreateParams);
         SetWindowLongPtrA(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(windowPtr));
-        LOG("WindowsAppWindow", "%s() : Created window %s", __func__, windowPtr->getWindowName().getChar());
+        LOG("WindowsAppWindow", "Created window %s", windowPtr->getWindowName().getChar());
         return 0;
     }
     case WM_DESTROY:
     {
         const WindowsAppWindow *const windowPtr = reinterpret_cast<const WindowsAppWindow *>(GetWindowLongPtrA(hwnd, GWLP_USERDATA));
-        LOG("WindowsAppWindow", "%s() : Destroying window %s", __func__, windowPtr->getWindowName().getChar());
+        LOG("WindowsAppWindow", "Destroying window %s", windowPtr->getWindowName().getChar());
         return 0;
     }
 
     case WM_CLOSE:
     {
         WindowsAppWindow *const windowPtr = reinterpret_cast<WindowsAppWindow *>(GetWindowLongPtrA(hwnd, GWLP_USERDATA));
-        LOG("WindowsAppWindow", "%s() : Quiting window %s", __func__, windowPtr->getWindowName().getChar());
+        LOG("WindowsAppWindow", "Quiting window %s", windowPtr->getWindowName().getChar());
 
         // This will trigger window destroyed event which can be used to kill engine
-        windowPtr->pushEvent(WM_CLOSE, [windowPtr]() { windowPtr->windowDestroyRequested(); });
+        windowPtr->pushEvent(
+            WM_CLOSE,
+            [windowPtr]()
+            {
+                windowPtr->windowDestroyRequested();
+            }
+        );
         return 0;
     }
-    case WM_ACTIVATEAPP:
+    case WM_ACTIVATE:
     {
         WindowsAppWindow *const windowPtr = reinterpret_cast<WindowsAppWindow *>(GetWindowLongPtrA(hwnd, GWLP_USERDATA));
         if (windowPtr)
         {
-            if (wParam == TRUE)
+            if (wParam == WA_ACTIVE || wParam == WA_CLICKACTIVE)
             {
                 windowPtr->activateWindow();
             }
@@ -215,15 +259,30 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     case WM_SIZE:
     {
         WindowsAppWindow *const windowPtr = reinterpret_cast<WindowsAppWindow *>(GetWindowLongPtrA(hwnd, GWLP_USERDATA));
-        if (windowPtr && (wParam == SIZE_MAXIMIZED || wParam == SIZE_RESTORED) && LOWORD(lParam) > 0 && HIWORD(lParam) > 0)
+        if (!windowPtr)
+            break;
+
+        if ((wParam == SIZE_MAXIMIZED || wParam == SIZE_RESTORED) && LOWORD(lParam) > 0 && HIWORD(lParam) > 0)
         {
             windowPtr->pushEvent(
                 WM_SIZE,
                 [windowPtr, lParam]()
                 {
-                    LOG("WindowsAppWindow", "%s() : Resizing window %s ( %d, %d )", __func__, windowPtr->getWindowName().getChar(),
-                        LOWORD(lParam), HIWORD(lParam));
+                    LOG("WindowsAppWindow", "Window %s Resized (%d, %d)", windowPtr->getWindowName().getChar(), LOWORD(lParam), HIWORD(lParam));
                     windowPtr->windowResizing(LOWORD(lParam), HIWORD(lParam));
+                }
+            );
+            return 0;
+        }
+        else if (wParam == SIZE_MINIMIZED)
+        {
+            windowPtr->pushEvent(
+                WM_SIZE,
+                [windowPtr, lParam]()
+                {
+                    LOG_DEBUG("WindowsAppWindow", "Window %s Minimized", windowPtr->getWindowName().getChar());
+                    debugAssert(LOWORD(lParam) == 0 && HIWORD(lParam) == 0);
+                    windowPtr->windowResizing(0, 0);
                 }
             );
             return 0;
@@ -235,4 +294,22 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     }
 
     return DefWindowProcA(hwnd, uMsg, wParam, lParam);
+}
+
+WindowHandle WindowsAppWindow::getWindowUnderPoint(Short2D point)
+{
+    ::POINT pt;
+    pt.x = point.x;
+    pt.y = point.y;
+    HWND wnd = ::WindowFromPoint(pt);
+    if (wnd == NULL)
+        return wnd;
+
+    while (HWND childWnd = ::ChildWindowFromPoint(wnd, pt))
+    {
+        if (wnd == childWnd)
+            break;
+        wnd = childWnd;
+    }
+    return wnd;
 }

@@ -9,18 +9,39 @@
  *  License can be read in LICENSE file at this repository's root
  */
 
-#include "Assets/AssetsManager.h"
 #include "CmdLine/CmdLine.h"
-#include "Engine/GameEngine.h"
+#include "Engine/TestGameEngine.h"
 #include "Logger/Logger.h"
 #include "Memory/Memory.h"
 #include "Modules/ModuleManager.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 #include "Types/Platform/PlatformFunctions.h"
+#include "ApplicationInstance.h"
+#include "IApplicationModule.h"
 
 CBE_GLOBAL_NEWDELETE_OVERRIDES
 
-int appMain(String cmdLine, void *appPlatformInstance)
+class TestEngineApplication : public ApplicationInstance
+{
+public:
+    TestEngineApplication(const AppInstanceCreateInfo &createInfo)
+        : ApplicationInstance(createInfo)
+    {}
+
+    void onStart() override
+    {
+        LOG("Engine", "Engine start");
+        gEngine->startup(this);
+    }
+    void onTick() override { gEngine->engineLoop(); }
+    void onExit() override
+    {
+        gEngine->quit();
+        LOG("Engine", "Engine quit");
+    }
+};
+
+int appMain(String cmdLine, InstanceHandle appPlatformInstance)
 {
     AppInstanceCreateInfo appCI;
     // appCI.applicationName = TCHAR(MACRO_TO_STRING(ENGINE_NAME));
@@ -30,31 +51,26 @@ int appMain(String cmdLine, void *appPlatformInstance)
     appCI.minorVersion = ENGINE_MINOR_VERSION;
     appCI.patchVersion = ENGINE_PATCH_VERSION;
     appCI.platformAppHandle = appPlatformInstance;
+    appCI.bIsComputeOnly = false;
+    appCI.bRenderOffscreen = false;
+    appCI.bUseGpu = true;
 
     // Main Core
-    bool bMandatoryModulesLoaded = ModuleManager::get()->loadModule(TCHAR("ProgramCore"))
-                                   && ModuleManager::get()->loadModule(TCHAR("ReflectionRuntime"))
-                                   && ModuleManager::get()->loadModule(TCHAR("CoreObjects"));
-    fatalAssert(bMandatoryModulesLoaded, "Loading mandatory modules failed");
+    bool bMandatoryModulesLoaded = ModuleManager::get()->loadModule(
+        TCHAR("ProgramCore")
+        )
+        && ModuleManager::get()->loadModule(TCHAR("ReflectionRuntime")) && ModuleManager::get()->loadModule(TCHAR("CoreObjects"));
+    fatalAssertf(bMandatoryModulesLoaded, "Loading mandatory modules failed");
 
     UnexpectedErrorHandler::getHandler()->registerFilter();
 
-    if (!ProgramCmdLine::get()->parse(appCI.cmdLine))
+    IApplicationModule *appModule = IApplicationModule::get();
+    if (appModule)
     {
-        LOG_ERROR("Engine", "%s() : Invalid command line", __func__);
-        ProgramCmdLine::get()->printCommandLine();
+        appModule->startApplication<TestEngineApplication>(appCI);
     }
 
-    LOG("Engine", "%s() : Engine start", __func__);
-    gEngine->startup(appCI);
-
-    Logger::flushStream();
-    gEngine->engineLoop();
-
-    gEngine->quit();
-    ModuleManager::get()->unloadAllModules();
-
-    LOG("Engine", "%s() : Engine quit", __func__);
+    ModuleManager::get()->unloadAll();
     UnexpectedErrorHandler::getHandler()->unregisterFilter();
     Logger::flushStream();
 
@@ -63,7 +79,7 @@ int appMain(String cmdLine, void *appPlatformInstance)
 
 #if PLATFORM_WINDOWS
 
-#include <wtypes.h>
+#include "WindowsCommonHeaders.h"
 
 //#define _CRTDBG_MAP_ALLOC
 //#include <cstdlib>
@@ -74,15 +90,17 @@ int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int n
     /*_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);*/
 
     String cmdLine{ WCHAR_TO_TCHAR(pCmdLine) };
-    LOG_DEBUG("CommandLine", "%s() : Command [%s]", __func__, cmdLine.getChar());
+    Logger::initialize();
+    LOG_DEBUG("CommandLine", "Command [%s]", cmdLine.getChar());
 
     int32 exitCode = appMain(cmdLine, hInstance);
 
+    Logger::shutdown();
     return exitCode;
 }
 
 #elif PLATFORM_LINUX
-static_assert(false, "Platform not supported!");
+#error "Platform not supported!"
 #elif PLATFORM_APPLE
-static_assert(false, "Platform not supported!");
+#error "Platform not supported!"
 #endif

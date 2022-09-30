@@ -18,6 +18,7 @@
 #include "Modules/ModuleManager.h"
 #include "Types/CoreTypes.h"
 #include "Types/Platform/LFS/PathFunctions.h"
+#include "Types/Time.h"
 
 #include "SampleCode.h"
 
@@ -36,6 +37,9 @@ void initializeCmdArguments()
     );
     CmdLineArgument moduleSrcDir(
         TCHAR("Directory to search and parse source headers from for this module."), ReflectToolCmdLineConst::MODULE_SRC_DIR
+    );
+    CmdLineArgument moduleName(
+        TCHAR("Name of this module. This will be used to derive several build file names."), ReflectToolCmdLineConst::MODULE_NAME
     );
     CmdLineArgument moduleExpMacro(TCHAR("Name of API export macro for this module."), ReflectToolCmdLineConst::MODULE_EXP_MACRO);
     CmdLineArgument intermediateDir(
@@ -58,6 +62,7 @@ void initializeCmdArguments()
         TCHAR("Filters the diagnostics results and only display what is absolutely necessary"), ReflectToolCmdLineConst::FILTER_DIAGNOSTICS
     );
     CmdLineArgument noDiagnostics(TCHAR("No diagnostics will be displayed"), ReflectToolCmdLineConst::NO_DIAGNOSTICS);
+    CmdLineArgument logVerbose(TCHAR("Sets the verbosity of logger to debug"), ReflectToolCmdLineConst::LOG_VERBOSE);
 
     ProgramCmdLine::get()->setProgramDescription(TCHAR("ModuleReflectTool Copyright (C) Jeslas Pravin, Since 2022\n\
     Parses the headers in provided module and creates reflection files for them.\n\
@@ -70,7 +75,6 @@ CBE_GLOBAL_NEWDELETE_OVERRIDES
 int32 main(int32 argsc, AChar **args)
 {
     UnexpectedErrorHandler::getHandler()->registerFilter();
-    Logger::pushMuteSeverities(Logger::Debug | Logger::Log);
 
     ModuleManager *moduleManager = ModuleManager::get();
     moduleManager->loadModule(TCHAR("ProgramCore"));
@@ -78,8 +82,15 @@ int32 main(int32 argsc, AChar **args)
 
     if (!ProgramCmdLine::get()->parse(args, argsc))
     {
-        LOG("CPPReflect", "%s(): Failed to parse command line arguments", __func__);
+        // We cannot initialize logger before parsing command line args
+        Logger::initialize();
+        LOG_ERROR("CPPReflect", "Failed to parse command line arguments");
         ProgramCmdLine::get()->printCommandLine();
+    }
+    Logger::initialize();
+    if (!ProgramCmdLine::get()->hasArg(ReflectToolCmdLineConst::LOG_VERBOSE))
+    {
+        Logger::pushMuteSeverities(Logger::Verbose | Logger::Debug | Logger::Log);
     }
     if (ProgramCmdLine::get()->printHelp())
     {
@@ -89,15 +100,15 @@ int32 main(int32 argsc, AChar **args)
 
     // Loading other libraries
     moduleManager->loadModule(TCHAR("ReflectionRuntime"));
-    moduleManager->getOrLoadLibrary(
-        PathFunctions::combinePath(TCHAR(LLVM_INSTALL_PATH), TCHAR("bin"), String(LIB_PREFIX) + TCHAR("libclang.") + SHARED_LIB_EXTENSION)
+    moduleManager->getOrLoadLibrary(PathFunctions::combinePath(
+        TCHAR(LLVM_INSTALL_PATH), TCHAR("bin"), String(LIB_PREFIX) + TCHAR("libclang.") + SHARED_LIB_EXTENSION).getChar()
     );
 
     Logger::flushStream();
 
     if (ProgramCmdLine::get()->hasArg(ReflectToolCmdLineConst::SAMPLE_CODE))
     {
-        LOG_DEBUG("CPPReflect", "%s(): Executing sample codes %s", __func__, ENGINE_MODULES_PATH);
+        LOG_DEBUG("CPPReflect", "Executing sample codes");
         String srcDir = ProgramCmdLine::get()->atIdx(ProgramCmdLine::get()->cmdLineCount() - 1);
 
         SampleCode::testLibClangParsing(srcDir);
@@ -108,10 +119,11 @@ int32 main(int32 argsc, AChar **args)
     }
     else
     {
+        StopWatch sw;
         ModuleSources moduleSrcs;
         if (!moduleSrcs.compileAllSources(SourceGenerator::isTemplatesModified()))
         {
-            LOG_ERROR("ModuleReflectTool", "%s() : Compiling module sources failed", __func__);
+            LOG_ERROR("ModuleReflectTool", "Compiling module sources failed");
             return 1;
         }
         SourceGenerator generator;
@@ -125,8 +137,16 @@ int32 main(int32 argsc, AChar **args)
 
         if (!bGenerated)
         {
-            LOG_ERROR("ModuleReflectTool", "%s() : Generating module sources failed", __func__);
+            LOG_ERROR("ModuleReflectTool", "Generating module sources failed");
             return 1;
+        }
+        else
+        {
+            SCOPED_MUTE_LOG_SEVERITIES(Logger::Debug);
+            String moduleSrcDir;
+            ProgramCmdLine::get()->getArg(moduleSrcDir, ReflectToolCmdLineConst::MODULE_SRC_DIR);
+            sw.stop();
+            LOG("ModuleReflectTool", "%s : Reflected in %0.2f seconds", PathFunctions::fileOrDirectoryName(moduleSrcDir), sw.duration());
         }
     }
 
@@ -134,6 +154,6 @@ int32 main(int32 argsc, AChar **args)
     moduleManager->unloadModule(TCHAR("ProgramCore"));
 
     UnexpectedErrorHandler::getHandler()->unregisterFilter();
-    Logger::flushStream();
+    Logger::shutdown();
     return 0;
 }

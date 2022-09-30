@@ -14,11 +14,12 @@
 #include <vulkan_core.h>
 
 #include "VulkanInternals/Platform/GenericVulkanFunctions.h"
+#include "Types/Platform/PlatformTypes.h"
 
 struct PFN_Win32SurfaceKHR : PFN_SurfaceKHR<VkInstance, const void *, const VkAllocationCallbacks *, VkSurfaceKHR *>
 {
-    void *hInstance;
-    void *hWindow;
+    InstanceHandle hInstance;
+    WindowHandle hWindow;
 
     static const char *EXT_NAME;
 

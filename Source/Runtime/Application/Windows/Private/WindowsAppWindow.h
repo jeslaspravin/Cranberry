@@ -17,7 +17,7 @@ class WindowsAppWindow final : public GenericAppWindow
 {
 
 private:
-    void *windowsHandle;
+    WindowHandle windowHandle;
 
 protected:
     // void resizeWindow() override;
@@ -27,15 +27,19 @@ public:
     void updateWindow() override;
     void destroyWindow() override;
     bool isValidWindow() const override;
-    void *getWindowHandle() const override { return windowsHandle; }
+    WindowHandle getWindowHandle() const override { return windowHandle; }
 
-    void pushEvent(uint32 eventType, LambdaFunction<void> function);
+    void pushEvent(uint32 eventType, LambdaFunction<void> &&function);
     void activateWindow() const;
     void deactivateWindow() const;
     void windowResizing(uint32 width, uint32 height) const;
     void windowDpiChanged(uint32 newDpi);
     void windowDestroyRequested() const;
-    Rect windowClientRect() const override;
+    QuantShortBox2D windowClientRect() const override;
+    QuantShortBox2D windowRect() const override;
+
+public:
+    static WindowHandle getWindowUnderPoint(Short2D point);
 };
 
 namespace GPlatformInstances

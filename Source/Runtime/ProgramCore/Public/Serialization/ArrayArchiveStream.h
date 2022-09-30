@@ -17,21 +17,24 @@ class PROGRAMCORE_EXPORT ArrayArchiveStream : public ArchiveStream
 {
 private:
     std::vector<uint8> buffer;
-    SizeT cursor;
+    SizeT cursor = 0;
 
 public:
     ArrayArchiveStream() = default;
 
     /* ArrayArchiveStream overrides */
-    void read(void *toPtr, SizeT len) override;
-    void write(const void *ptr, SizeT len) override;
-    void moveForward(SizeT count) override;
-    void moveBackward(SizeT count) override;
-    bool allocate(SizeT count) override;
+    void read(void *toPtr, SizeT byteLen) override;
+    void write(const void *ptr, SizeT byteLen) override;
+    void moveForward(SizeT byteCount) override;
+    void moveBackward(SizeT byteCount) override;
+    bool allocate(SizeT byteCount) override;
     uint8 readForwardAt(SizeT idx) const override;
     uint8 readBackwardAt(SizeT idx) const override;
     uint64 cursorPos() const override;
-    bool isAvailable() const override;
-    bool hasMoreData(SizeT requiredSize) const override;
+    bool isAvailable() const override { return true; }
+    bool hasMoreData(SizeT requiredByteCount) const override;
     /* Overrides ends */
+
+    void setBuffer(const std::vector<uint8> &inBuffer) { buffer = inBuffer; }
+    const std::vector<uint8> &getBuffer() const { return buffer; }
 };

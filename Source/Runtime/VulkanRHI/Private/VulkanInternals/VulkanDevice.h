@@ -47,8 +47,8 @@ private:
     VkPhysicalDeviceFeatures features;
     VkPhysicalDeviceDescriptorIndexingFeatures descIndexingFeatures;
     VkPhysicalDeviceTimelineSemaphoreFeatures timelineSemaphoreFeatures;
-    // KHRs
-    VkPhysicalDeviceSynchronization2FeaturesKHR sync2Features;
+    VkPhysicalDeviceSynchronization2Features sync2Features;
+    VkPhysicalDeviceMaintenance4Features maintainence4Features;
     // Enabled features will only be partially initialized manually, So zero initialize it
     VkPhysicalDeviceFeatures enabledFeatures{};
     VkPhysicalDeviceDescriptorIndexingFeatures enabledDescIndexingFeatures{};
@@ -112,6 +112,7 @@ public:
     QueueResourceBasePtr getComputeQueue() const;
     QueueResourceBasePtr getTransferQueue() const;
     QueueResourceBasePtr getGenericQueue() const;
+    VkQueueFlags getQueueFlags(uint32 queueIdx) const;
     const VulkanDebugGraphics *debugGraphics() const { return &graphicsDebug; }
 
     NODISCARD int32 compare(const VulkanDevice &otherDevice, const WindowCanvasRef &windowCanvas) const;

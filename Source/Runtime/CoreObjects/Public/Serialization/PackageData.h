@@ -11,39 +11,32 @@
 
 #pragma once
 
-#include "String/String.h"
-#include "String/StringID.h"
-#include "CBEObjectTypes.h"
+#include "ObjectPtrs.h"
 
-namespace CBE
-{
-class Object;
-}
-
-inline constexpr static const uint32 PACKAGE_SERIALIZER_VERSION = 0;
-inline constexpr static const uint32 PACKAGE_SERIALIZER_CUTOFF_VERSION = 0;
-inline STRINGID_CONSTEXPR static const StringID PACKAGE_CUSTOM_VERSION_ID = STRID("PackageSerializer");
-inline STRINGID_CONSTEXPR static const StringID PACKAGE_ARCHIVE_MARKER = STRID("SerializedCBEPackage");
+constexpr inline const uint32 PACKAGE_SERIALIZER_VERSION = 0;
+constexpr inline const uint32 PACKAGE_SERIALIZER_CUTOFF_VERSION = 0;
+STRINGID_CONSTEXPR inline const StringID PACKAGE_CUSTOM_VERSION_ID = STRID("PackageSerializer");
+STRINGID_CONSTEXPR inline const StringID PACKAGE_ARCHIVE_MARKER = STRID("SerializedCBEPackage");
 
 // This will be flag set on object index when an object index is serialized to archive
-inline constexpr static const SizeT DEPENDENT_OBJECT_FLAG = 0x80'00'00'00'00'00'00'00ull;
-inline constexpr static const SizeT NULL_OBJECT_FLAG = ~0ull;
+constexpr inline const SizeT DEPENDENT_OBJECT_FLAG = 0x80'00'00'00'00'00'00'00ull;
+constexpr inline const SizeT NULL_OBJECT_FLAG = ~0ull;
 
 struct PackageDependencyData
 {
     // Necessary as string to support package and object path processing
     String objectFullPath;
-    StringID className;
+    CBEClass clazz;
 
     // Loaded/saving object
-    CBE::Object *object = nullptr;
+    cbe::WeakObjPtr<cbe::Object> object;
 };
 
-template <ArchiveType ArchiveType>
+template <ArchiveTypeName ArchiveType>
 ArchiveType &operator<<(ArchiveType &archive, PackageDependencyData &value)
 {
     archive << value.objectFullPath;
-    archive << value.className;
+    archive << value.clazz;
     return archive;
 }
 
@@ -51,28 +44,42 @@ struct PackageContainedData
 {
     // Without package path as package path will be derived from package itself
     String objectPath;
-    StringID className;
     // Will also be pushed to archive's custom version, Should we need this?
     uint32 classVersion;
     EObjectFlags objectFlags;
+    CBEClass clazz;
 
     SizeT streamStart;
     SizeT streamSize;
 
     // Loaded/saving object
-    CBE::Object *object = nullptr;
+    cbe::WeakObjPtr<cbe::Object> object;
 };
 
-template <ArchiveType ArchiveType>
+template <ArchiveTypeName ArchiveType>
 ArchiveType &operator<<(ArchiveType &archive, PackageContainedData &value)
 {
     archive << value.objectPath;
-    archive << value.className;
     archive << value.classVersion;
     archive << value.objectFlags;
+    archive << value.clazz;
 
     archive << value.streamStart;
     archive << value.streamSize;
 
     return archive;
 }
+
+enum class EPackageLoadSaveResult : uint32
+{
+    Failed = 0,
+    IOError,
+    WithWarnings,
+    Success,
+    ErrorStart = Failed,
+    ErrorEnd = IOError
+};
+
+#define CBEPACKAGE_SAVELOAD_SUCCESS(OpResult) ((OpResult) == EPackageLoadSaveResult::Success)
+#define CBEPACKAGE_SAVELOAD_ERROR(OpResult)                                                                                                    \
+    (uint32(OpResult) >= uint32(EPackageLoadSaveResult::ErrorStart) && uint32(OpResult) <= uint32(EPackageLoadSaveResult::ErrorEnd))

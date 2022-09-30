@@ -10,10 +10,12 @@
  */
 
 #pragma once
+
 #include "ApplicationExports.h"
+#include "Types/Platform/PlatformTypes.h"
 
 class APPLICATION_EXPORT PlatformAppInstanceBase
 {
 public:
-    virtual void *getPlatformAppInstance() const = 0;
+    virtual InstanceHandle getPlatformAppInstance() const = 0;
 };

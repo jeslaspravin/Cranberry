@@ -108,7 +108,7 @@ void VulkanCommandPool::reinitResources()
 {
     if (cmdPoolInfo.queueResource == nullptr)
     {
-        LOG_ERROR("VulkanCommandPool", "%s() : Command pool information is invalid", __func__);
+        LOG_ERROR("VulkanCommandPool", "Command pool information is invalid");
         return;
     }
     release();
@@ -120,20 +120,21 @@ void VulkanCommandPool::reinitResources()
     commandPoolCreateInfo.flags = 0;
     if (cmdPoolInfo.vDevice->vkCreateCommandPool(cmdPoolInfo.logicalDevice, &commandPoolCreateInfo, nullptr, &oneTimeRecordPool) != VK_SUCCESS)
     {
-        LOG_ERROR("VulkanCommandPool", "%s() : Failed creating one time record command buffer pool", __func__);
+        LOG_ERROR("VulkanCommandPool", "Failed creating one time record command buffer pool");
         oneTimeRecordPool = nullptr;
     }
     else
     {
         cmdPoolInfo.vDevice->debugGraphics()->markObject(
-            (uint64)oneTimeRecordPool, getResourceName() + TCHAR("_OneTimeRecordPool"), getObjectType()
-        );
+            (uint64)oneTimeRecordPool, getResourceName()
+                                           + TCHAR("_OneTimeRecordPool"), getObjectType()
+                                       );
     }
 
     commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
     if (cmdPoolInfo.vDevice->vkCreateCommandPool(cmdPoolInfo.logicalDevice, &commandPoolCreateInfo, nullptr, &tempCommandsPool) != VK_SUCCESS)
     {
-        LOG_ERROR("VulkanCommandPool", "%s() : Failed creating temporary one time use command buffer pool", __func__);
+        LOG_ERROR("VulkanCommandPool", "Failed creating temporary one time use command buffer pool");
         tempCommandsPool = nullptr;
     }
     else
@@ -145,14 +146,15 @@ void VulkanCommandPool::reinitResources()
     if (cmdPoolInfo.vDevice->vkCreateCommandPool(cmdPoolInfo.logicalDevice, &commandPoolCreateInfo, nullptr, &rerecordableCommandPool)
         != VK_SUCCESS)
     {
-        LOG_ERROR("VulkanCommandPool", "%s() : Failed creating rerecordable command buffer pool", __func__);
+        LOG_ERROR("VulkanCommandPool", "Failed creating rerecordable command buffer pool");
         rerecordableCommandPool = nullptr;
     }
     else
     {
         cmdPoolInfo.vDevice->debugGraphics()->markObject(
-            (uint64)rerecordableCommandPool, getResourceName() + TCHAR("_RerecordableCmdPool"), getObjectType()
-        );
+            (uint64)rerecordableCommandPool, getResourceName()
+                                                 + TCHAR("_RerecordableCmdPool"), getObjectType()
+                                             );
     }
 }
 
@@ -228,7 +230,7 @@ VulkanCmdBufferManager::~VulkanCmdBufferManager()
         if (cmdBuffer.second.cmdSyncInfoIdx != -1)
         {
             LOG_WARN(
-                "VulkanCmdBufferManager", "%s: Command buffer %s is not finished, trying to finish it", __func__,
+                "VulkanCmdBufferManager", "Command buffer %s is not finished, trying to finish it",
                 cmdBuffer.second.cmdBuffer->getResourceName().getChar()
             );
             cmdFinished(cmdBuffer.second.cmdBuffer->getResourceName(), nullptr);
@@ -257,7 +259,7 @@ const GraphicsResource *VulkanCmdBufferManager::beginTempCmdBuffer(const String 
     cmdBuffer->fromQueue = cmdPool.cmdPoolInfo.queueType;
     cmdBuffer->usage = usingQueue;
 
-    fatalAssert(
+    fatalAssertf(
         vDevice->vkAllocateCommandBuffers(VulkanGraphicsHelper::getDevice(vDevice), &cmdBuffAllocInfo, &cmdBuffer->cmdBuffer) == VK_SUCCESS,
         "Allocating temporary command buffer failed"
     );
@@ -291,7 +293,7 @@ const GraphicsResource *VulkanCmdBufferManager::beginRecordOnceCmdBuffer(const S
         cmdBuffer->fromQueue = cmdPool.cmdPoolInfo.queueType;
         cmdBuffer->usage = usingQueue;
 
-        fatalAssert(
+        fatalAssertf(
             vDevice->vkAllocateCommandBuffers(VulkanGraphicsHelper::getDevice(vDevice), &cmdBuffAllocInfo, &cmdBuffer->cmdBuffer) == VK_SUCCESS,
             "Allocating record once command buffer failed"
         );
@@ -308,14 +310,14 @@ const GraphicsResource *VulkanCmdBufferManager::beginRecordOnceCmdBuffer(const S
         case ECmdState::Submitted:
             LOG_ERROR(
                 "VulkanCommandBufferManager",
-                "%s() : Trying to record a prerecorded command again is restricted Command = "
+                "Trying to record a prerecorded command again is restricted Command = "
                 "[%s]",
-                __func__, cmdName.getChar()
+                cmdName.getChar()
             );
-            fatalAssert(false, "Cannot record prerecorded command again");
+            fatalAssertf(false, "Cannot record prerecorded command again");
             return cmdBufferItr->second.cmdBuffer;
         case ECmdState::Recording:
-            LOG_WARN("VulkanCommandBufferManager", "%s() : Command %s is already being recorded", __func__, cmdName.getChar());
+            LOG_WARN("VulkanCommandBufferManager", "Command %s is already being recorded", cmdName.getChar());
             return cmdBufferItr->second.cmdBuffer;
         case ECmdState::Idle:
         default:
@@ -350,7 +352,7 @@ const GraphicsResource *VulkanCmdBufferManager::beginReuseCmdBuffer(const String
         cmdBuffer->fromQueue = cmdPool.cmdPoolInfo.queueType;
         cmdBuffer->usage = usingQueue;
 
-        fatalAssert(
+        fatalAssertf(
             vDevice->vkAllocateCommandBuffers(VulkanGraphicsHelper::getDevice(vDevice), &cmdBuffAllocInfo, &cmdBuffer->cmdBuffer) == VK_SUCCESS,
             "Allocating reusable command buffer failed"
         );
@@ -366,14 +368,14 @@ const GraphicsResource *VulkanCmdBufferManager::beginReuseCmdBuffer(const String
         case ECmdState::Submitted:
             LOG_ERROR(
                 "VulkanCommandBufferManager",
-                "%s() : Trying to record a submitted command [%s] is restricted before it is "
+                "Trying to record a submitted command [%s] is restricted before it is "
                 "finished",
-                __func__, cmdName.getChar()
+                cmdName.getChar()
             );
-            fatalAssert(false, "Cannot record command while it is still executing");
+            fatalAssertf(false, "Cannot record command while it is still executing");
             return cmdBufferItr->second.cmdBuffer;
         case ECmdState::Recording:
-            LOG_WARN("VulkanCommandBufferManager", "%s() : Command [%s] is already being recorded", __func__, cmdName.getChar());
+            LOG_WARN("VulkanCommandBufferManager", "Command [%s] is already being recorded", cmdName.getChar());
             return cmdBufferItr->second.cmdBuffer;
         case ECmdState::Recorded:
         case ECmdState::Idle:
@@ -400,8 +402,8 @@ void VulkanCmdBufferManager::startRenderPass(const GraphicsResource *cmdBuffer)
         auto cmdBufferItr = commandBuffers.find(cmdBuffer->getResourceName());
         if (cmdBufferItr != commandBuffers.end())
         {
-            fatalAssert(
-                cmdBufferItr->second.cmdState == ECmdState::Recording, "%s: %s cmd buffer is not recording to start render pass", __func__,
+            fatalAssertf(
+                cmdBufferItr->second.cmdState == ECmdState::Recording, "%s cmd buffer is not recording to start render pass",
                 cmdBufferItr->first.getChar()
             );
             cmdBufferItr->second.cmdState = ECmdState::RenderPass;
@@ -462,30 +464,31 @@ void VulkanCmdBufferManager::cmdFinished(const String &cmdName, VulkanResourcesT
     {
         VulkanCmdSubmitSyncInfo &syncInfo = cmdsSyncInfo[cmdBufferItr->second.cmdSyncInfoIdx];
         syncInfo.refCount--;
-        if (!syncInfo.bIsAdvancedSubmit && syncInfo.completeFence.isValid())
-        {
-            if (!syncInfo.completeFence->isSignaled())
-            {
-                syncInfo.completeFence->waitForSignal();
-            }
 
-            if (syncInfo.refCount == 0 && syncInfo.completeFence.refCount() == 0)
-            {
-                syncInfo.completeFence->resetSignal();
-                syncInfo.completeFence->release();
-            }
-        }
-        if (syncInfo.refCount == 0)
+        fatalAssertf(syncInfo.completeFence.isValid(), "Complete fence cannot be null!");
+        if (!syncInfo.completeFence->isSignaled())
         {
-            if (!syncInfo.bIsAdvancedSubmit && syncInfo.signalingSemaphore.refCount() == 0)
-            {
-                syncInfo.signalingSemaphore->release();
-            }
-            cmdsSyncInfo.reset(cmdBufferItr->second.cmdSyncInfoIdx);
+            syncInfo.completeFence->waitForSignal();
         }
+
+        // wait until other cmd buffers waiting on this is complete before cleaning resources
         if (resourceTracker)
         {
+            for (const GraphicsResource *cmdBuf : resourceTracker->getDependingCmdBuffers(cmdBufferItr->second.cmdBuffer))
+            {
+                cmdFinished(cmdBuf, resourceTracker);
+            }
             resourceTracker->clearFinishedCmd(cmdBufferItr->second.cmdBuffer);
+        }
+
+        // Reset resources
+        if (syncInfo.refCount == 0)
+        {
+            syncInfo.completeFence->resetSignal();
+            syncInfo.completeFence.reset();
+            syncInfo.signalingSemaphore.reset();
+
+            cmdsSyncInfo.reset(cmdBufferItr->second.cmdSyncInfoIdx);
         }
         cmdBufferItr->second.cmdSyncInfoIdx = -1;
         cmdBufferItr->second.cmdState = ECmdState::Recorded;
@@ -499,8 +502,7 @@ void VulkanCmdBufferManager::finishAllSubmited(VulkanResourcesTracker *resourceT
         if (cmd.second.cmdState == ECmdState::Submitted)
         {
             VulkanCmdSubmitSyncInfo &syncInfo = cmdsSyncInfo[cmd.second.cmdSyncInfoIdx];
-            // If advanced submit then finishing won't wait so wait here
-            if (syncInfo.bIsAdvancedSubmit && !syncInfo.completeFence->isSignaled())
+            if (!syncInfo.completeFence->isSignaled())
             {
                 syncInfo.completeFence->waitForSignal();
             }
@@ -546,6 +548,19 @@ uint32 VulkanCmdBufferManager::getQueueFamilyIdx(const GraphicsResource *cmdBuff
     return getQueueFamilyIdx(static_cast<const VulkanCommandBuffer *>(cmdBuffer)->fromQueue);
 }
 
+EQueueFunction VulkanCmdBufferManager::getQueueFamily(uint32 familyIdx) const
+{
+    for (const std::pair<const EQueueFunction, VulkanCommandPool> &poolPair : pools)
+    {
+        if (poolPair.second.cmdPoolInfo.vulkanQueueIndex == familyIdx)
+        {
+            return poolPair.first;
+        }
+    }
+    debugAssertf(false, "Invalide queue family index %u", familyIdx);
+    return EQueueFunction::Generic;
+}
+
 ECmdState VulkanCmdBufferManager::getState(const GraphicsResource *cmdBuffer) const
 {
     auto cmdBufferItr = commandBuffers.find(cmdBuffer->getResourceName());
@@ -553,13 +568,11 @@ ECmdState VulkanCmdBufferManager::getState(const GraphicsResource *cmdBuffer) co
     {
         return cmdBufferItr->second.cmdState;
     }
-    LOG_DEBUG(
-        "VulkanCmdBufferManager", "%s() : Not available command buffer[%s] queried for state", __func__, cmdBuffer->getResourceName().getChar()
-    );
+    LOG_DEBUG("VulkanCmdBufferManager", "Not available command buffer[%s] queried for state", cmdBuffer->getResourceName().getChar());
     return ECmdState::Idle;
 }
 
-SemaphoreRef VulkanCmdBufferManager::cmdSignalSemaphore(const GraphicsResource *cmdBuffer) const
+TimelineSemaphoreRef VulkanCmdBufferManager::cmdSignalSemaphore(const GraphicsResource *cmdBuffer) const
 {
     auto cmdBufferItr = commandBuffers.find(cmdBuffer->getResourceName());
     if (cmdBufferItr != commandBuffers.cend() && cmdBufferItr->second.cmdSyncInfoIdx >= 0)
@@ -584,78 +597,144 @@ bool VulkanCmdBufferManager::isTransferCmdBuffer(const GraphicsResource *cmdBuff
     return static_cast<const VulkanCommandBuffer *>(cmdBuffer)->usage == EQueueFunction::Transfer;
 }
 
-void VulkanCmdBufferManager::submitCmds(
-    EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo> &commands, FenceRef &cmdsCompleteFence
-)
+EQueueFunction VulkanCmdBufferManager::getCmdBufferQueue(const GraphicsResource *cmdBuffer) const
 {
+    return static_cast<const VulkanCommandBuffer *>(cmdBuffer)->usage;
+}
+
+bool VulkanCmdBufferManager::isCmdFinished(const GraphicsResource *cmdBuffer) const
+{
+    auto cmdBufferItr = commandBuffers.find(cmdBuffer->getResourceName());
+    // If submitted then only it can be finished in queue
+    if (cmdBufferItr != commandBuffers.end() && cmdBufferItr->second.cmdState == ECmdState::Submitted)
+    {
+        const VulkanCmdSubmitSyncInfo &syncInfo = cmdsSyncInfo[cmdBufferItr->second.cmdSyncInfoIdx];
+
+        fatalAssertf(syncInfo.completeFence.isValid(), "Complete fence cannot be null!");
+        return syncInfo.completeFence->isSignaled();
+    }
+    return true;
+}
+
+void VulkanCmdBufferManager::submitCmds(EQueuePriority::Enum priority, ArrayView<const CommandSubmitInfo> commands, FenceRef cmdsCompleteFence)
+{
+    IGraphicsInstance *graphicsInstance = IVulkanRHIModule::get()->getGraphicsInstance();
+    const GraphicsHelperAPI *graphicsHelper = IVulkanRHIModule::get()->getGraphicsHelper();
     QueueResourceBase *queueRes = nullptr;
 
-    std::vector<std::vector<VkCommandBuffer>> allCmdBuffers(commands.size());
-    std::vector<std::vector<VkSemaphore>> allWaitOnSemaphores(commands.size());
-    std::vector<std::vector<VkPipelineStageFlags>> allWaitingStages(commands.size());
-    std::vector<std::vector<VkSemaphore>> allSignallingSemaphores(commands.size());
-    std::vector<VkSubmitInfo> allSubmitInfo(commands.size());
+    std::vector<TimelineSemaphoreRef> managerTSemaphores(commands.size());
+    std::vector<std::vector<VkCommandBufferSubmitInfo>> allCmdBuffers(commands.size());
+    std::vector<std::vector<VkSemaphoreSubmitInfo>> allWaitOnSemaphores(commands.size());
+    std::vector<std::vector<VkSemaphoreSubmitInfo>> allSignallingSemaphores(commands.size());
+    std::vector<VkSubmitInfo2> allSubmitInfo;
+    allSubmitInfo.reserve(commands.size());
 
     for (int32 cmdSubmitIdx = 0; cmdSubmitIdx < commands.size(); ++cmdSubmitIdx)
     {
-        std::vector<VkCommandBuffer> &cmdBuffers = allCmdBuffers[cmdSubmitIdx];
-        cmdBuffers.resize(commands[cmdSubmitIdx].cmdBuffers.size());
-        std::vector<VkSemaphore> &waitOnSemaphores = allWaitOnSemaphores[cmdSubmitIdx];
-        waitOnSemaphores.resize(commands[cmdSubmitIdx].waitOn.size());
-        std::vector<VkPipelineStageFlags> &waitingStages = allWaitingStages[cmdSubmitIdx];
-        waitingStages.resize(waitOnSemaphores.size());
-        std::vector<VkSemaphore> &signalingSemaphores = allSignallingSemaphores[cmdSubmitIdx];
-        signalingSemaphores.resize(commands[cmdSubmitIdx].signalSemaphores.size());
+        std::vector<VkCommandBufferSubmitInfo> &cmdBuffers = allCmdBuffers[cmdSubmitIdx];
+        cmdBuffers.reserve(commands[cmdSubmitIdx].cmdBuffers.size());
+        std::vector<VkSemaphoreSubmitInfo> &waitOnSemaphores = allWaitOnSemaphores[cmdSubmitIdx];
+        waitOnSemaphores.reserve(commands[cmdSubmitIdx].waitOn.size() + commands[cmdSubmitIdx].waitOnTimelines.size());
+        std::vector<VkSemaphoreSubmitInfo> &signalingSemaphores = allSignallingSemaphores[cmdSubmitIdx];
+        signalingSemaphores.reserve(commands[cmdSubmitIdx].signalSemaphores.size() + commands[cmdSubmitIdx].signalTimelines.size() + 1);
 
+        bool bHasNonTemp = false;
         for (int32 i = 0; i < commands[cmdSubmitIdx].cmdBuffers.size(); ++i)
         {
             const auto *vCmdBuffer = static_cast<const VulkanCommandBuffer *>(commands[cmdSubmitIdx].cmdBuffers[i]);
+            bHasNonTemp = bHasNonTemp || !vCmdBuffer->bIsTempBuffer;
+
+            CMDBUFFER_SUBMIT_INFO(cmdBufferSubmitInfo);
+            cmdBufferSubmitInfo.commandBuffer = vCmdBuffer->cmdBuffer;
+            cmdBuffers.emplace_back(std::move(cmdBufferSubmitInfo));
+
             VulkanCommandPool &cmdPool = getPool(vCmdBuffer->fromQueue);
-            cmdBuffers[i] = vCmdBuffer->cmdBuffer;
             if (queueRes != nullptr && queueRes != cmdPool.cmdPoolInfo.queueResource)
             {
-                LOG_ERROR("VulkanCommandBufferManager", "%s() : Buffers from different queues cannot be submitted together", __func__);
+                LOG_ERROR("VulkanCommandBufferManager", "Buffers from different queues cannot be submitted together");
                 return;
             }
             queueRes = cmdPool.cmdPoolInfo.queueResource;
         }
         if (queueRes == nullptr)
         {
-            LOG_ERROR("VulkanCommandBufferManager", "%s() : Cannot submit as there is no queue found for command buffers", __func__);
+            LOG_ERROR("VulkanCommandBufferManager", "Cannot submit as there is no queue found for command buffers");
             return;
         }
 
         for (int32 i = 0; i < commands[cmdSubmitIdx].waitOn.size(); ++i)
         {
-            waitOnSemaphores[i] = commands[cmdSubmitIdx].waitOn[i].waitOnSemaphore.reference<VulkanSemaphore>()->semaphore;
-            waitingStages[i]
-                = VkPipelineStageFlags(EngineToVulkanAPI::vulkanPipelineStageFlags(commands[cmdSubmitIdx].waitOn[i].stagesThatWaits));
+            SEMAPHORE_SUBMIT_INFO(waitOnSema);
+            waitOnSema.semaphore = commands[cmdSubmitIdx].waitOn[i].semaphore.reference<VulkanSemaphore>()->semaphore;
+            waitOnSema.stageMask = EngineToVulkanAPI::vulkanPipelineStageFlags(commands[cmdSubmitIdx].waitOn[i].stages);
+            waitOnSemaphores.emplace_back(std::move(waitOnSema));
+        }
+        for (int32 i = 0; i < commands[cmdSubmitIdx].waitOnTimelines.size(); ++i)
+        {
+            SEMAPHORE_SUBMIT_INFO(waitOnSema);
+            waitOnSema.semaphore = commands[cmdSubmitIdx].waitOnTimelines[i].semaphore.reference<VulkanTimelineSemaphore>()->semaphore;
+            waitOnSema.stageMask = EngineToVulkanAPI::vulkanPipelineStageFlags(commands[cmdSubmitIdx].waitOnTimelines[i].stages);
+            waitOnSema.value = commands[cmdSubmitIdx].waitOnTimelines[i].value;
+            waitOnSemaphores.emplace_back(std::move(waitOnSema));
         }
         for (int32 i = 0; i < commands[cmdSubmitIdx].signalSemaphores.size(); ++i)
         {
-            signalingSemaphores[i] = commands[cmdSubmitIdx].signalSemaphores[i].reference<VulkanSemaphore>()->semaphore;
+            SEMAPHORE_SUBMIT_INFO(signalingSema);
+            signalingSema.semaphore = commands[cmdSubmitIdx].signalSemaphores[i].semaphore.reference<VulkanSemaphore>()->semaphore;
+            signalingSema.stageMask = EngineToVulkanAPI::vulkanPipelineStageFlags(commands[cmdSubmitIdx].signalSemaphores[i].stages);
+            signalingSemaphores.emplace_back(std::move(signalingSema));
+        }
+        for (int32 i = 0; i < commands[cmdSubmitIdx].signalTimelines.size(); ++i)
+        {
+            SEMAPHORE_SUBMIT_INFO(signalingSema);
+            signalingSema.semaphore = commands[cmdSubmitIdx].signalTimelines[i].semaphore.reference<VulkanTimelineSemaphore>()->semaphore;
+            signalingSema.stageMask = EngineToVulkanAPI::vulkanPipelineStageFlags(commands[cmdSubmitIdx].signalTimelines[i].stages);
+            signalingSema.value = commands[cmdSubmitIdx].signalTimelines[i].value;
+            signalingSemaphores.emplace_back(std::move(signalingSema));
+        }
+        if (bHasNonTemp)
+        {
+            // Add an Time line semaphore for manager tracking
+            TimelineSemaphoreRef submitSemaphore = graphicsHelper->createTimelineSemaphore(
+                graphicsInstance, (TCHAR("AdvancedSubmitTSema_") + String::toString(cmdSubmitIdx)).c_str()
+                );
+            submitSemaphore->init();
+            managerTSemaphores[cmdSubmitIdx] = submitSemaphore;
+
+            SEMAPHORE_SUBMIT_INFO(signalingSema);
+            signalingSema.semaphore = submitSemaphore.reference<VulkanTimelineSemaphore>()->semaphore;
+            signalingSema.stageMask = VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT;
+            signalingSema.value = 1;
+            signalingSemaphores.emplace_back(std::move(signalingSema));
         }
 
-        allSubmitInfo[cmdSubmitIdx].commandBufferCount = uint32(cmdBuffers.size());
-        allSubmitInfo[cmdSubmitIdx].pCommandBuffers = cmdBuffers.data();
-        allSubmitInfo[cmdSubmitIdx].signalSemaphoreCount = uint32(signalingSemaphores.size());
-        allSubmitInfo[cmdSubmitIdx].pSignalSemaphores = signalingSemaphores.data();
-        allSubmitInfo[cmdSubmitIdx].waitSemaphoreCount = uint32(waitOnSemaphores.size());
-        allSubmitInfo[cmdSubmitIdx].pWaitSemaphores = waitOnSemaphores.data();
-        allSubmitInfo[cmdSubmitIdx].pWaitDstStageMask = waitingStages.data();
+        SUBMIT_INFO2(submitInfo);
+        submitInfo.commandBufferInfoCount = uint32(cmdBuffers.size());
+        submitInfo.pCommandBufferInfos = cmdBuffers.data();
+        submitInfo.signalSemaphoreInfoCount = uint32(signalingSemaphores.size());
+        submitInfo.pSignalSemaphoreInfos = signalingSemaphores.data();
+        submitInfo.waitSemaphoreInfoCount = uint32(waitOnSemaphores.size());
+        submitInfo.pWaitSemaphoreInfos = waitOnSemaphores.data();
+
+        allSubmitInfo.emplace_back(std::move(submitInfo));
+    }
+
+    if (!cmdsCompleteFence.isValid())
+    {
+        cmdsCompleteFence = graphicsHelper->createFence(graphicsInstance, TCHAR("AdvancedSubmitFence"));
+        cmdsCompleteFence->init();
     }
 
     VkQueue vQueue = getVkQueue(priority, queueRes);
-    VkResult result = vDevice->vkQueueSubmit(
-        vQueue, uint32(allSubmitInfo.size()), allSubmitInfo.data(),
-        (cmdsCompleteFence.isValid() ? cmdsCompleteFence.reference<VulkanFence>()->fence : nullptr)
+    VkResult result = vDevice->vkQueueSubmit2KHR(
+        vQueue, uint32(allSubmitInfo.size()), allSubmitInfo.data(), cmdsCompleteFence.reference<VulkanFence>()->fence
     );
-    fatalAssert(
-        result == VK_SUCCESS, "%s(): Failed submitting command to queue %s(result: %d)", __func__, queueRes->getResourceName().getChar(), result
-    );
+    fatalAssertf(result == VK_SUCCESS, "Failed submitting command to queue %s(result: %d)", queueRes->getResourceName().getChar(), result);
 
-    for (const CommandSubmitInfo &command : commands)
+    for (uint32 cmdSubmitIdx = 0; cmdSubmitIdx != commands.size(); ++cmdSubmitIdx)
     {
+        const CommandSubmitInfo &command = commands[cmdSubmitIdx];
+
         bool bAnyNonTemp = false;
         int32 index = int32(cmdsSyncInfo.get());
         VulkanCmdSubmitSyncInfo &syncInfo = cmdsSyncInfo[index];
@@ -670,9 +749,9 @@ void VulkanCmdBufferManager::submitCmds(
         }
         if (bAnyNonTemp)
         {
-            syncInfo.signalingSemaphore = command.signalSemaphores.front();
+            debugAssert(managerTSemaphores[cmdSubmitIdx].isValid());
+            syncInfo.signalingSemaphore = managerTSemaphores[cmdSubmitIdx];
             syncInfo.completeFence = cmdsCompleteFence;
-            syncInfo.bIsAdvancedSubmit = true;
             syncInfo.refCount = uint32(command.cmdBuffers.size());
         }
         else
@@ -682,59 +761,106 @@ void VulkanCmdBufferManager::submitCmds(
     }
 }
 
-void VulkanCmdBufferManager::submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo &command, FenceRef &cmdsCompleteFence)
+void VulkanCmdBufferManager::submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo &command, FenceRef cmdsCompleteFence)
 {
+    IGraphicsInstance *graphicsInstance = IVulkanRHIModule::get()->getGraphicsInstance();
+    const GraphicsHelperAPI *graphicsHelper = IVulkanRHIModule::get()->getGraphicsHelper();
     QueueResourceBase *queueRes = nullptr;
 
-    std::vector<VkCommandBuffer> cmdBuffers(command.cmdBuffers.size());
-    std::vector<VkSemaphore> waitOnSemaphores(command.waitOn.size());
-    std::vector<VkPipelineStageFlags> waitingStages(command.waitOn.size());
-    std::vector<VkSemaphore> signallingSemaphores(command.signalSemaphores.size());
+    TimelineSemaphoreRef managerTSemaphore;
 
+    std::vector<VkCommandBufferSubmitInfo> cmdBuffers;
+    cmdBuffers.reserve(command.cmdBuffers.size());
+    std::vector<VkSemaphoreSubmitInfo> waitOnSemaphores;
+    waitOnSemaphores.reserve(command.waitOn.size() + command.waitOnTimelines.size());
+    std::vector<VkSemaphoreSubmitInfo> signalingSemaphores;
+    signalingSemaphores.reserve(command.signalSemaphores.size() + command.signalTimelines.size());
+
+    bool bHasNonTemp = false;
     for (int32 i = 0; i < command.cmdBuffers.size(); ++i)
     {
         const auto *vCmdBuffer = static_cast<const VulkanCommandBuffer *>(command.cmdBuffers[i]);
+        bHasNonTemp = bHasNonTemp || !vCmdBuffer->bIsTempBuffer;
+
+        CMDBUFFER_SUBMIT_INFO(cmdBufferSubmitInfo);
+        cmdBufferSubmitInfo.commandBuffer = vCmdBuffer->cmdBuffer;
+        cmdBuffers.emplace_back(std::move(cmdBufferSubmitInfo));
+
         auto &cmdPool = getPool(vCmdBuffer->fromQueue);
-        cmdBuffers[i] = vCmdBuffer->cmdBuffer;
         if (queueRes != nullptr && queueRes != cmdPool.cmdPoolInfo.queueResource)
         {
-            LOG_ERROR("VulkanCommandBufferManager", "%s() : Buffers from different queues cannot be submitted together", __func__);
+            LOG_ERROR("VulkanCommandBufferManager", "Buffers from different queues cannot be submitted together");
             return;
         }
         queueRes = cmdPool.cmdPoolInfo.queueResource;
     }
     if (queueRes == nullptr)
     {
-        LOG_ERROR("VulkanCommandBufferManager", "%s() : Cannot submit as there is no queue found for command buffers", __func__);
+        LOG_ERROR("VulkanCommandBufferManager", "Cannot submit as there is no queue found for command buffers");
         return;
     }
 
     for (int32 i = 0; i < command.waitOn.size(); ++i)
     {
-        waitOnSemaphores[i] = command.waitOn[i].waitOnSemaphore.reference<VulkanSemaphore>()->semaphore;
-        waitingStages[i] = VkPipelineStageFlags(EngineToVulkanAPI::vulkanPipelineStageFlags(command.waitOn[i].stagesThatWaits));
+        SEMAPHORE_SUBMIT_INFO(waitOnSema);
+        waitOnSema.semaphore = command.waitOn[i].semaphore.reference<VulkanSemaphore>()->semaphore;
+        waitOnSema.stageMask = EngineToVulkanAPI::vulkanPipelineStageFlags(command.waitOn[i].stages);
+        waitOnSemaphores.emplace_back(std::move(waitOnSema));
+    }
+    for (int32 i = 0; i < command.waitOnTimelines.size(); ++i)
+    {
+        SEMAPHORE_SUBMIT_INFO(waitOnSema);
+        waitOnSema.semaphore = command.waitOnTimelines[i].semaphore.reference<VulkanTimelineSemaphore>()->semaphore;
+        waitOnSema.stageMask = EngineToVulkanAPI::vulkanPipelineStageFlags(command.waitOnTimelines[i].stages);
+        waitOnSema.value = command.waitOnTimelines[i].value;
+        waitOnSemaphores.emplace_back(std::move(waitOnSema));
     }
     for (int32 i = 0; i < command.signalSemaphores.size(); ++i)
     {
-        signallingSemaphores[i] = command.signalSemaphores[i].reference<VulkanSemaphore>()->semaphore;
+        SEMAPHORE_SUBMIT_INFO(signalingSema);
+        signalingSema.semaphore = command.signalSemaphores[i].semaphore.reference<VulkanSemaphore>()->semaphore;
+        signalingSema.stageMask = EngineToVulkanAPI::vulkanPipelineStageFlags(command.signalSemaphores[i].stages);
+        signalingSemaphores.emplace_back(std::move(signalingSema));
+    }
+    for (int32 i = 0; i < command.signalTimelines.size(); ++i)
+    {
+        SEMAPHORE_SUBMIT_INFO(signalingSema);
+        signalingSema.semaphore = command.signalTimelines[i].semaphore.reference<VulkanTimelineSemaphore>()->semaphore;
+        signalingSema.stageMask = EngineToVulkanAPI::vulkanPipelineStageFlags(command.signalTimelines[i].stages);
+        signalingSema.value = command.signalTimelines[i].value;
+        signalingSemaphores.emplace_back(std::move(signalingSema));
+    }
+    if (bHasNonTemp)
+    {
+        // Add an Time line semaphore for manager tracking
+        managerTSemaphore = graphicsHelper->createTimelineSemaphore(graphicsInstance, TCHAR("AdvancedSubmitTSema") );
+        managerTSemaphore->init();
+
+        SEMAPHORE_SUBMIT_INFO(signalingSema);
+        signalingSema.semaphore = managerTSemaphore.reference<VulkanTimelineSemaphore>()->semaphore;
+        signalingSema.stageMask = VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT;
+        signalingSema.value = 1;
+        signalingSemaphores.emplace_back(std::move(signalingSema));
     }
 
-    SUBMIT_INFO(cmdSubmitInfo);
-    cmdSubmitInfo.commandBufferCount = uint32(cmdBuffers.size());
-    cmdSubmitInfo.pCommandBuffers = cmdBuffers.data();
-    cmdSubmitInfo.signalSemaphoreCount = uint32(signallingSemaphores.size());
-    cmdSubmitInfo.pSignalSemaphores = signallingSemaphores.data();
-    cmdSubmitInfo.waitSemaphoreCount = uint32(waitOnSemaphores.size());
-    cmdSubmitInfo.pWaitSemaphores = waitOnSemaphores.data();
-    cmdSubmitInfo.pWaitDstStageMask = waitingStages.data();
+    SUBMIT_INFO2(cmdSubmitInfo);
+    cmdSubmitInfo.commandBufferInfoCount = uint32(cmdBuffers.size());
+    cmdSubmitInfo.pCommandBufferInfos = cmdBuffers.data();
+    cmdSubmitInfo.signalSemaphoreInfoCount = uint32(signalingSemaphores.size());
+    cmdSubmitInfo.pSignalSemaphoreInfos = signalingSemaphores.data();
+    cmdSubmitInfo.waitSemaphoreInfoCount = uint32(waitOnSemaphores.size());
+    cmdSubmitInfo.pWaitSemaphoreInfos = waitOnSemaphores.data();
 
+    if (!cmdsCompleteFence.isValid())
+    {
+        cmdsCompleteFence = graphicsHelper->createFence(graphicsInstance, TCHAR("AdvancedSubmitBatched"));
+        cmdsCompleteFence->init();
+    }
     VkQueue vQueue = getVkQueue(priority, queueRes);
-    VkResult result = vDevice->vkQueueSubmit(
+    VkResult result = vDevice->vkQueueSubmit2KHR(
         vQueue, 1, &cmdSubmitInfo, (cmdsCompleteFence.isValid() ? cmdsCompleteFence.reference<VulkanFence>()->fence : nullptr)
     );
-    fatalAssert(
-        result == VK_SUCCESS, "%s(): Failed submitting command to queue %s(result: %d)", __func__, queueRes->getResourceName().getChar(), result
-    );
+    fatalAssertf(result == VK_SUCCESS, "Failed submitting command to queue %s(result: %d)", queueRes->getResourceName().getChar(), result);
 
     bool bAnyNonTemp = false;
     int32 index = int32(cmdsSyncInfo.get());
@@ -750,9 +876,9 @@ void VulkanCmdBufferManager::submitCmd(EQueuePriority::Enum priority, const Comm
     }
     if (bAnyNonTemp)
     {
-        syncInfo.signalingSemaphore = command.signalSemaphores.front();
+        debugAssert(managerTSemaphore.isValid());
+        syncInfo.signalingSemaphore = managerTSemaphore;
         syncInfo.completeFence = cmdsCompleteFence;
-        syncInfo.bIsAdvancedSubmit = true;
         syncInfo.refCount = uint32(command.cmdBuffers.size());
     }
     else
@@ -762,26 +888,25 @@ void VulkanCmdBufferManager::submitCmd(EQueuePriority::Enum priority, const Comm
 }
 
 void VulkanCmdBufferManager::submitCmds(
-    EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo2> &commands, VulkanResourcesTracker *resourceTracker
+    EQueuePriority::Enum priority, ArrayView<const CommandSubmitInfo2> commands, VulkanResourcesTracker *resourceTracker
 )
 {
     IGraphicsInstance *graphicsInstance = IVulkanRHIModule::get()->getGraphicsInstance();
     const GraphicsHelperAPI *graphicsHelper = IVulkanRHIModule::get()->getGraphicsHelper();
     QueueResourceBase *queueRes = nullptr;
 
-    std::vector<std::vector<VkCommandBuffer>> allCmdBuffers(commands.size());
-    std::vector<std::vector<VkSemaphore>> allWaitOnSemaphores(commands.size());
-    std::vector<std::vector<VkPipelineStageFlags>> allWaitingStages(commands.size());
-    std::vector<std::vector<VkSemaphore>> allSignalingSemaphores(commands.size());
-    std::vector<VkSubmitInfo> allSubmitInfo(commands.size());
+    std::vector<std::vector<VkCommandBufferSubmitInfo>> allCmdBuffers(commands.size());
+    std::vector<std::vector<VkSemaphoreSubmitInfo>> allWaitOnSemaphores(commands.size());
+    std::vector<std::vector<VkSemaphoreSubmitInfo>> allSignalingSemaphores(commands.size());
+    std::vector<VkSubmitInfo2> allSubmitInfo;
+    allSubmitInfo.reserve(commands.size());
 
     // fill command buffer vector, all wait informations and make sure there is no error so far
     for (int32 cmdSubmitIdx = 0; cmdSubmitIdx < commands.size(); ++cmdSubmitIdx)
     {
-        std::vector<VkCommandBuffer> &cmdBuffers = allCmdBuffers[cmdSubmitIdx];
-        cmdBuffers.resize(commands[cmdSubmitIdx].cmdBuffers.size());
-        std::vector<VkSemaphore> &waitOnSemaphores = allWaitOnSemaphores[cmdSubmitIdx];
-        std::vector<VkPipelineStageFlags> &waitingStages = allWaitingStages[cmdSubmitIdx];
+        std::vector<VkCommandBufferSubmitInfo> &cmdBuffers = allCmdBuffers[cmdSubmitIdx];
+        cmdBuffers.reserve(commands[cmdSubmitIdx].cmdBuffers.size());
+        std::vector<VkSemaphoreSubmitInfo> &waitOnSemaphores = allWaitOnSemaphores[cmdSubmitIdx];
 
         for (int32 i = 0; i < commands[cmdSubmitIdx].cmdBuffers.size(); ++i)
         {
@@ -790,18 +915,20 @@ void VulkanCmdBufferManager::submitCmds(
             {
                 LOG_ERROR(
                     "VulkanCommandBufferManager",
-                    "%s() : Temporary buffers[%s] are required to use advanced submit "
-                    "function",
-                    __func__, vCmdBuffer->getResourceName().getChar()
+                    "Reuse/One time record buffers are required to use advanced submit function, \"%s\" is temporary cmd buffer",
+                    vCmdBuffer->getResourceName().getChar()
                 );
                 return;
             }
 
-            VulkanCommandPool &cmdPool = getPool(vCmdBuffer->fromQueue);
-            cmdBuffers[i] = vCmdBuffer->cmdBuffer;
+            CMDBUFFER_SUBMIT_INFO(cmdBufferSubmitInfo);
+            cmdBufferSubmitInfo.commandBuffer = vCmdBuffer->cmdBuffer;
+            cmdBuffers.emplace_back(std::move(cmdBufferSubmitInfo));
+
+            auto &cmdPool = getPool(vCmdBuffer->fromQueue);
             if (queueRes != nullptr && queueRes != cmdPool.cmdPoolInfo.queueResource)
             {
-                LOG_ERROR("VulkanCommandBufferManager", "%s() : Buffers from different queues cannot be submitted together", __func__);
+                LOG_ERROR("VulkanCommandBufferManager", "Buffers from different queues cannot be submitted together");
                 return;
             }
             queueRes = cmdPool.cmdPoolInfo.queueResource;
@@ -816,23 +943,29 @@ void VulkanCmdBufferManager::submitCmds(
                     if (cmdBufferItr == commandBuffers.end() || cmdBufferItr->second.cmdState != ECmdState::Submitted)
                     {
                         LOG_ERROR(
-                            "VulkanCommandBufferManager",
-                            "%s() : Waiting on cmd buffer[%s] is invalid or not "
-                            "submitted",
-                            __func__, waitOn.cmdBuffer->getResourceName().getChar()
+                            "VulkanCommandBufferManager", "Waiting on cmd buffer[%s] is invalid or not submitted",
+                            waitOn.cmdBuffer->getResourceName().getChar()
                         );
                         return;
                     }
 
                     const VulkanCmdSubmitSyncInfo &syncInfo = cmdsSyncInfo[cmdBufferItr->second.cmdSyncInfoIdx];
-                    waitOnSemaphores.emplace_back(syncInfo.signalingSemaphore.reference<VulkanSemaphore>()->semaphore);
-                    waitingStages.emplace_back(waitOn.usageStages);
+                    // Do not add if completed already
+                    if (syncInfo.completeFence->isSignaled())
+                    {
+                        continue;
+                    }
+                    SEMAPHORE_SUBMIT_INFO(waitOnSema);
+                    waitOnSema.semaphore = syncInfo.signalingSemaphore.reference<VulkanTimelineSemaphore>()->semaphore;
+                    waitOnSema.stageMask = waitOn.usedDstStages;
+                    waitOnSema.value = 1;
+                    waitOnSemaphores.emplace_back(std::move(waitOnSema));
                 }
             }
         }
         if (queueRes == nullptr)
         {
-            LOG_ERROR("VulkanCommandBufferManager", "%s() : Cannot submit as there is no queue found for command buffers", __func__);
+            LOG_ERROR("VulkanCommandBufferManager", "Cannot submit as there is no queue found for command buffers");
             return;
         }
 
@@ -843,22 +976,25 @@ void VulkanCmdBufferManager::submitCmds(
             if (cmdBufferItr == commandBuffers.end() || cmdBufferItr->second.cmdState != ECmdState::Submitted)
             {
                 LOG_ERROR(
-                    "VulkanCommandBufferManager", "%s() : Waiting on cmd buffer[%s] is invalid or not submitted", __func__,
-                    waitOn->getResourceName().getChar()
+                    "VulkanCommandBufferManager", "Waiting on cmd buffer[%s] is invalid or not submitted", waitOn->getResourceName().getChar()
                 );
                 return;
             }
 
             const VulkanCmdSubmitSyncInfo &syncInfo = cmdsSyncInfo[cmdBufferItr->second.cmdSyncInfoIdx];
-            waitOnSemaphores.emplace_back(syncInfo.signalingSemaphore.reference<VulkanSemaphore>()->semaphore);
-            waitingStages.emplace_back(VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+            SEMAPHORE_SUBMIT_INFO(waitOnSema);
+            waitOnSema.semaphore = syncInfo.signalingSemaphore.reference<VulkanTimelineSemaphore>()->semaphore;
+            waitOnSema.stageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT;
+            waitOnSema.value = 1;
+            waitOnSemaphores.emplace_back(std::move(waitOnSema));
         }
 
-        allSubmitInfo[cmdSubmitIdx].commandBufferCount = uint32(cmdBuffers.size());
-        allSubmitInfo[cmdSubmitIdx].pCommandBuffers = cmdBuffers.data();
-        allSubmitInfo[cmdSubmitIdx].waitSemaphoreCount = uint32(waitOnSemaphores.size());
-        allSubmitInfo[cmdSubmitIdx].pWaitSemaphores = waitOnSemaphores.data();
-        allSubmitInfo[cmdSubmitIdx].pWaitDstStageMask = waitingStages.data();
+        SUBMIT_INFO2(cmdSubmitInfo);
+        cmdSubmitInfo.commandBufferInfoCount = uint32(cmdBuffers.size());
+        cmdSubmitInfo.pCommandBufferInfos = cmdBuffers.data();
+        cmdSubmitInfo.waitSemaphoreInfoCount = uint32(waitOnSemaphores.size());
+        cmdSubmitInfo.pWaitSemaphoreInfos = waitOnSemaphores.data();
+        allSubmitInfo.emplace_back(std::move(cmdSubmitInfo));
     }
 
     FenceRef cmdsCompleteFence = graphicsHelper->createFence(graphicsInstance, TCHAR("SubmitBatched"));
@@ -869,7 +1005,6 @@ void VulkanCmdBufferManager::submitCmds(
     {
         int32 index = int32(cmdsSyncInfo.get());
         VulkanCmdSubmitSyncInfo &syncInfo = cmdsSyncInfo[index];
-        syncInfo.bIsAdvancedSubmit = false;
         syncInfo.completeFence = cmdsCompleteFence;
         syncInfo.refCount = uint32(commands[cmdSubmitIdx].cmdBuffers.size());
 
@@ -877,33 +1012,30 @@ void VulkanCmdBufferManager::submitCmds(
         {
             commandBuffers[cmdBuffer->getResourceName()].cmdSyncInfoIdx = index;
             commandBuffers[cmdBuffer->getResourceName()].cmdState = ECmdState::Submitted;
-
-            // Remove dependencies if re-record able cmd buffer
-            if (static_cast<const VulkanCommandBuffer *>(cmdBuffer)->bIsResetable)
-            {
-                resourceTracker->clearCmdBufferDeps(cmdBuffer);
-            }
         }
 
+        // Add an Time line semaphore for manager tracking
         syncInfo.signalingSemaphore
-            = graphicsHelper->createSemaphore(graphicsInstance, (TCHAR("SubmitBatched_") + String::toString(cmdSubmitIdx)).c_str());
+            = graphicsHelper->createTimelineSemaphore(graphicsInstance, (TCHAR("SubmitTSema_") + String::toString(cmdSubmitIdx)).c_str());
         syncInfo.signalingSemaphore->init();
 
-        std::vector<VkSemaphore> &signalingSemaphores = allSignalingSemaphores[cmdSubmitIdx];
-        signalingSemaphores.emplace_back(syncInfo.signalingSemaphore.reference<VulkanSemaphore>()->semaphore);
+        std::vector<VkSemaphoreSubmitInfo> &signalingSemaphores = allSignalingSemaphores[cmdSubmitIdx];
+        SEMAPHORE_SUBMIT_INFO(signalingSema);
+        signalingSema.semaphore = syncInfo.signalingSemaphore.reference<VulkanTimelineSemaphore>()->semaphore;
+        signalingSema.stageMask = VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT;
+        signalingSema.value = 1;
+        signalingSemaphores.emplace_back(std::move(signalingSema));
 
-        allSubmitInfo[cmdSubmitIdx].signalSemaphoreCount = uint32(signalingSemaphores.size());
-        allSubmitInfo[cmdSubmitIdx].pSignalSemaphores = signalingSemaphores.data();
+        allSubmitInfo[cmdSubmitIdx].signalSemaphoreInfoCount = uint32(signalingSemaphores.size());
+        allSubmitInfo[cmdSubmitIdx].pSignalSemaphoreInfos = signalingSemaphores.data();
     }
 
     VkQueue vQueue = getVkQueue(priority, queueRes);
-    VkResult result = vDevice->vkQueueSubmit(
+    VkResult result = vDevice->vkQueueSubmit2KHR(
         vQueue, uint32(allSubmitInfo.size()), allSubmitInfo.data(),
         (cmdsCompleteFence.isValid() ? cmdsCompleteFence.reference<VulkanFence>()->fence : nullptr)
     );
-    fatalAssert(
-        result == VK_SUCCESS, "%s(): Failed submitting command to queue %s(result: %d)", __func__, queueRes->getResourceName().getChar(), result
-    );
+    fatalAssertf(result == VK_SUCCESS, "Failed submitting command to queue %s(result: %d)", queueRes->getResourceName().getChar(), result);
 }
 
 void VulkanCmdBufferManager::submitCmd(
@@ -915,10 +1047,10 @@ void VulkanCmdBufferManager::submitCmd(
 
     QueueResourceBase *queueRes = nullptr;
 
-    std::vector<VkCommandBuffer> cmdBuffers(command.cmdBuffers.size());
-    std::vector<VkSemaphore> waitOnSemaphores;
-    std::vector<VkPipelineStageFlags> waitingStages;
-    std::vector<VkSemaphore> signalingSemaphores;
+    std::vector<VkCommandBufferSubmitInfo> cmdBuffers;
+    cmdBuffers.reserve(command.cmdBuffers.size());
+    std::vector<VkSemaphoreSubmitInfo> waitOnSemaphores;
+    std::vector<VkSemaphoreSubmitInfo> signalingSemaphores;
 
     for (int32 i = 0; i < command.cmdBuffers.size(); ++i)
     {
@@ -926,17 +1058,20 @@ void VulkanCmdBufferManager::submitCmd(
         if (vCmdBuffer->bIsTempBuffer)
         {
             LOG_ERROR(
-                "VulkanCommandBufferManager", "%s() : Temporary buffers[%s] are required to use advanced submit function", __func__,
+                "VulkanCommandBufferManager", "Temporary buffers[%s] are required to use advanced submit function",
                 vCmdBuffer->getResourceName().getChar()
             );
             return;
         }
 
+        CMDBUFFER_SUBMIT_INFO(cmdBufferSubmitInfo);
+        cmdBufferSubmitInfo.commandBuffer = vCmdBuffer->cmdBuffer;
+        cmdBuffers.emplace_back(std::move(cmdBufferSubmitInfo));
+
         auto &cmdPool = getPool(vCmdBuffer->fromQueue);
-        cmdBuffers[i] = vCmdBuffer->cmdBuffer;
         if (queueRes != nullptr && queueRes != cmdPool.cmdPoolInfo.queueResource)
         {
-            LOG_ERROR("VulkanCommandBufferManager", "%s() : Buffers from different queues cannot be submitted together", __func__);
+            LOG_ERROR("VulkanCommandBufferManager", "Buffers from different queues cannot be submitted together");
             return;
         }
         queueRes = cmdPool.cmdPoolInfo.queueResource;
@@ -951,21 +1086,29 @@ void VulkanCmdBufferManager::submitCmd(
                 if (cmdBufferItr == commandBuffers.end() || cmdBufferItr->second.cmdState != ECmdState::Submitted)
                 {
                     LOG_ERROR(
-                        "VulkanCommandBufferManager", "%s() : Waiting on cmd buffer[%s] is invalid or not submitted", __func__,
+                        "VulkanCommandBufferManager", "Waiting on cmd buffer[%s] is invalid or not submitted",
                         waitOn.cmdBuffer->getResourceName().getChar()
                     );
                     return;
                 }
 
                 const VulkanCmdSubmitSyncInfo &syncInfo = cmdsSyncInfo[cmdBufferItr->second.cmdSyncInfoIdx];
-                waitOnSemaphores.emplace_back(syncInfo.signalingSemaphore.reference<VulkanSemaphore>()->semaphore);
-                waitingStages.emplace_back(waitOn.usageStages);
+                // Do not add if completed already
+                if (syncInfo.completeFence->isSignaled())
+                {
+                    continue;
+                }
+                SEMAPHORE_SUBMIT_INFO(waitOnSema);
+                waitOnSema.semaphore = syncInfo.signalingSemaphore.reference<VulkanTimelineSemaphore>()->semaphore;
+                waitOnSema.stageMask = waitOn.usedDstStages;
+                waitOnSema.value = 1;
+                waitOnSemaphores.emplace_back(std::move(waitOnSema));
             }
         }
     }
     if (queueRes == nullptr)
     {
-        LOG_ERROR("VulkanCommandBufferManager", "%s() : Cannot submit as there is no queue found for command buffers", __func__);
+        LOG_ERROR("VulkanCommandBufferManager", "Cannot submit as there is no queue found for command buffers");
         return;
     }
 
@@ -975,15 +1118,17 @@ void VulkanCmdBufferManager::submitCmd(
         if (cmdBufferItr == commandBuffers.end() || cmdBufferItr->second.cmdState != ECmdState::Submitted)
         {
             LOG_ERROR(
-                "VulkanCommandBufferManager", "%s() : Waiting on cmd buffer[%s] is invalid or not submitted", __func__,
-                waitOn->getResourceName().getChar()
+                "VulkanCommandBufferManager", "Waiting on cmd buffer[%s] is invalid or not submitted", waitOn->getResourceName().getChar()
             );
             return;
         }
 
         const VulkanCmdSubmitSyncInfo &syncInfo = cmdsSyncInfo[cmdBufferItr->second.cmdSyncInfoIdx];
-        waitOnSemaphores.emplace_back(syncInfo.signalingSemaphore.reference<VulkanSemaphore>()->semaphore);
-        waitingStages.emplace_back(VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+        SEMAPHORE_SUBMIT_INFO(waitOnSema);
+        waitOnSema.semaphore = syncInfo.signalingSemaphore.reference<VulkanTimelineSemaphore>()->semaphore;
+        waitOnSema.stageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT;
+        waitOnSema.value = 1;
+        waitOnSemaphores.emplace_back(std::move(waitOnSema));
     }
 
     FenceRef cmdsCompleteFence = graphicsHelper->createFence(graphicsInstance, TCHAR("SubmitBatched"));
@@ -991,7 +1136,6 @@ void VulkanCmdBufferManager::submitCmd(
 
     int32 index = int32(cmdsSyncInfo.get());
     VulkanCmdSubmitSyncInfo &syncInfo = cmdsSyncInfo[index];
-    syncInfo.bIsAdvancedSubmit = false;
     syncInfo.completeFence = cmdsCompleteFence;
     syncInfo.refCount = uint32(command.cmdBuffers.size());
 
@@ -999,34 +1143,31 @@ void VulkanCmdBufferManager::submitCmd(
     {
         commandBuffers[cmdBuffer->getResourceName()].cmdSyncInfoIdx = index;
         commandBuffers[cmdBuffer->getResourceName()].cmdState = ECmdState::Submitted;
-
-        // Remove dependencies if re-record able cmd buffer
-        if (static_cast<const VulkanCommandBuffer *>(cmdBuffer)->bIsResetable)
-        {
-            resourceTracker->clearCmdBufferDeps(cmdBuffer);
-        }
     }
 
-    syncInfo.signalingSemaphore = graphicsHelper->createSemaphore(graphicsInstance, TCHAR("SubmitSemaphore"));
+    // Add an Time line semaphore for manager tracking
+    syncInfo.signalingSemaphore = graphicsHelper->createTimelineSemaphore(graphicsInstance, TCHAR("SubmitTSema"));
     syncInfo.signalingSemaphore->init();
-    signalingSemaphores.emplace_back(syncInfo.signalingSemaphore.reference<VulkanSemaphore>()->semaphore);
 
-    SUBMIT_INFO(cmdSubmitInfo);
-    cmdSubmitInfo.commandBufferCount = uint32(cmdBuffers.size());
-    cmdSubmitInfo.pCommandBuffers = cmdBuffers.data();
-    cmdSubmitInfo.signalSemaphoreCount = uint32(signalingSemaphores.size());
-    cmdSubmitInfo.pSignalSemaphores = signalingSemaphores.data();
-    cmdSubmitInfo.waitSemaphoreCount = uint32(waitOnSemaphores.size());
-    cmdSubmitInfo.pWaitSemaphores = waitOnSemaphores.data();
-    cmdSubmitInfo.pWaitDstStageMask = waitingStages.data();
+    SEMAPHORE_SUBMIT_INFO(signalingSema);
+    signalingSema.semaphore = syncInfo.signalingSemaphore.reference<VulkanTimelineSemaphore>()->semaphore;
+    signalingSema.stageMask = VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT;
+    signalingSema.value = 1;
+    signalingSemaphores.emplace_back(std::move(signalingSema));
+
+    SUBMIT_INFO2(cmdSubmitInfo);
+    cmdSubmitInfo.commandBufferInfoCount = uint32(cmdBuffers.size());
+    cmdSubmitInfo.pCommandBufferInfos = cmdBuffers.data();
+    cmdSubmitInfo.signalSemaphoreInfoCount = uint32(signalingSemaphores.size());
+    cmdSubmitInfo.pSignalSemaphoreInfos = signalingSemaphores.data();
+    cmdSubmitInfo.waitSemaphoreInfoCount = uint32(waitOnSemaphores.size());
+    cmdSubmitInfo.pWaitSemaphoreInfos = waitOnSemaphores.data();
 
     VkQueue vQueue = getVkQueue(priority, queueRes);
-    VkResult result = vDevice->vkQueueSubmit(
+    VkResult result = vDevice->vkQueueSubmit2KHR(
         vQueue, 1, &cmdSubmitInfo, (cmdsCompleteFence.isValid() ? cmdsCompleteFence.reference<VulkanFence>()->fence : nullptr)
     );
-    fatalAssert(
-        result == VK_SUCCESS, "%s(): Failed submitting command to queue %s(result: %d)", __func__, queueRes->getResourceName().getChar(), result
-    );
+    fatalAssertf(result == VK_SUCCESS, "Failed submitting command to queue %s(result: %d)", queueRes->getResourceName().getChar(), result);
 }
 
 void VulkanCmdBufferManager::createPools()
@@ -1088,7 +1229,7 @@ VulkanCommandPool &VulkanCmdBufferManager::getPool(EQueueFunction forQueue)
     auto cmdPoolItr = pools.find(forQueue);
     if (cmdPoolItr == pools.end())
     {
-        fatalAssert(genericPool, "Generic pool must be available");
+        fatalAssertf(genericPool, "Generic pool must be available");
         return *genericPool;
     }
     else
@@ -1147,20 +1288,28 @@ std::vector<const GraphicsResource *> VulkanResourcesTracker::getCmdBufferResour
         }
         retVal.insert(retVal.end(), resourceAccessorItr->second.lastReadsIn.cbegin(), resourceAccessorItr->second.lastReadsIn.cend());
     }
-
-    auto attachmentAccessItr = renderpassAttachments.find(resource);
-    if (attachmentAccessItr != renderpassAttachments.cend())
-    {
-        if (attachmentAccessItr->second.lastWrite)
-        {
-            retVal.emplace_back(attachmentAccessItr->second.lastWrite);
-        }
-        retVal.insert(retVal.end(), attachmentAccessItr->second.lastReadsIn.cbegin(), attachmentAccessItr->second.lastReadsIn.cend());
-    }
     return retVal;
 }
 
-void VulkanResourcesTracker::clearCmdBufferDeps(const GraphicsResource *cmdBuffer) { cmdWaitInfo.erase(cmdBuffer); }
+std::vector<const GraphicsResource *> VulkanResourcesTracker::getDependingCmdBuffers(const GraphicsResource *cmdBuffer) const
+{
+    std::vector<const GraphicsResource *> retVal;
+    for (const std::pair<const GraphicsResource *const, std::vector<CommandResUsageInfo>> &cmdWaitOn : cmdWaitInfo)
+    {
+        auto cmdUsageInfoItr = std::find_if(
+            cmdWaitOn.second.cbegin(), cmdWaitOn.second.cend(),
+            [cmdBuffer](const CommandResUsageInfo &usageInfo)
+            {
+                return usageInfo.cmdBuffer == cmdBuffer;
+            }
+        );
+        if (cmdUsageInfoItr != cmdWaitOn.second.cend())
+        {
+            retVal.emplace_back(cmdWaitOn.first);
+        }
+    }
+    return retVal;
+}
 
 void VulkanResourcesTracker::clearFinishedCmd(const GraphicsResource *cmdBuffer)
 {
@@ -1176,10 +1325,14 @@ void VulkanResourcesTracker::clearFinishedCmd(const GraphicsResource *cmdBuffer)
 
         auto newEnd = std::remove_if(
             resAccessorItr->second.lastReadsIn.begin(), resAccessorItr->second.lastReadsIn.end(),
-            [cmdBuffer](const GraphicsResource *cmd) { return cmd == cmdBuffer; }
+            [cmdBuffer](const GraphicsResource *cmd)
+            {
+                return cmd == cmdBuffer;
+            }
         );
         resAccessorItr->second.lastReadsIn.erase(newEnd, resAccessorItr->second.lastReadsIn.end());
 
+        // if there is nothing using it any more remove it
         if (resAccessorItr->second.lastWrite == nullptr && resAccessorItr->second.lastReadsIn.empty())
         {
             resAccessorItr = resourcesAccessors.erase(resAccessorItr);
@@ -1189,36 +1342,16 @@ void VulkanResourcesTracker::clearFinishedCmd(const GraphicsResource *cmdBuffer)
             ++resAccessorItr;
         }
     }
-
-    // Remove cmdBuffer from read list and write and remove resource if no cmd buffer is related to it
-    for (auto attachmentItr = renderpassAttachments.begin(); attachmentItr != renderpassAttachments.end();)
-    {
-        if (attachmentItr->second.lastWrite == cmdBuffer)
-        {
-            attachmentItr->second.lastWrite = nullptr;
-        }
-
-        auto newEnd = std::remove_if(
-            attachmentItr->second.lastReadsIn.begin(), attachmentItr->second.lastReadsIn.end(),
-            [cmdBuffer](const GraphicsResource *cmd) { return cmd == cmdBuffer; }
-        );
-        attachmentItr->second.lastReadsIn.erase(newEnd, attachmentItr->second.lastReadsIn.end());
-
-        if (attachmentItr->second.lastWrite == nullptr && attachmentItr->second.lastReadsIn.empty())
-        {
-            attachmentItr = renderpassAttachments.erase(attachmentItr);
-        }
-        else
-        {
-            ++attachmentItr;
-        }
-    }
 }
 
 void VulkanResourcesTracker::clearResource(const MemoryResourceRef &resource)
 {
     resourcesAccessors.erase(resource);
-    renderpassAttachments.erase(resource);
+
+    for (uint32 i = 0; i < ARRAY_LENGTH(queueTransfers); ++i)
+    {
+        queueTransfers[i].erase(resource.get());
+    }
 }
 
 void VulkanResourcesTracker::clearUnwanted()
@@ -1229,9 +1362,11 @@ void VulkanResourcesTracker::clearUnwanted()
         MemoryResource::staticType()->allRegisteredResources(memRes, true);
         memResources.insert(memRes.cbegin(), memRes.cend());
     }
+
     for (std::map<MemoryResourceRef, ResourceAccessors>::iterator itr = resourcesAccessors.begin(); itr != resourcesAccessors.end();)
     {
-        if (memResources.find(itr->first.reference()) == memResources.end())
+        // If we are the last one holding reference to a resource release it
+        if (itr->first->refCount() == 1)
         {
             itr = resourcesAccessors.erase(itr);
         }
@@ -1247,7 +1382,10 @@ void VulkanResourcesTracker::clearUnwanted()
 
                 auto newEnd = std::remove_if(
                     itr->second.lastReadsIn.begin(), itr->second.lastReadsIn.end(),
-                    [&uniqueReads](const GraphicsResource *res) { return !uniqueReads.insert(res).second; }
+                    [&uniqueReads](const GraphicsResource *res)
+                    {
+                        return !uniqueReads.insert(res).second;
+                    }
                 );
                 itr->second.lastReadsIn.erase(newEnd, itr->second.lastReadsIn.end());
                 // Restore first read
@@ -1258,45 +1396,33 @@ void VulkanResourcesTracker::clearUnwanted()
         }
     }
 
-    for (std::map<const ImageResourceRef, ResourceAccessors>::iterator itr = renderpassAttachments.begin(); itr != renderpassAttachments.end();)
+    for (uint32 i = 0; i < ARRAY_LENGTH(queueTransfers); ++i)
     {
-        if (memResources.find(itr->first.reference()) == memResources.end())
+        for (std::map<MemoryResource *, ResourceQueueTransferInfo>::iterator itr = queueTransfers[i].begin(); itr != queueTransfers[i].end();)
         {
-            itr = renderpassAttachments.erase(itr);
-        }
-        else
-        {
-            // Remove duplicate reads preserving first read alone
-            if (itr->second.lastReadsIn.size() > 1)
+            if (!memResources.contains(itr->first))
             {
-                // Since we need to preserve first read alone
-                const GraphicsResource *firstRead = itr->second.lastReadsIn[0];
-                std::unordered_set<const GraphicsResource *> uniqueReads;
-                uniqueReads.insert(firstRead);
-
-                auto newEnd = std::remove_if(
-                    itr->second.lastReadsIn.begin(), itr->second.lastReadsIn.end(),
-                    [&uniqueReads](const GraphicsResource *res) { return !uniqueReads.insert(res).second; }
-                );
-                itr->second.lastReadsIn.erase(newEnd, itr->second.lastReadsIn.end());
-                // Restore first read
-                itr->second.lastReadsIn.emplace_back(itr->second.lastReadsIn[0]);
-                itr->second.lastReadsIn[0] = firstRead;
+                itr = queueTransfers[i].erase(itr);
             }
-            ++itr;
+            else
+            {
+                ++itr;
+            }
         }
     }
 }
 
 std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracker::readOnlyBuffers(
-    const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource
+    const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource
 )
 {
+    const EQueueFunction cmdBufferQ = static_cast<const VulkanCommandBuffer *>(cmdBuffer)->fromQueue;
+
     std::optional<ResourceBarrierInfo> outBarrierInfo;
     ResourceAccessors &accessors = resourcesAccessors[resource.first];
     if (!accessors.lastWrite)
     {
-        accessors.lastReadsIn.emplace_back(cmdBuffer);
+        accessors.addLastReadInCmd(cmdBuffer);
         accessors.allReadStages |= resource.second;
         accessors.lastReadStages = resource.second;
         return outBarrierInfo;
@@ -1318,22 +1444,33 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
     else
     {
         cmdWaitInfo[cmdBuffer].emplace_back(CommandResUsageInfo{ accessors.lastWrite, resource.second });
+        // if last write is not in this queue then we need barrier to do queue transfer
+        if (cmdBufferQ != static_cast<const VulkanCommandBuffer *>(accessors.lastWrite)->fromQueue)
+        {
+            ResourceBarrierInfo barrier;
+            barrier.accessors.lastWrite = accessors.lastWrite;
+            barrier.accessors.lastWriteStage = accessors.lastWriteStage;
+            barrier.resource = resource.first;
+            outBarrierInfo = barrier;
+        }
     }
-    accessors.lastReadsIn.emplace_back(cmdBuffer);
+    accessors.addLastReadInCmd(cmdBuffer);
     accessors.allReadStages |= resource.second;
     accessors.lastReadStages = resource.second;
     return outBarrierInfo;
 }
 
 std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracker::readOnlyImages(
-    const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource
+    const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource
 )
 {
+    const EQueueFunction cmdBufferQ = static_cast<const VulkanCommandBuffer *>(cmdBuffer)->fromQueue;
+
     std::optional<ResourceBarrierInfo> outBarrierInfo;
     ResourceAccessors &accessors = resourcesAccessors[resource.first];
     if (!accessors.lastWrite)
     {
-        accessors.lastReadsIn.emplace_back(cmdBuffer);
+        accessors.addLastReadInCmd(cmdBuffer);
         accessors.allReadStages |= resource.second;
         accessors.lastReadStages = resource.second;
         return outBarrierInfo;
@@ -1359,53 +1496,63 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
     else
     {
         cmdWaitInfo[cmdBuffer].emplace_back(CommandResUsageInfo{ accessors.lastWrite, resource.second });
-        // If layout transition is not done on this cmd buffer, then wait on it as well
-        if (accessors.lastReadsIn.front() != cmdBuffer)
+        // If layout transition is not done on this cmd buffer, then wait on it as well(So long as this is the first read in this cmdBuffer)
+        if (accessors.lastReadsIn.front() != cmdBuffer && accessors.lastReadsIn.back() != cmdBuffer)
         {
             cmdWaitInfo[cmdBuffer].emplace_back(CommandResUsageInfo{ accessors.lastReadsIn.front(), resource.second });
+            // If last read in cmd buffer queue is not same as current queue, we need queue transfer barrier
+            if (cmdBufferQ != static_cast<const VulkanCommandBuffer *>(accessors.lastReadsIn.back())->fromQueue)
+            {
+                ResourceBarrierInfo barrier;
+                barrier.accessors.addLastReadInCmd(accessors.lastReadsIn.back());
+                barrier.accessors.lastReadStages = barrier.accessors.allReadStages = accessors.lastReadStages;
+                barrier.resource = resource.first;
+
+                outBarrierInfo = barrier;
+            }
         }
     }
-    accessors.lastReadsIn.emplace_back(cmdBuffer);
+    accessors.addLastReadInCmd(cmdBuffer);
     accessors.allReadStages |= resource.second;
     accessors.lastReadStages = resource.second;
     return outBarrierInfo;
 }
 
 std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracker::readOnlyTexels(
-    const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource
+    const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource
 )
 {
     return readOnlyBuffers(cmdBuffer, resource);
 }
 
 std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracker::readFromWriteBuffers(
-    const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource
+    const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource
 )
 {
     return readOnlyBuffers(cmdBuffer, resource);
 }
 
 std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracker::readFromWriteImages(
-    const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource
+    const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource
 )
 {
     return readOnlyImages(cmdBuffer, resource);
 }
 
 std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracker::readFromWriteTexels(
-    const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource
+    const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource
 )
 {
     return readOnlyBuffers(cmdBuffer, resource);
 }
 
 std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracker::writeReadOnlyBuffers(
-    const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource
+    const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource
 )
 {
-    fatalAssert(
-        PlatformFunctions::getSetBitCount(resource.second) == 1, "%s: Writing to buffer in several pipeline stages is incorrect", __func__
-    );
+    fatalAssertf(PlatformFunctions::getSetBitCount(resource.second) == 1, "Writing to buffer in several pipeline stages is incorrect");
+
+    const EQueueFunction cmdBufferQ = static_cast<const VulkanCommandBuffer *>(cmdBuffer)->fromQueue;
 
     std::optional<ResourceBarrierInfo> outBarrierInfo;
     VkPipelineStageFlagBits stageFlag = VkPipelineStageFlagBits(resource.second);
@@ -1422,9 +1569,9 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
     // just read to finish
     if (std::find(accessors.lastReadsIn.cbegin(), accessors.lastReadsIn.cend(), cmdBuffer) != accessors.lastReadsIn.cend())
     {
-        // #TODO(Jeslas): Check if cmd not waiting on other reads is an issue here?
+        // TODO(Jeslas): Check if cmd not waiting on other reads is an issue here?
         ResourceBarrierInfo barrier;
-        barrier.accessors.lastReadsIn.emplace_back(cmdBuffer);
+        barrier.accessors.addLastReadInCmd(cmdBuffer);
         barrier.resource = resource.first;
         barrier.accessors.allReadStages = accessors.allReadStages;
         barrier.accessors.lastReadStages = accessors.lastReadStages;
@@ -1441,25 +1588,47 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
 
     if (!accessors.lastReadsIn.empty()) // If not empty then there is other cmds that are reading so wait for those cmds
     {
-        for (const GraphicsResource *cmdBuffer : accessors.lastReadsIn)
-            cmdWaitInfo[cmdBuffer].emplace_back(CommandResUsageInfo{ cmdBuffer, resource.second });
+        const GraphicsResource *readInDiffQ = nullptr;
+        for (const GraphicsResource *readInCmdBuffer : accessors.lastReadsIn)
+        {
+            cmdWaitInfo[cmdBuffer].emplace_back(CommandResUsageInfo{ readInCmdBuffer, resource.second });
+            if (cmdBufferQ != static_cast<const VulkanCommandBuffer *>(readInCmdBuffer)->fromQueue)
+            {
+                // It is okay as it is fine to wait on last submitted read queue
+                readInDiffQ = readInCmdBuffer;
+            }
+        }
 
+        // we do not have to wait for last write as reads already do that, Unless queue changes
+        if (readInDiffQ)
+        {
+            ResourceBarrierInfo barrier;
+            barrier.accessors.addLastReadInCmd(readInDiffQ);
+            barrier.resource = resource.first;
+            barrier.accessors.allReadStages = accessors.allReadStages;
+            barrier.accessors.lastReadStages = accessors.lastReadStages;
+
+            outBarrierInfo = barrier;
+        }
         accessors.lastWrite = cmdBuffer;
         accessors.lastWriteStage = stageFlag;
         accessors.lastReadsIn.clear();
         accessors.lastReadStages = 0;
         accessors.allReadStages = 0;
-        // we do not have to wait for last write as reads already do that
         return outBarrierInfo;
     }
 
     if (accessors.lastWrite)
     {
+        // If lastWrite is not in this queue then transfer has to happen
+        bool bApplyBarrier = true;
         if (accessors.lastWrite != cmdBuffer)
         {
             cmdWaitInfo[cmdBuffer].emplace_back(CommandResUsageInfo{ accessors.lastWrite, resource.second });
+            bApplyBarrier = cmdBufferQ != static_cast<const VulkanCommandBuffer *>(accessors.lastWrite)->fromQueue;
         }
-        else
+
+        if (bApplyBarrier)
         {
             ResourceBarrierInfo barrier;
             barrier.accessors.lastWrite = accessors.lastWrite;
@@ -1475,12 +1644,10 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
 }
 
 std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracker::writeReadOnlyImages(
-    const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource
+    const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource
 )
 {
-    fatalAssert(
-        PlatformFunctions::getSetBitCount(resource.second) == 1, "%s: Writing to image in several pipeline stages is incorrect", __func__
-    );
+    fatalAssertf(PlatformFunctions::getSetBitCount(resource.second) == 1, "Writing to image in several pipeline stages is incorrect");
 
     std::optional<ResourceBarrierInfo> outBarrierInfo;
     VkPipelineStageFlagBits stageFlag = VkPipelineStageFlagBits(resource.second);
@@ -1505,7 +1672,7 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
     {
         // Since same command buffer we need to write after waiting for read
         ResourceBarrierInfo barrier;
-        barrier.accessors.lastReadsIn.emplace_back(cmdBuffer);
+        barrier.accessors.addLastReadInCmd(cmdBuffer);
         barrier.resource = resource.first;
         barrier.accessors.allReadStages = accessors.allReadStages;
         barrier.accessors.lastReadStages = accessors.lastReadStages;
@@ -1519,11 +1686,11 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
         return outBarrierInfo;
     }
 
-    if (!accessors.lastReadsIn.empty()) // If not empty then there is other cmds that are reading so wait
-                                        // for those cmds, and transfer layout
+    // If not empty then there is other cmds that are reading so wait for those cmds, and transfer layout
+    if (!accessors.lastReadsIn.empty())
     {
-        for (const GraphicsResource *cmdBuffer : accessors.lastReadsIn)
-            cmdWaitInfo[cmdBuffer].emplace_back(CommandResUsageInfo{ cmdBuffer, resource.second });
+        for (const GraphicsResource *readInCmdBuffer : accessors.lastReadsIn)
+            cmdWaitInfo[cmdBuffer].emplace_back(CommandResUsageInfo{ readInCmdBuffer, resource.second });
 
         ResourceBarrierInfo barrier;
         barrier.accessors.lastReadsIn = accessors.lastReadsIn;
@@ -1563,32 +1730,32 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
 }
 
 std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracker::writeReadOnlyTexels(
-    const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource
+    const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource
 )
 {
     return writeReadOnlyBuffers(cmdBuffer, resource);
 }
 
 std::optional<VulkanResourcesTracker::ResourceBarrierInfo>
-    VulkanResourcesTracker::writeBuffers(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource)
+    VulkanResourcesTracker::writeBuffers(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource)
 {
     return writeReadOnlyBuffers(cmdBuffer, resource);
 }
 
 std::optional<VulkanResourcesTracker::ResourceBarrierInfo>
-    VulkanResourcesTracker::writeImages(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource)
+    VulkanResourcesTracker::writeImages(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource)
 {
     return writeReadOnlyImages(cmdBuffer, resource);
 }
 
 std::optional<VulkanResourcesTracker::ResourceBarrierInfo>
-    VulkanResourcesTracker::writeTexels(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource)
+    VulkanResourcesTracker::writeTexels(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource)
 {
     return writeReadOnlyBuffers(cmdBuffer, resource);
 }
 
 std::optional<VulkanResourcesTracker::ResourceBarrierInfo>
-    VulkanResourcesTracker::imageToGeneralLayout(const GraphicsResource *cmdBuffer, const ImageResourceRef resource)
+    VulkanResourcesTracker::imageToGeneralLayout(const GraphicsResource *cmdBuffer, const ImageResourceRef &resource)
 {
     std::optional<ResourceBarrierInfo> outBarrierInfo;
 
@@ -1607,4 +1774,92 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo>
     }
 
     return outBarrierInfo;
+}
+
+std::optional<VulkanResourcesTracker::ResourceBarrierInfo>
+    VulkanResourcesTracker::colorAttachmentWrite(const GraphicsResource *cmdBuffer, const ImageResourceRef &resource)
+{
+    std::optional<ResourceBarrierInfo> outBarrierInfo;
+    VkPipelineStageFlagBits stageFlag = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    ResourceAccessors &accessors = resourcesAccessors[resource];
+
+    // If never read or write, no need to do any transition unless we are loading in render pass
+    if (!accessors.lastWrite && accessors.lastReadsIn.empty())
+    {
+        accessors.lastWrite = cmdBuffer;
+        accessors.lastWriteStage = stageFlag;
+
+        return outBarrierInfo;
+    }
+
+    // If not read in same cmd buffer then there is other cmds that are reading so wait for those cmds,
+    // Transition is not necessary as load/clear either way layout will be compatible
+    if (!accessors.lastReadsIn.empty()
+        && std::find(accessors.lastReadsIn.cbegin(), accessors.lastReadsIn.cend(), cmdBuffer) == accessors.lastReadsIn.cend())
+    {
+        for (const GraphicsResource *readInCmdBuffer : accessors.lastReadsIn)
+            cmdWaitInfo[cmdBuffer].emplace_back(CommandResUsageInfo{ readInCmdBuffer, VkPipelineStageFlags2(stageFlag) });
+
+        accessors.lastWrite = cmdBuffer;
+        accessors.lastWriteStage = stageFlag;
+        accessors.lastReadsIn.clear();
+        accessors.allReadStages = accessors.lastReadStages = 0;
+
+        return outBarrierInfo;
+    }
+
+    // If last write is not in this cmd buffer then we just wait on that cmd buffer
+    // Transition is not necessary as load/clear either way layout will be compatible
+    if (accessors.lastWrite && accessors.lastWrite != cmdBuffer)
+    {
+        cmdWaitInfo[cmdBuffer].emplace_back(CommandResUsageInfo{ accessors.lastWrite, VkPipelineStageFlags2(stageFlag) });
+    }
+    accessors.lastWrite = cmdBuffer;
+    accessors.lastWriteStage = stageFlag;
+    return outBarrierInfo;
+}
+
+void VulkanResourcesTracker::addResourceToQTransfer(
+    EQueueFunction queueType, const MemoryResourceRef &resource, VkPipelineStageFlags2 usedInStages, VkAccessFlags2 accessFlags,
+    VkImageLayout imageLayout, bool bReset
+)
+{
+    std::map<MemoryResource *, ResourceQueueTransferInfo> &queueReleaseInfo = queueTransfers[queueToQTransferIdx(queueType)];
+    ResourceQueueTransferInfo &qTransferInfo = queueReleaseInfo[resource.get()];
+    qTransferInfo.srcLayout = imageLayout;
+    if (bReset)
+    {
+        qTransferInfo.srcStages = usedInStages;
+        qTransferInfo.srcAccessMask = accessFlags;
+    }
+    else
+    {
+        qTransferInfo.srcStages |= usedInStages;
+        qTransferInfo.srcAccessMask |= accessFlags;
+    }
+}
+
+void VulkanResourcesTracker::addResourceToQTransfer(
+    EQueueFunction queueType, const MemoryResourceRef &resource, VkPipelineStageFlags2 usedInStages, VkAccessFlags2 accessFlags, bool bReset
+)
+{
+    std::map<MemoryResource *, ResourceQueueTransferInfo> &queueReleaseInfo = queueTransfers[queueToQTransferIdx(queueType)];
+    ResourceQueueTransferInfo &qTransferInfo = queueReleaseInfo[resource.get()];
+    if (bReset)
+    {
+        qTransferInfo.srcStages = usedInStages;
+        qTransferInfo.srcAccessMask = accessFlags;
+    }
+    else
+    {
+        qTransferInfo.srcStages |= usedInStages;
+        qTransferInfo.srcAccessMask |= accessFlags;
+    }
+}
+
+std::map<MemoryResource *, VulkanResourcesTracker::ResourceQueueTransferInfo>
+    VulkanResourcesTracker::getReleasesFromQueue(EQueueFunction queueType)
+{
+    std::map<MemoryResource *, ResourceQueueTransferInfo> &queueReleaseInfo = queueTransfers[queueToQTransferIdx(queueType)];
+    return std::move(queueReleaseInfo);
 }

@@ -226,7 +226,7 @@ VkDescriptorSet VulkanDescriptorsSetAllocator::allocateSetFromPool(
     descsSetAllocInfo.pSetLayouts = &descriptorsSetLayout;
 
     VkDescriptorSet descsSet;
-    fatalAssert(
+    fatalAssertf(
         ownerDevice->vkAllocateDescriptorSets(VulkanGraphicsHelper::getDevice(ownerDevice), &descsSetAllocInfo, &descsSet) == VK_SUCCESS,
         "Allocating new descriptors set failed"
     );
@@ -274,7 +274,7 @@ VulkanDescriptorsSetAllocatorInfo &VulkanDescriptorsSetAllocator::createNewPool(
         descriptorsSetPoolSizes[i] = *queryDescPoolSizeItr;
     }
 
-    fatalAssert(
+    fatalAssertf(
         ownerDevice->vkCreateDescriptorPool(
             VulkanGraphicsHelper::getDevice(ownerDevice), &descsSetPoolCreateInfo, nullptr, &allocationPool.pool
         ) == VK_SUCCESS,
@@ -300,11 +300,11 @@ VulkanDescriptorsSetAllocatorInfo &VulkanDescriptorsSetAllocator::findOrCreateAl
             std::vector<VkDescriptorSet> tempSets;
             if (isSupportedPool(tempSets, *availableAllocationInfo, query, uint32(setsRequiredCount)))
             {
-                LOG_DEBUG(
+                LOG_VERBOSE(
                     "DescriptorsSetAllocator",
-                    "%s() : Found existing pool that supports query, obtained %d existing "
+                    "Found existing pool that supports query, obtained %d existing "
                     "Descriptors set",
-                    __func__, uint32(tempSets.size())
+                    uint32(tempSets.size())
                 );
                 allocationPool = availableAllocationInfo;
                 // If pool has enough capacity to allocate then support will be true and sets
@@ -355,7 +355,7 @@ VulkanDescriptorsSetAllocatorInfo &
             // If pool has enough capacity to allocate then support will be true
             if (isSupportedPool(tempSets, *availableAllocationInfo, query, setsCount) && tempSets.empty())
             {
-                LOG_DEBUG("DescriptorsSetAllocator", "%s() : Found existing pool that supports query", __func__);
+                LOG_VERBOSE("DescriptorsSetAllocator", "Found existing pool that supports query");
                 allocationPool = availableAllocationInfo;
                 break;
             }
@@ -363,7 +363,7 @@ VulkanDescriptorsSetAllocatorInfo &
     }
     if (allocationPool == nullptr)
     {
-        LOG_DEBUG("DescriptorsSetAllocator", "%s() : Creating new pool that supports query", __func__);
+        LOG_DEBUG("DescriptorsSetAllocator", "Creating new pool that supports query");
         allocationPool = &createNewPool(query, setsCount, availablePools[query]);
     }
     debugAssert(allocationPool != nullptr);
@@ -401,7 +401,7 @@ VulkanDescriptorsSetAllocator::VulkanDescriptorsSetAllocator(VulkanDevice *devic
     // globalPoolCreateInfo.pPoolSizes = globalDescriptorsSetPoolSizes.data();
     // globalPoolCreateInfo.maxSets = globalPool.maxSets = DESCRIPTORS_SET_POOL_MAX_SETS;
 
-    // fatalAssert(ownerDevice->vkCreateDescriptorPool(VulkanGraphicsHelper::getDevice(ownerDevice),
+    // fatalAssertf(ownerDevice->vkCreateDescriptorPool(VulkanGraphicsHelper::getDevice(ownerDevice),
     // &globalPoolCreateInfo
     //     , nullptr, &globalPool.pool) == VK_SUCCESS, "Global pool creation failed");
 
@@ -410,10 +410,10 @@ VulkanDescriptorsSetAllocator::VulkanDescriptorsSetAllocator(VulkanDevice *devic
         DESCRIPTOR_SET_LAYOUT_CREATE_INFO(emptyLayoutCI);
         emptyLayoutCI.pBindings = nullptr;
         emptyLayoutCI.bindingCount = 0;
-        fatalAssert(
+        fatalAssertf(
             ownerDevice->vkCreateDescriptorSetLayout(VulkanGraphicsHelper::getDevice(ownerDevice), &emptyLayoutCI, nullptr, &emptyLayout)
                 == VK_SUCCESS,
-            "%s() : Failed creating empty descriptors set layout", __func__
+            "Failed creating empty descriptors set layout"
         );
 
         VkDescriptorPoolSize poolSize;
@@ -423,7 +423,7 @@ VulkanDescriptorsSetAllocator::VulkanDescriptorsSetAllocator(VulkanDevice *devic
         emptyPoolCreateInfo.poolSizeCount = 1;
         emptyPoolCreateInfo.pPoolSizes = &poolSize;
         emptyPoolCreateInfo.maxSets = 1;
-        fatalAssert(
+        fatalAssertf(
             ownerDevice->vkCreateDescriptorPool(VulkanGraphicsHelper::getDevice(ownerDevice), &emptyPoolCreateInfo, nullptr, &emptyPool)
                 == VK_SUCCESS,
             "Empty pool creation failed"
@@ -432,9 +432,9 @@ VulkanDescriptorsSetAllocator::VulkanDescriptorsSetAllocator(VulkanDevice *devic
         emptySetAI.descriptorPool = emptyPool;
         emptySetAI.descriptorSetCount = 1;
         emptySetAI.pSetLayouts = &emptyLayout;
-        fatalAssert(
+        fatalAssertf(
             ownerDevice->vkAllocateDescriptorSets(VulkanGraphicsHelper::getDevice(ownerDevice), &emptySetAI, &emptyDescriptor) == VK_SUCCESS,
-            "%s() : Failed to allocate empty descriptors set", __func__
+            "Failed to allocate empty descriptors set"
         );
     }
 }
@@ -514,7 +514,7 @@ bool VulkanDescriptorsSetAllocator::allocDescriptorsSets(
 
     if (!allocateSetsFromPool(sets, allocationPool, layouts))
     {
-        LOG_ERROR("DescriptorsSetAllocator", "%s() : Failed allocating required sets", __func__);
+        LOG_ERROR("DescriptorsSetAllocator", "Failed allocating required sets");
         return false;
     }
     for (VkDescriptorSet &newAllocatedSet : sets)
@@ -541,13 +541,13 @@ bool VulkanDescriptorsSetAllocator::allocDescriptorsSets(
         if (chooseSets.size() != setsCount)
         {
             uint32 remainingSetsCount = setsCount - uint32(chooseSets.size());
-            LOG_DEBUG("DescriptorsSetAllocator", "%s() : Allocating remaining %d required sets", __func__, remainingSetsCount);
+            LOG_DEBUG("DescriptorsSetAllocator", "Allocating remaining %d required sets", remainingSetsCount);
 
             std::vector<VkDescriptorSetLayout> layouts;
             layouts.assign(remainingSetsCount, layout);
             if (!allocateSetsFromPool(sets, allocationPool, layouts))
             {
-                LOG_ERROR("DescriptorsSetAllocator", "%s() : Failed allocating required sets", __func__);
+                LOG_ERROR("DescriptorsSetAllocator", "Failed allocating required sets");
                 return false;
             }
             for (VkDescriptorSet &newAllocatedSet : sets)

@@ -19,19 +19,29 @@ struct VersionPair
 
 struct ArchiveMeta 
 {
-    uint64 archiveVersion;
+    uint32 archiveMarker<read = PrintArchiveMarker>;
+    uint32 archiveVersion;
     uint64 customVersionsLen<hidden=true>;    
     VersionPair customVersions[customVersionsLen];
 };
+
+#define ARCHIVE_MARKER_VALUE 1042438380
+string PrintArchiveMarker(uint32 archiveMarkerVal)
+{
+    string retStr;
+    SPrintf(retStr, "%s(%u)"
+        , (archiveMarkerVal == ARCHIVE_MARKER_VALUE)? "ValidArchive" : "InvalidArchive", archiveMarkerVal);
+    return retStr;
+}
 
 // Package data
 struct PackageContainedData
 {
     uint64 objectPathLen<hidden=true>;
     char objectPath[objectPathLen];
-    uint32 className;
     uint32 classVersion;
     uint64 objectFlags<read = ObjectFlagsDisplay>;
+    uint32 className;
 
     uint64 streamStart;
     uint64 streamSize;
@@ -55,8 +65,12 @@ enum <uint64> ObjectFlagBits
     OBJECTFLAG_MarkedForDelete= 0x0000000000000002,
     OBJECTFLAG_Deleted= 0x0000000000000004,
     OBJECTFLAG_RootObject= 0x0000000000000008,
-    OBJECTFLAG_PackageDirty= 0x0000000000000010,
-    OBJECTFLAG_PackageLoadPending= 0x0000000000000020
+    OBJECTFLAG_Transient= 0x0000000000000010,
+    OBJECTFLAG_PackageDirty= 0x0000000000000020,
+    OBJECTFLAG_PackageLoadPending= 0x0000000000000040,
+    OBJECTFLAG_PackageLoaded= 0x0000000000000080,
+    OBJECTFLAG_TemplateDefault= 0x0000000000000100,
+    OBJECTFLAG_FromTemplate= 0x0000000000000200
 };
 
 string ObjectFlagsDisplay(uint64 flags)
@@ -89,6 +103,10 @@ string ObjectBitFlagToStr(uint64 flags)
     {
         Strcat(fmtStr, "RootObject | ");
     }
+    if((flags & OBJECTFLAG_Transient) != 0)
+    {
+        Strcat(fmtStr, "Transient | ");
+    }
     if((flags & OBJECTFLAG_PackageDirty) != 0)
     {
         Strcat(fmtStr, "DirtyPackage | ");
@@ -96,6 +114,18 @@ string ObjectBitFlagToStr(uint64 flags)
     if((flags & OBJECTFLAG_PackageLoadPending) != 0)
     {
         Strcat(fmtStr, "PendingLoad | ");
+    }
+    if((flags & OBJECTFLAG_PackageLoaded) != 0)
+    {
+        Strcat(fmtStr, "PackageLoaded | ");
+    }
+    if((flags & OBJECTFLAG_TemplateDefault) != 0)
+    {
+        Strcat(fmtStr, "TemplateDefault | ");
+    }
+    if((flags & OBJECTFLAG_FromTemplate) != 0)
+    {
+        Strcat(fmtStr, "FromTemplate | ");
     }
     uint64 fmtStrLen = Strlen(fmtStr);
     if(fmtStrLen > 0)
@@ -105,12 +135,13 @@ string ObjectBitFlagToStr(uint64 flags)
     return fmtStr;    
 }
 
+#define ARCHIVE_MARKER_VALUE 1042438380
 #define PACKAGE_MARKER_VALUE 3759085268 
 string PrintPackageMarker(uint32 packageMarkerVal)
 {
     string retStr;
     SPrintf(retStr, "%s(%u)"
-        , (packageMarker == PACKAGE_MARKER_VALUE)? "Valid" : "Invalid", packageMarkerVal);
+        , (packageMarkerVal == PACKAGE_MARKER_VALUE)? "ValidPackage" : "InvalidPackage", packageMarkerVal);
     return retStr;
 }
 

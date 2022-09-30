@@ -1,5 +1,6 @@
-include(${cmake_script_dir}/EngineFileUtilities.cmake)
+include(EngineFileUtilities)
+include(EngineCMakeHelpers)
 
-# set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/Editor)
+setup_runtime_output_dir("${PROJECT_BINARY_DIR}" "Editor")
 set (CMAKE_FOLDER Editor)
 add_cmake_subdirectories()

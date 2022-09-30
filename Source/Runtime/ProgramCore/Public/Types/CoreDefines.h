@@ -67,8 +67,11 @@
 #define DLL_IMPORT
 #endif
 
-#ifndef LINE_FEED_CHAR
-#define LINE_FEED_CHAR TCHAR("\n")
+#ifndef LINE_FEED_ACHAR
+#define LINE_FEED_ACHAR "\n"
+#endif
+#ifndef LINE_FEED_TCHAR
+#define LINE_FEED_TCHAR TCHAR(LINE_FEED_ACHAR)
 #endif
 
 // File System path separator
@@ -80,6 +83,10 @@
 // be invalid Offset for a class's VTable in case of multiple inheritance
 #ifndef MI_VTABLE_OFFSET
 #define MI_VTABLE_OFFSET(ClassTypeName, OffsetOfClassTypeName) (((PtrInt) static_cast<OffsetOfClassTypeName *>((ClassTypeName *)1)) - 1)
+#endif
+
+#ifndef CACHELINE_SIZE
+#define CACHELINE_SIZE 64
 #endif
 
 // Math defines

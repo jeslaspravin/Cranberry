@@ -16,9 +16,9 @@
 #include "WindowsPlatformMemory.h"
 
 #elif PLATFORM_LINUX
-static_assert(false, "Platform not supported!");
+#error "Platform not supported!"
 #elif PLATFORM_APPLE
-static_assert(false, "Platform not supported!");
+#error "Platform not supported!"
 #endif
 
 using PlatformMemory = GPlatformMemory::PlatformMemory;

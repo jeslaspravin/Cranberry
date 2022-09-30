@@ -11,8 +11,7 @@
 
 #pragma once
 
-#include "String/String.h"
-#include "String/StringID.h"
+#include "CBEObjectTypes.h"
 
 #include <set>
 #include <unordered_map>
@@ -26,15 +25,15 @@ private:
     std::unordered_map<StringID, PackageLoader *> packageToLoader;
 
     std::vector<String> allFoundPackages;
+
+    struct FoundObjectsInfo
+    {
+        String fullPath;
+        StringID packageName;
+        CBEClass objClass;
+    };
     // Full path of all found objects
-    std::vector<String> allFoundObjects;
-
-private:
-    void readPackagesIn(const String &contentDir);
-    void removePackagesFrom(const String &contentDir);
-
-    void setupPackage(const String &packageFilePath, const String &contentDir);
-    FORCE_INLINE static String packagePathFromFilePath(const String &filePath, const String &contentDir);
+    std::vector<FoundObjectsInfo> allFoundObjects;
 
 public:
     CBEPackageManager() = default;
@@ -42,6 +41,7 @@ public:
 
     void registerContentRoot(const String &contentDir);
     void unregisterContentRoot(const String &contentDir);
+    void onObjectDeleted(cbe::Object *obj);
 
     /**
      * CBEPackageManager::findObject - Finds object with path/name if already found
@@ -49,10 +49,11 @@ public:
      * Access: public
      *
      * @param const String & objectPath - must be either object's path without package or just object name
+     * @param CBEClass clazz - Class this object must be. if null will ignore class check and returns first found
      *
      * @return String - Object's Full path if found, Else empty
      */
-    String findObject(const String &objectPath) const;
+    String findObject(const String &objectPath, CBEClass clazz) const;
 
     // Scans all content directory and finds new package if present and loads its meta and package tables
     void refreshPackages();
@@ -66,4 +67,12 @@ public:
         }
         return nullptr;
     }
+
+private:
+    void readPackagesIn(const String &contentDir);
+    void removePackagesFrom(const String &contentDir);
+
+    void setupPackage(const String &packageFilePath, const String &contentDir);
+    // Clears everything related to a package stored in CBEPackageManager and deletes the loader
+    void clearPackage(PackageLoader *loader);
 };

@@ -79,13 +79,13 @@ VkSwapchainKHR VulkanGraphicsHelper::createSwapchain(
 
     if (!device->isValidDevice())
     {
-        LOG_ERROR("VulkanSwapchain", "%s() : Cannot access resources of invalid device", __func__);
+        LOG_ERROR("VulkanSwapchain", "Cannot access resources of invalid device");
         return nullptr;
     }
 
     if (device->swapchainFormat.format == VkFormat::VK_FORMAT_UNDEFINED)
     {
-        LOG_ERROR("VulkanSwapchain", "%s() : Surface properties are invalid", __func__);
+        LOG_ERROR("VulkanSwapchain", "Surface properties are invalid");
         return nullptr;
     }
 
@@ -105,13 +105,20 @@ VkSwapchainKHR VulkanGraphicsHelper::createSwapchain(
     VulkanQueueResource<EQueueFunction::Present> *presentQueue = getQueue<EQueueFunction::Present>(device);
     VulkanQueueResource<EQueueFunction::Graphics> *graphicsQueue = getQueue<EQueueFunction::Graphics>(device);
 
-    fatalAssert(presentQueue && graphicsQueue, "presenting queue or graphics queue cannot be null");
+    fatalAssertf(presentQueue && graphicsQueue, "presenting queue or graphics queue cannot be null");
 
     if (presentQueue->queueFamilyIndex() == graphicsQueue->queueFamilyIndex())
     {
         swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
         swapchainCreateInfo.queueFamilyIndexCount = 0;
         swapchainCreateInfo.pQueueFamilyIndices = nullptr;
+
+        // Below check is to avoid VK validation error, Cached surface properties works fine in single gpu environment
+        VkBool32 queueSupported;
+        Vk::vkGetPhysicalDeviceSurfaceSupportKHR(
+            device->physicalDevice, presentQueue->queueFamilyIndex(), swapchainCreateInfo.surface, &queueSupported
+        );
+        fatalAssertf(queueSupported == VK_TRUE, "Window surface created in unsupported device(Multiple GPU is not supported)");
     }
     else
     {
@@ -119,9 +126,22 @@ VkSwapchainKHR VulkanGraphicsHelper::createSwapchain(
         std::vector<uint32> queueFamilyIndices = { graphicsQueue->queueFamilyIndex(), presentQueue->queueFamilyIndex() };
         swapchainCreateInfo.queueFamilyIndexCount = (uint32_t)queueFamilyIndices.size();
         swapchainCreateInfo.pQueueFamilyIndices = queueFamilyIndices.data();
+
+        // Below check is to avoid VK validation error, Cached surface properties works fine in single gpu environment
+        VkBool32 presentSupported, graphicsSupported;
+        Vk::vkGetPhysicalDeviceSurfaceSupportKHR(
+            device->physicalDevice, presentQueue->queueFamilyIndex(), swapchainCreateInfo.surface, &presentSupported
+        );
+        Vk::vkGetPhysicalDeviceSurfaceSupportKHR(
+            device->physicalDevice, graphicsQueue->queueFamilyIndex(), swapchainCreateInfo.surface, &graphicsSupported
+        );
+        fatalAssertf(
+            presentSupported == VK_TRUE && graphicsSupported == VK_TRUE,
+            "Window surface created in unsupported device(Multiple GPU is not supported)"
+        );
     }
 
-    /* Updating other necessary values */
+    /* Updating other necessary window unique values */
     VkSurfaceCapabilitiesKHR swapchainCapabilities;
     Vk::vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device->physicalDevice, swapchainCreateInfo.surface, &swapchainCapabilities);
     VkExtent2D surfaceSize = swapchainCapabilities.currentExtent;
@@ -184,7 +204,7 @@ void VulkanGraphicsHelper::destroySwapchain(class IGraphicsInstance *graphicsIns
 
     if (!device->isValidDevice())
     {
-        LOG_ERROR("VulkanSwapchain", "%s() : Cannot access resources of invalid device", __func__);
+        LOG_ERROR("VulkanSwapchain", "Cannot access resources of invalid device");
         return;
     }
 
@@ -206,43 +226,43 @@ uint32 VulkanGraphicsHelper::getNextSwapchainImage(
 
     if (result == VK_TIMEOUT)
     {
-        LOG_ERROR("VulkanSwapchain", "%s() : Timed out waiting to acquire next swapchain image", __func__);
+        LOG_ERROR("VulkanSwapchain", "Timed out waiting to acquire next swapchain image");
         return -1;
     }
     else if (result == VK_NOT_READY)
     {
-        LOG_ERROR("VulkanSwapchain", "%s() : swapchain is not suitable for use", __func__);
+        LOG_ERROR("VulkanSwapchain", "swapchain is not suitable for use");
         return -1;
     }
     return imageIndex;
 }
 
 void VulkanGraphicsHelper::presentImage(
-    class IGraphicsInstance *graphicsInstance, const std::vector<WindowCanvasRef> *canvases, const std::vector<uint32> *imageIndex,
-    const std::vector<SemaphoreRef> *waitOnSemaphores
+    class IGraphicsInstance *graphicsInstance, ArrayView<const WindowCanvasRef> canvases, ArrayView<const uint32> imageIndex,
+    ArrayView<const SemaphoreRef> waitOnSemaphores
 )
 {
-    if (!canvases || !imageIndex || canvases->size() != imageIndex->size())
+    if (canvases.empty() || imageIndex.empty() || canvases.size() != imageIndex.size())
         return;
 
     const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
     const VulkanDevice *device = &gInstance->selectedDevice;
 
-    std::vector<VkSwapchainKHR> swapchains(canvases->size());
-    std::vector<VkResult> results(canvases->size());
-    std::vector<VkSemaphore> semaphores(waitOnSemaphores ? waitOnSemaphores->size() : 0);
+    std::vector<VkSwapchainKHR> swapchains(canvases.size());
+    std::vector<VkResult> results(canvases.size());
+    std::vector<VkSemaphore> semaphores(waitOnSemaphores.size());
 
     for (int32 i = 0; i < swapchains.size(); ++i)
     {
-        swapchains[i] = (*canvases)[i].reference<VulkanWindowCanvas>()->swapchain();
+        swapchains[i] = canvases[i].reference<VulkanWindowCanvas>()->swapchain();
     }
 
     for (int32 i = 0; i < semaphores.size(); ++i)
     {
-        semaphores[i] = (*waitOnSemaphores)[i].reference<VulkanSemaphore>()->semaphore;
+        semaphores[i] = waitOnSemaphores[i].reference<VulkanSemaphore>()->semaphore;
     }
     PRESENT_INFO(presentInfo);
-    presentInfo.pImageIndices = imageIndex->data();
+    presentInfo.pImageIndices = imageIndex.data();
     presentInfo.pSwapchains = swapchains.data();
     presentInfo.swapchainCount = (uint32)swapchains.size();
     presentInfo.pResults = results.data();
@@ -254,7 +274,7 @@ void VulkanGraphicsHelper::presentImage(
 
     if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
     {
-        LOG_ERROR("VulkanPresenting", "%s() : Failed to present images", __func__);
+        LOG_ERROR("VulkanPresenting", "Failed to present images");
     }
     else
     {
@@ -262,7 +282,7 @@ void VulkanGraphicsHelper::presentImage(
         {
             if (results[i] != VK_SUCCESS && results[i] != VK_SUBOPTIMAL_KHR)
             {
-                LOG_ERROR("VulkanPresenting", "%s() : Failed presenting for window %s", __func__, (*canvases)[i]->getResourceName().getChar());
+                LOG_ERROR("VulkanPresenting", "Failed presenting for window %s", canvases[i]->getResourceName().getChar());
             }
         }
     }
@@ -292,7 +312,7 @@ void VulkanGraphicsHelper::waitTimelineSemaphores(
     class IGraphicsInstance *graphicsInstance, std::vector<TimelineSemaphoreRef> *semaphores, std::vector<uint64> *waitForValues
 ) const
 {
-    fatalAssert(
+    fatalAssertf(
         semaphores->size() <= waitForValues->size(), "Cannot wait on semaphores if the wait for values is less than waiting semaphors count"
     );
 
@@ -311,7 +331,7 @@ void VulkanGraphicsHelper::waitTimelineSemaphores(
     waitInfo.semaphoreCount = (uint32)deviceSemaphores.size();
     waitInfo.pValues = waitForValues->data();
 
-    device->TIMELINE_SEMAPHORE_TYPE(vkWaitSemaphores)(device->logicalDevice, &waitInfo, 2000000000 /*2 Seconds*/);
+    device->vkWaitSemaphores(device->logicalDevice, &waitInfo, 2000000000 /*2 Seconds*/);
 }
 
 FenceRef
@@ -360,7 +380,7 @@ VkBuffer VulkanGraphicsHelper::createBuffer(
         const EPixelDataFormat::PixelFormatInfo *imageFormatInfo = EPixelDataFormat::getFormatInfo(bufferDataFormat);
         if (bufferDataFormat == EPixelDataFormat::Undefined || !imageFormatInfo)
         {
-            LOG_ERROR("NewBufferCreation", "%s() : Invalid expected pixel format for buffer", __func__);
+            LOG_ERROR("NewBufferCreation", "Invalid expected pixel format for buffer");
             return buffer;
         }
 
@@ -369,10 +389,7 @@ VkBuffer VulkanGraphicsHelper::createBuffer(
 
         if ((formatProps.bufferFeatures & requiredFeatures) != requiredFeatures)
         {
-            LOG_ERROR(
-                "NewBufferCreation", "%s() : Required format %s for buffer is not supported by device", __func__,
-                imageFormatInfo->formatName.getChar()
-            );
+            LOG_ERROR("NewBufferCreation", "Required format %s for buffer is not supported by device", imageFormatInfo->formatName);
             return buffer;
         }
     }
@@ -398,10 +415,10 @@ bool VulkanGraphicsHelper::allocateBufferResource(
 {
     auto *gInstance = static_cast<VulkanGraphicsInstance *>(graphicsInstance);
     auto *resource = static_cast<VulkanBufferResource *>(memoryResource);
-    VulkanMemoryBlock *block = gInstance->memoryAllocator->allocateBuffer(resource->buffer, cpuAccessible);
-    if (block)
+    VulkanMemoryAllocation allocation = gInstance->memoryAllocator->allocateBuffer(resource->buffer, cpuAccessible);
+    if (allocation.memBlock)
     {
-        memoryResource->setMemoryData(block);
+        memoryResource->setMemoryData(allocation);
         gInstance->selectedDevice.vkBindBufferMemory(
             gInstance->selectedDevice.logicalDevice, resource->buffer, memoryResource->getDeviceMemory(), memoryResource->allocationOffset()
         );
@@ -414,7 +431,7 @@ void VulkanGraphicsHelper::deallocateBufferResource(class IGraphicsInstance *gra
 {
     auto *gInstance = static_cast<VulkanGraphicsInstance *>(graphicsInstance);
     auto *resource = static_cast<VulkanBufferResource *>(memoryResource);
-    if (memoryResource->getMemoryData())
+    if (memoryResource->getMemoryData().memBlock)
     {
         gInstance->memoryAllocator->deallocateBuffer(resource->buffer, memoryResource->getMemoryData());
     }
@@ -471,7 +488,7 @@ VkBufferView VulkanGraphicsHelper::createBufferView(class IGraphicsInstance *gra
     VkBufferView view;
     if (device->vkCreateBufferView(device->logicalDevice, &viewCreateInfo, nullptr, &view) != VK_SUCCESS)
     {
-        LOG_ERROR("VulkanGraphicsHelper", "%s() : Buffer view creation failed", __func__);
+        LOG_ERROR("VulkanGraphicsHelper", "Buffer view creation failed");
         view = nullptr;
     }
     return view;
@@ -575,7 +592,7 @@ VkImage VulkanGraphicsHelper::createImage(
                                                                                              : pixelFormatProperties.optimalTilingFeatures;
         if ((availableFeatures & requiredFeatures) != requiredFeatures)
         {
-            LOG_ERROR("NewImageCreation", "%s() : Required format for image is not supported by device", __func__);
+            LOG_ERROR("NewImageCreation", "Required format for image is not supported by device");
             return image;
         }
     }
@@ -590,9 +607,9 @@ VkImage VulkanGraphicsHelper::createImage(
     {
         LOG_ERROR(
             "NewImageCreation",
-            "%s() : Image size (%d, %d, %d) is exceeding the maximum size (%d, %d, %d) supported by "
+            "Image size (%d, %d, %d) is exceeding the maximum size (%d, %d, %d) supported by "
             "device",
-            __func__, createInfo.extent.width, createInfo.extent.height, createInfo.extent.depth, imageFormatProperties.maxExtent.width,
+            createInfo.extent.width, createInfo.extent.height, createInfo.extent.depth, imageFormatProperties.maxExtent.width,
             imageFormatProperties.maxExtent.height, imageFormatProperties.maxExtent.depth
         );
         return image;
@@ -602,9 +619,9 @@ VkImage VulkanGraphicsHelper::createImage(
     {
         LOG_WARN(
             "NewImageCreation",
-            "%s() : Image layer count %d is exceeding the maximum layer count %d supported by "
+            "Image layer count %d is exceeding the maximum layer count %d supported by "
             "device, using max limit",
-            __func__, createInfo.arrayLayers, imageFormatProperties.maxArrayLayers
+            createInfo.arrayLayers, imageFormatProperties.maxArrayLayers
         );
         createInfo.arrayLayers = imageFormatProperties.maxArrayLayers;
     }
@@ -613,9 +630,9 @@ VkImage VulkanGraphicsHelper::createImage(
     {
         LOG_WARN(
             "NewImageCreation",
-            "%s() : Image mip levels %d is exceeding the maximum mip levels %d supported by device, "
+            "Image mip levels %d is exceeding the maximum mip levels %d supported by device, "
             "using max limit",
-            __func__, createInfo.mipLevels, imageFormatProperties.maxMipLevels
+            createInfo.mipLevels, imageFormatProperties.maxMipLevels
         );
         createInfo.mipLevels = imageFormatProperties.maxMipLevels;
     }
@@ -640,14 +657,14 @@ bool VulkanGraphicsHelper::allocateImageResource(
 {
     auto *gInstance = static_cast<VulkanGraphicsInstance *>(graphicsInstance);
     auto *resource = static_cast<VulkanImageResource *>(memoryResource);
-    VulkanMemoryBlock *block = gInstance->memoryAllocator->allocateImage(
+    VulkanMemoryAllocation allocation = gInstance->memoryAllocator->allocateImage(
         resource->image, cpuAccessible,
         !resource->isStagingResource()
     ); // Every image apart from staging image are optimal
 
-    if (block)
+    if (allocation.memBlock)
     {
-        memoryResource->setMemoryData(block);
+        memoryResource->setMemoryData(allocation);
         gInstance->selectedDevice.vkBindImageMemory(
             gInstance->selectedDevice.logicalDevice, resource->image, memoryResource->getDeviceMemory(), memoryResource->allocationOffset()
         );
@@ -660,7 +677,7 @@ void VulkanGraphicsHelper::deallocateImageResource(class IGraphicsInstance *grap
 {
     auto *gInstance = static_cast<VulkanGraphicsInstance *>(graphicsInstance);
     auto *resource = static_cast<VulkanImageResource *>(memoryResource);
-    if (memoryResource->getMemoryData())
+    if (memoryResource->getMemoryData().memBlock)
     {
         gInstance->memoryAllocator->deallocateImage(
             resource->image, memoryResource->getMemoryData(),
@@ -676,7 +693,7 @@ VkImageView VulkanGraphicsHelper::createImageView(class IGraphicsInstance *graph
     VkImageView view;
     if (device->vkCreateImageView(device->logicalDevice, &viewCreateInfo, nullptr, &view) != VK_SUCCESS)
     {
-        LOG_ERROR("VulkanGraphicsHelper", "%s() : Image view creation failed", __func__);
+        LOG_ERROR("VulkanGraphicsHelper", "Image view creation failed");
         view = nullptr;
     }
     return view;
@@ -755,10 +772,7 @@ ESamplerFiltering::Type VulkanGraphicsHelper::clampFiltering(
             requiredFeature |= VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_IMG;
             break;
         default:
-            LOG_ERROR(
-                "VulkanGraphicsHelper", "%s() : not supported filtering mode %s", __func__,
-                ESamplerFiltering::filterName(choosenFiltering).getChar()
-            );
+            LOG_ERROR("VulkanGraphicsHelper", "not supported filtering mode %s", ESamplerFiltering::filterName(choosenFiltering).getChar());
             choosenFiltering = ESamplerFiltering::Type(choosenFiltering - 1);
             continue;
         }
@@ -787,7 +801,7 @@ void VulkanGraphicsHelper::cacheSurfaceProperties(class IGraphicsInstance *graph
     if (!gInstance->selectedDevice.isValidDevice())
     {
         gInstance->createVulkanDevice(windowCanvas);
-        fatalAssert(gInstance->selectedDevice.isValidDevice(), "Graphics device creation failed");
+        fatalAssertf(gInstance->selectedDevice.isValidDevice(), "Graphics device creation failed");
     }
     gInstance->selectedDevice.cacheGlobalSurfaceProperties(windowCanvas);
 }
@@ -827,7 +841,7 @@ void VulkanGraphicsHelper::flushMappedPtr(class IGraphicsInstance *graphicsInsta
         VkResult result = device->vkFlushMappedMemoryRanges(device->logicalDevice, uint32(memRanges.size()), memRanges.data());
         if (result != VK_SUCCESS)
         {
-            LOG_ERROR("VulkanGraphicsHelper", "%s() : failure in flushing mapped memories", __func__);
+            LOG_ERROR("VulkanGraphicsHelper", "failure in flushing mapped memories");
         }
     }
 }
@@ -867,7 +881,7 @@ void VulkanGraphicsHelper::flushMappedPtr(class IGraphicsInstance *graphicsInsta
         VkResult result = device->vkFlushMappedMemoryRanges(device->logicalDevice, uint32(memRanges.size()), memRanges.data());
         if (result != VK_SUCCESS)
         {
-            LOG_ERROR("VulkanGraphicsHelper", "%s() : failure in flushing mapped memories", __func__);
+            LOG_ERROR("VulkanGraphicsHelper", "failure in flushing mapped memories");
         }
     }
 }
@@ -876,6 +890,10 @@ void VulkanGraphicsHelper::markForDeletion(
     class IGraphicsInstance *graphicsInstance, GraphicsResource *resource, EDeferredDelStrategy deleteStrategy, TickRep duration /*= 1*/
 ) const
 {
+    if (resource == nullptr)
+    {
+        return;
+    }
 #if DEFER_DELETION
     auto *gInstance = static_cast<VulkanGraphicsInstance *>(graphicsInstance);
     VulkanDevice *device = &gInstance->selectedDevice;
@@ -904,6 +922,41 @@ void VulkanGraphicsHelper::markForDeletion(
 #endif // DEFER_DELETION
 }
 
+void VulkanGraphicsHelper::markForDeletion(
+    class IGraphicsInstance *graphicsInstance, SimpleSingleCastDelegate deleter, EDeferredDelStrategy deleteStrategy, TickRep duration /*= 1 */
+) const
+{
+    if (!deleter.isBound())
+    {
+        return;
+    }
+#if DEFER_DELETION
+    auto *gInstance = static_cast<VulkanGraphicsInstance *>(graphicsInstance);
+    VulkanDevice *device = &gInstance->selectedDevice;
+
+    DeferredDeleter::DeferringData deferInfo{ .deleter = deleter, .elapsedDuration = 0, .strategy = deleteStrategy };
+    switch (deleteStrategy)
+    {
+    case EDeferredDelStrategy::FrameCount:
+        deferInfo.deferDuration = duration;
+        break;
+    case EDeferredDelStrategy::SwapchainCount:
+        deferInfo.deferDuration = device->choosenImageCount;
+        break;
+    case EDeferredDelStrategy::TimePeriod:
+        deferInfo.deferDuration = duration;
+        deferInfo.elapsedDuration = Time::timeNow();
+        break;
+    case EDeferredDelStrategy::Immediate:
+    default:
+        break;
+    }
+    getDeferredDeleter(graphicsInstance)->deferDelete(std::move(deferInfo));
+#else  // DEFER_DELETION
+    deleter.invoke();
+#endif // DEFER_DELETION
+}
+
 VkShaderModule VulkanGraphicsHelper::createShaderModule(class IGraphicsInstance *graphicsInstance, const uint8 *code, uint32 size)
 {
     const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
@@ -916,7 +969,7 @@ VkShaderModule VulkanGraphicsHelper::createShaderModule(class IGraphicsInstance 
     VkShaderModule shaderModule;
     if (device->vkCreateShaderModule(device->logicalDevice, &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
     {
-        LOG_ERROR("VulkanGraphicsHelper", "%s() : failure in creating shader module[Shader size : %d]", __func__, size);
+        LOG_ERROR("VulkanGraphicsHelper", "failure in creating shader module[Shader size : %d]", size);
         shaderModule = nullptr;
     }
     return shaderModule;
@@ -944,7 +997,7 @@ void VulkanGraphicsHelper::createFramebuffer(
     const VulkanDevice *device = &gInstance->selectedDevice;
     if (device->vkCreateFramebuffer(device->logicalDevice, &fbCreateInfo, nullptr, framebuffer) != VK_SUCCESS)
     {
-        LOG_ERROR("VulkanGraphicsHelper", "%s() : Failed creating framebuffer", __func__);
+        LOG_ERROR("VulkanGraphicsHelper", "Failed creating framebuffer");
         (*framebuffer) = nullptr;
     }
 }
@@ -966,7 +1019,7 @@ VkDescriptorSetLayout VulkanGraphicsHelper::createDescriptorsSetLayout(
     VkDescriptorSetLayout layout;
     if (device->vkCreateDescriptorSetLayout(device->logicalDevice, &layoutCreateInfo, nullptr, &layout) != VK_SUCCESS)
     {
-        LOG_ERROR("VulkanGraphicsHelper", "%s : Failed creating descriptor set layout", __func__);
+        LOG_ERROR("VulkanGraphicsHelper", "Failed creating descriptor set layout");
         layout = nullptr;
     }
     return layout;
@@ -1028,7 +1081,7 @@ VkPipelineCache VulkanGraphicsHelper::createPipelineCache(class IGraphicsInstanc
     VkPipelineCache pipelineCache;
     if (device->vkCreatePipelineCache(device->logicalDevice, &cacheCreateInfo, nullptr, &pipelineCache) != VK_SUCCESS)
     {
-        LOG_ERROR("VulkanGraphicsHelper", "%s : Pipeline cache creation failed", __func__);
+        LOG_ERROR("VulkanGraphicsHelper", "Pipeline cache creation failed");
         pipelineCache = nullptr;
     }
     return pipelineCache;
@@ -1044,7 +1097,7 @@ VkPipelineCache VulkanGraphicsHelper::createPipelineCache(class IGraphicsInstanc
     VkPipelineCache pipelineCache;
     if (device->vkCreatePipelineCache(device->logicalDevice, &cacheCreateInfo, nullptr, &pipelineCache) != VK_SUCCESS)
     {
-        LOG_ERROR("VulkanGraphicsHelper", "%s : Pipeline cache creation failed", __func__);
+        LOG_ERROR("VulkanGraphicsHelper", "Pipeline cache creation failed");
         pipelineCache = nullptr;
     }
     return pipelineCache;
@@ -1066,7 +1119,7 @@ void VulkanGraphicsHelper::mergePipelineCaches(
 
     if (device->vkMergePipelineCaches(device->logicalDevice, dstCache, uint32(srcCaches.size()), srcCaches.data()) != VK_SUCCESS)
     {
-        LOG_ERROR("VulkanGraphicsHelper", "%s : Merging pipeline caches failed", __func__);
+        LOG_ERROR("VulkanGraphicsHelper", "Merging pipeline caches failed");
     }
 }
 
@@ -1086,7 +1139,7 @@ void VulkanGraphicsHelper::getPipelineCacheData(
     }
 }
 
-VkPipelineStageFlags2KHR VulkanGraphicsHelper::shaderToPipelineStageFlags(uint32 shaderStageFlags)
+VkPipelineStageFlags2 VulkanGraphicsHelper::shaderToPipelineStageFlags(uint32 shaderStageFlags)
 {
     static VkShaderStageFlagBits shaderStages[] = { VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT,
                                                     VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
@@ -1109,7 +1162,7 @@ VkPipelineStageFlags2KHR VulkanGraphicsHelper::shaderToPipelineStageFlags(uint32
         return 0;
     uint32 temp = shaderStageFlags;
 
-    VkPipelineStageFlags2KHR pipelineStageFlags = 0;
+    VkPipelineStageFlags2 pipelineStageFlags = 0;
     for (const VkShaderStageFlagBits &shaderStage : shaderStages)
     {
         if (BIT_SET(shaderStageFlags, shaderStage))
@@ -1164,7 +1217,7 @@ VkPipelineStageFlags2KHR VulkanGraphicsHelper::shaderToPipelineStageFlags(uint32
     return pipelineStageFlags;
 }
 
-VkShaderStageFlags VulkanGraphicsHelper::pipelineToShaderStageFlags(uint32 pipelineStageFlags)
+VkShaderStageFlags VulkanGraphicsHelper::pipelineToShaderStageFlags(uint64 pipelineStageFlags)
 {
     VkPipelineStageFlagBits pipelineStages[] = { VkPipelineStageFlagBits::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
                                                  VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT,
@@ -1180,7 +1233,7 @@ VkShaderStageFlags VulkanGraphicsHelper::pipelineToShaderStageFlags(uint32 pipel
     if (pipelineStageFlags == 0)
         return 0;
 
-    uint32 temp = pipelineStageFlags;
+    uint64 temp = pipelineStageFlags;
 
     VkShaderStageFlags shaderStageFlags = 0;
     for (const VkPipelineStageFlagBits &pipelineStage : pipelineStages)
@@ -1245,7 +1298,7 @@ std::vector<VkPipeline> VulkanGraphicsHelper::createGraphicsPipeline(
     const VulkanDevice *device = &gInstance->selectedDevice;
 
     std::vector<VkPipeline> pipelines(graphicsPipelineCI.size());
-    fatalAssert(
+    fatalAssertf(
         device->vkCreateGraphicsPipelines(
             device->logicalDevice, pipelineCache, uint32(graphicsPipelineCI.size()), graphicsPipelineCI.data(), nullptr, pipelines.data()
         ) == VK_SUCCESS,
@@ -1263,7 +1316,7 @@ std::vector<VkPipeline> VulkanGraphicsHelper::createComputePipeline(
     const VulkanDevice *device = &gInstance->selectedDevice;
 
     std::vector<VkPipeline> pipelines(computePipelineCI.size());
-    fatalAssert(
+    fatalAssertf(
         device->vkCreateComputePipelines(
             device->logicalDevice, pipelineCache, uint32(computePipelineCI.size()), computePipelineCI.data(), nullptr, pipelines.data()
         ) == VK_SUCCESS,

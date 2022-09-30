@@ -113,7 +113,7 @@ private:
 
     // Non math helpers
 
-    static bool isEqual(const Type &a, const Type &b, float epsilon) { a.isSame(b, epsilon); }
+    static bool isEqual(const Type &a, const Type &b, float epsilon) { return a.isSame(b, epsilon); }
 
     FORCE_INLINE static bool isFinite(const Type &value) { return value.isFinite(); }
 };
@@ -381,7 +381,7 @@ private:
     static std::random_device rDevice;
 
     template <typename ClampType, typename ClampType1, typename ClampType2>
-    requires IsConvertible<ClampType, ClampType1, ClampType2> FORCE_INLINE static ClampType
+    requires TypeConvertibleTo<ClampType, ClampType1, ClampType2> FORCE_INLINE static ClampType
         clampInternal(const ClampType &value, const ClampType1 &min, const ClampType2 &max)
     {
         return MathHelper<ClampType>::clamp(value, ClampType(min), ClampType(max));

@@ -32,6 +32,7 @@ CONST_EXPR StringLiteralStore<TCHAR("IsBaseType")> ISBASETYPE_BRANCH_TAG;
 CONST_EXPR StringLiteralStore<TCHAR("DefineCtorPolicy")> DEFINECTORPOLICY_BRANCH_TAG;
 
 // Source tags
+CONST_EXPR StringLiteralStore<TCHAR("ReflectionTUDefine")> REFLECTIONTUDEF_TAG;
 CONST_EXPR StringLiteralStore<TCHAR("HeaderInclude")> INCLUDEHEADER_TAG;
 CONST_EXPR StringLiteralStore<TCHAR("AllRegisterTypes")> ALLREGISTERTYPES_SECTION_TAG;
 CONST_EXPR StringLiteralStore<TCHAR("QualifiedTypes")> QUALIFIEDTYPES_SECTION_TAG;
@@ -59,6 +60,7 @@ CONST_EXPR StringLiteralStore<TCHAR("EnumFieldMetaData")> ENUMFIELDMETADATA_TAG;
 // Classes section tags
 CONST_EXPR StringLiteralStore<TCHAR("InterfaceTypes")> INTERFACETYPES_SECTION_TAG;
 CONST_EXPR StringLiteralStore<TCHAR("IsAbstract")> ISABSTRACT_TAG;
+CONST_EXPR StringLiteralStore<TCHAR("DisableCtor")> DISABLECTOR_TAG;
 CONST_EXPR StringLiteralStore<TCHAR("Ctors")> CONSTRUCTORS_SECTION_TAG;
 CONST_EXPR StringLiteralStore<TCHAR("MemberFuncs")> MEMBERFUNCS_SECTION_TAG;
 CONST_EXPR StringLiteralStore<TCHAR("StaticFuncs")> STATICFUNCS_SECTION_TAG;
@@ -101,9 +103,17 @@ CONST_EXPR StringLiteralStore<TCHAR("registerTypeFactory")> REGISTERTYPEFACTORY_
 CONST_EXPR StringLiteralStore<TCHAR("ReflectedHeader")> REFLECTHEADER_TEMPLATE;
 CONST_EXPR StringLiteralStore<TCHAR("ReflectedSource")> REFLECTSOURCE_TEMPLATE;
 
-// Class build flags
+/**
+ * Class build flags
+ */
 // Marks a class type as reflected BaseClass for further extended reflection
 CONST_EXPR StringLiteralStore<TCHAR("BaseType")> BASETYPE_FLAG;
+// Does not add generated class function as exported,
+// This must be manually used if using end of class META_ANNOTATE() and exporting class itself.
 CONST_EXPR StringLiteralStore<TCHAR("NoExport")> NOEXPORT_FLAG;
+// To explicitly mark a class/struct abstract
+CONST_EXPR StringLiteralStore<TCHAR("Abstract")> ABSTRACT_FLAG;
+// To explicitly disable generating constructor/destructor or alloc functions for the class
+CONST_EXPR StringLiteralStore<TCHAR("DisableCtor")> DISABLE_CTOR_FLAG;
 CONST_EXPR StringLiteralStore<TCHAR("Interface")> INTERFACE_FLAG;
 } // namespace GeneratorConsts

@@ -10,33 +10,37 @@
  */
 
 #include "CoreObjectGC.h"
+#include "GCReferenceCollector.h"
 #include "CBEObject.h"
 #include "CBEPackage.h"
 #include "CBEObjectTypes.h"
 #include "CoreObjectsModule.h"
+#include "PropertyVisitorHelpers.h"
 #include "Property/PropertyHelper.h"
 #include "Visitors/FieldVisitors.h"
 
-namespace CBE
+namespace cbe
 {
-void INTERNAL_destroyCBEObject(CBE::Object *obj);
+void INTERNAL_destroyCBEObject(cbe::Object *obj);
 }
 
-void CoreObjectGC::deleteObject(CBE::Object *obj) const
+uint64 CoreObjectGC::deleteObject(cbe::Object *obj) const
 {
     CoreObjectsDB &objsDb = CoreObjectsModule::objectsDB();
     if (objsDb.hasObject(obj->getStringID()))
     {
         // Deleting obj and its sub objects
-        std::vector<CBE::Object *> subObjs;
+        std::vector<cbe::Object *> subObjs;
         subObjs.emplace_back(obj);
         objsDb.getSubobjects(subObjs, obj->getStringID());
         // Need to reverse so that children will be destroyed before parent
         for (auto rItr = subObjs.crbegin(); rItr != subObjs.crend(); ++rItr)
         {
-            CBE::INTERNAL_destroyCBEObject(*rItr);
+            cbe::INTERNAL_destroyCBEObject(*rItr);
         }
+        return subObjs.size();
     }
+    return 0;
 }
 
 void CoreObjectGC::collectFromRefCollectors(TickRep &budgetTicks)
@@ -45,17 +49,17 @@ void CoreObjectGC::collectFromRefCollectors(TickRep &budgetTicks)
 
     StopWatch collectionSW;
 
-    std::vector<CBE::Object *> objects;
-    std::vector<CBE::Object *> markedDelete;
+    std::vector<cbe::Object *> objects;
+    std::vector<cbe::Object *> markedDelete;
     for (IReferenceCollector *refCollector : refCollectors)
     {
         objects.resize(0);
         refCollector->collectReferences(objects);
         markedDelete.reserve(objects.size());
 
-        for (CBE::Object *obj : objects)
+        for (cbe::Object *obj : objects)
         {
-            if (BIT_SET(obj->getFlags(), CBE::EObjectFlagBits::MarkedForDelete))
+            if (BIT_SET(obj->getFlags(), cbe::EObjectFlagBits::ObjFlag_MarkedForDelete))
             {
                 markedDelete.emplace_back(obj);
             }
@@ -63,7 +67,7 @@ void CoreObjectGC::collectFromRefCollectors(TickRep &budgetTicks)
             {
                 // Assumes that caller ensures that objUsedFlags are populated and available
                 // throughout collection
-                objUsedFlags[obj->getType()][CBE::INTERNAL_ObjectCoreAccessors::getAllocIdx(obj)] = true;
+                objUsedFlags[obj->getType()][cbe::INTERNAL_ObjectCoreAccessors::getAllocIdx(obj)] = true;
             }
         }
 
@@ -91,25 +95,26 @@ void CoreObjectGC::markObjectsAsValid(TickRep &budgetTicks)
         auto allocatorItr = gCBEObjectAllocators->find(clazz);
         debugAssert(allocatorItr != gCBEObjectAllocators->end());
 
-        for (CBE::Object *obj : allocatorItr->second->getAllObjects<CBE::Object>())
+        for (cbe::Object *obj : allocatorItr->second->getAllObjects<cbe::Object>())
         {
             // Only mark as valid if object not marked for delete already and
             // If object is marked explicitly as root or default then we must not delete it
-            if (BIT_NOT_SET(obj->getFlags(), CBE::EObjectFlagBits::MarkedForDelete)
-                && BIT_SET(obj->getFlags(), CBE::EObjectFlagBits::RootObject | CBE::EObjectFlagBits::Default))
+            if (BIT_NOT_SET(obj->getFlags(), cbe::EObjectFlagBits::ObjFlag_MarkedForDelete)
+                && ANY_BIT_SET(obj->getFlags(), cbe::EObjectFlagBits::ObjFlag_RootObject | cbe::EObjectFlagBits::ObjFlag_Default))
             {
-                classObjsFlag[CBE::INTERNAL_ObjectCoreAccessors::getAllocIdx(obj)] = true;
+                classObjsFlag[cbe::INTERNAL_ObjectCoreAccessors::getAllocIdx(obj)] = true;
             }
         }
     }
     // Mark all packages as valid if it has any subobject
     {
-        BitArray<uint64> &packagesFlag = objUsedFlags[CBE::Package::staticType()];
-        for (CBE::Package *package : (*gCBEObjectAllocators)[CBE::Package::staticType()]->getAllObjects<CBE::Package>())
+        alertOnce(gCBEObjectAllocators->contains(cbe::Package::staticType()));
+        BitArray<uint64> &packagesFlag = objUsedFlags[cbe::Package::staticType()];
+        for (cbe::Package *package : (*gCBEObjectAllocators)[cbe::Package::staticType()]->getAllObjects<cbe::Package>())
         {
-            if (BIT_NOT_SET(package->getFlags(), CBE::EObjectFlagBits::MarkedForDelete) && objsDb.hasChild(package->getStringID()))
+            if (BIT_NOT_SET(package->getFlags(), cbe::EObjectFlagBits::ObjFlag_MarkedForDelete) && objsDb.hasChild(package->getStringID()))
             {
-                packagesFlag[CBE::INTERNAL_ObjectCoreAccessors::getAllocIdx(package)] = true;
+                packagesFlag[cbe::INTERNAL_ObjectCoreAccessors::getAllocIdx(package)] = true;
             }
         }
     }
@@ -137,15 +142,15 @@ void CoreObjectGC::clearUnused(TickRep &budgetTicks)
         auto allocatorItr = gCBEObjectAllocators->find(classesLeft.back());
         if (allocatorItr != gCBEObjectAllocators->end())
         {
-            CBE::ObjectAllocatorBase *allocator = allocatorItr->second;
+            cbe::ObjectAllocatorBase *allocator = allocatorItr->second;
 
-            CBE::ObjectAllocatorBase::AllocIdx allocIdx = 0;
+            cbe::ObjectAllocatorBase::AllocIdx allocIdx = 0;
             for (bool bSet : objFlags)
             {
                 // If valid and not used then we delete it
                 if (allocator->isValid(allocIdx) && !bSet)
                 {
-                    deleteObject(allocator->getAt<CBE::Object>(allocIdx));
+                    lastClearCount += deleteObject(allocator->getAt<cbe::Object>(allocIdx));
                 }
                 allocIdx++;
             }
@@ -178,7 +183,7 @@ void CoreObjectGC::startNewGC(TickRep &budgetTicks)
     classesLeft.clear();
     objUsedFlags.reserve(gCBEObjectAllocators->size());
     classesLeft.reserve(gCBEObjectAllocators->size());
-    for (const std::pair<CBEClass const, CBE::ObjectAllocatorBase *> &classAllocator : *gCBEObjectAllocators)
+    for (const std::pair<CBEClass const, cbe::ObjectAllocatorBase *> &classAllocator : *gCBEObjectAllocators)
     {
         objUsedFlags[classAllocator.first].resize(classAllocator.second->size());
         classesLeft.emplace_back(classAllocator.first);
@@ -248,15 +253,12 @@ struct GCObjectVisitableUserData
 {
     std::unordered_map<CBEClass, BitArray<uint64>> *objUsedFlags;
     // Object we are inside, This is to ignore adding reference to itself
-    CBE::Object *thisObj = nullptr;
+    cbe::Object *thisObj = nullptr;
     void *pNext = nullptr;
 };
 
 struct GCObjectFieldVisitable
 {
-    static void visitMap(const MapProperty *mapProp, void *val, const PropertyInfo &propInfo, void *userData);
-    static void visitSet(const ContainerProperty *setProp, void *val, const PropertyInfo &propInfo, void *userData);
-
     // Ignore fundamental and special types, we need none const custom types or pointers
     template <typename Type>
     static void visit(Type *val, const PropertyInfo &propInfo, void *userData)
@@ -268,12 +270,16 @@ struct GCObjectFieldVisitable
         {
         case EPropertyType::MapType:
         {
-            visitMap(static_cast<const MapProperty *>(prop), val, propInfo, userData);
+            PropertyVisitorHelper::visitEditMapEntriesPtrOnly<GCObjectFieldVisitable>(
+                static_cast<const MapProperty *>(prop), val, propInfo, userData
+            );
             break;
         }
         case EPropertyType::SetType:
         {
-            visitSet(static_cast<const ContainerProperty *>(prop), val, propInfo, userData);
+            PropertyVisitorHelper::visitEditSetEntries<GCObjectFieldVisitable>(
+                static_cast<const ContainerProperty *>(prop), val, propInfo, userData
+            );
             break;
         }
         case EPropertyType::ArrayType:
@@ -322,20 +328,21 @@ struct GCObjectFieldVisitable
         {
         case EPropertyType::ClassType:
         {
-            debugAssert(PropertyHelper::isChildOf(static_cast<CBEClass>(prop), CBE::Object::staticType()));
+            debugAssert(PropertyHelper::isChildOf(static_cast<CBEClass>(prop), cbe::Object::staticType()));
 
             GCObjectVisitableUserData *gcUserData = (GCObjectVisitableUserData *)(userData);
-            CBE::Object **objPtrPtr = reinterpret_cast<CBE::Object **>(ptr);
-            CBE::Object *objPtr = *objPtrPtr;
+            cbe::Object **objPtrPtr = reinterpret_cast<cbe::Object **>(ptr);
+            cbe::Object *objPtr = *objPtrPtr;
             if (objPtr && objPtr != gcUserData->thisObj)
             {
-                if (BIT_SET(objPtr->getFlags(), CBE::EObjectFlagBits::MarkedForDelete))
+                // No need to check if Deleted flag as that happens only when no references where found
+                if (BIT_SET(objPtr->getFlags(), cbe::EObjectFlagBits::ObjFlag_MarkedForDelete))
                 {
                     (*objPtrPtr) = nullptr;
                 }
                 else
                 {
-                    (*gcUserData->objUsedFlags)[objPtr->getType()][CBE::INTERNAL_ObjectCoreAccessors::getAllocIdx(objPtr)] = true;
+                    (*gcUserData->objUsedFlags)[objPtr->getType()][cbe::INTERNAL_ObjectCoreAccessors::getAllocIdx(objPtr)] = true;
                 }
             }
             break;
@@ -346,7 +353,9 @@ struct GCObjectFieldVisitable
         case EPropertyType::ArrayType:
         case EPropertyType::PairType:
         default:
-            alertIf(false, "Unhandled ptr to ptr Field name %s, type %s", propInfo.fieldProperty->nameString, *propInfo.thisProperty->typeInfo);
+            alertAlwaysf(
+                false, "Unhandled ptr to ptr Field name %s, type %s", propInfo.fieldProperty->nameString, *propInfo.thisProperty->typeInfo
+            );
             break;
         }
     }
@@ -357,20 +366,20 @@ struct GCObjectFieldVisitable
         {
         case EPropertyType::ClassType:
         {
-            debugAssert(PropertyHelper::isChildOf(static_cast<CBEClass>(prop), CBE::Object::staticType()));
+            debugAssert(PropertyHelper::isChildOf(static_cast<CBEClass>(prop), cbe::Object::staticType()));
 
             GCObjectVisitableUserData *gcUserData = (GCObjectVisitableUserData *)(userData);
-            const CBE::Object **objPtrPtr = reinterpret_cast<const CBE::Object **>(ptr);
-            const CBE::Object *objPtr = *objPtrPtr;
+            const cbe::Object **objPtrPtr = reinterpret_cast<const cbe::Object **>(ptr);
+            const cbe::Object *objPtr = *objPtrPtr;
             if (objPtr && objPtr != gcUserData->thisObj)
             {
-                if (BIT_SET(objPtr->getFlags(), CBE::EObjectFlagBits::MarkedForDelete))
+                if (BIT_SET(objPtr->getFlags(), cbe::EObjectFlagBits::ObjFlag_MarkedForDelete))
                 {
                     (*objPtrPtr) = nullptr;
                 }
                 else
                 {
-                    (*gcUserData->objUsedFlags)[objPtr->getType()][CBE::INTERNAL_ObjectCoreAccessors::getAllocIdx(objPtr)] = true;
+                    (*gcUserData->objUsedFlags)[objPtr->getType()][cbe::INTERNAL_ObjectCoreAccessors::getAllocIdx(objPtr)] = true;
                 }
             }
             break;
@@ -381,146 +390,13 @@ struct GCObjectFieldVisitable
         case EPropertyType::ArrayType:
         case EPropertyType::PairType:
         default:
-            alertIf(
+            alertAlwaysf(
                 false, "Unhandled ptr to const ptr Field name %s, type %s", propInfo.fieldProperty->nameString, *propInfo.thisProperty->typeInfo
             );
             break;
         }
     }
 };
-
-void GCObjectFieldVisitable::visitMap(const MapProperty *mapProp, void *val, const PropertyInfo &propInfo, void *userData)
-{
-    const IterateableDataRetriever *dataRetriever = static_cast<const IterateableDataRetriever *>(mapProp->dataRetriever);
-    const TypedProperty *keyProp = static_cast<const TypedProperty *>(mapProp->keyProp);
-    const TypedProperty *valueProp = static_cast<const TypedProperty *>(mapProp->valueProp);
-
-    // map key can be either fundamental or special or struct or class ptr but it can never be custom
-    // types fundamental or special cannot hold pointer to CBE::Object so only struct and pointer is left
-    if (PropertyHelper::getUnqualified(keyProp)->type == EPropertyType::ClassType)
-    {
-        // 2 times the data is needed to copy current and new value, to be removed and added later
-        uint8 *bufferData = (uint8 *)CBEMemory::memAlloc(mapProp->pairSize * (dataRetriever->size(val) * 2 + 1), mapProp->pairAlignment);
-        uint8 *tempData = bufferData;
-        bufferData += mapProp->pairSize;
-
-        // First - original data, Second - replacement data. both are key value pairs
-        std::vector<std::pair<uint8 *, uint8 *>> editedKeys;
-        for (auto itrPtr = dataRetriever->createIterator(val); itrPtr->isValid(); itrPtr->iterateFwd())
-        {
-            void *keyPtr = itrPtr->getElement();
-            void *valPtr = static_cast<MapIteratorWrapper *>(itrPtr.get())->value();
-
-            CBEMemory::memZero(tempData, mapProp->pairSize);
-            dataRetriever->copyTo(keyPtr, tempData);
-            FieldVisitor::visit<GCObjectFieldVisitable>(keyProp, tempData, userData);
-            // If both original and temp new keys are equal then we do not have to replace entry
-            if (dataRetriever->equals(keyPtr, tempData))
-            {
-                // Copy back key just in case pointer is not used for hashing or equality
-                // checks
-                dataRetriever->copyTo(tempData, keyPtr);
-                // visit the value
-                FieldVisitor::visit<GCObjectFieldVisitable>(valueProp, valPtr, userData);
-            }
-            else
-            {
-                std::pair<uint8 *, uint8 *> originalToNewPairs;
-                originalToNewPairs.first = bufferData;
-                bufferData += mapProp->pairSize;
-                originalToNewPairs.second = bufferData;
-                bufferData += mapProp->pairSize;
-                // Copy original
-                dataRetriever->copyTo(keyPtr, originalToNewPairs.first);
-                // Copy new key and value
-                dataRetriever->copyTo(tempData, originalToNewPairs.second);
-                // visit the value
-                FieldVisitor::visit<GCObjectFieldVisitable>(valueProp, originalToNewPairs.second + mapProp->secondOffset, userData);
-
-                editedKeys.emplace_back(std::move(originalToNewPairs));
-            }
-        }
-
-        for (const std::pair<uint8 *, uint8 *> &originalToNewPairs : editedKeys)
-        {
-            dataRetriever->remove(val, originalToNewPairs.first);
-            dataRetriever->add(val, originalToNewPairs.second);
-        }
-
-        CBEMemory::memFree(tempData);
-    }
-    else // Only value can have pointer
-    {
-        for (auto itrPtr = dataRetriever->createIterator(val); itrPtr->isValid(); itrPtr->iterateFwd())
-        {
-            FieldVisitor::visit<GCObjectFieldVisitable>(valueProp, static_cast<MapIteratorWrapper *>(itrPtr.get())->value(), userData);
-        }
-    }
-}
-
-void GCObjectFieldVisitable::visitSet(const ContainerProperty *setProp, void *val, const PropertyInfo &propInfo, void *userData)
-{
-    const IterateableDataRetriever *dataRetriever = static_cast<const IterateableDataRetriever *>(setProp->dataRetriever);
-    const TypedProperty *elementProp = static_cast<const TypedProperty *>(setProp->elementProp);
-
-    // set key can be either fundamental or special or struct or class ptr but it can never be custom
-    // types fundamental or special cannot hold pointer to CBE::Object so only struct and pointer is left
-    if (PropertyHelper::getUnqualified(elementProp)->type == EPropertyType::ClassType)
-    {
-        // 2 times the data is needed to copy current and new value, to be removed and added later
-        uint8 *bufferData
-            = (uint8 *)CBEMemory::memAlloc(elementProp->typeInfo->size * (dataRetriever->size(val) * 2 + 1), elementProp->typeInfo->alignment);
-        uint8 *tempData = bufferData;
-        bufferData += elementProp->typeInfo->size;
-
-        // First - original data, Second - replacement data.
-        std::vector<std::pair<uint8 *, uint8 *>> editedKeys;
-        for (auto itrPtr = dataRetriever->createIterator(val); itrPtr->isValid(); itrPtr->iterateFwd())
-        {
-            void *elemPtr = itrPtr->getElement();
-
-            CBEMemory::memZero(tempData, elementProp->typeInfo->size);
-            dataRetriever->copyTo(elemPtr, tempData);
-            FieldVisitor::visit<GCObjectFieldVisitable>(elementProp, tempData, userData);
-            // If both original and temp new keys are equal then we do not have to replace entry
-            if (dataRetriever->equals(elemPtr, tempData))
-            {
-                // Copy back key just in case pointer is not used for hashing or equality
-                // checks
-                dataRetriever->copyTo(tempData, elemPtr);
-            }
-            else
-            {
-                std::pair<uint8 *, uint8 *> originalToNewPairs;
-                originalToNewPairs.first = bufferData;
-                bufferData += elementProp->typeInfo->size;
-                originalToNewPairs.second = bufferData;
-                bufferData += elementProp->typeInfo->size;
-                // Copy original
-                dataRetriever->copyTo(elemPtr, originalToNewPairs.first);
-                // Copy new key and value
-                dataRetriever->copyTo(tempData, originalToNewPairs.second);
-
-                editedKeys.emplace_back(std::move(originalToNewPairs));
-            }
-        }
-
-        for (const std::pair<uint8 *, uint8 *> &originalToNewPairs : editedKeys)
-        {
-            dataRetriever->remove(val, originalToNewPairs.first);
-            dataRetriever->add(val, originalToNewPairs.second);
-        }
-
-        CBEMemory::memFree(tempData);
-    }
-    else // Only value can have pointer
-    {
-        for (auto itrPtr = dataRetriever->createIterator(val); itrPtr->isValid(); itrPtr->iterateFwd())
-        {
-            FieldVisitor::visit<GCObjectFieldVisitable>(elementProp, itrPtr->getElement(), userData);
-        }
-    }
-}
 
 void CoreObjectGC::collectObjects(TickRep &budgetTicks)
 {
@@ -540,18 +416,18 @@ void CoreObjectGC::collectObjects(TickRep &budgetTicks)
         debugAssert(allocatorItr != gCBEObjectAllocators->end());
         // Collect
         {
-            CBE::ObjectAllocatorBase *allocator = allocatorItr->second;
+            cbe::ObjectAllocatorBase *allocator = allocatorItr->second;
 
             // Right now we are only going through static fields of classes that has object
             // created from it. We are not using static in struct as well Create a separate
             // collection pass to collect from static field of all class properties in
-            // CBE::Object hierarchy However storing referenced object in statics is not wise so
+            // cbe::Object hierarchy However storing referenced object in statics is not wise so
             // we do only as below or we could never scan any statics?
             FieldVisitor::visitStaticFields<GCObjectFieldVisitable>(classesLeft.back(), &userData);
 
-            for (CBE::Object *obj : allocator->getAllObjects<CBE::Object>())
+            for (cbe::Object *obj : allocator->getAllObjects<cbe::Object>())
             {
-                if (BIT_NOT_SET(obj->getFlags(), CBE::EObjectFlagBits::MarkedForDelete))
+                if (BIT_NOT_SET(obj->getFlags(), cbe::EObjectFlagBits::ObjFlag_MarkedForDelete))
                 {
                     userData.thisObj = obj;
                     FieldVisitor::visitFields<GCObjectFieldVisitable>(classesLeft.back(), obj, &userData);
@@ -572,6 +448,7 @@ void CoreObjectGC::collectObjects(TickRep &budgetTicks)
         }
     }
 
+    lastClearCount = 0;
     state = EGCState::Clearing;
     // Setup classes left for clearing
     classesLeft.reserve(objUsedFlags.size());
