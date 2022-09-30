@@ -19,9 +19,11 @@
 
 void WgEditorImGuiLayer::draw(ImGuiDrawInterface *drawInterface)
 {
-    bool bShowDemoOpen = true;
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_FirstUseEver);
-    ImGui::ShowDemoWindow(&bShowDemoOpen);
+    if (bShowDemo)
+    {
+        ImGui::ShowDemoWindow(&bShowDemo);
+    }
 
     ImGuiViewport *viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(viewport->Pos);
@@ -121,7 +123,7 @@ void WgEditorImGuiLayer::addMenubar(ImGuiDrawInterface *drawInterface)
         if (ImGui::BeginMenu("Developer"))
         {
             ImGui::MenuItem("CoPaT stats", nullptr, &bShowJobQueueStats);
-
+            ImGui::MenuItem("Show ImGUI demo", nullptr, &bShowDemo);
             ImGui::EndMenu();
         }
 

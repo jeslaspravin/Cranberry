@@ -146,10 +146,10 @@ void tempTest()
     }
 #endif
 
-    // const TChar *meshPath = TCHAR("D:/Workspace/Blender/Exports/Sponza.obj");
-    // const TChar *meshName = TCHAR("Sponza");
-    const TChar *meshPath = TCHAR("D:/Workspace/Blender/Exports/TestScene.obj");
-    const TChar *meshName = TCHAR("TestScene");
+    const TChar *meshPath = TCHAR("D:/Workspace/Blender/Exports/Sponza.obj");
+    const TChar *meshName = TCHAR("Sponza");
+    // const TChar *meshPath = TCHAR("D:/Workspace/Blender/Exports/TestScene.obj");
+    // const TChar *meshName = TCHAR("TestScene");
     if (cbe::World *sceneObj = cbe::getOrLoad<cbe::World>(meshName))
     {
         gCBEEngine->worldManager()->initWorld(sceneObj, true);

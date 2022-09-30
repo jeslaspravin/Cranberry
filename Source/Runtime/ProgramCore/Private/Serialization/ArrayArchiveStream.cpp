@@ -67,8 +67,6 @@ uint8 ArrayArchiveStream::readBackwardAt(SizeT idx) const
     return buffer[cursor - idx];
 }
 
-bool ArrayArchiveStream::isAvailable() const { return true; }
-
 bool ArrayArchiveStream::hasMoreData(SizeT requiredByteCount) const { return isAvailable() && (cursor + requiredByteCount) <= buffer.size(); }
 
 uint64 ArrayArchiveStream::cursorPos() const { return cursor; }

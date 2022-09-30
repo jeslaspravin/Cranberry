@@ -15,6 +15,8 @@
 #include "Serialization/ObjectArchive.h"
 #include "Serialization/BinaryArchive.h"
 
+class ArrayArchiveStream;
+
 namespace cbe
 {
 class Package;
@@ -36,6 +38,9 @@ private:
     UPtrInt delayLinkPtrMask = 0;
     SizeT streamStartAt;
     BinaryArchive packageArchive;
+
+    // Only should be set if not going to serialize from file by default
+    ArrayArchiveStream *inStream = nullptr;
 
 private:
     /**
@@ -65,6 +70,8 @@ public:
     void prepareLoader();
     EPackageLoadSaveResult load();
     void unload();
+
+    void setInStreamer(ArrayArchiveStream *stream) { inStream = stream; }
 
     FORCE_INLINE cbe::Package *getPackage() const { return package; }
     FORCE_INLINE const std::vector<PackageContainedData> &getContainedObjects() const { return containedObjects; }

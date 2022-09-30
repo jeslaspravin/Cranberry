@@ -866,6 +866,7 @@ void EngineRenderScene::createRenderInfo(cbe::RenderableComponent *comp, SizeT c
 
     // TODO(Jeslas): Remove below demo code
     compRenderInfo.shaderName = TCHAR("SingleColor");
+    compRenderInfo.materialID = comp->getName();
     addCompMaterialData(compRenderInfoIdx);
     addCompInstanceData(compRenderInfoIdx);
 }
@@ -1456,7 +1457,7 @@ copat::NormalFuncAwaiter EngineRenderScene::recreateMaterialBuffers(
 
                 SizeT matIdx;
                 const bool bAllocated = newShaderMats.second.materialAllocTracker.allocate(1, 1, matIdx);
-                debugAssertf(bAllocated, "Allocation failed(This must never happen unless OOM!)");
+                fatalAssertf(bAllocated, "Allocation failed(This must never happen unless OOM!)");
 
                 newShaderMats.second.materialToIdx[compRenderInfo.materialID] = matIdx;
                 newShaderMats.second.materialRefs[matIdx] = 1;
@@ -1884,7 +1885,7 @@ void EngineRenderScene::renderTheSceneRenderThread(
 
         GraphicsPipelineState pipelineState;
         pipelineState.pipelineQuery.drawMode = EPolygonDrawMode::Fill;
-        pipelineState.pipelineQuery.cullingMode = ECullingMode::BackFace;
+        pipelineState.pipelineQuery.cullingMode = ECullingMode::None;
         for (const std::pair<const String, MaterialShaderParams> &shaderMats : shaderToMaterials)
         {
             LocalPipelineContext pipelineCntxt;
