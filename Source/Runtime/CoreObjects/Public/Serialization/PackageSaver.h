@@ -15,6 +15,8 @@
 #include "Serialization/ObjectArchive.h"
 #include "Serialization/BinaryArchive.h"
 
+class ArrayArchiveStream;
+
 namespace cbe
 {
 class Package;
@@ -32,6 +34,8 @@ private:
     std::vector<PackageDependencyData> dependentObjects;
 
     BinaryArchive packageArchive;
+    // Only should be set if not going to serialize to file by default
+    ArrayArchiveStream *outStream = nullptr;
 
 public:
     PackageSaver(cbe::Package *savingPackage);
@@ -48,6 +52,8 @@ public:
     }
     ObjectArchive &serialize(cbe::Object *&obj) final;
     /* Overrides ends */
+
+    void setOutStreamer(ArrayArchiveStream *stream) { outStream = stream; }
 
 private:
     void setupContainedObjs();

@@ -163,9 +163,10 @@ GraphicsPipelineConfig writeGbufferShaderConfig(String &pipelineName, const Shad
 
     GraphicsPipelineConfig config;
 
-    config.supportedCullings.resize(2);
+    config.supportedCullings.resize(3);
     config.supportedCullings[0] = ECullingMode::FrontFace;
     config.supportedCullings[1] = ECullingMode::BackFace;
+    config.supportedCullings[1] = ECullingMode::None;
 
     config.allowedDrawModes.resize(2);
     config.allowedDrawModes[0] = EPolygonDrawMode::Fill;

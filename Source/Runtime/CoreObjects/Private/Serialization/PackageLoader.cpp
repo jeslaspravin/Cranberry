@@ -9,8 +9,9 @@
  *  License can be read in LICENSE file at this repository's root
  */
 
+#include "Types/Platform/LFS/File/FileHelper.h"
 #include "Serialization/PackageLoader.h"
-#include "Serialization/FileArchiveStream.h"
+#include "Serialization/ArrayArchiveStream.h"
 #include "Serialization/PackageData.h"
 #include "Visitors/FieldVisitors.h"
 #include "PropertyVisitorHelpers.h"
@@ -320,10 +321,18 @@ ObjectArchive &PackageLoader::serialize(cbe::Object *&obj)
 
 void PackageLoader::prepareLoader()
 {
-    FileArchiveStream fileStream{ packageFilePath, true };
-    fatalAssertf(fileStream.isAvailable(), "Package %s at %s cannot be read!", package->getName(), packageFilePath);
+    ArrayArchiveStream archiveStream;
+    ArrayArchiveStream *archiveStreamPtr = inStream;
+    if (inStream == nullptr)
+    {
+        std::vector<uint8> fileData;
+        bool bRead = FileHelper::readBytes(fileData, packageFilePath);
+        fatalAssertf(bRead, "Package %s at %s cannot be read!", package->getName(), packageFilePath);
+        archiveStream.setBuffer(fileData);
+        archiveStreamPtr = &archiveStream;
+    }
 
-    packageArchive.setStream(&fileStream);
+    packageArchive.setStream(&archiveStream);
     // Set custom versions to this archive to ensure custom versions are available in ObjectArchive
     for (const std::pair<const uint32, uint32> &customVersion : packageArchive.getCustomVersions())
     {
@@ -339,12 +348,12 @@ void PackageLoader::prepareLoader()
     // Try reading the marker
     {
         StringID packageMarker;
-        SizeT packageHeaderStart = fileStream.cursorPos();
+        SizeT packageHeaderStart = archiveStreamPtr->cursorPos();
         (*static_cast<ObjectArchive *>(this)) << packageMarker;
         if (packageMarker != PACKAGE_ARCHIVE_MARKER)
         {
             LOG_WARN("PackageLoader", "Package marker not found in %s, Trying to load binary stream as marked package!", packageFilePath);
-            fileStream.moveBackward(fileStream.cursorPos() - packageHeaderStart);
+            archiveStreamPtr->moveBackward(archiveStreamPtr->cursorPos() - packageHeaderStart);
         }
     }
     (*static_cast<ObjectArchive *>(this)) << containedObjects;
@@ -357,7 +366,7 @@ void PackageLoader::prepareLoader()
     debugAssert(BIT_SET(clearSentinelBits, containedObjects.size() - 1));
     CLEAR_BITS(delayLinkPtrMask, clearSentinelBits);
 
-    streamStartAt = fileStream.cursorPos();
+    streamStartAt = archiveStreamPtr->cursorPos();
 
     alertAlwaysf(!containedObjects.empty(), "Empty package %s at %s", package->getName(), packageFilePath);
     CoreObjectDelegates::broadcastPackageScanned(this);
@@ -365,25 +374,33 @@ void PackageLoader::prepareLoader()
 
 EPackageLoadSaveResult PackageLoader::load()
 {
-    FileArchiveStream fileStream{ packageFilePath, true };
-    if (!fileStream.isAvailable())
+    ArrayArchiveStream archiveStream;
+    ArrayArchiveStream *archiveStreamPtr = inStream;
+    if (inStream == nullptr)
     {
-        alertAlwaysf(fileStream.isAvailable(), "Package %s at %s cannot be read!", package->getName(), packageFilePath);
-        return EPackageLoadSaveResult::IOError;
+        std::vector<uint8> fileData;
+        bool bRead = FileHelper::readBytes(fileData, packageFilePath);
+        if (!bRead)
+        {
+            alertAlwaysf(bRead, "Package %s at %s cannot be read!", package->getName(), packageFilePath);
+            return EPackageLoadSaveResult::IOError;
+        }
+        archiveStream.setBuffer(fileData);
+        archiveStreamPtr = &archiveStream;
     }
 
-    packageArchive.setStream(&fileStream);
+    packageArchive.setStream(archiveStreamPtr);
 
     EPackageLoadSaveResult loadResult = EPackageLoadSaveResult::Success;
-    auto containedObjSerializer = [&loadResult, &fileStream, this](PackageContainedData &containedData)
+    auto containedObjSerializer = [&loadResult, archiveStreamPtr, this](PackageContainedData &containedData)
     {
-        if (fileStream.cursorPos() > containedData.streamStart)
+        if (archiveStreamPtr->cursorPos() > containedData.streamStart)
         {
-            fileStream.moveBackward(fileStream.cursorPos() - containedData.streamStart);
+            archiveStreamPtr->moveBackward(archiveStreamPtr->cursorPos() - containedData.streamStart);
         }
         else
         {
-            fileStream.moveForward(containedData.streamStart - fileStream.cursorPos());
+            archiveStreamPtr->moveForward(containedData.streamStart - archiveStreamPtr->cursorPos());
         }
 
         if (containedData.object.isValid() && BIT_SET(containedData.object->getFlags(), cbe::EObjectFlagBits::ObjFlag_PackageLoadPending))
@@ -398,7 +415,7 @@ EPackageLoadSaveResult PackageLoader::load()
             );
 
             // Check serialized size to ensure we are matching that was saved
-            SizeT serializedSize = fileStream.cursorPos() - containedData.streamStart;
+            SizeT serializedSize = archiveStreamPtr->cursorPos() - containedData.streamStart;
             if (serializedSize != containedData.streamSize)
             {
                 alertAlwaysf(
@@ -406,7 +423,8 @@ EPackageLoadSaveResult PackageLoader::load()
                     "Corrupted package %s for object %s consider using Custom version and handle versioning! Written out size for object %llu "
                     "is "
                     "not same as read size %llu",
-                    package->getName(), containedData.objectPath, containedData.streamSize, (fileStream.cursorPos() - containedData.streamStart)
+                    package->getName(), containedData.objectPath, containedData.streamSize,
+                    (archiveStreamPtr->cursorPos() - containedData.streamStart)
                 );
                 // It is okay to continue as it is just warning
                 loadResult = EPackageLoadSaveResult::WithWarnings;

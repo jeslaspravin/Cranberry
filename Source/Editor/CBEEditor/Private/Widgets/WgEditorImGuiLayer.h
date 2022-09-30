@@ -17,6 +17,7 @@
 class WgEditorImGuiLayer : public IImGuiLayer
 {
 private:
+    bool bShowDemo = false;
     bool bShowAbout = false;
     bool bShowJobQueueStats = false;
 

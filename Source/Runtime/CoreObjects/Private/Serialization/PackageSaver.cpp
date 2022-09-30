@@ -11,7 +11,8 @@
 
 #include "Serialization/PackageSaver.h"
 #include "Types/Platform/LFS/PathFunctions.h"
-#include "Serialization/FileArchiveStream.h"
+#include "Types/Platform/LFS/File/FileHelper.h"
+#include "Serialization/ArrayArchiveStream.h"
 #include "ObjectPathHelpers.h"
 #include "CoreObjectsDB.h"
 #include "ICoreObjectsModule.h"
@@ -117,16 +118,11 @@ EPackageLoadSaveResult PackageSaver::savePackage()
     }
     SizeT finalPackageSize = containedObjects.back().streamStart + containedObjects.back().streamSize;
 
-    // Step 5 : Setup file stream to write
-    String packagePath = package->getPackageFilePath();
-    FileArchiveStream fileStream(packagePath, false);
-    if (!fileStream.isAvailable())
-    {
-        LOG_ERROR("PackageSaver", "Failed to open file stream to save package %s at %s", package->getName(), packagePath);
-        return EPackageLoadSaveResult::IOError;
-    }
-    fileStream.allocate(finalPackageSize);
-    packageArchive.setStream(&fileStream);
+    // Step 5 : Setup Array stream to write
+    ArrayArchiveStream archiveStream;
+    ArrayArchiveStream *archiveStreamPtr = outStream ? outStream : &archiveStream;
+    archiveStreamPtr->allocate(finalPackageSize);
+    packageArchive.setStream(archiveStreamPtr);
 
     // Step 6 : Write into archive
     (*static_cast<ObjectArchive *>(this)) << *const_cast<StringID *>(&PACKAGE_ARCHIVE_MARKER);
@@ -138,7 +134,16 @@ EPackageLoadSaveResult PackageSaver::savePackage()
     }
     packageArchive.setStream(nullptr);
 
-    CoreObjectDelegates::broadcastPackageSaved(package);
+    if (outStream == nullptr)
+    {
+        String packagePath = package->getPackageFilePath();
+        if (!FileHelper::writeBytes(archiveStreamPtr->getBuffer(), packagePath))
+        {
+            LOG_ERROR("PackageSaver", "Failed to open file stream to save package %s at %s", package->getName(), packagePath);
+            return EPackageLoadSaveResult::IOError;
+        }
+        CoreObjectDelegates::broadcastPackageSaved(package);
+    }
 
     return EPackageLoadSaveResult::Success;
 }

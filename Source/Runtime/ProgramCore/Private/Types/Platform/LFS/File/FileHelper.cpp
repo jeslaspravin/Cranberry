@@ -267,7 +267,7 @@ bool FileHelper::writeString(const String &content, const String &fileName)
     return false;
 }
 
-bool FileHelper::writeBytes(std::vector<uint8> &bytes, const String &fileName)
+bool FileHelper::writeBytes(const std::vector<uint8> &bytes, const String &fileName)
 {
     PlatformFile file(fileName);
     file.setSharingMode(EFileSharing::ReadOnly);
