@@ -176,11 +176,8 @@ bool ApplicationInstance::appTick()
     {
         fontManager->flushUpdates();
     }
-    if (hasActiveWindow())
-    {
-        tickWindowWidgets();
-    }
 
+    tickWindowWidgets();
     // Application tick
     onTick();
 

@@ -47,6 +47,5 @@ public:
     void setWorldViewport(SharedPtr<WorldViewport> inViewport) { worldViewport = inViewport; }
 
 private:
-
     void navigateScene();
 };

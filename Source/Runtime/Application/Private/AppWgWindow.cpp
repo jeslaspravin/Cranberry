@@ -245,50 +245,53 @@ void ApplicationInstance::onWindowDestroyed(GenericAppWindow *appWindow)
 
 void ApplicationInstance::tickWindowWidgets()
 {
-    SharedPtr<WgWindow> window = getActiveWindow();
-    debugAssert(window);
+    if (hasActiveWindow())
+    {
+        SharedPtr<WgWindow> window = getActiveWindow();
+        debugAssert(window);
 
-    for (Keys::StateKeyType key : Keys::Range())
-    {
-        const KeyState *state = inputSystem->keyState(*key);
-        if (state->keyWentDown || state->keyWentUp)
+        for (Keys::StateKeyType key : Keys::Range())
         {
-            // We do not want to pass input keys to inactive/not focused window
-            window->inputKey(key, *state, inputSystem);
+            const KeyState *state = inputSystem->keyState(*key);
+            if (state->keyWentDown || state->keyWentUp)
+            {
+                // We do not want to pass input keys to inactive/not focused window
+                window->inputKey(key, *state, inputSystem);
+            }
         }
-    }
-    for (AnalogStates::StateKeyType key : AnalogStates::Range())
-    {
-        const AnalogStates::StateInfoType *state = inputSystem->analogState(key);
-        if (state->acceleration != 0.0f || state->currentValue != 0.0f)
+        for (AnalogStates::StateKeyType key : AnalogStates::Range())
         {
-            window->analogKey(key, *state, inputSystem);
+            const AnalogStates::StateInfoType *state = inputSystem->analogState(key);
+            if (state->acceleration != 0.0f || state->currentValue != 0.0f)
+            {
+                window->analogKey(key, *state, inputSystem);
+            }
         }
-    }
 
-    const AnalogStates::StateInfoType *screenMouseX = inputSystem->analogState(AnalogStates::AbsMouseX);
-    const AnalogStates::StateInfoType *screenMouseY = inputSystem->analogState(AnalogStates::AbsMouseY);
-    Short2D mouseScreenPos(int16(screenMouseX->currentValue), int16(screenMouseY->currentValue));
-    GenericAppWindow *appWnd = windowManager->findWindowUnder(mouseScreenPos);
-    SharedPtr<WgWindow> wndWidget = appWnd ? windowWidgets[appWnd] : nullptr;
-    if (lastHoverWnd != wndWidget)
-    {
-        if (lastHoverWnd)
+        const AnalogStates::StateInfoType *screenMouseX = inputSystem->analogState(AnalogStates::AbsMouseX);
+        const AnalogStates::StateInfoType *screenMouseY = inputSystem->analogState(AnalogStates::AbsMouseY);
+        Short2D mouseScreenPos(int16(screenMouseX->currentValue), int16(screenMouseY->currentValue));
+        GenericAppWindow *appWnd = windowManager->findWindowUnder(mouseScreenPos);
+        SharedPtr<WgWindow> wndWidget = appWnd ? windowWidgets[appWnd] : nullptr;
+        if (lastHoverWnd != wndWidget)
+        {
+            if (lastHoverWnd)
+            {
+                Short2D mouseAbsPos = lastHoverWnd->screenToWgWindowSpace(mouseScreenPos);
+                lastHoverWnd->mouseLeave(mouseAbsPos, mouseAbsPos, inputSystem);
+            }
+            lastHoverWnd = wndWidget;
+            if (lastHoverWnd)
+            {
+                Short2D mouseAbsPos = lastHoverWnd->screenToWgWindowSpace(mouseScreenPos);
+                lastHoverWnd->mouseEnter(mouseAbsPos, mouseAbsPos, inputSystem);
+            }
+        }
+        if (lastHoverWnd && (screenMouseX->acceleration != 0.0f || screenMouseY->acceleration != 0.0f))
         {
             Short2D mouseAbsPos = lastHoverWnd->screenToWgWindowSpace(mouseScreenPos);
-            lastHoverWnd->mouseLeave(mouseAbsPos, mouseAbsPos, inputSystem);
+            lastHoverWnd->mouseMoved(mouseAbsPos, mouseAbsPos, inputSystem);
         }
-        lastHoverWnd = wndWidget;
-        if (lastHoverWnd)
-        {
-            Short2D mouseAbsPos = lastHoverWnd->screenToWgWindowSpace(mouseScreenPos);
-            lastHoverWnd->mouseEnter(mouseAbsPos, mouseAbsPos, inputSystem);
-        }
-    }
-    if (lastHoverWnd && (screenMouseX->acceleration != 0.0f || screenMouseY->acceleration != 0.0f))
-    {
-        Short2D mouseAbsPos = lastHoverWnd->screenToWgWindowSpace(mouseScreenPos);
-        lastHoverWnd->mouseMoved(mouseAbsPos, mouseAbsPos, inputSystem);
     }
 
     for (const std::pair<GenericAppWindow *const, SharedPtr<WgWindow>> window : windowWidgets)

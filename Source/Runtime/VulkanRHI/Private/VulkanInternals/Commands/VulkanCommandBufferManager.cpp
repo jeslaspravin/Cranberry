@@ -1324,17 +1324,10 @@ void VulkanResourcesTracker::clearFinishedCmd(const GraphicsResource *cmdBuffer)
             resAccessorItr->second.lastWrite = nullptr;
         }
 
-        auto newEnd = std::remove_if(
-            resAccessorItr->second.lastReadsIn.begin(), resAccessorItr->second.lastReadsIn.end(),
-            [cmdBuffer](const GraphicsResource *cmd)
-            {
-                return cmd == cmdBuffer;
-            }
-        );
-        resAccessorItr->second.lastReadsIn.erase(newEnd, resAccessorItr->second.lastReadsIn.end());
+        SizeT erasedCount = std::erase(resAccessorItr->second.lastReadsIn, cmdBuffer);
 
-        // if there is nothing using it any more remove it
-        if (resAccessorItr->second.lastWrite == nullptr && resAccessorItr->second.lastReadsIn.empty())
+        // if there is no last write or if there was read after write and all read is finished and empty, Then clear it
+        if ((resAccessorItr->second.lastWrite == nullptr || erasedCount > 0) && resAccessorItr->second.lastReadsIn.empty())
         {
             resAccessorItr = resourcesAccessors.erase(resAccessorItr);
         }
