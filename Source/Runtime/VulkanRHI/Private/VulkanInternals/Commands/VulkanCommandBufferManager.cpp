@@ -9,11 +9,12 @@
  *  License can be read in LICENSE file at this repository's root
  */
 
-#include <optional>
+#include <variant>
 #include <unordered_set>
 
 #include "Types/Platform/PlatformAssertionErrors.h"
 #include "Types/Platform/PlatformFunctions.h"
+#include "Types/Templates/TemplateTypes.h"
 #include "VulkanInternals/Commands/VulkanCommandBufferManager.h"
 #include "VulkanInternals/Resources/VulkanMemoryResources.h"
 #include "VulkanInternals/Resources/VulkanQueueResource.h"
@@ -541,7 +542,7 @@ const GraphicsResource *VulkanCmdBufferManager::getCmdBuffer(const String &cmdNa
     return nullptr;
 }
 
-uint32 VulkanCmdBufferManager::getQueueFamilyIdx(EQueueFunction queue) const { return pools.at(queue).cmdPoolInfo.vulkanQueueIndex; }
+uint32 VulkanCmdBufferManager::getQueueFamilyIdx(EQueueFunction queue) const { return pools.find(queue)->second.cmdPoolInfo.vulkanQueueIndex; }
 
 uint32 VulkanCmdBufferManager::getQueueFamilyIdx(const GraphicsResource *cmdBuffer) const
 {
@@ -1398,7 +1399,7 @@ void VulkanResourcesTracker::clearUnwanted()
 
     for (uint32 i = 0; i < ARRAY_LENGTH(queueTransfers); ++i)
     {
-        for (std::map<MemoryResource *, ResourceQueueTransferInfo>::iterator itr = queueTransfers[i].begin(); itr != queueTransfers[i].end();)
+        for (std::map<MemoryResource *, ResourceUsedQueue>::iterator itr = queueTransfers[i].begin(); itr != queueTransfers[i].end();)
         {
             if (!memResources.contains(itr->first))
             {
@@ -1410,29 +1411,51 @@ void VulkanResourcesTracker::clearUnwanted()
             }
         }
     }
+    for (auto itr = resourceReleases.begin(); itr != resourceReleases.end();)
+    {
+        if (!memResources.contains(itr->first))
+        {
+            itr = resourceReleases.erase(itr);
+        }
+        else
+        {
+            ++itr;
+        }
+    }
 }
 
-std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracker::readOnlyBuffers(
+VulkanResourcesTracker::OptionalBarrierInfo VulkanResourcesTracker::readOnlyBuffers(
     const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource
 )
 {
     const EQueueFunction cmdBufferQ = static_cast<const VulkanCommandBuffer *>(cmdBuffer)->fromQueue;
 
-    std::optional<ResourceBarrierInfo> outBarrierInfo;
+    OptionalBarrierInfo outBarrierInfo = {};
     ResourceAccessors &accessors = resourcesAccessors[resource.first];
     if (!accessors.lastWrite)
     {
         accessors.addLastReadInCmd(cmdBuffer);
         accessors.allReadStages |= resource.second;
         accessors.lastReadStages = resource.second;
+
+        // If nothing is found at least we might have to do queue transfers
+        auto resReleasedAtQItr = resourceReleases.find(resource.first.get());
+        if (resReleasedAtQItr != resourceReleases.cend())
+        {
+            outBarrierInfo = resReleasedAtQItr->second;
+            resourceReleases.erase(resReleasedAtQItr);
+        }
         return outBarrierInfo;
     }
+    // Clear the last release information since we do not need it anymore, Until further release
+    resourceReleases.erase(resource.first.get());
 
-    if (accessors.lastWrite == cmdBuffer)
+    if (accessors.lastReadsIn.empty())
     {
-        // If this is the first barrier within this command for this resource
-        if (accessors.lastReadsIn.empty())
+
+        if (accessors.lastWrite == cmdBuffer)
         {
+            // If this is the first barrier within this command for this resource
             ResourceBarrierInfo barrier;
             barrier.accessors.lastWrite = accessors.lastWrite;
             barrier.accessors.lastWriteStage = accessors.lastWriteStage;
@@ -1440,41 +1463,70 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
 
             outBarrierInfo = barrier;
         }
-    }
-    else
-    {
-        cmdWaitInfo[cmdBuffer].emplace_back(CommandResUsageInfo{ accessors.lastWrite, resource.second });
-        // if last write is not in this queue then we need barrier to do queue transfer
-        if (cmdBufferQ != static_cast<const VulkanCommandBuffer *>(accessors.lastWrite)->fromQueue)
+        else
         {
-            ResourceBarrierInfo barrier;
-            barrier.accessors.lastWrite = accessors.lastWrite;
-            barrier.accessors.lastWriteStage = accessors.lastWriteStage;
-            barrier.resource = resource.first;
-            outBarrierInfo = barrier;
+            cmdWaitInfo[cmdBuffer].emplace_back(CommandResUsageInfo{ accessors.lastWrite, resource.second });
+            // if last write is not in this queue then we need barrier to do queue transfer
+            if (cmdBufferQ != static_cast<const VulkanCommandBuffer *>(accessors.lastWrite)->fromQueue)
+            {
+                ResourceBarrierInfo barrier;
+                barrier.accessors.lastWrite = accessors.lastWrite;
+                barrier.accessors.lastWriteStage = accessors.lastWriteStage;
+                barrier.resource = resource.first;
+                outBarrierInfo = barrier;
+            }
         }
     }
+    else if (cmdBufferQ != static_cast<const VulkanCommandBuffer *>(accessors.lastReadsIn.back())->fromQueue)
+    {
+        cmdWaitInfo[cmdBuffer].emplace_back(CommandResUsageInfo{ accessors.lastReadsIn.back(), resource.second });
+
+        fatalAssertf(
+            cmdBufferQ != static_cast<const VulkanCommandBuffer *>(accessors.lastReadsIn.back())->fromQueue,
+            "This is valid usage however this case for read buffer is not supported in VulkanRenderCmdList"
+        );
+        ResourceBarrierInfo barrier;
+        barrier.accessors.lastWrite = nullptr;
+        barrier.accessors.lastWriteStage = 0;
+        barrier.accessors.addLastReadInCmd(accessors.lastReadsIn.back());
+        barrier.accessors.lastReadStages = accessors.lastReadStages;
+        barrier.accessors.allReadStages = accessors.allReadStages;
+        barrier.resource = resource.first;
+
+        outBarrierInfo = barrier;
+    }
+
     accessors.addLastReadInCmd(cmdBuffer);
     accessors.allReadStages |= resource.second;
     accessors.lastReadStages = resource.second;
     return outBarrierInfo;
 }
 
-std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracker::readOnlyImages(
+VulkanResourcesTracker::OptionalBarrierInfo VulkanResourcesTracker::readOnlyImages(
     const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource
 )
 {
     const EQueueFunction cmdBufferQ = static_cast<const VulkanCommandBuffer *>(cmdBuffer)->fromQueue;
 
-    std::optional<ResourceBarrierInfo> outBarrierInfo;
+    OptionalBarrierInfo outBarrierInfo = {};
     ResourceAccessors &accessors = resourcesAccessors[resource.first];
     if (!accessors.lastWrite)
     {
         accessors.addLastReadInCmd(cmdBuffer);
         accessors.allReadStages |= resource.second;
         accessors.lastReadStages = resource.second;
+
+        // If nothing is found at least we might have to do queue transfers
+        auto resReleasedAtQItr = resourceReleases.find(resource.first.get());
+        if (resReleasedAtQItr != resourceReleases.cend())
+        {
+            outBarrierInfo = resReleasedAtQItr->second;
+            resourceReleases.erase(resReleasedAtQItr);
+        }
         return outBarrierInfo;
     }
+    // Clear the last release information since we do not need it anymore, Until further release
+    resourceReleases.erase(resource.first.get());
 
     // If never read after last write, then layout needs transition before this read no matter write is
     // in this cmd or others
@@ -1518,35 +1570,35 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
     return outBarrierInfo;
 }
 
-std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracker::readOnlyTexels(
+VulkanResourcesTracker::OptionalBarrierInfo VulkanResourcesTracker::readOnlyTexels(
     const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource
 )
 {
     return readOnlyBuffers(cmdBuffer, resource);
 }
 
-std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracker::readFromWriteBuffers(
+VulkanResourcesTracker::OptionalBarrierInfo VulkanResourcesTracker::readFromWriteBuffers(
     const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource
 )
 {
     return readOnlyBuffers(cmdBuffer, resource);
 }
 
-std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracker::readFromWriteImages(
+VulkanResourcesTracker::OptionalBarrierInfo VulkanResourcesTracker::readFromWriteImages(
     const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource
 )
 {
     return readOnlyImages(cmdBuffer, resource);
 }
 
-std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracker::readFromWriteTexels(
+VulkanResourcesTracker::OptionalBarrierInfo VulkanResourcesTracker::readFromWriteTexels(
     const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource
 )
 {
     return readOnlyBuffers(cmdBuffer, resource);
 }
 
-std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracker::writeReadOnlyBuffers(
+VulkanResourcesTracker::OptionalBarrierInfo VulkanResourcesTracker::writeReadOnlyBuffers(
     const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource
 )
 {
@@ -1554,7 +1606,7 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
 
     const EQueueFunction cmdBufferQ = static_cast<const VulkanCommandBuffer *>(cmdBuffer)->fromQueue;
 
-    std::optional<ResourceBarrierInfo> outBarrierInfo;
+    OptionalBarrierInfo outBarrierInfo = {};
     VkPipelineStageFlagBits stageFlag = VkPipelineStageFlagBits(resource.second);
     ResourceAccessors &accessors = resourcesAccessors[resource.first];
     // If never read or write
@@ -1562,8 +1614,18 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
     {
         accessors.lastWrite = cmdBuffer;
         accessors.lastWriteStage = stageFlag;
+
+        // If nothing is found at least we might have to do queue transfers
+        auto resReleasedAtQItr = resourceReleases.find(resource.first.get());
+        if (resReleasedAtQItr != resourceReleases.cend())
+        {
+            outBarrierInfo = resReleasedAtQItr->second;
+            resourceReleases.erase(resReleasedAtQItr);
+        }
         return outBarrierInfo;
     }
+    // Clear the last release information since we do not need it anymore, Until further release
+    resourceReleases.erase(resource.first.get());
 
     // If we are already reading in this cmd buffer then all other steps are already done so wait for
     // just read to finish
@@ -1643,28 +1705,39 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
     return outBarrierInfo;
 }
 
-std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracker::writeReadOnlyImages(
+VulkanResourcesTracker::OptionalBarrierInfo VulkanResourcesTracker::writeReadOnlyImages(
     const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource
 )
 {
     fatalAssertf(PlatformFunctions::getSetBitCount(resource.second) == 1, "Writing to image in several pipeline stages is incorrect");
 
-    std::optional<ResourceBarrierInfo> outBarrierInfo;
+    OptionalBarrierInfo outBarrierInfo = {};
     VkPipelineStageFlagBits stageFlag = VkPipelineStageFlagBits(resource.second);
     ResourceAccessors &accessors = resourcesAccessors[resource.first];
     // If never read or write
     if (!accessors.lastWrite && accessors.lastReadsIn.empty())
     {
-        // Since image layout for Read/writes img depends on caller, use empty read write case to
-        // handle it
-        ResourceBarrierInfo barrier;
 
         accessors.lastWrite = cmdBuffer;
         accessors.lastWriteStage = stageFlag;
 
-        outBarrierInfo = barrier;
+        // If nothing is found at least we might have to do queue transfers
+        auto resReleasedAtQItr = resourceReleases.find(resource.first.get());
+        if (resReleasedAtQItr != resourceReleases.cend())
+        {
+            outBarrierInfo = resReleasedAtQItr->second;
+            resourceReleases.erase(resReleasedAtQItr);
+        }
+        else
+        {
+            // Since image layout for Read/writes img depends on caller, use empty read write case to handle it
+            outBarrierInfo = ResourceBarrierInfo{};
+        }
+
         return outBarrierInfo;
     }
+    // Clear the last release information since we do not need it anymore, Until further release
+    resourceReleases.erase(resource.first.get());
 
     // If we are already reading in this cmd buffer then all other steps are already done so wait for
     // just read to finish
@@ -1729,44 +1802,59 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
     return outBarrierInfo;
 }
 
-std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracker::writeReadOnlyTexels(
+VulkanResourcesTracker::OptionalBarrierInfo VulkanResourcesTracker::writeReadOnlyTexels(
     const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource
 )
 {
     return writeReadOnlyBuffers(cmdBuffer, resource);
 }
 
-std::optional<VulkanResourcesTracker::ResourceBarrierInfo>
+VulkanResourcesTracker::OptionalBarrierInfo
     VulkanResourcesTracker::writeBuffers(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource)
 {
     return writeReadOnlyBuffers(cmdBuffer, resource);
 }
 
-std::optional<VulkanResourcesTracker::ResourceBarrierInfo>
+VulkanResourcesTracker::OptionalBarrierInfo
     VulkanResourcesTracker::writeImages(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource)
 {
     return writeReadOnlyImages(cmdBuffer, resource);
 }
 
-std::optional<VulkanResourcesTracker::ResourceBarrierInfo>
+VulkanResourcesTracker::OptionalBarrierInfo
     VulkanResourcesTracker::writeTexels(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource)
 {
     return writeReadOnlyBuffers(cmdBuffer, resource);
 }
 
-std::optional<VulkanResourcesTracker::ResourceBarrierInfo>
+VulkanResourcesTracker::OptionalBarrierInfo
     VulkanResourcesTracker::imageToGeneralLayout(const GraphicsResource *cmdBuffer, const ImageResourceRef &resource)
 {
-    std::optional<ResourceBarrierInfo> outBarrierInfo;
+    OptionalBarrierInfo outBarrierInfo = {};
 
     auto accessorsItr = resourcesAccessors.find(resource);
     if (accessorsItr != resourcesAccessors.end())
     {
         if (accessorsItr->second.lastWrite || !accessorsItr->second.lastReadsIn.empty())
         {
-            outBarrierInfo = ResourceBarrierInfo();
-            outBarrierInfo->accessors = accessorsItr->second;
-            outBarrierInfo->resource = resource;
+            ResourceBarrierInfo barrier;
+            barrier.accessors = accessorsItr->second;
+            barrier.resource = resource;
+
+            outBarrierInfo = barrier;
+
+            // Clear the last release information since we do not need it anymore, Until further release
+            resourceReleases.erase(resource.get());
+        }
+        else
+        {
+            // If nothing is found at least we might have to do queue transfers
+            auto resReleasedAtQItr = resourceReleases.find(resource.get());
+            if (resReleasedAtQItr != resourceReleases.cend())
+            {
+                outBarrierInfo = resReleasedAtQItr->second;
+                resourceReleases.erase(resReleasedAtQItr);
+            }
         }
         accessorsItr->second.allReadStages = accessorsItr->second.lastReadStages = 0;
         accessorsItr->second.lastReadsIn.clear();
@@ -1776,10 +1864,10 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo>
     return outBarrierInfo;
 }
 
-std::optional<VulkanResourcesTracker::ResourceBarrierInfo>
+VulkanResourcesTracker::OptionalBarrierInfo
     VulkanResourcesTracker::colorAttachmentWrite(const GraphicsResource *cmdBuffer, const ImageResourceRef &resource)
 {
-    std::optional<ResourceBarrierInfo> outBarrierInfo;
+    OptionalBarrierInfo outBarrierInfo = {};
     VkPipelineStageFlagBits stageFlag = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
     ResourceAccessors &accessors = resourcesAccessors[resource];
 
@@ -1789,8 +1877,17 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo>
         accessors.lastWrite = cmdBuffer;
         accessors.lastWriteStage = stageFlag;
 
+        // If nothing is found at least we might have to do queue transfers
+        auto resReleasedAtQItr = resourceReleases.find(resource.get());
+        if (resReleasedAtQItr != resourceReleases.cend())
+        {
+            outBarrierInfo = resReleasedAtQItr->second;
+            resourceReleases.erase(resReleasedAtQItr);
+        }
         return outBarrierInfo;
     }
+    // Clear the last release information since we do not need it anymore, Until further release
+    resourceReleases.erase(resource.get());
 
     // If not read in same cmd buffer then there is other cmds that are reading so wait for those cmds,
     // Transition is not necessary as load/clear either way layout will be compatible
@@ -1824,8 +1921,8 @@ void VulkanResourcesTracker::addResourceToQTransfer(
     VkImageLayout imageLayout, bool bReset
 )
 {
-    std::map<MemoryResource *, ResourceQueueTransferInfo> &queueReleaseInfo = queueTransfers[queueToQTransferIdx(queueType)];
-    ResourceQueueTransferInfo &qTransferInfo = queueReleaseInfo[resource.get()];
+    std::map<MemoryResource *, ResourceUsedQueue> &queueReleaseInfo = queueTransfers[queueToQTransferIdx(queueType)];
+    ResourceUsedQueue &qTransferInfo = queueReleaseInfo[resource.get()];
     qTransferInfo.srcLayout = imageLayout;
     if (bReset)
     {
@@ -1843,8 +1940,8 @@ void VulkanResourcesTracker::addResourceToQTransfer(
     EQueueFunction queueType, const MemoryResourceRef &resource, VkPipelineStageFlags2 usedInStages, VkAccessFlags2 accessFlags, bool bReset
 )
 {
-    std::map<MemoryResource *, ResourceQueueTransferInfo> &queueReleaseInfo = queueTransfers[queueToQTransferIdx(queueType)];
-    ResourceQueueTransferInfo &qTransferInfo = queueReleaseInfo[resource.get()];
+    std::map<MemoryResource *, ResourceUsedQueue> &queueReleaseInfo = queueTransfers[queueToQTransferIdx(queueType)];
+    ResourceUsedQueue &qTransferInfo = queueReleaseInfo[resource.get()];
     if (bReset)
     {
         qTransferInfo.srcStages = usedInStages;
@@ -1857,9 +1954,30 @@ void VulkanResourcesTracker::addResourceToQTransfer(
     }
 }
 
-std::map<MemoryResource *, VulkanResourcesTracker::ResourceQueueTransferInfo>
-    VulkanResourcesTracker::getReleasesFromQueue(EQueueFunction queueType)
+std::map<MemoryResource *, VulkanResourcesTracker::ResourceUsedQueue> VulkanResourcesTracker::getReleasesFromQueue(EQueueFunction queueType)
 {
-    std::map<MemoryResource *, ResourceQueueTransferInfo> &queueReleaseInfo = queueTransfers[queueToQTransferIdx(queueType)];
+    std::map<MemoryResource *, ResourceUsedQueue> &queueReleaseInfo = queueTransfers[queueToQTransferIdx(queueType)];
     return std::move(queueReleaseInfo);
+}
+
+void VulkanResourcesTracker::releaseResourceAt(
+    EQueueFunction queueType, const MemoryResourceRef &resource, VkPipelineStageFlags2 usedInStages, VkAccessFlags2 accessFlags
+)
+{
+    ResourceReleasedFromQueue &releaseAtQ = resourceReleases[resource.get()];
+    releaseAtQ.lastReleasedQ = queueType;
+    releaseAtQ.srcStages = usedInStages;
+    releaseAtQ.srcAccessMask = accessFlags;
+}
+
+void VulkanResourcesTracker::releaseResourceAt(
+    EQueueFunction queueType, const MemoryResourceRef &resource, VkPipelineStageFlags2 usedInStages, VkAccessFlags2 accessFlags,
+    VkImageLayout imageLayout
+)
+{
+    ResourceReleasedFromQueue &releaseAtQ = resourceReleases[resource.get()];
+    releaseAtQ.lastReleasedQ = queueType;
+    releaseAtQ.srcStages = usedInStages;
+    releaseAtQ.srcAccessMask = accessFlags;
+    releaseAtQ.srcLayout = imageLayout;
 }

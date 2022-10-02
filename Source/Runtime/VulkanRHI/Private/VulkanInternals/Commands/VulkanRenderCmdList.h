@@ -185,5 +185,5 @@ public:
     void waitIdle() final;
     void waitOnResDepCmds(const MemoryResourceRef &resource) final;
     void flushAllcommands() final;
-    bool hasCmdsUsingResource(const MemoryResourceRef &resource) final;
+    bool hasCmdsUsingResource(const MemoryResourceRef &resource, bool bFinishCmds) final;
 };

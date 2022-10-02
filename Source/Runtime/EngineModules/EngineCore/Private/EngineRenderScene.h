@@ -25,6 +25,8 @@
 #include "RenderInterface/Rendering/IRenderCommandList.h"
 #include "RenderInterface/Resources/BufferedResources.h"
 
+#include <bitset>
+
 struct DrawIndexedIndirectCommand;
 namespace copat
 {
@@ -203,9 +205,12 @@ private:
 
     struct MaterialShaderParams
     {
+        constexpr static const uint32 DRAWLIST_BUFFERED_COUNT = VERTEX_TYPE_COUNT * BUFFER_COUNT;
         // Draw lists are for main GBuffer pass. For lights and other rendering passes separate draw list must be maintained
-        BufferResourceRef drawListPerVertType[VERTEX_TYPE_COUNT * BUFFER_COUNT];
-        uint32 drawListCounts[VERTEX_TYPE_COUNT * BUFFER_COUNT] = {};
+        BufferResourceRef drawListPerVertType[DRAWLIST_BUFFERED_COUNT];
+        uint32 drawListCounts[DRAWLIST_BUFFERED_COUNT] = {};
+        // If the draw counts data buffer is at least copied once, This is to avoid unnecessary barrier before first copy
+        std::bitset<DRAWLIST_BUFFERED_COUNT> drawListCopied;
         std::vector<DrawIndexedIndirectCommand> cpuDrawListPerVertType[VERTEX_TYPE_COUNT];
 
         BufferResourceRef materialData;
@@ -221,6 +226,7 @@ private:
         std::vector<BatchCopyBufferData> drawListCopies;
         std::vector<BatchCopyBufferInfo> materialCopies;
         std::vector<BatchCopyBufferData> hostToMatCopies;
+        bool bMatsCopied = false;
     };
 
     uint64 frameCount = 0;
@@ -235,12 +241,16 @@ private:
 
     bool bVertexUpdating = false;
     VerticesPerVertType vertexBuffers[VERTEX_TYPE_COUNT];
+    // If the vertex and index buffer is at least copied once, This is to avoid unnecessary barrier before first copy
+    std::bitset<VERTEX_TYPE_COUNT> vertIdxBufferCopied;
 
     bool bMaterialsUpdating = false;
     std::unordered_map<String, MaterialShaderParams> shaderToMaterials;
 
     bool bInstanceParamsUpdating = false;
     InstanceParamsPerVertType instancesData[VERTEX_TYPE_COUNT];
+    // If the instances data buffer is at least copied once, This is to avoid unnecessary barrier before first copy
+    std::bitset<VERTEX_TYPE_COUNT> instanceDataCopied;
 
     // Scene common data
     RingBufferedResource<ShaderParametersRef, BUFFER_COUNT> bindlessSet;

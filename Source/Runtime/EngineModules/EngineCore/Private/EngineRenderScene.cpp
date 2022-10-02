@@ -171,9 +171,9 @@ const RendererIntermTexture *SceneRenderTexturePool::getTexture(IRenderCommandLi
         // Must be valid if present in poolTextures
         debugAssert(intermTexture.renderTargetResource().isValid());
 
-        if (!cmdList->hasCmdsUsingResource(intermTexture.renderTargetResource())
+        if (!cmdList->hasCmdsUsingResource(intermTexture.renderTargetResource(), /*bFinishCmds*/ false)
             && (intermTexture.renderTargetResource() == intermTexture.renderResource()
-                || !cmdList->hasCmdsUsingResource(intermTexture.renderResource())))
+                || !cmdList->hasCmdsUsingResource(intermTexture.renderResource(), /*bFinishCmds*/ false)))
         {
             return &intermTexture;
         }
@@ -210,9 +210,9 @@ void SceneRenderTexturePool::clearUnused(IRenderCommandList *cmdList)
             // Must be valid if present in poolTextures
             debugAssert(intermTexture.renderTargetResource().isValid());
 
-            if (!cmdList->hasCmdsUsingResource(intermTexture.renderTargetResource())
+            if (!cmdList->hasCmdsUsingResource(intermTexture.renderTargetResource(), /*bFinishCmds*/ false)
                 && (intermTexture.renderTargetResource() == intermTexture.renderResource()
-                    || !cmdList->hasCmdsUsingResource(intermTexture.renderResource())))
+                    || !cmdList->hasCmdsUsingResource(intermTexture.renderResource(), /*bFinishCmds*/ false)))
             {
                 safeToDeleteRts.emplace_back(intermTexture.renderTargetResource());
                 if (intermTexture.renderTargetResource() != intermTexture.renderResource())
@@ -925,6 +925,7 @@ void EngineRenderScene::performTransferCopies(
             }
             if (!allCopies.empty())
             {
+                vertIdxBufferCopied.set();
                 cmdList->cmdCopyBuffer(cmdBuffer, allCopies);
             }
         }
@@ -943,6 +944,7 @@ void EngineRenderScene::performTransferCopies(
                 );
                 shaderMaterials.second.materialCopies.clear();
                 shaderMaterials.second.hostToMatCopies.clear();
+                shaderMaterials.second.bMatsCopied = true;
             }
             if (!allCopies.empty())
             {
@@ -973,10 +975,12 @@ void EngineRenderScene::performTransferCopies(
             if (!allCopies.empty())
             {
                 cmdList->cmdCopyBuffer(cmdBuffer, allCopies);
+                instanceDataCopied.set();
             }
             if (!allHostToDeviceCopies.empty())
             {
                 cmdList->cmdCopyToBuffer(cmdBuffer, allHostToDeviceCopies);
+                instanceDataCopied.set();
             }
         }
 
@@ -989,6 +993,7 @@ void EngineRenderScene::performTransferCopies(
                     perFrameCopies.end(), shaderMaterials.second.drawListCopies.cbegin(), shaderMaterials.second.drawListCopies.cend()
                 );
                 shaderMaterials.second.drawListCopies.clear();
+                shaderMaterials.second.drawListCopied.set();
             }
             // Always next one will be written to
             bindlessSet.peek(1)->pullBufferParamUpdates(perFrameCopies, cmdList, graphicsInstance);
@@ -1245,11 +1250,13 @@ copat::NormalFuncAwaiter EngineRenderScene::recreateSceneVertexBuffers(
         newSceneVerts.meshes.reserve(sceneVerts.meshes.size() + newSceneVerts.meshesToAdd.size());
 
         newSceneVerts.vertices = graphicsHelper->createReadOnlyVertexBuffer(graphicsInstance, vertexStride, newVertsCount);
-        newSceneVerts.vertices->setResourceName(world.getObjectName() + TCHAR("_") + EVertexType::toString(EVertexType::Type(vertType)));
+        newSceneVerts.vertices->setResourceName(
+            world.getObjectName() + TCHAR("_") + EVertexType::toString(EVertexType::Type(vertType)) + TCHAR("_Vertices"));
         newSceneVerts.vertices->init();
 
         newSceneVerts.indices = graphicsHelper->createReadOnlyIndexBuffer(graphicsInstance, idxStride, newIdxsCount);
-        newSceneVerts.indices->setResourceName(world.getObjectName() + TCHAR("_Indices"));
+        newSceneVerts.indices->setResourceName(
+            world.getObjectName() + TCHAR("_") + EVertexType::toString(EVertexType::Type(vertType)) + TCHAR("_Indices"));
         newSceneVerts.indices->init();
     }
 
@@ -1344,6 +1351,9 @@ copat::NormalFuncAwaiter EngineRenderScene::recreateSceneVertexBuffers(
         {
             continue;
         }
+
+        vertIdxBufferCopied[vertType] = false;
+
         // Move all the data to scene's vertex buffer struct
         sceneVerts.vertices = std::move(newSceneVerts.vertices);
         sceneVerts.indices = std::move(newSceneVerts.indices);
@@ -1480,6 +1490,7 @@ copat::NormalFuncAwaiter EngineRenderScene::recreateMaterialBuffers(
     {
         MaterialShaderParams &shaderMats = shaderToMaterials[newShaderMats.first];
 
+        shaderMats.bMatsCopied = false;
         shaderMats.materialData = std::move(newShaderMats.second.materialData);
         shaderMats.shaderParameter = std::move(newShaderMats.second.shaderParameter);
         shaderMats.materialAllocTracker = std::move(newShaderMats.second.materialAllocTracker);
@@ -1610,6 +1621,8 @@ copat::NormalFuncAwaiter EngineRenderScene::recreateInstanceBuffers(
             continue;
         }
 
+        instanceDataCopied[vertType] = false;
+
         instances.instanceData = std::move(newInstances.instanceData);
         instances.allocTracker = std::move(newInstances.allocTracker);
         instances.shaderParameter = std::move(newInstances.shaderParameter);
@@ -1709,6 +1722,7 @@ void EngineRenderScene::createNextDrawList(
                 bufferRes->init();
 
                 shaderMats.drawListPerVertType[drawListIdx] = bufferRes;
+                shaderMats.drawListCopied[drawListIdx] = false;
             }
 
             // Now issue copies
@@ -1752,64 +1766,60 @@ void EngineRenderScene::renderTheSceneRenderThread(
     indirectDrawBarriers.reserve(VERTEX_TYPE_COUNT * shaderToMaterials.size());
     for (uint32 vertType = EVertexType::TypeStart; vertType != EVertexType::TypeEnd; ++vertType)
     {
-        // When buffering count is 2, there might be at max 1 frame in flight no need to transfer in that case
-        if constexpr (BUFFER_COUNT > 2)
+        if (!vertexBuffers[vertType].copies.empty())
         {
-            if (!vertexBuffers[vertType].copies.empty())
-            {
-                transferReleases[vertexBuffers[vertType].indices] = EQueueFunction::Transfer;
-                transferReleases[vertexBuffers[vertType].vertices] = EQueueFunction::Transfer;
-            }
+            transferReleases[vertexBuffers[vertType].indices] = EQueueFunction::Transfer;
+            transferReleases[vertexBuffers[vertType].vertices] = EQueueFunction::Transfer;
+        }
 
-            if (!(instancesData[vertType].copies.empty() && instancesData[vertType].hostToBufferCopies.empty()))
-            {
-                transferReleases[instancesData[vertType].instanceData] = EQueueFunction::Transfer;
-            }
+        if (!(instancesData[vertType].copies.empty() && instancesData[vertType].hostToBufferCopies.empty()))
+        {
+            transferReleases[instancesData[vertType].instanceData] = EQueueFunction::Transfer;
         }
 
         // Add to barrier this read
-        if (instancesData[vertType].shaderParameter)
+        if (instancesData[vertType].shaderParameter && instanceDataCopied[vertType])
         {
             resBarriers.emplace_back(instancesData[vertType].shaderParameter);
         }
-        if (vertexBuffers[vertType].indices && vertexBuffers[vertType].vertices)
+        if (vertIdxBufferCopied[vertType] && vertexBuffers[vertType].vertices && vertexBuffers[vertType].indices)
         {
             vertexBarriers.emplace_back(vertexBuffers[vertType].vertices);
             indexBarriers.emplace_back(vertexBuffers[vertType].indices);
         }
     }
+
+    bool bHasAnyDraws = false;
     for (const std::pair<const String, MaterialShaderParams> &shaderMats : shaderToMaterials)
     {
-        if constexpr (BUFFER_COUNT > 2)
+        if (!(shaderMats.second.materialCopies.empty() && shaderMats.second.hostToMatCopies.empty()))
         {
-            if (!(shaderMats.second.materialCopies.empty() && shaderMats.second.hostToMatCopies.empty()))
-            {
-                transferReleases[shaderMats.second.materialData] = EQueueFunction::Transfer;
-            }
+            transferReleases[shaderMats.second.materialData] = EQueueFunction::Transfer;
+        }
 
-            if (!shaderMats.second.drawListCopies.empty())
+        if (!shaderMats.second.drawListCopies.empty())
+        {
+            for (uint32 vertType = EVertexType::TypeStart; vertType != EVertexType::TypeEnd; ++vertType)
             {
-                for (uint32 vertType = EVertexType::TypeStart; vertType != EVertexType::TypeEnd; ++vertType)
-                {
-                    transferReleases[shaderMats.second.drawListPerVertType[vertType * BUFFER_COUNT + bufferedWriteOffset]]
-                        = EQueueFunction::Transfer;
-                }
+                transferReleases[shaderMats.second.drawListPerVertType[vertType * BUFFER_COUNT + bufferedWriteOffset]]
+                    = EQueueFunction::Transfer;
             }
         }
 
         // To barrier this read
-        bool bHasAnyDraws = false;
+        bool bHasAnyMatDraws = false;
         for (uint32 vertType = EVertexType::TypeStart; vertType != EVertexType::TypeEnd; ++vertType)
         {
             uint32 drawListIdx = vertType * BUFFER_COUNT + bufferedReadOffset;
-            if (shaderMats.second.drawListCounts[drawListIdx] != 0)
+            if (shaderMats.second.drawListCounts[drawListIdx] != 0 && shaderMats.second.drawListCopied[drawListIdx])
             {
-                bHasAnyDraws = true;
+                bHasAnyMatDraws = true;
                 indirectDrawBarriers.emplace_back(shaderMats.second.drawListPerVertType[drawListIdx]);
             }
         }
-        if (bHasAnyDraws)
+        if (bHasAnyMatDraws && shaderMats.second.bMatsCopied && shaderMats.second.shaderParameter)
         {
+            bHasAnyDraws = true;
             resBarriers.emplace_back(shaderMats.second.shaderParameter);
         }
     }
@@ -1866,64 +1876,69 @@ void EngineRenderScene::renderTheSceneRenderThread(
         defaultPipelineCntxt.renderpassFormat = ERenderPassFormat::Multibuffer;
         renderMan->preparePipelineContext(&defaultPipelineCntxt, gbufferRts);
 
-        cmdList->cmdBarrierResources(cmdBuffer, resBarriers);
-        cmdList->cmdBarrierVertices(cmdBuffer, vertexBarriers);
-        cmdList->cmdBarrierIndices(cmdBuffer, indexBarriers);
-        cmdList->cmdBarrierIndirectDraws(cmdBuffer, indirectDrawBarriers);
+        if (bHasAnyDraws)
+        {
+            cmdList->cmdBarrierResources(cmdBuffer, resBarriers);
+            cmdList->cmdBarrierVertices(cmdBuffer, vertexBarriers);
+            cmdList->cmdBarrierIndices(cmdBuffer, indexBarriers);
+            cmdList->cmdBarrierIndirectDraws(cmdBuffer, indirectDrawBarriers);
+        }
 
         RenderPassAdditionalProps additionalProps{ .bAllowUndefinedLayout = true };
-        cmdList->cmdBeginRenderPass(cmdBuffer, defaultPipelineCntxt, viewport, additionalProps, clearVal);
-        // This has to be upside down along y
-        QuantizedBox2D drawViewport{
-            {                        0, viewParams.viewportSize.y},
-            {viewParams.viewportSize.x,                         0}
-        };
-        cmdList->cmdSetViewportAndScissor(cmdBuffer, drawViewport, scissor);
-
-        ShaderParametersRef commonDescSets[] = { frameBindlessParam, frameSceneViewParam };
-        cmdList->cmdBindDescriptorsSets(cmdBuffer, defaultPipelineCntxt, commonDescSets);
-
-        GraphicsPipelineState pipelineState;
-        pipelineState.pipelineQuery.drawMode = EPolygonDrawMode::Fill;
-        pipelineState.pipelineQuery.cullingMode = ECullingMode::None;
-        for (const std::pair<const String, MaterialShaderParams> &shaderMats : shaderToMaterials)
+        SCOPED_RENDERPASS(cmdList, cmdBuffer, defaultPipelineCntxt, viewport, additionalProps, clearVal, ToGBuffer);
+        if (bHasAnyDraws)
         {
-            LocalPipelineContext pipelineCntxt;
-            pipelineCntxt.materialName = shaderMats.first;
-            pipelineCntxt.renderpassFormat = ERenderPassFormat::Multibuffer;
-            pipelineCntxt.forVertexType = EVertexType::StaticMesh;
-            renderMan->preparePipelineContext(&pipelineCntxt, gbufferRts);
-            cmdList->cmdBindDescriptorsSets(cmdBuffer, pipelineCntxt, { &shaderMats.second.shaderParameter, 1 });
-            for (uint32 vertType = EVertexType::TypeStart; vertType != EVertexType::TypeEnd; ++vertType)
+            // This has to be upside down along y
+            QuantizedBox2D drawViewport{
+                {                        0, viewParams.viewportSize.y},
+                {viewParams.viewportSize.x,                         0}
+            };
+            cmdList->cmdSetViewportAndScissor(cmdBuffer, drawViewport, scissor);
+
+            ShaderParametersRef commonDescSets[] = { frameBindlessParam, frameSceneViewParam };
+            cmdList->cmdBindDescriptorsSets(cmdBuffer, defaultPipelineCntxt, commonDescSets);
+
+            GraphicsPipelineState pipelineState;
+            pipelineState.pipelineQuery.drawMode = EPolygonDrawMode::Fill;
+            pipelineState.pipelineQuery.cullingMode = ECullingMode::None;
+            for (const std::pair<const String, MaterialShaderParams> &shaderMats : shaderToMaterials)
             {
-                uint32 drawListIdx = vertType * BUFFER_COUNT + bufferedReadOffset;
-                if (shaderMats.second.drawListCounts[drawListIdx] == 0)
-                {
-                    continue;
-                }
-
-                pipelineCntxt.forVertexType = EVertexType::Type(vertType);
+                LocalPipelineContext pipelineCntxt;
+                pipelineCntxt.materialName = shaderMats.first;
+                pipelineCntxt.renderpassFormat = ERenderPassFormat::Multibuffer;
+                pipelineCntxt.forVertexType = EVertexType::StaticMesh;
                 renderMan->preparePipelineContext(&pipelineCntxt, gbufferRts);
+                cmdList->cmdBindDescriptorsSets(cmdBuffer, pipelineCntxt, { &shaderMats.second.shaderParameter, 1 });
+                for (uint32 vertType = EVertexType::TypeStart; vertType != EVertexType::TypeEnd; ++vertType)
+                {
+                    uint32 drawListIdx = vertType * BUFFER_COUNT + bufferedReadOffset;
+                    if (shaderMats.second.drawListCounts[drawListIdx] == 0)
+                    {
+                        continue;
+                    }
 
-                cmdList->cmdBindDescriptorsSets(cmdBuffer, pipelineCntxt, { &instancesData[vertType].shaderParameter, 1 });
-                cmdList->cmdBindGraphicsPipeline(cmdBuffer, pipelineCntxt, pipelineState);
-                cmdList->cmdBindVertexBuffer(cmdBuffer, 0, vertexBuffers[vertType].vertices, 0);
-                cmdList->cmdBindIndexBuffer(cmdBuffer, vertexBuffers[vertType].indices, 0);
+                    pipelineCntxt.forVertexType = EVertexType::Type(vertType);
+                    renderMan->preparePipelineContext(&pipelineCntxt, gbufferRts);
 
-                static_assert(
-                    std::is_same_v<
-                        std::remove_reference_t<decltype(std::declval<decltype(MaterialShaderParams::cpuDrawListPerVertType)>()[0]
-                        )>::value_type,
-                        DrawIndexedIndirectCommand>,
-                    "Fix me! Indexed indirect command struct mismatch!"
-                );
-                cmdList->cmdDrawIndexedIndirect(
-                    cmdBuffer, shaderMats.second.drawListPerVertType[drawListIdx], 0, shaderMats.second.drawListCounts[drawListIdx],
-                    sizeof(DrawIndexedIndirectCommand)
-                );
+                    cmdList->cmdBindDescriptorsSets(cmdBuffer, pipelineCntxt, { &instancesData[vertType].shaderParameter, 1 });
+                    cmdList->cmdBindGraphicsPipeline(cmdBuffer, pipelineCntxt, pipelineState);
+                    cmdList->cmdBindVertexBuffer(cmdBuffer, 0, vertexBuffers[vertType].vertices, 0);
+                    cmdList->cmdBindIndexBuffer(cmdBuffer, vertexBuffers[vertType].indices, 0);
+
+                    static_assert(
+                        std::is_same_v<
+                            std::remove_reference_t<decltype(std::declval<decltype(MaterialShaderParams::cpuDrawListPerVertType)>()[0]
+                            )>::value_type,
+                            DrawIndexedIndirectCommand>,
+                        "Fix me! Indexed indirect command struct mismatch!"
+                    );
+                    cmdList->cmdDrawIndexedIndirect(
+                        cmdBuffer, shaderMats.second.drawListPerVertType[drawListIdx], 0, shaderMats.second.drawListCounts[drawListIdx],
+                        sizeof(DrawIndexedIndirectCommand)
+                    );
+                }
             }
         }
-        cmdList->cmdEndRenderPass(cmdBuffer);
     }
     {
         SCOPED_CMD_MARKER(cmdList, cmdBuffer, ResolveFinalColor);
@@ -1953,10 +1968,7 @@ void EngineRenderScene::renderTheSceneRenderThread(
 
         cmdList->cmdEndRenderPass(cmdBuffer);
     }
-    if constexpr (BUFFER_COUNT > 2)
-    {
-        cmdList->cmdReleaseQueueResources(cmdBuffer, EQueueFunction::Graphics, transferReleases);
-    }
+    cmdList->cmdReleaseQueueResources(cmdBuffer, EQueueFunction::Graphics, transferReleases);
     cmdList->endCmd(cmdBuffer);
 
     CommandSubmitInfo2 submitInfo;

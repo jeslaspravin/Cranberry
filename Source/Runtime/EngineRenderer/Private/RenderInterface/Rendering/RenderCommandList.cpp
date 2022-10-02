@@ -23,18 +23,6 @@
 
 #include <utility>
 
-ScopedCommandMarker::ScopedCommandMarker(
-    const class IRenderCommandList *commandList, const GraphicsResource *commandBuffer, const String &name,
-    const LinearColor &color /*= LinearColorConst::WHITE*/
-)
-    : cmdList(commandList)
-    , cmdBuffer(commandBuffer)
-{
-    cmdList->cmdBeginBufferMarker(cmdBuffer, name, color);
-}
-
-ScopedCommandMarker::~ScopedCommandMarker() { cmdList->cmdEndBufferMarker(cmdBuffer); }
-
 // This must be modified to be a thread safe call when from other threads
 class RenderCommandList final : public IRenderCommandList
 {
@@ -168,7 +156,7 @@ public:
     void waitIdle() final;
     void waitOnResDepCmds(const MemoryResourceRef &resource) final;
     void flushAllcommands() final;
-    bool hasCmdsUsingResource(const MemoryResourceRef &resource) final;
+    bool hasCmdsUsingResource(const MemoryResourceRef &resource, bool bFinishCmds) final;
 };
 
 void RenderCommandList::cmdPushConstants(
@@ -323,7 +311,10 @@ void RenderCommandList::waitOnResDepCmds(const MemoryResourceRef &resource) { cm
 
 void RenderCommandList::flushAllcommands() { cmdList->flushAllcommands(); }
 
-bool RenderCommandList::hasCmdsUsingResource(const MemoryResourceRef &resource) { return cmdList->hasCmdsUsingResource(resource); }
+bool RenderCommandList::hasCmdsUsingResource(const MemoryResourceRef &resource, bool bFinishCmds)
+{
+    return cmdList->hasCmdsUsingResource(resource, bFinishCmds);
+}
 
 void RenderCommandList::copyToImage(ImageResourceRef dst, ArrayView<const class Color> pixelData, const CopyPixelsToImageInfo &copyInfo)
 {

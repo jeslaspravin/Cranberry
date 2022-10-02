@@ -28,22 +28,39 @@ struct CommandSubmitInfo;
 struct CommandSubmitInfo2;
 class LocalPipelineContext;
 struct RenderPassAdditionalProps;
+struct RenderPassClearValue;
 class Color;
 class LinearColor;
+class IRenderCommandList;
 
 #define SCOPED_CMD_MARKER(CmdList, CommandBuffer, Name) ScopedCommandMarker cmdMarker_##Name(CmdList, CommandBuffer, TCHAR(#Name))
 #define SCOPED_STR_CMD_MARKER(CmdList, CommandBuffer, Name) ScopedCommandMarker COMBINE(cmdMarker_, __COUNTER__)(CmdList, CommandBuffer, (Name))
 #define SCOPED_CMD_COLORMARKER(CmdList, CommandBuffer, Name, Color)                                                                            \
     ScopedCommandMarker cmdMarker_##Name(CmdList, CommandBuffer, TCHAR(#Name), Color)
-struct ENGINERENDERER_EXPORT ScopedCommandMarker
+struct ScopedCommandMarker
 {
     const GraphicsResource *cmdBuffer;
-    const class IRenderCommandList *cmdList;
-    ScopedCommandMarker(
-        const class IRenderCommandList *commandList, const GraphicsResource *commandBuffer, const String &name,
+    const IRenderCommandList *cmdList;
+    FORCE_INLINE ScopedCommandMarker(
+        const IRenderCommandList *commandList, const GraphicsResource *commandBuffer, const String &name,
         const LinearColor &color = LinearColorConst::WHITE
     );
-    ~ScopedCommandMarker();
+    FORCE_INLINE ~ScopedCommandMarker();
+};
+
+#define SCOPED_RENDERPASS(CmdList, CommandBuffer, PipelineContext, RenderArea, AdditionalProps, ClearVal, RenderPassName)                      \
+    ScopedRenderPass renderPass_##RenderPassName(CmdList, CommandBuffer, PipelineContext, RenderArea, AdditionalProps, ClearVal)
+struct ScopedRenderPass
+{
+    const GraphicsResource *cmdBuffer;
+    IRenderCommandList *cmdList;
+
+    FORCE_INLINE ScopedRenderPass(
+        IRenderCommandList *commandList, const GraphicsResource *commandBuffer, const LocalPipelineContext &contextPipeline,
+        const QuantizedBox2D &renderArea, const RenderPassAdditionalProps &renderpassAdditionalProps, const RenderPassClearValue &clearColor
+    );
+
+    FORCE_INLINE ~ScopedRenderPass();
 };
 
 struct RenderPassClearValue
@@ -291,7 +308,7 @@ public:
     virtual void waitOnResDepCmds(const MemoryResourceRef &resource) = 0;
     virtual void flushAllcommands() = 0;
 
-    virtual bool hasCmdsUsingResource(const MemoryResourceRef &resource) = 0;
+    virtual bool hasCmdsUsingResource(const MemoryResourceRef &resource, bool bFinishCmds) = 0;
 };
 
 template <typename BufferDataType>
@@ -415,3 +432,27 @@ bool ShaderParameters::setBuffer(StringID paramName, const BufferType &bufferVal
     }
     return bValueSet;
 }
+
+FORCE_INLINE ScopedCommandMarker::ScopedCommandMarker(
+    const IRenderCommandList *commandList, const GraphicsResource *commandBuffer, const String &name,
+    const LinearColor &color /*= LinearColorConst::WHITE*/
+)
+    : cmdList(commandList)
+    , cmdBuffer(commandBuffer)
+{
+    cmdList->cmdBeginBufferMarker(cmdBuffer, name, color);
+}
+
+FORCE_INLINE ScopedCommandMarker::~ScopedCommandMarker() { cmdList->cmdEndBufferMarker(cmdBuffer); }
+
+FORCE_INLINE ScopedRenderPass::ScopedRenderPass(
+    IRenderCommandList *commandList, const GraphicsResource *commandBuffer, const LocalPipelineContext &contextPipeline,
+    const QuantizedBox2D &renderArea, const RenderPassAdditionalProps &renderpassAdditionalProps, const RenderPassClearValue &clearColor
+)
+    : cmdList(commandList)
+    , cmdBuffer(commandBuffer)
+{
+    cmdList->cmdBeginRenderPass(cmdBuffer, contextPipeline, renderArea, renderpassAdditionalProps, clearColor);
+}
+
+FORCE_INLINE ScopedRenderPass::~ScopedRenderPass() { cmdList->cmdEndRenderPass(cmdBuffer); }

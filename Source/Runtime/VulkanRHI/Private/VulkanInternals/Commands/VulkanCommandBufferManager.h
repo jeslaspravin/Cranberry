@@ -28,12 +28,17 @@ class VulkanDevice;
 class GraphicsSemaphore;
 class GraphicsFence;
 class VulkanResourcesTracker;
+struct NullType;
 
 namespace std
 {
 template <class _Ty>
 class optional;
-}
+
+template <typename... T>
+class variant;
+
+} // namespace std
 
 struct VulkanCommandPoolInfo
 {
@@ -194,17 +199,29 @@ public:
         ResourceAccessors accessors;
     };
 
-    struct ResourceQueueTransferInfo
+    struct ResourceUsedQueue
     {
         // Stages to wait before resource gets transferred to new queue
         VkPipelineStageFlags2 srcStages = 0;
         VkAccessFlags2 srcAccessMask = 0;
         VkImageLayout srcLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     };
+    struct ResourceReleasedFromQueue
+    {
+        EQueueFunction lastReleasedQ;
+        // Stages to wait before resource gets released from this queue
+        VkPipelineStageFlags2 srcStages = 0;
+        VkAccessFlags2 srcAccessMask = 0;
+        VkImageLayout srcLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    };
+
+    using OptionalBarrierInfo = std::variant<NullType, ResourceBarrierInfo, ResourceReleasedFromQueue>;
 
 private:
     std::map<MemoryResourceRef, ResourceAccessors> resourcesAccessors;
-    std::map<MemoryResource *, ResourceQueueTransferInfo> queueTransfers[3];
+    // Queue release tracker is basically a backup mechanism to allow resources to be acquired after release even if cmdBuffer is finished
+    std::map<MemoryResource *, ResourceReleasedFromQueue> resourceReleases;
+    std::map<MemoryResource *, ResourceUsedQueue> queueTransfers[3];
 
     using CmdWaitInfoMap = std::map<const GraphicsResource *, std::vector<CommandResUsageInfo>>;
     CmdWaitInfoMap cmdWaitInfo;
@@ -220,35 +237,29 @@ public:
     void clearUnwanted();
 
     /* Reading resources functions */
-    std::optional<ResourceBarrierInfo>
-        readOnlyBuffers(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource);
-    std::optional<ResourceBarrierInfo>
-        readOnlyImages(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource);
-    std::optional<ResourceBarrierInfo>
-        readOnlyTexels(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource);
-    std::optional<ResourceBarrierInfo>
+    OptionalBarrierInfo readOnlyBuffers(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource);
+    OptionalBarrierInfo readOnlyImages(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource);
+    OptionalBarrierInfo readOnlyTexels(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource);
+    OptionalBarrierInfo
         readFromWriteBuffers(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource);
-    std::optional<ResourceBarrierInfo>
+    OptionalBarrierInfo
         readFromWriteImages(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource);
-    std::optional<ResourceBarrierInfo>
+    OptionalBarrierInfo
         readFromWriteTexels(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource);
 
     /* Writing resources functions */
-    std::optional<ResourceBarrierInfo>
+    OptionalBarrierInfo
         writeReadOnlyBuffers(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource);
-    std::optional<ResourceBarrierInfo>
+    OptionalBarrierInfo
         writeReadOnlyImages(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource);
-    std::optional<ResourceBarrierInfo>
+    OptionalBarrierInfo
         writeReadOnlyTexels(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource);
-    std::optional<ResourceBarrierInfo>
-        writeBuffers(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource);
-    std::optional<ResourceBarrierInfo>
-        writeImages(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource);
-    std::optional<ResourceBarrierInfo>
-        writeTexels(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource);
+    OptionalBarrierInfo writeBuffers(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource);
+    OptionalBarrierInfo writeImages(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource);
+    OptionalBarrierInfo writeTexels(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource);
 
-    std::optional<ResourceBarrierInfo> imageToGeneralLayout(const GraphicsResource *cmdBuffer, const ImageResourceRef &resource);
-    std::optional<ResourceBarrierInfo> colorAttachmentWrite(const GraphicsResource *cmdBuffer, const ImageResourceRef &resource);
+    OptionalBarrierInfo imageToGeneralLayout(const GraphicsResource *cmdBuffer, const ImageResourceRef &resource);
+    OptionalBarrierInfo colorAttachmentWrite(const GraphicsResource *cmdBuffer, const ImageResourceRef &resource);
 
     // bReset - If true instead of adding staged it resets stages to current usedInStages
     void addResourceToQTransfer(
@@ -258,7 +269,14 @@ public:
         EQueueFunction queueType, const MemoryResourceRef &resource, VkPipelineStageFlags2 usedInStages, VkAccessFlags2 accessFlags,
         VkImageLayout imageLayout, bool bReset
     );
-    std::map<MemoryResource *, ResourceQueueTransferInfo> getReleasesFromQueue(EQueueFunction queueType);
+    std::map<MemoryResource *, ResourceUsedQueue> getReleasesFromQueue(EQueueFunction queueType);
+    void releaseResourceAt(
+        EQueueFunction queueType, const MemoryResourceRef &resource, VkPipelineStageFlags2 usedInStages, VkAccessFlags2 accessFlags
+    );
+    void releaseResourceAt(
+        EQueueFunction queueType, const MemoryResourceRef &resource, VkPipelineStageFlags2 usedInStages, VkAccessFlags2 accessFlags,
+        VkImageLayout imageLayout
+    );
 
 private:
     FORCE_INLINE uint32 queueToQTransferIdx(EQueueFunction queueType) { return uint32(queueType) - uint32(EQueueFunction::Compute); }
