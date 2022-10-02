@@ -1020,8 +1020,12 @@ void EngineRenderScene::updateVisibility(const RenderSceneViewParams &viewParams
     compsVisibility.resetRange(0, totalCompCapacity);
 
     ApplicationInstance *appInstance = IApplicationModule::get()->getApplication();
+
+    // Below ds must be either cache line separated boolean or atomic bool to avoid memory stomping
     // Will be inside frustum only if every other condition to render a mesh is valid
-    std::vector<bool, CBEStrStackAllocatorExclusive<bool>> compsInsideFrustum(totalCompCapacity, false, appInstance->getRenderFrameAllocator());
+    std::vector<std::atomic_flag, CBEStrStackAllocatorExclusive<std::atomic_flag>> compsInsideFrustum(
+        totalCompCapacity, appInstance->getRenderFrameAllocator()
+    );
 
     Matrix4 w2clip;
     viewParams.view.viewMatrix(w2clip);
@@ -1063,7 +1067,7 @@ void EngineRenderScene::updateVisibility(const RenderSceneViewParams &viewParams
                         if (projectedPt.x() <= projectedPt.w() && projectedPt.y() <= projectedPt.w() && projectedPt.z() > 0
                             && projectedPt.z() <= 1)
                         {
-                            compsInsideFrustum[idx] = true;
+                            compsInsideFrustum[idx].test_and_set(std::memory_order::relaxed);
                             return;
                         }
                     }
@@ -1075,7 +1079,7 @@ void EngineRenderScene::updateVisibility(const RenderSceneViewParams &viewParams
 
     for (SizeT i = 0; i != totalCompCapacity; ++i)
     {
-        if (compsInsideFrustum[i])
+        if (compsInsideFrustum[i].test(std::memory_order::relaxed))
         {
             compsVisibility[i] = true;
         }

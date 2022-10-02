@@ -203,6 +203,12 @@ public:
         , availableWorkersCount(0)
         , workersFinishedEvent(workersCount)
     {}
+    JobSystem(u32 inWorkerCount)
+        : workersCount(inWorkerCount)
+        , workerJobEvent(0)
+        , availableWorkersCount(0)
+        , workersFinishedEvent(workersCount)
+    {}
 
     static JobSystem *get() { return singletonInstance; }
 
