@@ -866,7 +866,7 @@ void EngineRenderScene::createRenderInfo(cbe::RenderableComponent *comp, SizeT c
 
     // TODO(Jeslas): Remove below demo code
     compRenderInfo.shaderName = TCHAR("SingleColor");
-    compRenderInfo.materialID = comp->getName();
+    compRenderInfo.materialID = comp->getActor()->getName();
     addCompMaterialData(compRenderInfoIdx);
     addCompInstanceData(compRenderInfoIdx);
 }
@@ -1916,7 +1916,8 @@ void EngineRenderScene::renderTheSceneRenderThread(
                 for (uint32 vertType = EVertexType::TypeStart; vertType != EVertexType::TypeEnd; ++vertType)
                 {
                     uint32 drawListIdx = vertType * BUFFER_COUNT + bufferedReadOffset;
-                    if (shaderMats.second.drawListCounts[drawListIdx] == 0)
+                    if (shaderMats.second.drawListCounts[drawListIdx] == 0 || !instancesData[vertType].shaderParameter.isValid()
+                        || instancesData[vertType].instanceData->bufferCount() == 0)
                     {
                         continue;
                     }

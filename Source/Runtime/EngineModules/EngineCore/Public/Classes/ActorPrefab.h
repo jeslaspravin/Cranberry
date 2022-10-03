@@ -126,6 +126,7 @@ public:
     // Helper functions
     static ActorPrefab *prefabFromActorTemplate(const ObjectTemplate *actorTemplate);
     static ActorPrefab *prefabFromCompTemplate(const ObjectTemplate *compTemplate);
+    // Object's template for native components there is no immediate templates and this function returns null in that caseed
     static ObjectTemplate *objectTemplateFromObj(const Object *obj);
     // initializes world actor prefab by connecting all attachments
     static void initializeActor(ActorPrefab *inPrefab);

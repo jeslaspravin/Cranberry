@@ -18,10 +18,12 @@
 #define STRINGID_FUNCQUALIFIER FORCE_INLINE
 #define STRINGID_CONSTEXPR
 #define HAS_STRINGID_CONSTEXPR 0
+#define ENABLE_STRID_DEBUG 1
 #else // DEV_BUILD
 #define STRINGID_FUNCQUALIFIER CONST_EXPR
 #define STRINGID_CONSTEXPR CONST_EXPR
 #define HAS_STRINGID_CONSTEXPR 1
+#define ENABLE_STRID_DEBUG 0
 #endif // DEV_BUILD
 
 #ifndef STRINGID_HASHFUNC
@@ -52,7 +54,7 @@ public:
     static const StringID INVALID;
 
 private:
-#if DEV_BUILD
+#if ENABLE_STRID_DEBUG
     // Holds pointer to debugStringsDB which will be used by debug to visualize string
     const std::unordered_map<StringID::IDType, String> *debugStrings = nullptr;
     static std::unordered_map<IDType, String> &debugStringDB();
@@ -147,7 +149,7 @@ public:
      */
     FORCE_INLINE String toString() const
     {
-#if DEV_BUILD
+#if ENABLE_STRID_DEBUG
         auto itr = debugStringDB().find(id);
         if (itr == debugStringDB().cend())
         {
@@ -170,7 +172,7 @@ inline namespace Literals
 {
 NODISCARD STRINGID_FUNCQUALIFIER StringID operator"" _sid(const TChar *str, SizeT len) noexcept
 {
-#if DEV_BUILD
+#if ENABLE_STRID_DEBUG
     return StringID(STRINGID_HASHFUNC(str, StringID::IDType(len), StringID::Seed), str, len);
 #else  // DEV_BUILD
     return StringID(STRINGID_HASHFUNC(str, StringID::IDType(len), StringID::Seed));

@@ -246,7 +246,11 @@ public:
                 return prop->name == fieldName;
             }
         );
-        return (itr == clazz->memberFields.cend()) ? nullptr : *itr;
+        if (itr == clazz->memberFields.cend())
+        {
+            return clazz->baseClass ? findField(clazz->baseClass, fieldName) : nullptr;
+        }
+        return *itr;
     }
     static const FieldProperty *findStaticField(const ClassProperty *clazz, const StringID &fieldName)
     {
@@ -257,7 +261,11 @@ public:
                 return prop->name == fieldName;
             }
         );
-        return (itr == clazz->staticFields.cend()) ? nullptr : *itr;
+        if (itr == clazz->staticFields.cend())
+        {
+            return clazz->baseClass ? findStaticField(clazz->baseClass, fieldName) : nullptr;
+        }
+        return *itr;
     }
 
     //////////////////////////////////////////////////////////////////////////

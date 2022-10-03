@@ -11,7 +11,7 @@
 
 #include "String/StringID.h"
 
-#if DEV_BUILD
+#if ENABLE_STRID_DEBUG
 std::unordered_map<StringID::IDType, String> &StringID::debugStringDB()
 {
     static std::unordered_map<StringID::IDType, String> singletonStringDB;

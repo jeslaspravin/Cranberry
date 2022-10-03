@@ -67,6 +67,26 @@ cbe::Actor *
     return rootActorPrefab->getActorTemplate();
 }
 
+cbe::Actor *EditorHelpers::addActorToWorld(cbe::World *world, CBEClass actorClass, const String &actorName, EObjectFlags flags)
+{
+    cbe::ActorPrefab *prefab
+        = cbe::create<cbe::ActorPrefab, StringID, const String &>(actorName + TCHAR("_Prefab"), world, flags, actorClass->name, actorName);
+    world->actorPrefabs.emplace_back(prefab);
+    postAddActorToWorld(world, prefab);
+    cbe::markDirty(world);
+    return prefab->getActorTemplate();
+}
+
+cbe::Actor *EditorHelpers::addActorToWorld(cbe::World *world, cbe::ActorPrefab *inPrefab, const String &name, EObjectFlags flags)
+{
+    cbe::ActorPrefab *prefab
+        = create<cbe::ActorPrefab, cbe::ActorPrefab *, const String &>(name + TCHAR("_Prefab"), world, flags, inPrefab, name);
+    world->actorPrefabs.emplace_back(prefab);
+    postAddActorToWorld(world, prefab);
+    cbe::markDirty(world);
+    return prefab->getActorTemplate();
+}
+
 cbe::Object *EditorHelpers::addComponentToPrefab(cbe::ActorPrefab *prefab, CBEClass compClass, const String &compName)
 {
     cbe::Object *comp = prefab->addComponent(compClass, compName);
@@ -127,7 +147,19 @@ cbe::Object *EditorHelpers::modifyPrefabCompField(const FieldProperty *prop, cbe
 {
     debugAssert(comp && prop);
     cbe::ObjectTemplate *compTemplate = cbe::ActorPrefab::objectTemplateFromObj(comp);
-    cbe::ActorPrefab *prefab = cbe::ActorPrefab::prefabFromCompTemplate(compTemplate);
+    cbe::ActorPrefab *prefab = nullptr;
+    if (compTemplate == nullptr)
+    {
+        // Probably actor owned/native component
+        cbe::Actor *actor = cbe::cast<cbe::Actor>(comp->getOuter());
+        debugAssert(actor);
+        compTemplate = cbe::ActorPrefab::objectTemplateFromObj(actor);
+        prefab = cbe::ActorPrefab::prefabFromActorTemplate(compTemplate);
+    }
+    else
+    {
+        prefab = cbe::ActorPrefab::prefabFromCompTemplate(compTemplate);
+    }
     debugAssert(prefab);
 
     comp = modifyComponentInPrefab(prefab, comp);
@@ -140,33 +172,25 @@ cbe::Object *EditorHelpers::resetPrefabCompField(const FieldProperty *prop, cbe:
 {
     debugAssert(comp && prop);
     cbe::ObjectTemplate *compTemplate = cbe::ActorPrefab::objectTemplateFromObj(comp);
-    cbe::ActorPrefab *prefab = cbe::ActorPrefab::prefabFromCompTemplate(compTemplate);
+    cbe::ActorPrefab *prefab = nullptr;
+    if (compTemplate == nullptr)
+    {
+        // Probably actor owned/native component
+        cbe::Actor *actor = cbe::cast<cbe::Actor>(comp->getOuter());
+        debugAssert(actor);
+        compTemplate = cbe::ActorPrefab::objectTemplateFromObj(actor);
+        prefab = cbe::ActorPrefab::prefabFromActorTemplate(compTemplate);
+    }
+    else
+    {
+        prefab = cbe::ActorPrefab::prefabFromCompTemplate(compTemplate);
+    }
     debugAssert(prefab);
 
     comp = modifyComponentInPrefab(prefab, comp);
     compTemplate = cbe::ActorPrefab::objectTemplateFromObj(comp);
     compTemplate->onFieldReset(prop, comp);
     return comp;
-}
-
-cbe::Actor *EditorHelpers::addActorToWorld(cbe::World *world, CBEClass actorClass, const String &actorName, EObjectFlags flags)
-{
-    cbe::ActorPrefab *prefab
-        = cbe::create<cbe::ActorPrefab, StringID, const String &>(actorName + TCHAR("_Prefab"), world, flags, actorClass->name, actorName);
-    world->actorPrefabs.emplace_back(prefab);
-    postAddActorToWorld(world, prefab);
-    cbe::markDirty(world);
-    return prefab->getActorTemplate();
-}
-
-cbe::Actor *EditorHelpers::addActorToWorld(cbe::World *world, cbe::ActorPrefab *inPrefab, const String &name, EObjectFlags flags)
-{
-    cbe::ActorPrefab *prefab
-        = create<cbe::ActorPrefab, cbe::ActorPrefab *, const String &>(name + TCHAR("_Prefab"), world, flags, inPrefab, name);
-    world->actorPrefabs.emplace_back(prefab);
-    postAddActorToWorld(world, prefab);
-    cbe::markDirty(world);
-    return prefab->getActorTemplate();
 }
 
 void EditorHelpers::postAddActorToWorld(cbe::World *world, cbe::ActorPrefab *prefab)

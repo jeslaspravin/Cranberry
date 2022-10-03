@@ -38,6 +38,9 @@ public:
     static cbe::Actor *
         addStaticMeshesToWorld(const std::vector<cbe::StaticMesh *> &staticMeshes, cbe::World *world, const String &rootActorName);
 
+    static cbe::Actor *addActorToWorld(cbe::World *world, CBEClass actorClass, const String &actorName, EObjectFlags flags);
+    static cbe::Actor *addActorToWorld(cbe::World *world, cbe::ActorPrefab *inPrefab, const String &name, EObjectFlags flags);
+
     static cbe::Object *addComponentToPrefab(cbe::ActorPrefab *prefab, CBEClass compClass, const String &compName);
     static cbe::Object *addComponentToPrefab(cbe::ActorPrefab *prefab, cbe::ObjectTemplate *compTemplate, const String &compName);
     static void removeComponentFromPrefab(cbe::ActorPrefab *prefab, cbe::Object *comp);
@@ -48,8 +51,6 @@ public:
     static cbe::Object *resetPrefabCompField(const FieldProperty *prop, cbe::Object *comp);
 
 private:
-    static cbe::Actor *addActorToWorld(cbe::World *world, CBEClass actorClass, const String &actorName, EObjectFlags flags);
-    static cbe::Actor *addActorToWorld(cbe::World *world, cbe::ActorPrefab *inPrefab, const String &name, EObjectFlags flags);
     static void postAddActorToWorld(cbe::World *world, cbe::ActorPrefab *prefab);
     static void removeActorFromWorld(cbe::World *world, cbe::Actor *actor);
 

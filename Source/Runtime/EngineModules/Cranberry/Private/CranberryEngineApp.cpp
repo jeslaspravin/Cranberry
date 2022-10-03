@@ -85,7 +85,12 @@ void CranberryEngineApp::onRendererStateEvent(ERenderStateEvent state) {}
 #include "Types/Platform/LFS/PathFunctions.h"
 #include "IEditorCore.h"
 #include "Classes/World.h"
+#include "Classes/StaticMesh.h"
+#include "Classes/ActorPrefab.h"
+#include "Classes/Actor.h"
+#include "Components/StaticMeshComponent.h"
 #include "RenderApi/RenderTaskHelpers.h"
+#include "EditorHelpers.h"
 
 void tempTest()
 {
@@ -146,35 +151,116 @@ void tempTest()
     }
 #endif
 
-    const TChar *meshPath = TCHAR("D:/Workspace/Blender/Exports/Sponza.obj");
-    const TChar *meshName = TCHAR("Sponza");
-    // const TChar *meshPath = TCHAR("D:/Workspace/Blender/Exports/TestScene.obj");
-    // const TChar *meshName = TCHAR("TestScene");
-    if (cbe::World *sceneObj = cbe::getOrLoad<cbe::World>(meshName))
+    bool bUseCubeScene = true;
+    if (bUseCubeScene)
     {
-        gCBEEngine->worldManager()->initWorld(sceneObj, true);
+        const TChar *scenePath = TCHAR("Scenes/TestCubes:TestCubes");
+        cbe::World *sceneObj = cbe::getOrLoad<cbe::World>(scenePath);
+        if (sceneObj == nullptr)
+        {
+            String importContentTo = PathFunctions::combinePath(Paths::engineRuntimeRoot(), TCHAR("Content"));
+            cbe::StaticMesh *cubeMesh = cbe::getOrLoad<cbe::StaticMesh>(TCHAR("Meshes/Cube:Cube"));
+            if (!cbe::isValid(cubeMesh))
+            {
+                const TChar *cubeObjPath = TCHAR("D:/Assets/EngineAssets/Cube.obj");
+                ImportOption opt;
+                opt.filePath = cubeObjPath;
+                opt.importContentPath = importContentTo;
+                opt.relativeDirPath = TCHAR("Meshes");
+                if (AssetImporterBase *importer = IEditorCore::get()->findAssetImporter(opt))
+                {
+                    bool bImportAsScene = false;
+                    static_cast<const MemberFieldWrapper *>(PropertyHelper::findField(opt.structType, STRID("bImportAsScene"))->fieldPtr)
+                                                                ->setTypeless(&bImportAsScene, opt.optionsStruct);
+
+                    std::vector<cbe::Object *> objs = importer->tryImporting(opt);
+                    debugAssert(objs.size() == 1);
+
+                    cubeMesh = cbe::cast<cbe::StaticMesh>(objs[0]);
+                    cbe::save(cubeMesh);
+                }
+            }
+
+            debugAssert(cubeMesh);
+
+            cbe::Package *worldPackage = cbe::Package::createPackage(TCHAR("Scenes/TestCubes"), importContentTo, false);
+            debugAssert(worldPackage);
+            cbe::markDirty(worldPackage);
+            SET_BITS(cbe::INTERNAL_ObjectCoreAccessors::getFlags(worldPackage), cbe::EObjectFlagBits::ObjFlag_PackageLoaded);
+
+            sceneObj = cbe::create<cbe::World>(TCHAR("TestCubes"), worldPackage, cbe::EObjectFlagBits::ObjFlag_PackageLoaded);
+
+            // Create hundred thousand sm objects
+            for (uint32 i = 0; i < 20 * 20 * 20; ++i)
+            {
+                cbe::ActorPrefab *smActorPrefab = cbe::ActorPrefab::prefabFromActorTemplate(cbe::ActorPrefab::objectTemplateFromObj(
+                    EditorHelpers::addActorToWorld(sceneObj, cbe::Actor::staticType(), TCHAR("CubeActor_") + String::toString(i), 0)
+                ));
+                cbe::Actor *smActor = smActorPrefab->getActorTemplate();
+                cbe::StaticMeshComponent *smComp = static_cast<cbe::StaticMeshComponent *>(
+                    EditorHelpers::addComponentToPrefab(smActorPrefab, cbe::StaticMeshComponent::staticType(), TCHAR("CubeSM"))
+                );
+
+                cbe::Object *modifyingComp = EditorHelpers::modifyPrefabCompField(
+                    PropertyHelper::findField(smComp->getType(), GET_MEMBER_ID_CHECKED(cbe::StaticMeshComponent, mesh)), smComp
+                );
+                modifyingComp = EditorHelpers::modifyPrefabCompField(PropertyHelper::findField(smComp->getType(), STRID("relativeTf")), smComp);
+                debugAssert(modifyingComp == smComp);
+                smComp->mesh = cubeMesh;
+
+                Vector3D pos;
+                pos.x() = (i % 20) * 50 + 25 - 50;
+                pos.y() = ((i / 20) % 20) * 50 + 25 - 50;
+                pos.z() = (i / (20 * 20)) * 50 + 25 - 50;
+                smComp->setRelativeLocation(pos);
+                smComp->setRelativeScale(Vector3D{ 0.25f });
+
+                // Reset root and remove default root component
+                cbe::TransformComponent *defaultRoot = smActorPrefab->getRootComponent();
+                smActorPrefab->setRootComponent(smComp);
+                smActorPrefab->removeComponent(defaultRoot);
+            }
+
+            cbe::save(sceneObj);
+        }
+        if (sceneObj)
+        {
+            gCBEEngine->worldManager()->initWorld(sceneObj, true);
+        }
     }
     else
     {
-        // const TChar *meshPath = TCHAR("D:/Workspace/VisualStudio/Cranberry/External/Assets/Cone.obj");
-        ImportOption opt;
-        opt.filePath = meshPath;
-        opt.importContentPath = PathFunctions::combinePath(Paths::engineRuntimeRoot(), TCHAR("Content"));
-        if (AssetImporterBase *importer = IEditorCore::get()->findAssetImporter(opt))
-        {
-            bool bImportAsScene = true;
-            static_cast<const MemberFieldWrapper *>(PropertyHelper::findField(opt.structType, STRID("bImportAsScene"))->fieldPtr)
-                                                        ->setTypeless(&bImportAsScene, opt.optionsStruct);
 
-            std::vector<cbe::Object *> objs = importer->tryImporting(opt);
-            for (cbe::Object *obj : objs)
+        const TChar *meshObjPath = TCHAR("D:/Workspace/Blender/Exports/Sponza.obj");
+        const TChar *meshEnginePath = TCHAR("Scenes/Sponze:Sponza");
+        cbe::World *sceneObj = cbe::getOrLoad<cbe::World>(meshEnginePath);
+        if (sceneObj == nullptr)
+        {
+            ImportOption opt;
+            opt.filePath = meshObjPath;
+            opt.importContentPath = PathFunctions::combinePath(Paths::engineRuntimeRoot(), TCHAR("Content"));
+            opt.relativeDirPath = TCHAR("Scenes");
+            if (AssetImporterBase *importer = IEditorCore::get()->findAssetImporter(opt))
             {
-                cbe::save(obj);
+                bool bImportAsScene = true;
+                static_cast<const MemberFieldWrapper *>(PropertyHelper::findField(opt.structType, STRID("bImportAsScene"))->fieldPtr)
+                                                            ->setTypeless(&bImportAsScene, opt.optionsStruct);
+
+                std::vector<cbe::Object *> objs = importer->tryImporting(opt);
+                for (cbe::Object *obj : objs)
+                {
+                    cbe::save(obj);
+                }
+                if (!objs.empty())
+                {
+                    sceneObj = cbe::cast<cbe::World>(objs[0]);
+                }
             }
-            if (!objs.empty())
-            {
-                gCBEEngine->worldManager()->initWorld(cast<cbe::World>(objs[0]), true);
-            }
+        }
+
+        if (sceneObj)
+        {
+            gCBEEngine->worldManager()->initWorld(sceneObj, true);
         }
     }
 }
