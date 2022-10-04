@@ -18,11 +18,7 @@
 
 DECLARE_MODULE(CoreObjects, CoreObjectsModule)
 
-ICoreObjectsModule *ICoreObjectsModule::get()
-{
-    static WeakModulePtr weakRiModule = (ModuleManager::get()->getOrLoadModule(TCHAR("CoreObjects")));
-    return weakRiModule.expired() ? nullptr : static_cast<CoreObjectsModule *>(weakRiModule.lock().get());
-}
+ICoreObjectsModule *ICoreObjectsModule::get() { return ModuleManager::get()->getOrLoadModulePtr<ICoreObjectsModule>(TCHAR("CoreObjects")); }
 
 void CoreObjectsModule::init()
 {

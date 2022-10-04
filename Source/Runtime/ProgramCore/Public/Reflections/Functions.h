@@ -25,7 +25,6 @@
 template <typename ReturnType, typename... Parameters>
 struct Function
 {
-
     typedef ReturnType (*StaticDelegate)(Parameters...);
 
     StaticDelegate staticDelegate = nullptr;

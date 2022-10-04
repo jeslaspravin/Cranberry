@@ -21,12 +21,13 @@
 
 void PackageSaver::setupContainedObjs()
 {
+    String packageFullPath = package->getFullPath();
     const CoreObjectsDB &objsDb = ICoreObjectsModule::get()->getObjectsDB();
 
     // We peel the onion as parent must be create before child,
     // The getChildren from FlatTree already returns in ordered manner so we should be good without peeling manually here
     std::vector<cbe::Object *> children;
-    objsDb.getSubobjects(children, package->getStringID());
+    objsDb.getSubobjects(children, { .objectPath = packageFullPath.getChar(), .objectId = package->getStringID() });
     containedObjects.clear();
     containedObjects.reserve(children.size());
     for (cbe::Object *child : children)
@@ -38,7 +39,7 @@ void PackageSaver::setupContainedObjs()
             continue;
         }
 
-        objToContObjsIdx[child->getStringID()] = containedObjects.size();
+        objToContObjsIdx[child->getFullPath().getChar()] = containedObjects.size();
         PackageContainedData &containedObjData = containedObjects.emplace_back();
         containedObjData.object = child;
         containedObjData.objectPath = ObjectPathHelper::getObjectPath(child, package);
@@ -157,20 +158,20 @@ ObjectArchive &PackageSaver::serialize(cbe::Object *&obj)
         return (*this);
     }
 
-    auto containedObjItr = objToContObjsIdx.find(obj->getStringID());
+    auto containedObjItr = objToContObjsIdx.find(obj->getFullPath().getChar());
     if (containedObjItr != objToContObjsIdx.end())
     {
         (*static_cast<ObjectArchive *>(this)) << containedObjItr->second;
     }
     else
     {
-        auto depObjItr = objToDepObjsIdx.find(obj->getStringID());
+        auto depObjItr = objToDepObjsIdx.find(obj->getFullPath().getChar());
         SizeT depObjIdx = 0;
         // If dependent is not there then we must create a new entry and serialize it
         if (depObjItr == objToDepObjsIdx.end())
         {
             depObjIdx = dependentObjects.size();
-            objToDepObjsIdx[obj->getStringID()] = depObjIdx;
+            objToDepObjsIdx[obj->getFullPath().getChar()] = depObjIdx;
             PackageDependencyData &objDepData = dependentObjects.emplace_back();
             objDepData.object = obj;
             objDepData.objectFullPath = obj->getFullPath();

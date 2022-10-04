@@ -334,7 +334,7 @@ EngineRenderScene::EngineRenderScene(cbe::World *inWorld)
         {
             if (cbe::RenderableComponent *renderComp = cbe::cast<cbe::RenderableComponent>(compObj))
             {
-                componentUpdates.compsRemoved.emplace_back(renderComp->getStringID());
+                componentUpdates.compsRemoved.emplace_back(renderComp->getFullPath());
                 // Remove component from added components list if both happening in same frame
                 std::erase(componentUpdates.compsAdded, compObj);
                 std::erase(componentUpdates.recreateComps, compObj);
@@ -498,19 +498,19 @@ void EngineRenderScene::onLastRTCopied()
     // TODO(Jeslas) : OnLastRTCopied, Is this needed?
 }
 
-FORCE_INLINE void EngineRenderScene::addMeshRef(EVertexType::Type vertType, StringID meshID, SizeT compRenderInfoIdx)
+FORCE_INLINE void EngineRenderScene::addMeshRef(EVertexType::Type vertType, cbe::ObjectPath meshPath, SizeT compRenderInfoIdx)
 {
     VerticesPerVertType &sceneVerts = vertexBuffers[vertType];
     ComponentRenderInfo &compRenderInfo = compsRenderInfo[compRenderInfoIdx];
 
-    auto meshItr = sceneVerts.meshes.find(meshID);
+    auto meshItr = sceneVerts.meshes.find(meshPath);
     if (meshItr != sceneVerts.meshes.end())
     {
         meshItr->second.refs++;
     }
     else if (bVertexUpdating)
     {
-        sceneVerts.meshesToAdd.emplace_back(meshID, compRenderInfoIdx);
+        sceneVerts.meshesToAdd.emplace_back(meshPath, compRenderInfoIdx);
     }
     else
     {
@@ -519,10 +519,10 @@ FORCE_INLINE void EngineRenderScene::addMeshRef(EVertexType::Type vertType, Stri
             && compRenderInfo.cpuVertBuffer->isValid() && compRenderInfo.cpuVertBuffer->bufferStride() > 1
             && compRenderInfo.cpuIdxBuffer->bufferStride() > 1
         );
-        cbe::Object *mesh = cbe::get(meshID);
+        cbe::Object *mesh = cbe::get(meshPath.getFullPath().getChar());
         if (!cbe::isValid(mesh))
         {
-            debugAssert(!sceneVerts.meshes.contains(meshID));
+            debugAssert(!sceneVerts.meshes.contains(meshPath));
             return;
         }
 
@@ -531,7 +531,7 @@ FORCE_INLINE void EngineRenderScene::addMeshRef(EVertexType::Type vertType, Stri
         bool bVertAlloced = sceneVerts.vertsAllocTracker.allocate(compRenderInfo.cpuVertBuffer->bufferCount(), 1, vertOffset);
         if (bIdxAlloced && bVertAlloced)
         {
-            MeshVertexView &vertView = sceneVerts.meshes[meshID];
+            MeshVertexView &vertView = sceneVerts.meshes[meshPath];
             vertView.idxOffset = idxOffset;
             vertView.idxCount = compRenderInfo.cpuIdxBuffer->bufferCount();
             vertView.vertOffset = vertOffset;
@@ -554,12 +554,12 @@ FORCE_INLINE void EngineRenderScene::addMeshRef(EVertexType::Type vertType, Stri
         else
         {
             // Not enough space allocate new buffers and copy
-            sceneVerts.meshesToAdd.emplace_back(meshID, compRenderInfoIdx);
+            sceneVerts.meshesToAdd.emplace_back(meshPath, compRenderInfoIdx);
         }
     }
 }
 
-FORCE_INLINE void EngineRenderScene::removeMeshRef(EVertexType::Type vertType, MeshVertexView &meshVertView, StringID meshID)
+FORCE_INLINE void EngineRenderScene::removeMeshRef(EVertexType::Type vertType, MeshVertexView &meshVertView, cbe::ObjectPath meshID)
 {
     VerticesPerVertType &sceneVerts = vertexBuffers[vertType];
     debugAssert(meshVertView.refs >= 1);
@@ -680,7 +680,7 @@ FORCE_INLINE void EngineRenderScene::addCompMaterialData(SizeT compRenderInfoIdx
     }
 
     MaterialShaderParams &shaderMats = shaderToMaterials[compRenderInfo.shaderName];
-    auto shaderMatsIdxItr = shaderMats.materialToIdx.find(compRenderInfo.materialID);
+    auto shaderMatsIdxItr = shaderMats.materialToIdx.find(compRenderInfo.matObjPath);
     if (shaderMatsIdxItr != shaderMats.materialToIdx.end())
     {
         compRenderInfo.materialIndex = vectorIdxToMaterialIdx(shaderMatsIdxItr->second);
@@ -704,7 +704,7 @@ FORCE_INLINE void EngineRenderScene::addCompMaterialData(SizeT compRenderInfoIdx
         SizeT matIdx;
         if (shaderMats.materialAllocTracker.allocate(1, 1, matIdx))
         {
-            shaderMats.materialToIdx[compRenderInfo.materialID] = matIdx;
+            shaderMats.materialToIdx[compRenderInfo.matObjPath] = matIdx;
             shaderMats.materialRefs[matIdx] = 1;
 
             compRenderInfo.materialIndex = vectorIdxToMaterialIdx(matIdx);
@@ -721,7 +721,7 @@ FORCE_INLINE void EngineRenderScene::addCompMaterialData(SizeT compRenderInfoIdx
     }
 }
 
-FORCE_INLINE void EngineRenderScene::removeMaterialAt(SizeT matVectorIdx, StringID materialID, MaterialShaderParams &shaderMats)
+FORCE_INLINE void EngineRenderScene::removeMaterialAt(SizeT matVectorIdx, cbe::ObjectPath materialID, MaterialShaderParams &shaderMats)
 {
     debugAssert(shaderMats.materialAllocTracker.isRangeAllocated(matVectorIdx, 1) && shaderMats.materialRefs[matVectorIdx] >= 1);
     shaderMats.materialRefs[matVectorIdx]--;
@@ -747,37 +747,38 @@ void EngineRenderScene::addRenderComponents(const std::vector<cbe::RenderableCom
         {
             continue;
         }
-        auto compToIdxItr = componentToRenderInfo.find(compToAdd->getStringID());
+        cbe::ObjectPath compPath = cbe::ObjectPath(compToAdd);
+        auto compToIdxItr = componentToRenderInfo.find(compPath);
         if (compToIdxItr == componentToRenderInfo.end())
         {
             SizeT idx = compsRenderInfo.get();
             createRenderInfo(compToAdd, idx);
-            if (compsRenderInfo[idx].meshID.isValid())
+            if (compsRenderInfo[idx].meshObjPath.isValid())
             {
                 debugAssert(compsRenderInfo[idx].cpuVertBuffer.isValid() && compsRenderInfo[idx].cpuIdxBuffer.isValid());
-                addMeshRef(compsRenderInfo[idx].vertexType, compsRenderInfo[idx].meshID, idx);
+                addMeshRef(compsRenderInfo[idx].vertexType, compsRenderInfo[idx].meshObjPath, idx);
             }
-            componentToRenderInfo[compToAdd->getStringID()] = idx;
+            componentToRenderInfo[compPath] = idx;
         }
     }
 }
 
-void EngineRenderScene::removeRenderComponents(const std::vector<StringID> &renderComps)
+void EngineRenderScene::removeRenderComponents(const std::vector<String> &renderComps)
 {
-    for (StringID compToRemove : renderComps)
+    for (const String &compToRemove : renderComps)
     {
-        auto compToIdxItr = componentToRenderInfo.find(compToRemove);
+        auto compToIdxItr = componentToRenderInfo.find(cbe::ObjectPath{ compToRemove.getChar() });
         if (compToIdxItr != componentToRenderInfo.end())
         {
             SizeT idx = compToIdxItr->second;
-            StringID currMesh = compsRenderInfo[idx].meshID;
+            cbe::ObjectPath currMesh = compsRenderInfo[idx].meshObjPath;
             EVertexType::Type currVertType = compsRenderInfo[idx].vertexType;
 
             if (currMesh.isValid())
             {
                 removeMeshRef(currVertType, vertexBuffers[currVertType].meshes[currMesh], currMesh);
             }
-            cbe::RenderableComponent *comp = cbe::cast<cbe::RenderableComponent>(cbe::get(compToRemove));
+            cbe::RenderableComponent *comp = cbe::cast<cbe::RenderableComponent>(cbe::get(compToRemove.getChar()));
             destroyRenderInfo(comp, idx);
             componentToRenderInfo.erase(compToIdxItr);
             compsRenderInfo.reset(idx);
@@ -793,29 +794,30 @@ void EngineRenderScene::recreateRenderComponents(const std::vector<cbe::Renderab
         {
             continue;
         }
-        auto compToIdxItr = componentToRenderInfo.find(compToRecreate->getStringID());
+        cbe::ObjectPath compToRecreatePath{ compToRecreate };
+        auto compToIdxItr = componentToRenderInfo.find(compToRecreatePath);
         if (compToIdxItr == componentToRenderInfo.end())
         {
             SizeT idx = compsRenderInfo.get();
             createRenderInfo(compToRecreate, idx);
 
-            if (compsRenderInfo[idx].meshID.isValid())
+            if (compsRenderInfo[idx].meshObjPath.isValid())
             {
                 debugAssert(compsRenderInfo[idx].cpuVertBuffer.isValid() && compsRenderInfo[idx].cpuIdxBuffer.isValid());
-                addMeshRef(compsRenderInfo[idx].vertexType, compsRenderInfo[idx].meshID, idx);
+                addMeshRef(compsRenderInfo[idx].vertexType, compsRenderInfo[idx].meshObjPath, idx);
             }
-            componentToRenderInfo[compToRecreate->getStringID()] = idx;
+            componentToRenderInfo[compToRecreatePath] = idx;
         }
         else
         {
             SizeT idx = compToIdxItr->second;
-            StringID currMesh = compsRenderInfo[idx].meshID;
+            const cbe::ObjectPath &currMesh = compsRenderInfo[idx].meshObjPath;
             EVertexType::Type currVertType = compsRenderInfo[idx].vertexType;
 
             destroyRenderInfo(compToRecreate, idx);
             createRenderInfo(compToRecreate, idx);
 
-            StringID newMesh = compsRenderInfo[idx].meshID;
+            const cbe::ObjectPath &newMesh = compsRenderInfo[idx].meshObjPath;
             if (currMesh != newMesh)
             {
                 debugAssert(currVertType == compsRenderInfo[idx].vertexType);
@@ -843,7 +845,8 @@ void EngineRenderScene::updateTfComponents(
             continue;
         }
 
-        auto compRenderIdxItr = componentToRenderInfo.find(updateTf->getStringID());
+        cbe::ObjectPath updateTfPath{ updateTf };
+        auto compRenderIdxItr = componentToRenderInfo.find(updateTfPath);
         if (compRenderIdxItr != componentToRenderInfo.cend())
         {
             ComponentRenderInfo &compRenderInfo = compsRenderInfo[compRenderIdxItr->second];
@@ -861,12 +864,12 @@ void EngineRenderScene::updateTfComponents(
 void EngineRenderScene::createRenderInfo(cbe::RenderableComponent *comp, SizeT compRenderInfoIdx)
 {
     ComponentRenderInfo &compRenderInfo = compsRenderInfo[compRenderInfoIdx];
-    compRenderInfo.compID = comp->getStringID();
+    compRenderInfo.compObjPath = comp;
     comp->setupRenderInfo(compRenderInfo);
 
     // TODO(Jeslas): Remove below demo code
     compRenderInfo.shaderName = TCHAR("SingleColor");
-    compRenderInfo.materialID = comp->getActor()->getName();
+    compRenderInfo.matObjPath = comp->getActor()->getName().getChar();
     addCompMaterialData(compRenderInfoIdx);
     addCompInstanceData(compRenderInfoIdx);
 }
@@ -878,7 +881,7 @@ void EngineRenderScene::destroyRenderInfo(const cbe::RenderableComponent *comp, 
     if (compRenderInfo.materialIndex != 0)
     {
         removeMaterialAt(
-            materialIdxToVectorIdx(compRenderInfo.materialIndex), compRenderInfo.materialID, shaderToMaterials[compRenderInfo.shaderName]
+            materialIdxToVectorIdx(compRenderInfo.materialIndex), compRenderInfo.matObjPath, shaderToMaterials[compRenderInfo.shaderName]
         );
         compRenderInfo.materialIndex = 0;
     }
@@ -1042,9 +1045,12 @@ void EngineRenderScene::updateVisibility(const RenderSceneViewParams &viewParams
                 }
 
                 const ComponentRenderInfo &compRenderInfo = compsRenderInfo[idx];
-                cbe::RenderableComponent *renderComp
-                    = compRenderInfo.meshID.isValid() ? cbe::cast<cbe::RenderableComponent>(cbe::get(compRenderInfo.compID)) : nullptr;
-                if (vertexBuffers[compRenderInfo.vertexType].meshes.contains(compRenderInfo.meshID) && compRenderInfo.tfIndex != 0
+                cbe::RenderableComponent *renderComp = nullptr;
+                if (compRenderInfo.meshObjPath.isValid())
+                {
+                    renderComp = cbe::cast<cbe::RenderableComponent>(cbe::get(compRenderInfo.compObjPath.getFullPath().getChar()));
+                }
+                if (vertexBuffers[compRenderInfo.vertexType].meshes.contains(compRenderInfo.meshObjPath) && compRenderInfo.tfIndex != 0
                     && compRenderInfo.materialIndex != 0 && renderComp != nullptr)
                 {
                     Matrix4 obj2Clip = w2clip * compRenderInfo.worldTf.getTransformMatrix();
@@ -1077,12 +1083,27 @@ void EngineRenderScene::updateVisibility(const RenderSceneViewParams &viewParams
         totalCompCapacity
     ));
 
-    for (SizeT i = 0; i != totalCompCapacity; ++i)
+    for (SizeT i = 0; i != totalCompCapacity;)
     {
-        if (compsInsideFrustum[i].test(std::memory_order::relaxed))
+        bool bIsSet = compsInsideFrustum[i].test(std::memory_order::relaxed);
+        SizeT endIdx = i + 1;
+        for (; endIdx != totalCompCapacity; ++endIdx)
         {
-            compsVisibility[i] = true;
+            if (bIsSet != compsInsideFrustum[endIdx].test(std::memory_order::relaxed))
+            {
+                break;
+            }
         }
+        if (bIsSet)
+        {
+            compsVisibility.setRange(i, endIdx - i);
+        }
+        else
+        {
+            compsVisibility.resetRange(i, endIdx - i);
+        }
+
+        i = endIdx;
     }
 }
 
@@ -1107,7 +1128,7 @@ void EngineRenderScene::syncWorldCompsRenderThread(
             if (!sceneVerts.meshesToRemove.empty())
             {
                 auto meshesToRemove = std::move(sceneVerts.meshesToRemove);
-                for (StringID meshToRemove : meshesToRemove)
+                for (cbe::ObjectPath meshToRemove : meshesToRemove)
                 {
                     auto meshViewItr = sceneVerts.meshes.find(meshToRemove);
                     if (meshViewItr != sceneVerts.meshes.cend())
@@ -1121,7 +1142,7 @@ void EngineRenderScene::syncWorldCompsRenderThread(
             {
                 // Try adding the meshes directly to the current buffers, Any thing not copied will be added back to meshesToAdd list
                 auto meshesToAdd = std::move(sceneVerts.meshesToAdd);
-                for (const std::pair<const StringID, SizeT> &meshToAdd : meshesToAdd)
+                for (const std::pair<const cbe::ObjectPath, SizeT> &meshToAdd : meshesToAdd)
                 {
                     addMeshRef(EVertexType::Type(vertType), meshToAdd.first, meshToAdd.second);
                 }
@@ -1144,7 +1165,7 @@ void EngineRenderScene::syncWorldCompsRenderThread(
             if (!shaderMats.second.materialIDToRemove.empty())
             {
                 auto matIDsToRemove = std::move(shaderMats.second.materialIDToRemove);
-                for (StringID matIDToRemove : matIDsToRemove)
+                for (cbe::ObjectPath matIDToRemove : matIDsToRemove)
                 {
                     debugAssert(shaderMats.second.materialToIdx.contains(matIDToRemove));
                     removeMaterialAt(shaderMats.second.materialToIdx[matIDToRemove], matIDToRemove, shaderMats.second);
@@ -1235,7 +1256,7 @@ copat::NormalFuncAwaiter EngineRenderScene::recreateSceneVertexBuffers(
         );
         vertexStride = tempRenderInfo.cpuVertBuffer->bufferStride();
         idxStride = tempRenderInfo.cpuIdxBuffer->bufferStride();
-        for (const std::pair<const StringID, SizeT> &meshToAdd : newBuffers[vertType].meshesToAdd)
+        for (const std::pair<const cbe::ObjectPath, SizeT> &meshToAdd : newBuffers[vertType].meshesToAdd)
         {
             const ComponentRenderInfo &compRenderInfo = compsRenderInfo[newSceneVerts.meshesToAdd[0].second];
             addVertsCount += compRenderInfo.cpuVertBuffer->bufferCount();
@@ -1280,7 +1301,7 @@ copat::NormalFuncAwaiter EngineRenderScene::recreateSceneVertexBuffers(
         // It is okay to directly modify the copies as it will not be modified until bVertexUpdating is false
         sceneVerts.copies.reserve(sceneVerts.copies.size() + sceneVerts.meshes.size() + newSceneVerts.meshesToAdd.size());
         uint64 vertOffset = 0, idxOffset = 0;
-        for (const std::pair<const StringID, MeshVertexView> &meshViewPair : sceneVerts.meshes)
+        for (const std::pair<const cbe::ObjectPath, MeshVertexView> &meshViewPair : sceneVerts.meshes)
         {
             MeshVertexView &newVertexView = newSceneVerts.meshes[meshViewPair.first];
             newVertexView.idxCount = meshViewPair.second.idxCount;
@@ -1305,7 +1326,7 @@ copat::NormalFuncAwaiter EngineRenderScene::recreateSceneVertexBuffers(
             idxOffset += newVertexView.idxCount;
         }
 
-        for (const std::pair<const StringID, SizeT> &meshToAdd : newBuffers[vertType].meshesToAdd)
+        for (const std::pair<const cbe::ObjectPath, SizeT> &meshToAdd : newBuffers[vertType].meshesToAdd)
         {
             MeshVertexView &newVertexView = newSceneVerts.meshes[meshToAdd.first];
             const ComponentRenderInfo &compRenderInfo = compsRenderInfo[meshToAdd.second];
@@ -1365,7 +1386,7 @@ copat::NormalFuncAwaiter EngineRenderScene::recreateSceneVertexBuffers(
         sceneVerts.idxsAllocTracker = std::move(newSceneVerts.idxsAllocTracker);
 
         // Pull references before pushing back
-        for (std::pair<const StringID, MeshVertexView> &meshViewPair : newSceneVerts.meshes)
+        for (std::pair<const cbe::ObjectPath, MeshVertexView> &meshViewPair : newSceneVerts.meshes)
         {
             auto itr = sceneVerts.meshes.find(meshViewPair.first);
             if (itr != sceneVerts.meshes.cend())
@@ -1453,7 +1474,7 @@ copat::NormalFuncAwaiter EngineRenderScene::recreateMaterialBuffers(
             ComponentRenderInfo &compRenderInfo = compsRenderInfo[compRenderInfoIdx];
             debugAssert(compRenderInfo.materialIndex == 0 && compRenderInfo.shaderName.isEqual(newShaderMats.first));
 
-            auto shaderMatsIdxItr = newShaderMats.second.materialToIdx.find(compRenderInfo.materialID);
+            auto shaderMatsIdxItr = newShaderMats.second.materialToIdx.find(compRenderInfo.matObjPath);
             if (shaderMatsIdxItr != newShaderMats.second.materialToIdx.end())
             {
                 compRenderInfo.materialIndex = vectorIdxToMaterialIdx(shaderMatsIdxItr->second);
@@ -1473,7 +1494,7 @@ copat::NormalFuncAwaiter EngineRenderScene::recreateMaterialBuffers(
                 const bool bAllocated = newShaderMats.second.materialAllocTracker.allocate(1, 1, matIdx);
                 fatalAssertf(bAllocated, "Allocation failed(This must never happen unless OOM!)");
 
-                newShaderMats.second.materialToIdx[compRenderInfo.materialID] = matIdx;
+                newShaderMats.second.materialToIdx[compRenderInfo.matObjPath] = matIdx;
                 newShaderMats.second.materialRefs[matIdx] = 1;
 
                 compRenderInfo.materialIndex = vectorIdxToMaterialIdx(matIdx);
@@ -1685,12 +1706,12 @@ void EngineRenderScene::createNextDrawList(
     {
         const ComponentRenderInfo &compRenderInfo = compsRenderInfo[compIdx];
         debugAssert(
-            compRenderInfo.meshID.isValid() && vertexBuffers[compRenderInfo.vertexType].meshes.contains(compRenderInfo.meshID)
+            compRenderInfo.meshObjPath.isValid() && vertexBuffers[compRenderInfo.vertexType].meshes.contains(compRenderInfo.meshObjPath)
             && compRenderInfo.materialIndex != 0 && compRenderInfo.tfIndex != 0
         );
 
         MaterialShaderParams &shaderMats = shaderToMaterials[compRenderInfo.shaderName];
-        const MeshVertexView &meshView = vertexBuffers[compRenderInfo.vertexType].meshes[compRenderInfo.meshID];
+        const MeshVertexView &meshView = vertexBuffers[compRenderInfo.vertexType].meshes[compRenderInfo.meshObjPath];
         DrawIndexedIndirectCommand indexedIndirectDraw{ .indexCount = uint32(meshView.idxCount),
                                                         .instanceCount = 1,
                                                         .firstIndex = uint32(meshView.idxOffset),

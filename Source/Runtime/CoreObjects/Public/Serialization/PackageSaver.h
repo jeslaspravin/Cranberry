@@ -27,10 +27,10 @@ class PackageSaver final : public ObjectArchive
 private:
     cbe::Package *package;
 
-    std::unordered_map<StringID, SizeT> objToContObjsIdx;
+    std::unordered_map<NameString, SizeT> objToContObjsIdx;
     std::vector<PackageContainedData> containedObjects;
 
-    std::unordered_map<StringID, SizeT> objToDepObjsIdx;
+    std::unordered_map<NameString, SizeT> objToDepObjsIdx;
     std::vector<PackageDependencyData> dependentObjects;
 
     BinaryArchive packageArchive;

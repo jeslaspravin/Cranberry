@@ -24,7 +24,7 @@ void StaticMeshComponent::setupRenderInfo(ComponentRenderInfo &compRenderInfo) c
         compRenderInfo.cpuVertBuffer = mesh->vertexCpuBuffer;
 
         compRenderInfo.vertexType = EVertexType::StaticMesh;
-        compRenderInfo.meshID = mesh->getStringID();
+        compRenderInfo.meshObjPath = mesh;
         compRenderInfo.worldTf = getWorldTransform();
     }
 }

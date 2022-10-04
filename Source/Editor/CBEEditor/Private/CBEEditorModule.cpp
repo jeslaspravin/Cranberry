@@ -42,7 +42,7 @@ DECLARE_MODULE(CBEEditor, CBEEditorModule)
 
 void CBEEditorModule::init()
 {
-    IEditorCore *editorCore = ModuleManager::get()->getOrLoadModule<IEditorCore>(TCHAR("EditorCore"));
+    IEditorCore *editorCore = ModuleManager::get()->getOrLoadModulePtr<IEditorCore>(TCHAR("EditorCore"));
     debugAssert(editorCore);
     editorCore->registerAssetImporter(ObjStaticMeshImporter::staticType());
 }

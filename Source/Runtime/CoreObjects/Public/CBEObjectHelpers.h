@@ -15,7 +15,6 @@
 #include "ICoreObjectsModule.h"
 #include "CoreObjectsDB.h"
 #include "ObjectPathHelpers.h"
-#include "Property/PropertyHelper.h"
 #include "String/NameString.h"
 
 namespace cbe
@@ -34,7 +33,8 @@ FORCE_INLINE bool isValid(const Object *obj)
     {
         const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
         // Object db must have this object if present, then at this point this object must have valid alloc index due to flags not being set
-        bool bIsValid = objectsDb.hasObject(obj->getStringID());
+        String objFullPath = obj->getFullPath();
+        bool bIsValid = objectsDb.hasObject({ .objectPath = objFullPath.getChar(), .objectId = obj->getStringID() });
 #if DEV_BUILD
         ObjectAllocatorBase *objAllocator = getObjAllocator(obj->getType());
         fatalAssertf(
@@ -98,16 +98,16 @@ Object *INTERNAL_create(CBEClass clazz, const String &name, Object *outerObj, EO
         alertAlwaysf(false, "Invalid object name! Invalid characters will be replaced with underscore(_)");
         objectName = INTERNAL_getValidObjectName(objectName, clazz);
     }
-    NameString objectFullPath = NameString(ObjectPathHelper::getFullPath(objectName.getChar(), outerObj));
+    NameString objFullPath = NameString(ObjectPathHelper::getFullPath(objectName.getChar(), outerObj));
 
     const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
 #if DEV_BUILD
-    if (objectsDb.hasObject(StringID(objectFullPath)))
+    if (objectsDb.hasObject({ .objectPath = objFullPath.toString().getChar(), .objectId = StringID(objFullPath) }))
     {
         LOG_WARN(
             "ObjectHelper",
             "Object with path %s already exists, If object path needs to be exactly same use createOrGet() to retrieve existing object",
-            objectFullPath
+            objFullPath
         );
     }
 #endif // DEV_BUILD
@@ -132,7 +132,7 @@ Object *INTERNAL_create(CBEClass clazz, const String &name, Object *outerObj, EO
     Object *object = reinterpret_cast<Object *>(objPtr);
 
     // Object's data must be populated even before constructor is called
-    if (objectsDb.hasObject(StringID(objectFullPath)))
+    if (objectsDb.hasObject({ .objectPath = objFullPath.toString().getChar(), .objectId = StringID(objFullPath) }))
     {
         // Appending allocation ID and class name will make it unique
         SizeT uniqueNameId = uint32(clazz->name);
@@ -170,11 +170,13 @@ Object *create(CBEClass clazz, const String &name, Object *outerObj, EObjectFlag
 template <typename... CtorArgs>
 Object *createOrGet(CBEClass clazz, const String &name, Object *outerObj, EObjectFlags flags = 0, CtorArgs... ctorArgs)
 {
+    String objFullPath = ObjectPathHelper::getFullPath(name.getChar(), outerObj);
     const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
-    StringID objectFullPath = ObjectPathHelper::getFullPath(name.getChar(), outerObj).getChar();
-    if (objectsDb.hasObject(objectFullPath))
+    CoreObjectsDB::NodeIdxType objNodeIdx
+        = objectsDb.getObjectNodeIdx({ .objectPath = objFullPath.getChar(), .objectId = objFullPath.getChar() });
+    if (objectsDb.hasObject(objNodeIdx))
     {
-        return objectsDb.getObject(objectFullPath);
+        return objectsDb.getObject(objNodeIdx);
     }
     return create<CtorArgs...>(clazz, name, outerObj, flags, std::forward<CtorArgs>(ctorArgs)...);
 }
@@ -193,8 +195,14 @@ ClassType *createOrGet(const String &name, Object *outerObj, EObjectFlags flags 
     );
 }
 
-FORCE_INLINE Object *get(const TChar *objectFullPath) { return ICoreObjectsModule::get()->getObjectsDB().getObject(objectFullPath); }
-FORCE_INLINE Object *get(StringID objectID) { return ICoreObjectsModule::get()->getObjectsDB().getObject(objectID); }
+FORCE_INLINE Object *get(const TChar *objectFullPath)
+{
+    return ICoreObjectsModule::get()->getObjectsDB().getObject({ .objectPath = objectFullPath, .objectId = objectFullPath });
+}
+FORCE_INLINE Object *get(StringID objectID, const TChar *objectFullPath)
+{
+    return ICoreObjectsModule::get()->getObjectsDB().getObject({ .objectPath = objectFullPath, .objectId = objectID });
+}
 
 template <typename ClassType>
 ClassType *get(const TChar *objectFullPath)

@@ -269,10 +269,10 @@ struct DeepCopyFieldVisitable
             // Replace pointer if we are replacing subobject references and the from pointer is valid sub object of fromCommonRoot
             if (copyUserData->bReplaceSubobjects && isValid(*fromDataPtrPtr) && (*fromDataPtrPtr)->hasOuter(copyUserData->fromCommonRoot))
             {
-                String comRootRelPath = ObjectPathHelper::getObjectPath(*fromDataPtrPtr, copyUserData->fromCommonRoot);
-                Object *dupObj = copyUserData->objDb->getObject(
-                    ObjectPathHelper::getFullPath(comRootRelPath.getChar(), copyUserData->toCommonRoot).getChar()
-                );
+                String dupObjFullPath = ObjectPathHelper::getObjectPath(*fromDataPtrPtr, copyUserData->fromCommonRoot);
+                dupObjFullPath = ObjectPathHelper::getFullPath(dupObjFullPath.getChar(), copyUserData->toCommonRoot);
+                Object *dupObj
+                    = copyUserData->objDb->getObject({ .objectPath = dupObjFullPath.getChar(), .objectId = dupObjFullPath.getChar() });
                 debugAssert(dupObj);
                 (*toDataPtrPtr) = dupObj;
             }
@@ -364,13 +364,19 @@ bool copyObject(CopyObjectOptions options)
     switch (options.copyMode)
     {
     case EObjectTraversalMode::EntireObjectTree:
+    {
+        String objFullPath = options.fromObject->getFullPath();
         // We need to copy the entire object graph under this objects
-        objDb.getSubobjects(subObjects, options.fromObject->getStringID());
+        objDb.getSubobjects(subObjects, { .objectPath = objFullPath.getChar(), .objectId = options.fromObject->getStringID() });
         break;
+    }
     case EObjectTraversalMode::ObjectAndChildren:
+    {
+        String objFullPath = options.fromObject->getFullPath();
         // We need to copy the object and its children only
-        objDb.getChildren(subObjects, options.fromObject->getStringID());
+        objDb.getChildren(subObjects, { .objectPath = objFullPath.getChar(), .objectId = options.fromObject->getStringID() });
         break;
+    }
     case EObjectTraversalMode::OnlyObject:
     default:
         break;
@@ -395,8 +401,8 @@ bool copyObject(CopyObjectOptions options)
         Object *duplicateSubObjOuter = options.toObject;
         for (auto outerNameRItr = objectNamesChain.crbegin(); outerNameRItr != objectNamesChain.crend(); ++outerNameRItr)
         {
-            StringID fromObjectFullPath = StringID(ObjectPathHelper::getFullPath(outerNameRItr->getChar(), subObjOuter));
-            Object *fromOuterObj = objDb.getObject(fromObjectFullPath);
+            String fromObjFullPath = ObjectPathHelper::getFullPath(outerNameRItr->getChar(), subObjOuter);
+            Object *fromOuterObj = get(fromObjFullPath.getChar());
             debugAssert(fromOuterObj);
             String toOuterFullPath = ObjectPathHelper::getFullPath(outerNameRItr->getChar(), duplicateSubObjOuter);
             // Just createOrGet()
@@ -612,11 +618,17 @@ void replaceObjectReferences(
     switch (replaceMode)
     {
     case EObjectTraversalMode::EntireObjectTree:
-        objDb.getSubobjects(subObjects, object->getStringID());
+    {
+        String objFullPath = object->getFullPath();
+        objDb.getSubobjects(subObjects, { .objectPath = objFullPath.getChar(), .objectId = object->getStringID() });
         break;
+    }
     case EObjectTraversalMode::ObjectAndChildren:
-        objDb.getChildren(subObjects, object->getStringID());
+    {
+        String objFullPath = object->getFullPath();
+        objDb.getChildren(subObjects, { .objectPath = objFullPath.getChar(), .objectId = object->getStringID() });
         break;
+    }
     case EObjectTraversalMode::OnlyObject:
     default:
         break;
@@ -767,11 +779,17 @@ COREOBJECTS_EXPORT std::vector<ObjectReferences> findObjectReferences(
     switch (replaceMode)
     {
     case EObjectTraversalMode::EntireObjectTree:
-        objDb.getSubobjects(subObjects, object->getStringID());
+    {
+        String objFullPath = object->getFullPath();
+        objDb.getSubobjects(subObjects, { .objectPath = objFullPath.getChar(), .objectId = object->getStringID() });
         break;
+    }
     case EObjectTraversalMode::ObjectAndChildren:
-        objDb.getChildren(subObjects, object->getStringID());
+    {
+        String objFullPath = object->getFullPath();
+        objDb.getChildren(subObjects, { .objectPath = objFullPath.getChar(), .objectId = object->getStringID() });
         break;
+    }
     case EObjectTraversalMode::OnlyObject:
     default:
         break;

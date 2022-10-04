@@ -65,6 +65,58 @@ LibHandle ModuleManager::loadFromAdditionalPaths(const TChar *modulePath) const
     return nullptr;
 }
 
+ModulePtr ModuleManager::tryLoadModule(const TChar *moduleName)
+{
+    ModulePtr retModule = nullptr;
+
+    LOG("ModuleManager", "Loading module %s", moduleName);
+
+    auto staticInitializerItr = getModuleInitializerList().find(moduleName);
+    if (staticInitializerItr != getModuleInitializerList().end())
+    {
+        fatalAssertf(staticInitializerItr->second.isBound(), "Static initializer must be bound");
+        retModule = ModulePtr(staticInitializerItr->second.invoke());
+    }
+#if STATIC_LINKED
+    else
+    {
+        fatalAssertf(!"Module initializer not found", "Module %s initializer not found", moduleName);
+        return existingModule;
+    }
+#else  // STATIC_LINKED
+    else
+    {
+        // Not specifying extension as they are auto appended by api to platform default
+        LibHandle libPtr = getOrLoadLibrary(moduleName);
+        // Check other paths for modules
+        fatalAssertf(libPtr, "Failed loading module %s", moduleName);
+
+        String moduleCreateFuncName = TCHAR("createModule_");
+        moduleCreateFuncName.append(moduleName);
+        Function<IModuleBase *> createFuncPtr(
+            Function<IModuleBase *>::StaticDelegate(PlatformFunctions::getProcAddress(libPtr, moduleCreateFuncName.getChar()))
+        );
+        fatalAssertf(createFuncPtr, "Failed find module create function(%s) for module %s", moduleCreateFuncName, moduleName);
+
+        retModule = ModulePtr(createFuncPtr());
+    }
+#endif // STATIC_LINKED
+    if (retModule)
+    {
+        // Order and module must be set before calling init, this allows module's code to access module from ModuleManager inside init
+        moduleLoadedOrder.emplace_back(moduleName);
+        loadedModuleInterfaces[moduleName] = retModule;
+        retModule->init();
+
+        onModuleLoad.invoke(moduleName);
+    }
+    else
+    {
+        LOG_ERROR("ModuleManager", "Failed loading module interface %s", moduleName);
+    }
+    return retModule;
+}
+
 ModuleManager::ModuleManager()
     : loadedLibraries()
 {
@@ -196,7 +248,17 @@ WeakModulePtr ModuleManager::getModule(const TChar *moduleName) const
     return moduleItr->second;
 }
 
-bool ModuleManager::loadModule(const TChar *moduleName) { return !getOrLoadModule(moduleName).expired(); }
+IModuleBase *ModuleManager::getModulePtr(const TChar *moduleName) const
+{
+    auto moduleItr = loadedModuleInterfaces.find(moduleName);
+    if (moduleItr == loadedModuleInterfaces.cend())
+    {
+        return nullptr;
+    }
+    return moduleItr->second.get();
+}
+
+bool ModuleManager::loadModule(const TChar *moduleName) { return getOrLoadModulePtr(moduleName); }
 
 WeakModulePtr ModuleManager::getOrLoadModule(const TChar *moduleName)
 {
@@ -205,46 +267,20 @@ WeakModulePtr ModuleManager::getOrLoadModule(const TChar *moduleName)
 
     if (!bool(retModule))
     {
-        LOG("ModuleManager", "Loading module %s", moduleName);
-
-        auto staticInitializerItr = getModuleInitializerList().find(moduleName);
-        if (staticInitializerItr != getModuleInitializerList().end())
-        {
-            fatalAssertf(staticInitializerItr->second.isBound(), "Static initializer must be bound");
-            retModule = ModulePtr(staticInitializerItr->second.invoke());
-        }
-#if STATIC_LINKED
-        else
-        {
-            fatalAssertf(!"Module initializer not found", "Module %s initializer not found", moduleName);
-            return existingModule;
-        }
-#else  // STATIC_LINKED
-        else
-        {
-            // Not specifying extension as they are auto appended by api to platform default
-            LibHandle libPtr = getOrLoadLibrary(moduleName);
-            // Check other paths for modules
-            fatalAssertf(libPtr, "Failed loading module %s", moduleName);
-
-            String moduleCreateFuncName = TCHAR("createModule_");
-            moduleCreateFuncName.append(moduleName);
-            Function<IModuleBase *> createFuncPtr(
-                Function<IModuleBase *>::StaticDelegate(PlatformFunctions::getProcAddress(libPtr, moduleCreateFuncName.getChar()))
-            );
-            fatalAssertf(createFuncPtr, "Failed find module create function(%s) for module %s", moduleCreateFuncName, moduleName);
-
-            retModule = ModulePtr(createFuncPtr());
-        }
-#endif // STATIC_LINKED
+        retModule = tryLoadModule(moduleName);
         fatalAssertf(retModule, "Failed loading module interface %s", moduleName);
+    }
+    return retModule;
+}
 
-        // Order and module must be set before calling init, this allows module's code to access module from ModuleManager inside init
-        moduleLoadedOrder.emplace_back(moduleName);
-        loadedModuleInterfaces[moduleName] = retModule;
-        retModule->init();
-
-        onModuleLoad.invoke(moduleName);
+IModuleBase *ModuleManager::getOrLoadModulePtr(const TChar *moduleName)
+{
+    IModuleBase *retModule = getModulePtr(moduleName);
+    if (retModule == nullptr)
+    {
+        ModulePtr modulePtr = tryLoadModule(moduleName);
+        fatalAssertf(modulePtr, "Failed loading module interface %s", moduleName);
+        retModule = modulePtr.get();
     }
     return retModule;
 }

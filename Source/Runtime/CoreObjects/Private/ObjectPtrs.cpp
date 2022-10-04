@@ -20,7 +20,7 @@ ObjectPath &ObjectPath::operator=(const TChar *fullPath)
     allocIdx = 0;
 
     packagePath = ObjectPathHelper::getPathComponents(outerPath, objectName, fullPath);
-    Object *obj = getObject();
+    Object *obj = get(fullPath);
     if (cbe::isValid(obj))
     {
         allocIdx = INTERNAL_ObjectCoreAccessors::getAllocIdx(obj);

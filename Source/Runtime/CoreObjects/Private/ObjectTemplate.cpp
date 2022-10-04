@@ -215,8 +215,9 @@ void ObjectTemplate::createTemplate(CBEClass clazz, const TChar *name)
     }
 
     const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
+    String templateObjFullPath = templateObj->getFullPath();
     std::vector<Object *> subObjs;
-    objectsDb.getSubobjects(subObjs, templateObj->getStringID());
+    objectsDb.getSubobjects(subObjs, { .objectPath = templateObjFullPath.getChar(), .objectId = templateObj->getStringID() });
 
     objectEntries.emplace(objectName, TemplateObjectEntry{});
     for (Object *subObj : subObjs)

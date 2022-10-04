@@ -76,6 +76,12 @@ NODISCARD CONST_EXPR bool empty(const CharType *start)
 }
 
 template <typename CharType, typename StringViewType = CharStringView<CharType>>
+NODISCARD CONST_EXPR bool isEqual(const CharType *lhs, const CharType *rhs)
+{
+    return StringViewType(lhs) == StringViewType(rhs);
+}
+
+template <typename CharType, typename StringViewType = CharStringView<CharType>>
 CONST_EXPR bool find(const CharType *findIn, const CharType *findStr, SizeT *outFoundAt = nullptr, SizeT findFrom = 0)
 {
     StringViewType strView(findIn);

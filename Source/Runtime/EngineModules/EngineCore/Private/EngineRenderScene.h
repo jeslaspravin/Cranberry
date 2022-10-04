@@ -11,7 +11,6 @@
 
 #pragma once
 
-#include "String/StringID.h"
 #include "Math/Box.h"
 #include "Memory/LinearAllocator.h"
 #include "Types/Containers/BitArray.h"
@@ -125,7 +124,7 @@ struct ComponentRenderInfo
     // materialIndex is just a cache. 0 is invalid
     SizeT materialIndex;
     String shaderName;
-    StringID materialID;
+    cbe::ObjectPath matObjPath;
 
     // TODO(Jeslas) : Will be changed after other vertex types of meshes are added
     // 0 is invalid
@@ -134,13 +133,13 @@ struct ComponentRenderInfo
 
     // vertexBuffers[vertexType].meshes[meshID] gives vertex information for this component
     EVertexType::Type vertexType;
-    StringID meshID;
+    cbe::ObjectPath meshObjPath;
 
     BufferResourceRef cpuVertBuffer;
     BufferResourceRef cpuIdxBuffer;
 
     // Will be same as one mapped in componentToRenderInfo
-    StringID compID;
+    cbe::ObjectPath compObjPath;
 };
 
 struct RenderSceneViewParams
@@ -179,12 +178,12 @@ private:
 
         LinearAllocationTracker<1> vertsAllocTracker;
         LinearAllocationTracker<1> idxsAllocTracker;
-        std::unordered_map<StringID, MeshVertexView> meshes;
+        std::unordered_map<cbe::ObjectPath, MeshVertexView> meshes;
 
         // List of meshes and Component render info index to add for first time
-        std::vector<std::pair<StringID, SizeT>> meshesToAdd;
+        std::vector<std::pair<cbe::ObjectPath, SizeT>> meshesToAdd;
         // List of meshes to remove in case vertex updates are in progress
-        std::vector<StringID> meshesToRemove;
+        std::vector<cbe::ObjectPath> meshesToRemove;
 
         // Batch copy all vertices
         std::vector<BatchCopyBufferInfo> copies;
@@ -218,10 +217,10 @@ private:
         LinearAllocationTracker<1> materialAllocTracker;
         std::vector<uint32> materialRefs;
         // Idx is not material idx but the direct vector idx. No need to do materialIdxToVectorIdx()
-        std::unordered_map<StringID, SizeT> materialToIdx;
+        std::unordered_map<cbe::ObjectPath, SizeT> materialToIdx;
 
         std::vector<SizeT> compIdxToAdd;
-        std::vector<StringID> materialIDToRemove;
+        std::vector<cbe::ObjectPath> materialIDToRemove;
 
         std::vector<BatchCopyBufferData> drawListCopies;
         std::vector<BatchCopyBufferInfo> materialCopies;
@@ -234,7 +233,7 @@ private:
     cbe::ObjectPath world;
     RenderInfoVector compsRenderInfo;
     BitArray<uint64> compsVisibility;
-    std::unordered_map<StringID, SizeT> componentToRenderInfo;
+    std::unordered_map<cbe::ObjectPath, SizeT> componentToRenderInfo;
     ComponentRenderSyncInfo componentUpdates;
 
     SceneRenderTexturePool rtPool;
@@ -283,8 +282,8 @@ public:
 
 private:
     // Add/Remove mesh ref is used when creating or deleting a component in render scene to clear those vertices in scene vert and index buffers
-    FORCE_INLINE void addMeshRef(EVertexType::Type vertType, StringID meshID, SizeT compRenderInfoIdx);
-    FORCE_INLINE void removeMeshRef(EVertexType::Type vertType, MeshVertexView &meshVertView, StringID meshID);
+    FORCE_INLINE void addMeshRef(EVertexType::Type vertType, cbe::ObjectPath meshFullPath, SizeT compRenderInfoIdx);
+    FORCE_INLINE void removeMeshRef(EVertexType::Type vertType, MeshVertexView &meshVertView, cbe::ObjectPath meshFullPath);
 
     FORCE_INLINE SizeT instanceIdxToVectorIdx(SizeT instanceIdx) const { return instanceIdx - 1; }
     FORCE_INLINE SizeT vectorIdxToInstanceIdx(SizeT idx) const { return idx + 1; }
@@ -304,13 +303,13 @@ private:
     FORCE_INLINE void addCompMaterialData(SizeT compRenderInfoIdx);
     // Why material vector index here alone? Because in materialIDToIdx each material ID directly maps to actual vector idx
     // And only materialIDs to be removed is stored
-    FORCE_INLINE void removeMaterialAt(SizeT matVectorIdx, StringID materialID, MaterialShaderParams &shaderMats);
+    FORCE_INLINE void removeMaterialAt(SizeT matVectorIdx, cbe::ObjectPath matFullPath, MaterialShaderParams &shaderMats);
 
     FORCE_INLINE uint32 getBufferedReadOffset() const { return uint32(frameCount % BUFFER_COUNT); }
     FORCE_INLINE uint32 getBufferedWriteOffset() const { return uint32((frameCount + 1) % BUFFER_COUNT); }
 
     void addRenderComponents(const std::vector<cbe::RenderableComponent *> &renderComps);
-    void removeRenderComponents(const std::vector<StringID> &renderComps);
+    void removeRenderComponents(const std::vector<String> &renderComps);
     void recreateRenderComponents(const std::vector<cbe::RenderableComponent *> &renderComps);
     void updateTfComponents(
         const std::vector<cbe::TransformComponent *> &comps, IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance

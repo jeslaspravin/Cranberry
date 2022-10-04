@@ -127,12 +127,13 @@ Object *load(String objectPath, CBEClass clazz)
         }
     }
 
-    StringID objId{ objectPath };
     const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
+    CoreObjectsDB::NodeIdxType objNodeIdx
+        = objectsDb.getObjectNodeIdx({ .objectPath = objectPath.getChar(), .objectId = objectPath.getChar() });
     Object *obj = nullptr;
-    if (objectsDb.hasObject(objId))
+    if (objectsDb.hasObject(objNodeIdx))
     {
-        obj = objectsDb.getObject(objId);
+        obj = objectsDb.getObject(objNodeIdx);
     }
     debugAssert(obj && BIT_NOT_SET(obj->getFlags(), EObjectFlagBits::ObjFlag_PackageLoadPending));
     return obj;
@@ -159,12 +160,13 @@ Object *getOrLoad(String objectPath, CBEClass clazz)
         objectPath = objPath;
     }
 
-    StringID objId{ objectPath };
     const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
+    CoreObjectsDB::NodeIdxType objNodeIdx
+        = objectsDb.getObjectNodeIdx({ .objectPath = objectPath.getChar(), .objectId = objectPath.getChar() });
     Object *obj = nullptr;
-    if (objectsDb.hasObject(objId))
+    if (objectsDb.hasObject(objNodeIdx))
     {
-        obj = objectsDb.getObject(objId);
+        obj = objectsDb.getObject(objNodeIdx);
     }
 
     if (!obj || BIT_SET(obj->getFlags(), EObjectFlagBits::ObjFlag_PackageLoadPending))

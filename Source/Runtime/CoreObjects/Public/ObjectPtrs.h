@@ -21,25 +21,20 @@ template <ObjectType PtrType>
 class WeakObjPtr
 {
 private:
-    ObjectAllocIdx allocIdx;
-    StringID objectId;
+    ObjectAllocIdx allocIdx = 0;
+    NameString objectPath;
 
     friend std::hash<WeakObjPtr<PtrType>>;
 
 public:
-    WeakObjPtr()
-        : allocIdx(0)
-        , objectId(StringID::INVALID)
-    {}
+    WeakObjPtr() = default;
 
     WeakObjPtr(PtrType *ptr)
-        : allocIdx(0)
-        , objectId(StringID::INVALID)
     {
         if (cbe::isValid(ptr))
         {
             allocIdx = INTERNAL_ObjectCoreAccessors::getAllocIdx(ptr);
-            objectId = ptr->getStringID();
+            objectPath = ptr->getFullPath().getChar();
         }
     }
 
@@ -47,13 +42,13 @@ public:
     // constructors
     WeakObjPtr(WeakObjPtr &&weakPtr)
         : allocIdx(weakPtr.allocIdx)
-        , objectId(weakPtr.objectId)
+        , objectPath(weakPtr.objectPath)
     {
         weakPtr.detachRef();
     }
     WeakObjPtr(const WeakObjPtr &weakPtr)
         : allocIdx(weakPtr.allocIdx)
-        , objectId(weakPtr.objectId)
+        , objectPath(weakPtr.objectPath)
     {}
     template <class InPtrType>
     WeakObjPtr(WeakObjPtr<InPtrType> &&weakPtr)
@@ -80,7 +75,7 @@ public:
         if (cbe::isValid(ptr))
         {
             allocIdx = INTERNAL_ObjectCoreAccessors::getAllocIdx(ptr);
-            objectId = ptr->getStringID();
+            objectPath = ptr->getFullPath().getChar();
         }
         else
         {
@@ -96,7 +91,7 @@ public:
         if (this != &weakPtr)
         {
             allocIdx = weakPtr.allocIdx;
-            objectId = weakPtr.objectId;
+            objectPath = weakPtr.objectPath;
             weakPtr.detachRef();
         }
         return *this;
@@ -104,7 +99,7 @@ public:
     FORCE_INLINE WeakObjPtr &operator=(const WeakObjPtr &weakPtr)
     {
         allocIdx = weakPtr.allocIdx;
-        objectId = weakPtr.objectId;
+        objectPath = weakPtr.objectPath;
         return *this;
     }
     template <class InPtrType>
@@ -138,11 +133,14 @@ public:
     {
         return !(*this == rhs);
     }
-    FORCE_INLINE bool operator==(const WeakObjPtr &rhs) const { return allocIdx == rhs.allocIdx && objectId == rhs.objectId; }
+    FORCE_INLINE bool operator==(const WeakObjPtr &rhs) const
+    {
+        return allocIdx == rhs.allocIdx && objectPath == rhs.objectPath && objectPath.toString().isEqual(rhs.objectPath.toString());
+    }
     template <typename Type>
     FORCE_INLINE bool operator==(const WeakObjPtr<Type> &rhs) const
     {
-        return allocIdx == rhs.allocIdx && objectId == rhs.objectId;
+        return allocIdx == rhs.allocIdx && objectPath == rhs.objectPath && objectPath.toString().isEqual(rhs.objectPath.toString());
     }
     template <typename Type>
     FORCE_INLINE bool operator==(Type *rhs) const
@@ -152,12 +150,12 @@ public:
 
     FORCE_INLINE bool operator<(const WeakObjPtr &rhs) const
     {
-        return objectId == rhs.objectId ? allocIdx < rhs.allocIdx : objectId < rhs.objectId;
+        return objectPath == rhs.objectPath ? allocIdx < rhs.allocIdx : objectPath < rhs.objectPath;
     }
     template <typename Type>
     FORCE_INLINE bool operator<(const WeakObjPtr<Type> &rhs) const
     {
-        return objectId == rhs.objectId ? allocIdx < rhs.allocIdx : objectId < rhs.objectId;
+        return objectPath == rhs.objectPath ? allocIdx < rhs.allocIdx : objectPath < rhs.objectPath;
     }
 
     template <typename AsType>
@@ -168,21 +166,21 @@ public:
     // For compliance with SharedPtr
     FORCE_INLINE PtrType *get() const
     {
-        if (objectId == StringID::INVALID)
+        if (!objectPath.isValid())
         {
             return nullptr;
         }
-        return static_cast<PtrType *>(cbe::get(objectId));
+        return static_cast<PtrType *>(cbe::get(StringID(objectPath), objectPath.toString().getChar()));
     }
 
     // Checks if set objectId is valid now
     FORCE_INLINE bool isValid() const
     {
-        if (objectId == StringID::INVALID)
+        if (!objectPath.isValid())
         {
             return false;
         }
-        if (Object *obj = cbe::get(objectId))
+        if (Object *obj = cbe::get(StringID(objectPath), objectPath.toString().getChar()))
         {
             return INTERNAL_ObjectCoreAccessors::getAllocIdx(obj) == allocIdx;
         }
@@ -191,18 +189,18 @@ public:
     FORCE_INLINE explicit operator bool() const { return isValid(); }
 
     // Check if this WeakPtr is set
-    FORCE_INLINE bool isSet() const { return objectId != StringID::INVALID; }
+    FORCE_INLINE bool isSet() const { return objectPath.isValid(); }
 
     FORCE_INLINE void swap(WeakObjPtr<PtrType> &weakPtr)
     {
         std::swap(allocIdx, weakPtr.allocIdx);
-        std::swap(objectId, weakPtr.objectId);
+        std::swap(objectPath, weakPtr.objectPath);
     }
 
     FORCE_INLINE void reset()
     {
         allocIdx = 0;
-        objectId = StringID::INVALID;
+        objectPath = NameString();
     }
 
     // Detaches current ref counted resource without decrementing ref counter, Do not use it
@@ -247,7 +245,7 @@ public:
     const String &getObjectName() const { return objectName; }
     String getFullPath() const;
 
-    // Return nullptr if no object found
+    // Return nullptr if no object found, Tries to load which could be slow
     Object *getObject() const;
     template <ObjectType AsType>
     AsType *getObject() const

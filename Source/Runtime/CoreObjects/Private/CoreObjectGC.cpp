@@ -27,12 +27,14 @@ void INTERNAL_destroyCBEObject(cbe::Object *obj);
 uint64 CoreObjectGC::deleteObject(cbe::Object *obj) const
 {
     CoreObjectsDB &objsDb = CoreObjectsModule::objectsDB();
-    if (objsDb.hasObject(obj->getStringID()))
+    String objFullPath = obj->getFullPath();
+    CoreObjectsDB::NodeIdxType objNodeIdx = objsDb.getObjectNodeIdx({ .objectPath = objFullPath.getChar(), .objectId = obj->getStringID() });
+    if (objsDb.hasObject(objNodeIdx))
     {
         // Deleting obj and its sub objects
         std::vector<cbe::Object *> subObjs;
         subObjs.emplace_back(obj);
-        objsDb.getSubobjects(subObjs, obj->getStringID());
+        objsDb.getSubobjects(subObjs, objNodeIdx);
         // Need to reverse so that children will be destroyed before parent
         for (auto rItr = subObjs.crbegin(); rItr != subObjs.crend(); ++rItr)
         {
@@ -112,7 +114,11 @@ void CoreObjectGC::markObjectsAsValid(TickRep &budgetTicks)
         BitArray<uint64> &packagesFlag = objUsedFlags[cbe::Package::staticType()];
         for (cbe::Package *package : (*gCBEObjectAllocators)[cbe::Package::staticType()]->getAllObjects<cbe::Package>())
         {
-            if (BIT_NOT_SET(package->getFlags(), cbe::EObjectFlagBits::ObjFlag_MarkedForDelete) && objsDb.hasChild(package->getStringID()))
+            debugAssertf(
+                package->getFullPath().isEqual(package->getName()), "Package name is not same as Package full path below logic will fail!"
+            );
+            if (BIT_NOT_SET(package->getFlags(), cbe::EObjectFlagBits::ObjFlag_MarkedForDelete)
+                && objsDb.hasChild({ .objectPath = package->getName().getChar(), .objectId = package->getStringID() }))
             {
                 packagesFlag[cbe::INTERNAL_ObjectCoreAccessors::getAllocIdx(package)] = true;
             }
@@ -197,6 +203,24 @@ void CoreObjectGC::startNewGC(TickRep &budgetTicks)
     if (state == EGCState::Clearing)
     {
         clearUnused(budgetTicks);
+    }
+}
+
+void CoreObjectGC::purgeAll()
+{
+    std::vector<cbe::Object *> allObjs;
+    CoreObjectsDB &objsDb = CoreObjectsModule::objectsDB();
+    objsDb.getAllObjects(allObjs);
+    objsDb.clear();
+
+    for (auto objRItr = allObjs.crbegin(); objRItr != allObjs.crend(); ++objRItr)
+    {
+        cbe::Object *obj = *objRItr;
+        SET_BITS(cbe::INTERNAL_ObjectCoreAccessors::getFlags(obj), cbe::EObjectFlagBits::ObjFlag_GCPurge);
+        if (BIT_NOT_SET(obj->getFlags(), cbe::EObjectFlagBits::ObjFlag_Default))
+        {
+            cbe::INTERNAL_destroyCBEObject(obj);
+        }
     }
 }
 

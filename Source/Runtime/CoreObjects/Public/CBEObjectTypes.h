@@ -29,51 +29,56 @@ class Object;
 
 enum EObjectFlagBits : EObjectFlags
 {
-    /*
+    /**
      * Default object that are created as part of
      * cbe::ObjectAllocatorBase creation and are not cleared during garbage collection
      */
     ObjFlag_Default = 0x00'00'00'00'00'00'00'01,
-    /*
+    /**
      * Object when marked for delete will be deleted during later
      * garbage collection no matter if they are referred or not
      */
     ObjFlag_MarkedForDelete = 0x00'00'00'00'00'00'00'02,
-    /*
+    /**
      * Object after deleted will be marked as deleted, deleted object
      * remains available until the allocated slot is entirely deleted.
      * However It is not safe to use object in this state.
      */
     ObjFlag_Deleted = 0x00'00'00'00'00'00'00'04,
-    /*
+    /**
+     * Object will be marked as GCPurge if destroy is part of whole clean up and other systems might not provide necessary services at this
+     * point
+     */
+    ObjFlag_GCPurge = 0x00'00'00'00'00'00'00'08,
+    /**
      * Objects marked as root can only be removed if its parent is deleted or if it is manually deleted.
      * GC skips over objects marked as root
      */
-    ObjFlag_RootObject = 0x00'00'00'00'00'00'00'08,
-    /*
+    ObjFlag_RootObject = 0x00'00'00'00'00'00'00'10,
+    /**
      * If Object is transient and will not be serialized with package
      */
-    ObjFlag_Transient = 0x00'00'00'00'00'00'00'10,
-    /*
+    ObjFlag_Transient = 0x00'00'00'00'00'00'00'20,
+    /**
      * If package is modified and needs to be saved
      */
-    ObjFlag_PackageDirty = 0x00'00'00'00'00'00'00'20,
-    /*
+    ObjFlag_PackageDirty = 0x00'00'00'00'00'00'00'40,
+    /**
      * If object of the package is being loaded/needs loading. Once object is loaded this flag will be cleared
      */
-    ObjFlag_PackageLoadPending = 0x00'00'00'00'00'00'00'40,
-    /*
+    ObjFlag_PackageLoadPending = 0x00'00'00'00'00'00'00'80,
+    /**
      * If object of the package is Loaded. Once object is loaded this flag will be set
      */
-    ObjFlag_PackageLoaded = 0x00'00'00'00'00'00'00'80,
-    /*
+    ObjFlag_PackageLoaded = 0x00'00'00'00'00'00'01'00,
+    /**
      * If object is a template default object
      */
-    ObjFlag_TemplateDefault = 0x00'00'00'00'00'00'01'00,
-    /*
+    ObjFlag_TemplateDefault = 0x00'00'00'00'00'00'02'00,
+    /**
      * If object is created from Template.
      */
-    ObjFlag_FromTemplate = 0x00'00'00'00'00'00'02'00,
+    ObjFlag_FromTemplate = 0x00'00'00'00'00'00'04'00
 };
 
 enum class EObjectTraversalMode

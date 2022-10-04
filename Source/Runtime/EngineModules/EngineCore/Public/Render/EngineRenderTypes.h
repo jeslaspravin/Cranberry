@@ -27,7 +27,7 @@ class World;
 
 struct ComponentRenderSyncInfo
 {
-    std::vector<StringID> compsRemoved;
+    std::vector<String> compsRemoved;
     std::vector<cbe::RenderableComponent *> compsAdded;
     std::vector<cbe::RenderableComponent *> recreateComps;
     std::vector<cbe::TransformComponent *> compsTransformed;

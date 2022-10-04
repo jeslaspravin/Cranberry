@@ -60,11 +60,19 @@ void CranberryEngineApp::onExit()
 {
     gCBEEngine->onExit();
     gCBEEngine->worldManager()->unloadAllWorlds();
-    // Wait until all the dereferenced objects are cleared, Give as much time as it wants
-    coreObjModule->getGC().collect(0.f);
-    while (!coreObjModule->getGC().isGcComplete() || coreObjModule->getGC().getLastClearCount() > 0)
-    {
+
+    const bool bWaitClearGC = false;
+    if (bWaitClearGC)
+    { // Wait until all the dereferenced objects are cleared, Give as much time as it wants
         coreObjModule->getGC().collect(0.f);
+        while (!coreObjModule->getGC().isGcComplete() || coreObjModule->getGC().getLastClearCount() > 0)
+        {
+            coreObjModule->getGC().collect(0.f);
+        }
+    }
+    else
+    {
+        coreObjModule->getGC().purgeAll();
     }
 
     ModuleManager *moduleManager = ModuleManager::get();
@@ -191,7 +199,7 @@ void tempTest()
             sceneObj = cbe::create<cbe::World>(TCHAR("TestCubes"), worldPackage, cbe::EObjectFlagBits::ObjFlag_PackageLoaded);
 
             // Create hundred thousand sm objects
-            for (uint32 i = 0; i < 20 * 20 * 20; ++i)
+            for (uint32 i = 0; i < 10 * 100 * 100; ++i)
             {
                 cbe::ActorPrefab *smActorPrefab = cbe::ActorPrefab::prefabFromActorTemplate(cbe::ActorPrefab::objectTemplateFromObj(
                     EditorHelpers::addActorToWorld(sceneObj, cbe::Actor::staticType(), TCHAR("CubeActor_") + String::toString(i), 0)
@@ -209,9 +217,9 @@ void tempTest()
                 smComp->mesh = cubeMesh;
 
                 Vector3D pos;
-                pos.x() = (i % 20) * 50 + 25 - 50;
-                pos.y() = ((i / 20) % 20) * 50 + 25 - 50;
-                pos.z() = (i / (20 * 20)) * 50 + 25 - 50;
+                pos.x() = (i % 100) * 50 + 25 - 2500;
+                pos.y() = ((i / 100) % 100) * 50 + 25 - 2500;
+                pos.z() = (i / (100 * 100)) * 50 + 25 - 250;
                 smComp->setRelativeLocation(pos);
                 smComp->setRelativeScale(Vector3D{ 0.25f });
 

@@ -95,9 +95,17 @@ public:
     }
 
     // Equality
-    CONST_EXPR std::strong_ordering operator<=>(const NameString &rhs) const noexcept { return id <=> rhs.id; }
+    CONST_EXPR std::strong_ordering operator<=>(const NameString &rhs) const noexcept
+    {
+        std::strong_ordering ordering = id <=> rhs.id;
+        if (ordering == std::strong_ordering::equal)
+        {
+            return nameStr <=> rhs.nameStr;
+        }
+        return ordering;
+    }
     // Since the == operator is necessary even though spaceship is defined for hash map
-    CONST_EXPR bool operator==(const NameString &rhs) const noexcept { return id == rhs.id; }
+    CONST_EXPR bool operator==(const NameString &rhs) const noexcept { return id == rhs.id && nameStr.isEqual(rhs.nameStr); }
     // String ID equality
     friend CONST_EXPR std::strong_ordering operator<=>(const NameString &lhs, const StringID &rhs) noexcept { return lhs.id <=> rhs; }
     friend CONST_EXPR bool operator==(const NameString &lhs, const StringID &rhs) noexcept { return lhs.id == rhs; }

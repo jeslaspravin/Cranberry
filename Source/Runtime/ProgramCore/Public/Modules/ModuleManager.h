@@ -85,17 +85,14 @@ public:
     // Engine/Game module loading functions
     bool isModuleLoaded(const TChar *moduleName) const;
     WeakModulePtr getModule(const TChar *moduleName) const;
+    IModuleBase *getModulePtr(const TChar *moduleName) const;
     bool loadModule(const TChar *moduleName);
     WeakModulePtr getOrLoadModule(const TChar *moduleName);
+    IModuleBase *getOrLoadModulePtr(const TChar *moduleName);
     template <typename ModuleType>
-    ModuleType *getOrLoadModule(const TChar *moduleName)
+    ModuleType *getOrLoadModulePtr(const TChar *moduleName)
     {
-        WeakModulePtr modulePtr = getOrLoadModule(moduleName);
-        if (!modulePtr.expired())
-        {
-            return static_cast<ModuleType *>(modulePtr.lock().get());
-        }
-        return nullptr;
+        return static_cast<ModuleType *>(getOrLoadModulePtr(moduleName));
     }
     void unloadModule(const TChar *moduleName);
     void unloadAll();
@@ -113,6 +110,7 @@ private:
      * Checks and appends/prepends library prefix and extension as required if not present already
      */
     LibHandle loadFromAdditionalPaths(const TChar *modulePath) const;
+    ModulePtr tryLoadModule(const TChar *moduleName);
 
     ModuleManager();
 };

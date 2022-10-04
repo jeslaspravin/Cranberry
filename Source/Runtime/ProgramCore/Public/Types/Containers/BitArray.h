@@ -341,6 +341,11 @@ public:
     CONST_EXPR void add(SizeT count, value_type newVal = 0) { resize(bitsCount + count, newVal); }
     CONST_EXPR void setRange(SizeT offset, SizeT count)
     {
+        if (count == 0)
+        {
+            return;
+        }
+
         // <= as end is exclusive
         debugAssert(offset + count <= bitsCount);
 
@@ -386,6 +391,11 @@ public:
     }
     CONST_EXPR void resetRange(SizeT offset, SizeT count)
     {
+        if (count == 0)
+        {
+            return;
+        }
+
         // <= as end is exclusive
         debugAssert(offset + count <= bitsCount);
 
@@ -431,6 +441,11 @@ public:
     }
     CONST_EXPR bool checkRange(SizeT offset, SizeT count, bool bCheckIfSet) const
     {
+        if (count == 0)
+        {
+            return true;
+        }
+
         // <= as end is exclusive
         debugAssert(offset + count <= bitsCount);
 

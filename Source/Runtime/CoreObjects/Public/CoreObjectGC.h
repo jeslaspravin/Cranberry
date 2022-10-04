@@ -69,6 +69,11 @@ private:
 
 public:
     /**
+     * Clears every object not checking the usage
+     */
+    COREOBJECTS_EXPORT void purgeAll();
+
+    /**
      * CoreObjectGC::collect Garbage collects objects and stores a context for next collection if
      * collection exceeds time budget
      *

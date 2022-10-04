@@ -25,12 +25,20 @@ void Object::destroyObject()
 {
     destroy();
 
-    // Must have entry in object DB if we constructed the objects properly unless object is default
-    debugAssert(CoreObjectsModule::objectsDB().hasObject(sid) || BIT_SET(flags, EObjectFlagBits::ObjFlag_Default));
-    if (CoreObjectsModule::objectsDB().hasObject(sid))
+    if (BIT_NOT_SET(flags, EObjectFlagBits::ObjFlag_GCPurge))
     {
-        CoreObjectsModule::objectsDB().removeObject(sid);
+        String objPath = getFullPath();
+        CoreObjectsDB::NodeIdxType objNodeIdx
+            = CoreObjectsModule::objectsDB().getObjectNodeIdx({ .objectPath = objPath.getChar(), .objectId = sid });
+
+        // Must have entry in object DB if we constructed the objects properly unless object is default
+        debugAssert(CoreObjectsModule::objectsDB().hasObject(objNodeIdx) || BIT_SET(flags, EObjectFlagBits::ObjFlag_Default));
+        if (CoreObjectsModule::objectsDB().hasObject(objNodeIdx))
+        {
+            CoreObjectsModule::objectsDB().removeObject(objNodeIdx);
+        }
     }
+
     objOuter = nullptr;
     sid = StringID();
     SET_BITS(flags, EObjectFlagBits::ObjFlag_Deleted);
@@ -44,9 +52,11 @@ void Object::beginDestroy()
 
     uint64 uniqNameSuffix = 0;
     String newObjName = objectName + TCHAR("_Delete");
-    while (objectsDb.hasObject(ObjectPathHelper::getFullPath(newObjName.getChar(), objOuter).getChar()))
+    String newObjPath = ObjectPathHelper::getFullPath(newObjName.getChar(), objOuter);
+    while (objectsDb.hasObject({ .objectPath = newObjPath.getChar(), .objectId = newObjPath.getChar() }))
     {
         newObjName = objectName + TCHAR("_Delete") + String::toString(uniqNameSuffix);
+        newObjPath = ObjectPathHelper::getFullPath(newObjName.getChar(), objOuter);
         uniqNameSuffix++;
     }
     // Rename it Immediately to allow other objects to replace this object with same name
@@ -73,26 +83,48 @@ void INTERNAL_ObjectCoreAccessors::setOuterAndName(Object *object, const String 
 
     CoreObjectsDB &objectsDb = CoreObjectsModule::objectsDB();
 
-    // Setting object outer
-    object->objOuter = outer;
-
-    StringID newSid(ObjectPathHelper::getFullPath(newName.getChar(), outer));
+    String objPath = object->getFullPath();
+    String newObjPath = ObjectPathHelper::getFullPath(newName.getChar(), outer);
+    StringID newSid(newObjPath);
     fatalAssertf(
-        !objectsDb.hasObject(newSid), "Object cannot be renamed to another existing object! [Old name: %s, New name: %s]", object->getName(),
-        newName
+        !objectsDb.hasObject({ .objectPath = newObjPath.getChar(), .objectId = newSid }),
+        "Object cannot be renamed to another existing object! [Old name: %s, New name: %s]", object->getName(), newName
     );
-    if (object->getStringID().isValid() && objectsDb.hasObject(object->getStringID()))
+
+    CoreObjectsDB::NodeIdxType existingNodeIdx
+        = objectsDb.getObjectNodeIdx({ .objectPath = objPath.getChar(), .objectId = object->getStringID() });
+    if (object->getStringID().isValid() && objectsDb.hasObject(existingNodeIdx))
     {
-        // Setting object name
+        // Setting object name here so that sub object's new full path can be calculated easily
         object->objectName = newName;
-        objectsDb.setObject(object->getStringID(), newSid);
+
+        // If there is child then all of them must be renamed before object can be renamed
+        if (objectsDb.hasChild(existingNodeIdx))
+        {
+            std::vector<CoreObjectsDB::NodeIdxType> subobjNodeIdxs;
+            objectsDb.getSubobjects(subobjNodeIdxs, existingNodeIdx);
+            for (CoreObjectsDB::NodeIdxType subObjNodeIdx : subobjNodeIdxs)
+            {
+                debugAssert(objectsDb.hasObject(subObjNodeIdx));
+                Object *subObj = objectsDb.getObject(subObjNodeIdx);
+                String newSubObjFullPath = subObj->getFullPath();
+
+                subObj->sid = newSubObjFullPath.getChar();
+                // Only need to set name, No need to reset parent
+                objectsDb.setObject(subObjNodeIdx, subObj->getStringID(), newSubObjFullPath.getChar());
+            }
+        }
+
+        objectsDb.setObject(existingNodeIdx, newSid, newObjPath.getChar());
+        // It is fine to use the existingNodeIdx since the node index do not change when changing object id or parent
         if (outer)
         {
-            objectsDb.setObjectParent(newSid, object->getOuter()->getStringID());
+            String outerObjPath = outer->getFullPath();
+            objectsDb.setObjectParent(existingNodeIdx, { .objectPath = outerObjPath.getChar(), .objectId = outer->getStringID() });
         }
         else
         {
-            objectsDb.setObjectParent(newSid, StringID::INVALID);
+            objectsDb.setObjectParent(existingNodeIdx, { .objectId = StringID::INVALID });
         }
     }
     else
@@ -100,19 +132,22 @@ void INTERNAL_ObjectCoreAccessors::setOuterAndName(Object *object, const String 
         // constructing object's name
         new (&object->objectName) String(newName);
 
-        CoreObjectsDB::ObjectData objData{ .clazz = (clazz != nullptr ? clazz : object->getType()),
-                                           .allocIdx = object->allocIdx,
-                                           .sid = newSid };
+        CoreObjectsDB::ObjectData objData{
+            .path = newObjPath, .clazz = (clazz != nullptr ? clazz : object->getType()), .allocIdx = object->allocIdx, .sid = newSid
+        };
 
         if (outer)
         {
-            objectsDb.addObject(newSid, objData, outer->getStringID());
+            String outerObjPath = outer->getFullPath();
+            objectsDb.addObject(newSid, objData, { .objectPath = outerObjPath.getChar(), .objectId = outer->getStringID() });
         }
         else
         {
             objectsDb.addRootObject(newSid, objData);
         }
     }
+    // Setting object outer
+    object->objOuter = outer;
     // Setting object's new sid
     object->sid = newSid;
 }
@@ -157,13 +192,13 @@ String ObjectPathHelper::getObjectPath(const cbe::Object *object, const cbe::Obj
         return object->getName();
     }
 
-    std::vector<String> outers;
+    std::vector<const TChar *> outers;
     // Since last path element must be this obj name
-    outers.emplace_back(object->getName());
+    outers.emplace_back(object->getName().getChar());
     const cbe::Object *outer = object->getOuter();
     while (outer != stopAt && outer->getOuter())
     {
-        outers.emplace_back(outer->getName());
+        outers.emplace_back(outer->getName().getChar());
         outer = outer->getOuter();
     }
     if (outer != stopAt)
@@ -182,13 +217,13 @@ FORCE_INLINE String ObjectPathHelper::getFullPath(const cbe::Object *object)
         return object->getName();
     }
 
-    std::vector<String> outers;
+    std::vector<const TChar *> outers;
     // Since last path element must be this obj name
-    outers.emplace_back(object->getName());
+    outers.emplace_back(object->getName().getChar());
     const cbe::Object *outer = object->getOuter();
     while (outer->getOuter())
     {
-        outers.emplace_back(outer->getName());
+        outers.emplace_back(outer->getName().getChar());
         outer = outer->getOuter();
     }
     String objectPath = outer->getName() + ObjectPathHelper::RootObjectSeparator
@@ -240,10 +275,17 @@ String ObjectPathHelper::combinePathComponents(const String &packagePath, const 
 {
     // Ensure that package path is package path without any additional root path and outer object is without any root/package object path
     debugAssert(
-        !(TCharStr::find(packagePath.getChar(), ObjectPathHelper::RootObjectSeparator)
-          || TCharStr::find(packagePath.getChar(), ObjectPathHelper::RootObjectSeparator))
+        !packagePath.empty()
+        && (!(
+            TCharStr::find(packagePath.getChar(), ObjectPathHelper::RootObjectSeparator)
+            || TCharStr::find(packagePath.getChar(), ObjectPathHelper::RootObjectSeparator)
+        ))
     );
 
+    if (outerObjectPath.empty())
+    {
+        return packagePath + ObjectPathHelper::RootObjectSeparator + objectName;
+    }
     return packagePath + ObjectPathHelper::RootObjectSeparator + outerObjectPath + ObjectPathHelper::ObjectObjectSeparator + objectName;
 }
 
