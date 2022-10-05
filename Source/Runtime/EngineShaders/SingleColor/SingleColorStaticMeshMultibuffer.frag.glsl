@@ -27,7 +27,8 @@
 
 void mainFS()
 {    
-    colorAttachment0 = materials.meshData[inMaterialIdx].meshColor;
+    MeshData meshDat = materials.meshData[inMaterialIdx];
+    colorAttachment0 = meshDat.meshColor;
     colorAttachment1 = vec4((normalize(inWorldNormal) * 0.5) + 0.5, 1);
-    colorAttachment2 = vec4(1, materials.meshData[inMaterialIdx].roughness, materials.meshData[inMaterialIdx].metallic, 1);
+    colorAttachment2 = vec4(1, meshDat.roughness, meshDat.metallic, 1);
 }

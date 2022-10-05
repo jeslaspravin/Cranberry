@@ -20,6 +20,7 @@ layout(set = VIEW_UNIQ_SET, binding = 0) uniform ViewData
     mat4 invView;
     mat4 projection;
     mat4 invProjection;
+    mat4 w2clip;
 } viewData;
 
 // TODO(Jeslas) : Can be simplified for orthographics camera

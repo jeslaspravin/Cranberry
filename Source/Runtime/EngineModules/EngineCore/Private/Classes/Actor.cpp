@@ -528,7 +528,7 @@ TransformComponent *ActorPrefab::getRootComponent() const
 
 TransformComponent *ActorPrefab::getAttachedToComp(const TransformComponent *component) const
 {
-    debugAssert(isValid(component) && componentAttachedTo.contains(component));
+    debugAssert(isValidFast(component) && componentAttachedTo.contains(component));
     return componentAttachedTo.find(component)->second;
 }
 
@@ -583,14 +583,14 @@ void ActorPrefab::onPostSerialize(const ObjectArchive &ar)
         // First make all invalid attached to components as null or connect to a valid component up in hierarchy
         for (std::pair<TransformComponent *const, TransformComponent *> &compAttachedToPair : componentAttachedTo)
         {
-            if (compAttachedToPair.second != nullptr && !isValid(compAttachedToPair.second))
+            if (compAttachedToPair.second != nullptr && !isValidFast(compAttachedToPair.second))
             {
                 // walk the tree and find first valid attachable component
                 auto nextAttachedToItr = componentAttachedTo.find(compAttachedToPair.second);
                 while (nextAttachedToItr != componentAttachedTo.end())
                 {
                     // If reached nullptr then we lost the chain leaving the loop is better
-                    if (nextAttachedToItr->second == nullptr || isValid(nextAttachedToItr->second))
+                    if (nextAttachedToItr->second == nullptr || isValidFast(nextAttachedToItr->second))
                     {
                         break;
                     }

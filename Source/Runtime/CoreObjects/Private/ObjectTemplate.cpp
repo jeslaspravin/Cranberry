@@ -102,7 +102,7 @@ ObjectArchive &ObjectTemplate::serialize(ObjectArchive &ar)
                 entry.cursorStart = loadedEntry.second.cursorStart;
                 entry.modifiedFields = std::move(loadedEntry.second.modifiedFields);
                 Object *entryObj = get(ObjectPathHelper::getFullPath(loadedEntry.first.toString().getChar(), this).getChar());
-                debugAssert(isValid(entryObj));
+                debugAssert(isValidFast(entryObj));
 
                 if (ar.stream()->cursorPos() >= entry.cursorStart)
                 {
@@ -123,7 +123,7 @@ ObjectArchive &ObjectTemplate::serialize(ObjectArchive &ar)
     }
     else
     {
-        debugAssert(isValid(templateObj));
+        debugAssert(isValidFast(templateObj));
         uint64 objectEntriesStart = ar.stream()->cursorPos();
         uint64 archiveEnd = 0; // Necessary when loading to reset to end after random reads
         ar << objectEntries;
@@ -132,7 +132,7 @@ ObjectArchive &ObjectTemplate::serialize(ObjectArchive &ar)
         {
             entry.second.cursorStart = ar.stream()->cursorPos();
             Object *entryObj = get(ObjectPathHelper::getFullPath(entry.first.toString().getChar(), this).getChar());
-            debugAssert(isValid(entryObj));
+            debugAssert(isValidFast(entryObj));
             ObjectSerializationHelpers::serializeOnlyFields(entryObj, ar, entry.second.modifiedFields);
         }
         // Move back and serialize objectEntries to write cursor start of each serialized objects
@@ -195,7 +195,7 @@ bool ObjectTemplate::copyFrom(ObjectTemplate *otherTemplate)
 
 void ObjectTemplate::createTemplate(CBEClass clazz, const TChar *name)
 {
-    if (clazz != objectClass && isValid(templateObj))
+    if (clazz != objectClass && isValidFast(templateObj))
     {
         templateObj->beginDestroy();
         templateObj = nullptr;
@@ -228,7 +228,7 @@ void ObjectTemplate::createTemplate(CBEClass clazz, const TChar *name)
 
 cbe::Object *create(ObjectTemplate *objTemplate, const String &name, Object *outerObj, EObjectFlags flags /*= 0*/)
 {
-    if (!isValid(objTemplate))
+    if (!isValidFast(objTemplate))
     {
         return nullptr;
     }

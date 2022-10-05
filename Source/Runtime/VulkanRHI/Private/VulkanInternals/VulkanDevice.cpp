@@ -821,3 +821,26 @@ void VulkanDevice::getMemoryStat(uint64 &totalBudget, uint64 &usage, uint32 heap
         usage = 0;
     }
 }
+
+String VulkanDevice::memoryTypeIdxToString(uint32 typeIdx)
+{
+    String retVal = BIT_SET(memoryProperties.memoryTypes[typeIdx].propertyFlags, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
+        ? TCHAR("HVis|")
+        : TCHAR("");
+    if (BIT_SET(memoryProperties.memoryTypes[typeIdx].propertyFlags, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+    {
+        retVal.append(TCHAR("HCoh|"));
+    }
+
+    if (BIT_SET(memoryProperties.memoryTypes[typeIdx].propertyFlags, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_CACHED_BIT))
+    {
+        retVal.append(TCHAR("HCac|"));
+    }
+    if (BIT_SET(memoryProperties.memoryTypes[typeIdx].propertyFlags, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT))
+    {
+        retVal.append(TCHAR("DLoc|"));
+    }
+
+    retVal.eraseR(1);
+    return retVal;
+}

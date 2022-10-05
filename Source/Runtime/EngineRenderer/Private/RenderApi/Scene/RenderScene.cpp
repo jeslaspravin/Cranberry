@@ -16,6 +16,7 @@ ADD_BUFFER_TYPED_FIELD(view)
 ADD_BUFFER_TYPED_FIELD(invView)
 ADD_BUFFER_TYPED_FIELD(projection)
 ADD_BUFFER_TYPED_FIELD(invProjection)
+ADD_BUFFER_TYPED_FIELD(w2clip)
 END_BUFFER_DEFINITION();
 
 const std::map<StringID, ShaderBufferParamInfo *> &RenderSceneBase::sceneViewParamInfo()

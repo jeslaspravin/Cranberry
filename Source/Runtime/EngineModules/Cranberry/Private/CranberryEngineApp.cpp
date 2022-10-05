@@ -52,8 +52,8 @@ void CranberryEngineApp::onStart()
 void CranberryEngineApp::onTick()
 {
     gCBEEngine->onTick();
-    // 8ms, Reduce if this is too much
-    coreObjModule->getGC().collect(0.008f);
+    // 4ms, Reduce if this is too much
+    coreObjModule->getGC().collect(0.004f);
 }
 
 void CranberryEngineApp::onExit()
@@ -217,9 +217,9 @@ void tempTest()
                 smComp->mesh = cubeMesh;
 
                 Vector3D pos;
-                pos.x() = (i % 100) * 50 + 25 - 2500;
-                pos.y() = ((i / 100) % 100) * 50 + 25 - 2500;
-                pos.z() = (i / (100 * 100)) * 50 + 25 - 250;
+                pos.x() = (i % 100) * 50.0f + 25 - 2500;
+                pos.y() = ((i / 100) % 100) * 50.0f + 25 - 2500;
+                pos.z() = (i / (100 * 100)) * 50.0f + 25 - 250;
                 smComp->setRelativeLocation(pos);
                 smComp->setRelativeScale(Vector3D{ 0.25f });
 

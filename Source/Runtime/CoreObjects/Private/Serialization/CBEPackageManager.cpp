@@ -249,7 +249,8 @@ void CBEPackageManager::onObjectDeleted(cbe::Object *obj)
 {
     debugAssert(obj);
 
-    if (cbe::Package *package = cbe::cast<cbe::Package>(obj))
+    cbe::Package *package = cbe::cast<cbe::Package>(obj);
+    if (package)
     {
         auto packageLoaderItr = packageToLoader.find(package->getStringID());
         if (packageLoaderItr != packageToLoader.end())
@@ -260,8 +261,9 @@ void CBEPackageManager::onObjectDeleted(cbe::Object *obj)
         return;
     }
 
-    cbe::Object *outerMost = obj->getOuterMost();
-    if (cbe::Package *package = cbe::cast<cbe::Package>(outerMost))
+    package = cbe::cast<cbe::Package>(obj->getOuterMost());
+    // If load pending then it means package is unloaded, We need to reload the entire package
+    if (package && BIT_NOT_SET(package->getFlags(), cbe::EObjectFlagBits::ObjFlag_PackageLoadPending))
     {
         auto packageLoaderItr = packageToLoader.find(package->getStringID());
         if (packageLoaderItr != packageToLoader.end())
@@ -373,24 +375,12 @@ void CBEPackageManager::setupPackage(const String &packageFilePath, const String
 void CBEPackageManager::clearPackage(PackageLoader *loader)
 {
     std::erase(allFoundPackages, loader->getPackage()->getName());
-    for (const PackageContainedData &containedData : loader->getContainedObjects())
-    {
-        String fullObjPath;
-        if (containedData.object.isValid())
+    std::erase_if(
+        allFoundObjects,
+        [packageId = loader->getPackage()->getStringID()](const FoundObjectsInfo &foundInfo)
         {
-            fullObjPath = containedData.object->getFullPath();
+            return foundInfo.packageName == packageId;
         }
-        else
-        {
-            fullObjPath = loader->getPackage()->getFullPath() + ObjectPathHelper::RootObjectSeparator + containedData.objectPath;
-        }
-        std::erase_if(
-            allFoundObjects,
-            [&fullObjPath](const FoundObjectsInfo &foundInfo)
-            {
-                return foundInfo.fullPath == fullObjPath;
-            }
-        );
-    }
+    );
     delete loader;
 }

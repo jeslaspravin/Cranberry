@@ -267,7 +267,7 @@ struct DeepCopyFieldVisitable
             Object **fromDataPtrPtr = reinterpret_cast<Object **>(copyUserData->fromData);
             Object **toDataPtrPtr = reinterpret_cast<Object **>(copyUserData->toData);
             // Replace pointer if we are replacing subobject references and the from pointer is valid sub object of fromCommonRoot
-            if (copyUserData->bReplaceSubobjects && isValid(*fromDataPtrPtr) && (*fromDataPtrPtr)->hasOuter(copyUserData->fromCommonRoot))
+            if (copyUserData->bReplaceSubobjects && isValidFast(*fromDataPtrPtr) && (*fromDataPtrPtr)->hasOuter(copyUserData->fromCommonRoot))
             {
                 String dupObjFullPath = ObjectPathHelper::getObjectPath(*fromDataPtrPtr, copyUserData->fromCommonRoot);
                 dupObjFullPath = ObjectPathHelper::getFullPath(dupObjFullPath.getChar(), copyUserData->toCommonRoot);
@@ -478,7 +478,7 @@ Object *duplicateCBEObject(
         newName = fromObject->getName();
     }
 
-    if (!isValid(newOuter))
+    if (!isValidFast(newOuter))
     {
         newOuter = fromObject->getOuter();
     }

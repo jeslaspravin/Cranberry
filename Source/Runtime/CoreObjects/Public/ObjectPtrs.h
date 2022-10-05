@@ -207,6 +207,8 @@ public:
     FORCE_INLINE void detachRef() { reset(); }
 };
 
+using WeakObjectPtr = WeakObjPtr<Object>;
+
 struct COREOBJECTS_EXPORT ObjectPath
 {
 public:

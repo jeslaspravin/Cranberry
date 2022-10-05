@@ -506,6 +506,10 @@ void PackageLoader::unload()
             SET_BITS(cbe::INTERNAL_ObjectCoreAccessors::getFlags(obj), cbe::EObjectFlagBits::ObjFlag_PackageLoadPending);
             CLEAR_BITS(cbe::INTERNAL_ObjectCoreAccessors::getFlags(obj), cbe::EObjectFlagBits::ObjFlag_PackageLoaded);
         }
+        else
+        {
+            containedData.object.reset();
+        }
     }
     CoreObjectDelegates::broadcastPackageUnloaded(package);
 }

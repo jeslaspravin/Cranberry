@@ -18,14 +18,23 @@ namespace cbe
 
 void StaticMeshComponent::setupRenderInfo(ComponentRenderInfo &compRenderInfo) const
 {
-    if (cbe::isValid(mesh))
+    if (cbe::isValidFast(mesh))
     {
         compRenderInfo.cpuIdxBuffer = mesh->indexCpuBuffer;
         compRenderInfo.cpuVertBuffer = mesh->vertexCpuBuffer;
 
         compRenderInfo.vertexType = EVertexType::StaticMesh;
         compRenderInfo.meshObjPath = mesh;
+
         compRenderInfo.worldTf = getWorldTransform();
+        compRenderInfo.worldBound = AABB();
+
+        Vector3D aabbCorners[8];
+        getLocalBound().boundCorners(aabbCorners);
+        for (uint32 i = 0; i != ARRAY_LENGTH(aabbCorners); ++i)
+        {
+            compRenderInfo.worldBound.grow(compRenderInfo.worldTf.transformPoint(aabbCorners[i]));
+        }
     }
 }
 
@@ -33,7 +42,7 @@ void StaticMeshComponent::clearRenderInfo(const ComponentRenderInfo &compRenderI
 
 AABB StaticMeshComponent::getLocalBound() const
 {
-    if (cbe::isValid(mesh))
+    if (cbe::isValidFast(mesh))
     {
         return mesh->bounds;
     }

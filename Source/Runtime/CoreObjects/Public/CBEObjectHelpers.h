@@ -47,6 +47,21 @@ FORCE_INLINE bool isValid(const Object *obj)
     return false;
 }
 
+FORCE_INLINE bool isValidFast(const Object *obj)
+{
+    return obj && NO_BITS_SET(obj->getFlags(), EObjectFlagBits::ObjFlag_Deleted | EObjectFlagBits::ObjFlag_MarkedForDelete);
+}
+
+FORCE_INLINE bool isValidAlloc(const Object *obj)
+{
+    if (obj && NO_BITS_SET(obj->getFlags(), EObjectFlagBits::ObjFlag_Deleted | EObjectFlagBits::ObjFlag_MarkedForDelete))
+    {
+        ObjectAllocatorBase *objAllocator = getObjAllocator(obj->getType());
+        return objAllocator && objAllocator->isValid(INTERNAL_ObjectCoreAccessors::getAllocIdx(obj));
+    }
+    return false;
+}
+
 //////////////////////////////////////////////////////////////////////////
 // Object casts
 //////////////////////////////////////////////////////////////////////////

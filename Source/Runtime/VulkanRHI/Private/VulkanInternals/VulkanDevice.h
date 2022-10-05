@@ -120,6 +120,7 @@ public:
     NODISCARD bool isLogicalDeviceCreated() const;
 
     void getMemoryStat(uint64 &totalBudget, uint64 &usage, uint32 heapIndex);
+    String memoryTypeIdxToString(uint32 typeIdx);
 
 public:
 #define DEVICE_VK_FUNCTIONS(function) PFN_##function function;

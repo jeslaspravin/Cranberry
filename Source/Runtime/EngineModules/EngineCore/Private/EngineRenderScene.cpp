@@ -840,7 +840,7 @@ void EngineRenderScene::updateTfComponents(
 {
     for (cbe::TransformComponent *updateTf : comps)
     {
-        if (!cbe::isValid(updateTf))
+        if (!cbe::isValidFast(updateTf))
         {
             continue;
         }
@@ -849,9 +849,19 @@ void EngineRenderScene::updateTfComponents(
         auto compRenderIdxItr = componentToRenderInfo.find(updateTfPath);
         if (compRenderIdxItr != componentToRenderInfo.cend())
         {
+            cbe::RenderableComponent *renderComp = cbe::cast<cbe::RenderableComponent>(updateTf);
+            debugAssert(renderComp);
+
             ComponentRenderInfo &compRenderInfo = compsRenderInfo[compRenderIdxItr->second];
             // TODO(Jeslas) : Getting world tf here is safe?
             compRenderInfo.worldTf = updateTf->getWorldTransform();
+            compRenderInfo.worldBound = AABB();
+            Vector3D aabbCorners[8];
+            renderComp->getLocalBound().boundCorners(aabbCorners);
+            for (uint32 i = 0; i != ARRAY_LENGTH(aabbCorners); ++i)
+            {
+                compRenderInfo.worldBound.grow(compRenderInfo.worldTf.transformPoint(aabbCorners[i]));
+            }
 
             if (compRenderInfo.tfIndex != 0)
             {
@@ -1045,27 +1055,20 @@ void EngineRenderScene::updateVisibility(const RenderSceneViewParams &viewParams
                 }
 
                 const ComponentRenderInfo &compRenderInfo = compsRenderInfo[idx];
-                cbe::RenderableComponent *renderComp = nullptr;
-                if (compRenderInfo.meshObjPath.isValid())
-                {
-                    renderComp = cbe::cast<cbe::RenderableComponent>(cbe::get(compRenderInfo.compObjPath.getFullPath().getChar()));
-                }
                 if (vertexBuffers[compRenderInfo.vertexType].meshes.contains(compRenderInfo.meshObjPath) && compRenderInfo.tfIndex != 0
-                    && compRenderInfo.materialIndex != 0 && renderComp != nullptr)
+                    && compRenderInfo.materialIndex != 0)
                 {
-                    Matrix4 obj2Clip = w2clip * compRenderInfo.worldTf.getTransformMatrix();
-                    AABB localBound = renderComp->getLocalBound();
-                    if (!localBound.isValidAABB())
+                    if (!compRenderInfo.worldBound.isValidAABB())
                     {
                         return;
                     }
 
                     Vector3D aabbCorners[8];
-                    localBound.boundCorners(aabbCorners);
+                    compRenderInfo.worldBound.boundCorners(aabbCorners);
 
                     for (uint32 i = 0; i != ARRAY_LENGTH(aabbCorners); ++i)
                     {
-                        Vector4D projectedPt = obj2Clip * Vector4D(aabbCorners[i], 1.0f);
+                        Vector4D projectedPt = w2clip * Vector4D(aabbCorners[i], 1.0f);
                         projectedPt.x() = Math::abs(projectedPt.x());
                         projectedPt.y() = Math::abs(projectedPt.y());
                         projectedPt.z() /= projectedPt.w();
@@ -1256,11 +1259,24 @@ copat::NormalFuncAwaiter EngineRenderScene::recreateSceneVertexBuffers(
         );
         vertexStride = tempRenderInfo.cpuVertBuffer->bufferStride();
         idxStride = tempRenderInfo.cpuIdxBuffer->bufferStride();
-        for (const std::pair<const cbe::ObjectPath, SizeT> &meshToAdd : newBuffers[vertType].meshesToAdd)
+
+        std::unordered_set<cbe::ObjectPath> meshesAdded;
+        meshesAdded.reserve(newSceneVerts.meshesToAdd.size());
+        for (uint64 addIdx = 0; addIdx != newSceneVerts.meshesToAdd.size();)
         {
-            const ComponentRenderInfo &compRenderInfo = compsRenderInfo[newSceneVerts.meshesToAdd[0].second];
-            addVertsCount += compRenderInfo.cpuVertBuffer->bufferCount();
-            addIdxsCount += compRenderInfo.cpuIdxBuffer->bufferCount();
+            const std::pair<const cbe::ObjectPath, SizeT> &meshToAdd = newSceneVerts.meshesToAdd[addIdx];
+            if (meshesAdded.insert(meshToAdd.first).second)
+            {
+                const ComponentRenderInfo &compRenderInfo = compsRenderInfo[newSceneVerts.meshesToAdd[0].second];
+                addVertsCount += compRenderInfo.cpuVertBuffer->bufferCount();
+                addIdxsCount += compRenderInfo.cpuIdxBuffer->bufferCount();
+                ++addIdx;
+            }
+            else
+            {
+                std::iter_swap(newSceneVerts.meshesToAdd.begin() + addIdx, newSceneVerts.meshesToAdd.end() - 1);
+                newSceneVerts.meshesToAdd.pop_back();
+            }
         }
 
         // Setup newSceneVerts data for new size and counts
@@ -1774,6 +1790,7 @@ void EngineRenderScene::renderTheSceneRenderThread(
     ViewData viewData{ .projection = viewParams.view.projectionMatrix() };
     viewData.view = viewParams.view.viewMatrix(viewData.invView);
     viewData.invProjection = viewData.projection.inverse();
+    viewData.w2clip = viewData.projection * viewData.invView;
     sceneViewParams.peek(1)->setBuffer(RenderSceneBase::VIEW_PARAM_NAME, viewData);
 
     uint32 bufferedReadOffset = getBufferedReadOffset(), bufferedWriteOffset = getBufferedWriteOffset();

@@ -272,11 +272,22 @@ public:
     // Object casts
     //////////////////////////////////////////////////////////////////////////
 
+    template <ReflectClassOrStructType Type>
+    FORCE_INLINE static bool isValidReflectedObject(Type *obj)
+    {
+        if (obj != nullptr)
+        {
+            const ClassProperty *clazz = obj->getType();
+            return clazz->type >= EPropertyType::StartType && clazz->type <= EPropertyType::EndType;
+        }
+        return false;
+    }
+
     // Object to Object conversions
     template <ReflectClassOrStructType AsType, ReflectClassOrStructType FromType>
     FORCE_INLINE static AsType *cast(FromType *obj)
     {
-        if (isValid(obj) && isChildOf(obj->getType(), AsType::staticType()))
+        if (isValidReflectedObject(obj) && isChildOf(obj->getType(), AsType::staticType()))
         {
             return static_cast<AsType *>(obj);
         }
@@ -292,7 +303,7 @@ public:
     {
         using UPtrIntType = std::conditional_t<std::is_const_v<FromType>, const UPtrInt, UPtrInt>;
 
-        if (!isValid(obj))
+        if (!isValidReflectedObject(obj))
         {
             return nullptr;
         }

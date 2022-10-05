@@ -25,9 +25,10 @@
 
 void mainVS()
 {
-    vec4 worldPos = instancesWrapper.instances[gl_InstanceIndex].model * vec4(position.xyz, 1);
-    gl_Position = viewData.projection * viewData.invView * worldPos;
+    InstanceData instance = instancesWrapper.instances[gl_InstanceIndex];
+    vec4 worldPos = instance.model * vec4(position.xyz, 1);
+    gl_Position = viewData.w2clip * worldPos;
     outWorldPosition = worldPos.xyz;
-    outMaterialIdx = instancesWrapper.instances[gl_InstanceIndex].shaderUniqIdx;
-    outWorldNormal = (transpose(instancesWrapper.instances[gl_InstanceIndex].invModel) * vec4(normal.xyz, 0)).xyz;
+    outMaterialIdx = instance.shaderUniqIdx;
+    outWorldNormal = (transpose(instance.invModel) * vec4(normal.xyz, 0)).xyz;
 }

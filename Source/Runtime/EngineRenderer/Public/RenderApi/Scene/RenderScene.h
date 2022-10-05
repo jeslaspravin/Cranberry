@@ -21,6 +21,7 @@ struct ViewData
     Matrix4 invView;
     Matrix4 projection;
     Matrix4 invProjection;
+    Matrix4 w2clip;
 };
 
 // TODO(Jeslas) : Rename this file and class to RenderSceneData as I am using it only for view param info as view specialization constants

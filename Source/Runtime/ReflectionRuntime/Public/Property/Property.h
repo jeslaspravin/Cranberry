@@ -38,7 +38,9 @@ enum class EPropertyType
     MapType,
     SetType,
     PairType,
-    ArrayType
+    ArrayType,
+    StartType = ClassType,
+    EndType = ArrayType
 };
 
 // TODO(Jeslas) : Property system needs overhaul especially the CustomProperty like map, set, vector.

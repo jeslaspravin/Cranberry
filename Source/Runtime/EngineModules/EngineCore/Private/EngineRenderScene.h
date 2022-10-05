@@ -128,8 +128,9 @@ struct ComponentRenderInfo
 
     // TODO(Jeslas) : Will be changed after other vertex types of meshes are added
     // 0 is invalid
-    Transform3D worldTf;
     SizeT tfIndex = 0;
+    Transform3D worldTf;
+    AABB worldBound;
 
     // vertexBuffers[vertexType].meshes[meshID] gives vertex information for this component
     EVertexType::Type vertexType;
