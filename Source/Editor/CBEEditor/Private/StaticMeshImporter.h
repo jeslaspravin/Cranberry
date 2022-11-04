@@ -30,6 +30,9 @@ struct META_ANNOTATE(NoExport) StaticMeshImportOptions
 
     META_ANNOTATE()
     float smoothingAngle = 35.0f;
+
+    META_ANNOTATE()
+    bool bFromYUp = false;
 };
 
 class META_ANNOTATE(NoExport) ObjStaticMeshImporter : public AssetImporterBase

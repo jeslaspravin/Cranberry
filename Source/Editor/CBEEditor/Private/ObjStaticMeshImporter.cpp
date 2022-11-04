@@ -194,6 +194,36 @@ void calcTangent(
     loaderData.tbnVerts.emplace_back(pt2);
 }
 
+void rotateVertices(tinyobj::attrib_t &attrib, const StaticMeshImportOptions &options)
+{
+    if (!options.bFromYUp)
+        return;
+
+    static const Quat ROTATION_Y2Z_UP = Quat(90.f, Vector3D::FWD);
+
+    const uint64 vertEndIdx = attrib.vertices.size() / 3;
+    for (uint64 vertIdx = 0; vertIdx != vertEndIdx; ++vertIdx)
+    {
+        const uint64 vertXIdx = vertIdx * 3;
+        Vector3D v{ attrib.vertices[vertXIdx + 0], attrib.vertices[vertXIdx + 1], attrib.vertices[vertXIdx + 2] };
+        v = ROTATION_Y2Z_UP.rotateVector(v);
+        attrib.vertices[vertXIdx + 0] = v.x();
+        attrib.vertices[vertXIdx + 1] = v.y();
+        attrib.vertices[vertXIdx + 2] = v.z();
+    }
+
+    const uint64 normEndIdx = attrib.normals.size() / 3;
+    for (uint64 normIdx = 0; normIdx != normEndIdx; ++normIdx)
+    {
+        const uint64 normXIdx = normIdx * 3;
+        Vector3D n{ attrib.normals[normXIdx + 0], attrib.normals[normXIdx + 1], attrib.normals[normXIdx + 2] };
+        n = ROTATION_Y2Z_UP.rotateVector(n).normalized();
+        attrib.normals[normXIdx + 0] = n.x();
+        attrib.normals[normXIdx + 1] = n.y();
+        attrib.normals[normXIdx + 2] = n.z();
+    }
+}
+
 void fillVertexInfo(StaticMeshVertex &vertexData, const tinyobj::attrib_t &attrib, const tinyobj::index_t &index)
 {
     // Inverting Y since UV origin is at left bottom of image and Graphics API's UV origin is at left top
@@ -720,6 +750,8 @@ std::vector<cbe::Object *> ObjStaticMeshImporter::tryImporting(const ImportOptio
         LOG_WARN("ObjStaticMeshImporter", "No mesh found while loading %s with ObjStaticMeshImporter!", importOptions.filePath);
         return importedObjs;
     }
+
+    ObjSMImporterHelpers::rotateVertices(attrib, options);
 
     ObjSMImporterHelpers::IntermediateImportData meshIntermediate;
     meshIntermediate.options = options;

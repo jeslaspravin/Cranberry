@@ -61,8 +61,8 @@ private:
     template <typename StrType>
     void insertDbgStr(StrType &&str)
     {
-        debugStringDB().insert({ id, std::forward<StrType>(str) });
         debugStrings = &debugStringDB();
+        debugStringDB().insert({ id, std::forward<StrType>(str) });
     }
 
     StringID(IDType strId, const TChar *debugStr, SizeT len)

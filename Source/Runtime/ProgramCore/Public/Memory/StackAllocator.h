@@ -20,14 +20,16 @@
 #include <shared_mutex>
 
 /**
- * Alignment must be handled yourself
+ * Alignment must be handled yourself,
+ * Can be used as arena as well.
+ * For aligned stack use StackAllocator<SharingMode>
  */
 template <EThreadSharing SharingMode>
-class StackAllocator;
+class StackAllocatorUnaligned;
 
 struct StackAllocatorTraits
 {
-    // We are not going to need more than 4GB stack size, If yes we are doing something wrong
+    // We are not going to need more than 4GB stack size, If yes we are doing something unusual
     using SizeType = uint32;
     // In bytes, IDK 2MB maybe?
     constexpr static const SizeType INITIAL_STACK_SIZE = 2 * 1024 * 1024;
@@ -35,7 +37,7 @@ struct StackAllocatorTraits
 };
 
 template <>
-class StackAllocator<EThreadSharing::ThreadSharing_Exclusive>
+class StackAllocatorUnaligned<EThreadSharing::ThreadSharing_Exclusive>
 {
 public:
     using Traits = StackAllocatorTraits;
@@ -49,22 +51,22 @@ private:
     SizeType bsp;
 
 public:
-    StackAllocator()
+    StackAllocatorUnaligned()
         : memoryPtr(CBEMemory::memAlloc(Traits::INITIAL_STACK_SIZE))
         , stackTop(Traits::INITIAL_STACK_SIZE)
         , bsp(0)
     {
         debugAssert(memoryPtr);
     }
-    StackAllocator(SizeType stackSize)
+    StackAllocatorUnaligned(SizeType stackSize)
         : memoryPtr(CBEMemory::memAlloc(stackSize))
         , stackTop(stackSize)
         , bsp(0)
     {
         debugAssert(memoryPtr && stackSize > 0);
     }
-    StackAllocator(StackAllocator &&other) { (*this) = std::forward<StackAllocator>(other); }
-    StackAllocator &operator=(StackAllocator &&other)
+    StackAllocatorUnaligned(StackAllocatorUnaligned &&other) { (*this) = std::forward<StackAllocatorUnaligned>(other); }
+    StackAllocatorUnaligned &operator=(StackAllocatorUnaligned &&other)
     {
         freeStack();
         memoryPtr = other.memoryPtr;
@@ -76,10 +78,10 @@ public:
 
         other.freeStack();
     }
-    StackAllocator(const StackAllocator &other) = delete;
-    StackAllocator &operator=(const StackAllocator &other) = delete;
+    StackAllocatorUnaligned(const StackAllocatorUnaligned &other) = delete;
+    StackAllocatorUnaligned &operator=(const StackAllocatorUnaligned &other) = delete;
 
-    ~StackAllocator() { freeStack(); }
+    ~StackAllocatorUnaligned() { freeStack(); }
 
     /**
      * Returns true if nothing is allocated/used so all slots as free
@@ -91,12 +93,12 @@ public:
         PtrInt diff = (PtrInt)(ptr) - (PtrInt)(memoryPtr);
         return diff >= 0 && diff < stackTop;
     }
-    FORCE_INLINE bool isBspAlignedBy(uint32 alignment) const
+    FORCE_INLINE void *basePointer() const
     {
         UPtrInt basePtr = (UPtrInt)(memoryPtr);
-        basePtr += bsp;
-        return Math::isAligned(basePtr, alignment);
+        return (void *)(basePtr + bsp);
     }
+    FORCE_INLINE bool isBspAlignedBy(uint32 alignment) const { return Math::isAligned((UPtrInt)basePointer(), alignment); }
 
     void reset(SizeT newByteSize = 0)
     {
@@ -134,30 +136,22 @@ public:
         }
         if (isOwningMemory(ptr))
         {
-            const UPtrInt freeingPtr = UPtrInt(ptr);
-            const UPtrInt expectedPtr = UPtrInt(memoryPtr) + (bsp - size);
-            alertAlwaysf(
-                freeingPtr == expectedPtr, "Out of order freeing allocated stack memory! Freeing ptr %llu expected ptr %llu", freeingPtr,
-                expectedPtr
+            const UPtrInt basePtr = (UPtrInt)(memoryPtr);
+            const SizeType bspAfterFree = UPtrInt(ptr) - basePtr;
+            void *expectedPtr = (void *)(basePtr + (bsp - size));
+            debugAssertf(
+                ptr == expectedPtr, "Out of order freeing allocated stack memory! Freeing ptr %llu expected ptr %llu", UPtrInt(ptr), expectedPtr
             );
-            bsp -= size;
+            // If bsp already went below the freeing pointer's stack pointer, Do nothing.
+            if (bsp >= (bspAfterFree + size))
+            {
+                bsp = bspAfterFree;
+            }
         }
         else
         {
             CBEMemory::memFree(ptr);
         }
-    }
-    void memFreeChecked(void *ptr, SizeType size)
-    {
-        if (!ptr)
-        {
-            return;
-        }
-        if (isOwningMemory(ptr))
-        {
-            alertAlwaysf(UPtrInt(ptr) == (UPtrInt(memoryPtr) + (bsp - size)), "Out of order freeing allocated stack memory!");
-        }
-        memFree(ptr, size);
     }
 
 private:
@@ -177,7 +171,7 @@ private:
  * Just having per thread stack allocated, All threads that used this stack must exit before StackAllocator is destroyed
  */
 template <>
-class StackAllocator<EThreadSharing::ThreadSharing_Shared>
+class StackAllocatorUnaligned<EThreadSharing::ThreadSharing_Shared>
 {
 public:
     using Traits = StackAllocatorTraits;
@@ -186,7 +180,7 @@ public:
 private:
     struct alignas(2 * CACHELINE_SIZE) PerThreadData
     {
-        StackAllocator<EThreadSharing::ThreadSharing_Exclusive> allocator;
+        StackAllocatorUnaligned<EThreadSharing::ThreadSharing_Exclusive> allocator;
         // For deleting this PerThreadData at whatever ends last of StackAllocator delete or thread exit
         std::atomic_bool bIsActive = true;
     };
@@ -198,11 +192,11 @@ private:
     SizeType byteSize;
 
 public:
-    PROGRAMCORE_EXPORT StackAllocator();
-    PROGRAMCORE_EXPORT StackAllocator(SizeType stackByteSize);
+    PROGRAMCORE_EXPORT StackAllocatorUnaligned();
+    PROGRAMCORE_EXPORT StackAllocatorUnaligned(SizeType stackByteSize);
 
-    MAKE_TYPE_NONCOPY_NONMOVE(StackAllocator)
-    PROGRAMCORE_EXPORT ~StackAllocator();
+    MAKE_TYPE_NONCOPY_NONMOVE(StackAllocatorUnaligned)
+    PROGRAMCORE_EXPORT ~StackAllocatorUnaligned();
 
     /**
      * Returns true if nothing is allocated/used so all slots as free
@@ -211,7 +205,7 @@ public:
     {
         if (PerThreadData *tlData = getThreadData())
         {
-            tlData->allocator.empty();
+            return tlData->allocator.empty();
         }
         return true;
     }
@@ -219,7 +213,7 @@ public:
     {
         if (PerThreadData *tlData = getThreadData())
         {
-            tlData->allocator.hasEnoughStack(size);
+            return tlData->allocator.hasEnoughStack(size);
         }
         return true;
     }
@@ -227,15 +221,23 @@ public:
     {
         if (PerThreadData *tlData = getThreadData())
         {
-            tlData->allocator.isOwningMemory(ptr);
+            return tlData->allocator.isOwningMemory(ptr);
         }
         return false;
+    }
+    FORCE_INLINE void *basePointer() const
+    {
+        if (PerThreadData *tlData = getThreadData())
+        {
+            return tlData->allocator.basePointer();
+        }
+        return 0;
     }
     FORCE_INLINE bool isBspAlignedBy(uint32 alignment) const
     {
         if (PerThreadData *tlData = getThreadData())
         {
-            tlData->allocator.isBspAlignedBy(alignment);
+            return tlData->allocator.isBspAlignedBy(alignment);
         }
         return false;
     }
@@ -257,16 +259,110 @@ public:
         PerThreadData &tlData = getThreadData();
         tlData.allocator.memFree(ptr, size);
     }
-    void memFreeChecked(void *ptr, SizeType size)
-    {
-        PerThreadData &tlData = getThreadData();
-        tlData.allocator.memFreeChecked(ptr, size);
-    }
 
 private:
     PROGRAMCORE_EXPORT PerThreadData &getThreadData();
     PROGRAMCORE_EXPORT PerThreadData *getThreadData() const;
     PROGRAMCORE_EXPORT PerThreadData *createNewThreadData();
+};
+
+template <EThreadSharing SharingMode>
+class StackAllocator : private StackAllocatorUnaligned<SharingMode>
+{
+public:
+    using BaseType = StackAllocatorUnaligned<SharingMode>;
+    using typename BaseType::SizeType;
+
+    // For now only padding is needed for freeing
+    using AlignmentType = uint8;
+    using StackAllocHeader = AlignmentType;
+    constexpr static const uint32 MIN_ALIGNMENT = CBEMemAlloc::DEFAULT_ALIGNMENT;
+    // 128bytes padding is more than large enough right now
+    constexpr static const uint32 MAX_SUPPORTED_ALIGNMENT = std::numeric_limits<AlignmentType>::max();
+
+public:
+    StackAllocator() = default;
+    StackAllocator(SizeType stackByteSize)
+        : BaseType(stackByteSize)
+    {}
+    ~StackAllocator() = default;
+
+    MAKE_TYPE_NONCOPY_NONMOVE(StackAllocator)
+
+    /**
+     * Returns true if nothing is allocated/used so all slots as free
+     */
+    FORCE_INLINE bool empty() const { return BaseType::empty(); }
+    FORCE_INLINE bool hasEnoughStack(SizeT size) const { return BaseType::hasEnoughStack(size); }
+    FORCE_INLINE bool isOwningMemory(void *ptr) const { return BaseType::isOwningMemory(ptr); }
+    FORCE_INLINE void *basePointer() const { return BaseType::basePointer(); }
+    FORCE_INLINE bool isBspAlignedBy(uint32 alignment) const { return BaseType::isBspAlignedBy(alignment); }
+    FORCE_INLINE void reset(SizeT newByteSize = 0) { BaseType::reset(newByteSize); }
+
+    void *memAlloc(SizeType size, uint32 alignment = MIN_ALIGNMENT)
+    {
+        alignAllocSize(size, alignment);
+        debugAssertf(
+            alignment <= MAX_SUPPORTED_ALIGNMENT, "StackAllocator does not support alignment %u greater than %u", alignment,
+            MAX_SUPPORTED_ALIGNMENT
+        );
+
+        void *ptr = BaseType::memAlloc(size + calcExtraWidth(alignment));
+        return writeAllocMeta(ptr, size, alignment);
+    }
+    void memFree(void *ptr, SizeType size, uint32 alignment = MIN_ALIGNMENT)
+    {
+        alignAllocSize(size, alignment);
+        uint32 padding = 0;
+        void *paddedPtr = getAllocationInfo(ptr, padding);
+        BaseType::memFree(paddedPtr, size + padding);
+    }
+
+private:
+    FORCE_INLINE static void alignAllocSize(SizeType &inOutSize, uint32 &inOutAlignment)
+    {
+        debugAssert(Math::isPowOf2(inOutAlignment));
+        inOutAlignment = Math::max(alignof(StackAllocHeader), CBEMemAlloc::alignBy(inOutSize, inOutAlignment), MIN_ALIGNMENT);
+        inOutSize = Math::alignByUnsafe(inOutSize, inOutAlignment);
+    }
+
+    FORCE_INLINE SizeType calcExtraWidth(uint32 alignment) const
+    {
+        static_assert(sizeof(StackAllocHeader) == 1, "Assumes that StackAllocHeader is a byte!");
+        UPtrInt basePtr = (UPtrInt)basePointer();
+        UPtrInt alignedBsp = Math::alignByUnsafe(basePtr, alignment);
+        // If bsp is perfectly aligned then we need entire alignment space for adding header
+        if (alignedBsp == basePtr)
+        {
+            return alignment;
+        }
+        else
+        {
+            return alignedBsp - basePtr;
+        }
+    }
+
+    FORCE_INLINE void *writeAllocMeta(void *allocatedPtr, SizeT size, uint32 alignment) const
+    {
+        static_assert(sizeof(StackAllocHeader) == 1, "Assumes that StackAllocHeader is a byte!");
+        UPtrInt alignedOutPtr = Math::alignByUnsafe((UPtrInt)(allocatedPtr), alignment);
+        uint32 padding = alignedOutPtr - (UPtrInt)allocatedPtr;
+        if (padding == 0)
+        {
+            alignedOutPtr += alignment;
+            padding = alignment;
+        }
+
+        StackAllocHeader *allocHeader = (((StackAllocHeader *)alignedOutPtr) - 1);
+        *allocHeader = padding;
+        return (void *)alignedOutPtr;
+    }
+    FORCE_INLINE void *getAllocationInfo(void *ptr, uint32 &outPadding) const
+    {
+        StackAllocHeader *allocHeader = (((StackAllocHeader *)ptr) - 1);
+        outPadding = *allocHeader;
+        return (void *)(((UPtrInt)ptr) - outPadding);
+    }
 };
 
 template <typename Type, EThreadSharing SharingMode>
@@ -311,7 +407,7 @@ public:
         if (stackAllocator == nullptr)
             return;
 
-        stackAllocator->memFree(ptr, count * sizeof(Type));
+        stackAllocator->memFree(ptr, count * sizeof(Type), alignof(Type));
     }
 
     NODISCARD CONST_EXPR Type *allocate(const SizeT count)
@@ -319,8 +415,7 @@ public:
         if (stackAllocator == nullptr)
             return nullptr;
 
-        debugAssertf(stackAllocator->isBspAlignedBy(alignof(Type)), "Alignment %d requirement not meet!", alignof(Type));
-        return static_cast<Type *>(stackAllocator->memAlloc(count * sizeof(Type)));
+        return static_cast<Type *>(stackAllocator->memAlloc(count * sizeof(Type), alignof(Type)));
     }
 
     NODISCARD CONST_EXPR AllocatorType *allocator() const { return stackAllocator; }
@@ -334,6 +429,6 @@ FORCE_INLINE CONST_EXPR bool
 }
 
 template <typename Type>
-using CBEStrStackAllocatorShared = CBEStlStackAllocator<Type, EThreadSharing::ThreadSharing_Shared>;
+using CBEStlStackAllocatorShared = CBEStlStackAllocator<Type, EThreadSharing::ThreadSharing_Shared>;
 template <typename Type>
-using CBEStrStackAllocatorExclusive = CBEStlStackAllocator<Type, EThreadSharing::ThreadSharing_Exclusive>;
+using CBEStlStackAllocatorExclusive = CBEStlStackAllocator<Type, EThreadSharing::ThreadSharing_Exclusive>;

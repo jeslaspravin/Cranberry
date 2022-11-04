@@ -146,6 +146,11 @@ struct LinkObjPtrsFieldVisitable
 
 FORCE_INLINE void PackageLoader::linkContainedObjects() const
 {
+    if (!bDelayLinkRequired)
+    {
+        return;
+    }
+
     LinkObjectPtrsData userData{ this };
     for (const PackageContainedData &containedData : containedObjects)
     {
@@ -314,6 +319,7 @@ ObjectArchive &PackageLoader::serialize(cbe::Object *&obj)
             // This will be later replaced with actual value at relinkSerializedPtr(ptr)
             UPtrInt *objPtrPtr = reinterpret_cast<UPtrInt *>(&obj);
             *objPtrPtr = delayLinkPtrMask + tableIdx;
+            bDelayLinkRequired = true;
         }
     }
     return *this;

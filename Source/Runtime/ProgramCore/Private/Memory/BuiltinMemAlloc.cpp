@@ -40,6 +40,7 @@ FORCE_INLINE void *CBEBuiltinMemAlloc::writeAllocMeta(void *allocatedPtr, SizeT 
     void *outPtr = ((uint8 *)allocatedPtr) + calcHeaderPadding(alignment);
 #ifndef PLATFORM_ALIGNED_MALLOC
     void *alignedPtr = (void *)(Math::alignByUnsafe((UPtrInt)(outPtr), alignment));
+    // Header will also be properly aligned for efficient read
     AllocHeader &allocHeader = *(((AllocHeader *)alignedPtr) - 1);
     allocHeader.offset = (uint32)((UPtrInt)(alignedPtr) - (UPtrInt)(allocatedPtr));
     outPtr = alignedPtr;

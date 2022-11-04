@@ -1,5 +1,5 @@
 /*!
- * \file LinearAllocator.h
+ * \file FreeListAllocator.h
  *
  * \author Jeslas
  * \date September 2022
@@ -14,11 +14,11 @@
 #include "Types/Containers/BitArray.h"
 
 /**
- * Linear allocator tracker, does not manages memory itself just manages available pages virtually. Actual memory must be allocated and managed
- * by the user
+ * Free list allocator tracker, does not manages memory itself just manages available pages virtually. Actual memory must be allocated and
+ * managed by the user
  */
 template <uint32 PageByteSize>
-class LinearAllocationTracker
+class FreeListAllocTracker
 {
 public:
     static_assert(Math::isPowOf2(PageByteSize), "Page size must be power of 2");
@@ -32,14 +32,14 @@ private:
     BitArray<SizeType> pageUsage;
 
 public:
-    LinearAllocationTracker() = default;
-    MAKE_TYPE_DEFAULT_COPY_MOVE(LinearAllocationTracker)
-    LinearAllocationTracker(SizeType byteSize) { resize(byteSize); }
+    FreeListAllocTracker() = default;
+    MAKE_TYPE_DEFAULT_COPY_MOVE(FreeListAllocTracker)
+    FreeListAllocTracker(SizeType byteSize) { resize(byteSize); }
 
     CONST_EXPR void resize(SizeType byteSize)
     {
         byteSize = Math::alignByUnsafe(byteSize, PAGE_SIZE);
-        SizeType pageCount = byteSize / PAGE_SIZE;
+        SizeType pageCount = pageCountFromBytes(byteSize);
         pageUsage.resize(pageCount);
     }
 
@@ -77,15 +77,25 @@ public:
         }
         return foundFragSize * PAGE_SIZE;
     }
+    FORCE_INLINE bool findNextAllocatedBlock(SizeType fromOffsetBytes, SizeType &outOffsetBytes, SizeType &outByteSize) 
+    {
+        SizeType pageOffset = pageCountFromBytes(fromOffsetBytes);
+        debugAssert(pageOffset <= pageUsage.size());
+
+        bool bFound = findAllocatedBlock(pageOffset, outOffsetBytes, outByteSize);
+        outOffsetBytes *= PAGE_SIZE;
+        outByteSize *= PAGE_SIZE;
+        return bFound;
+    }
 
     FORCE_INLINE bool allocate(SizeType byteSize, SizeType alignment, SizeType &outOffsetBytes)
     {
         debugAssert(Math::isAligned(byteSize, PAGE_SIZE) && Math::isAligned(alignment, PAGE_SIZE));
-        SizeType pageCount = byteSize / PAGE_SIZE;
-        SizeType alignmentCount = alignment / PAGE_SIZE;
+        SizeType pageCount = pageCountFromBytes(byteSize);
+        SizeType alignmentCount = Math::max(alignment / PAGE_SIZE, 1);
 
         SizeType foundAt = 0;
-        if (bool bAvailable = getBestFit(pageCount, alignmentCount, foundAt))
+        if (getBestFit(pageCount, alignmentCount, foundAt))
         {
             outOffsetBytes = foundAt * PAGE_SIZE;
             pageUsage.setRange(foundAt, pageCount);
@@ -97,7 +107,7 @@ public:
     FORCE_INLINE void deallocate(SizeType bytesOffset, SizeType byteSize)
     {
         debugAssert(Math::isAligned(bytesOffset, PAGE_SIZE) && Math::isAligned(byteSize, PAGE_SIZE));
-        SizeType pageCount = byteSize / PAGE_SIZE;
+        SizeType pageCount = pageCountFromBytes(byteSize);
         SizeType pageIdx = bytesOffset / PAGE_SIZE;
         pageUsage.resetRange(pageIdx, pageCount);
     }
@@ -105,14 +115,14 @@ public:
     /* Check if entire range is allocated, Fails even if one page is not allocated */
     FORCE_INLINE bool isRangeAllocated(SizeType bytesOffset, SizeType byteSize) const
     {
-        SizeType pageCount = byteSize / PAGE_SIZE;
+        SizeType pageCount = pageCountFromBytes(byteSize);
         SizeType pageIdx = bytesOffset / PAGE_SIZE;
         return pageUsage.checkRange(pageIdx, pageCount, true);
     }
     /* Check if entire range is free, Fails even if one page is allocated */
     FORCE_INLINE bool isRangeFree(SizeType bytesOffset, SizeType byteSize) const
     {
-        SizeType pageCount = byteSize / PAGE_SIZE;
+        SizeType pageCount = pageCountFromBytes(byteSize);
         SizeType pageIdx = bytesOffset / PAGE_SIZE;
         return pageUsage.checkRange(pageIdx, pageCount, false);
     }
@@ -162,6 +172,8 @@ public:
     }
 
 private:
+    FORCE_INLINE SizeType pageCountFromBytes(SizeType byteSize) const { return Math::max(byteSize / PAGE_SIZE, 1); }
+
     /**
      * Best fit always allocate at the end so there is no need to track last allocation at while first linear allocation.
      * Filling holes will anyway search through the array so no need to track last allocation at there either

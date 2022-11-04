@@ -49,8 +49,12 @@ public:
 class PROGRAMCORE_EXPORT CBEMemAlloc : public AllocFromBuiltInMalloc
 {
 public:
-    CONST_EXPR static const uint32 DEFAULT_ALIGNMENT = 1;
-    FORCE_INLINE static uint32 alignBy(SizeT size, uint32 alignment) { return Math::max((size > 8) ? 16 : 8, alignment); }
+    constexpr static const uint32 POINTER_SIZE = sizeof(void *);
+    constexpr static const uint32 DEFAULT_ALIGNMENT = POINTER_SIZE;
+    FORCE_INLINE static uint32 alignBy(SizeT size, uint32 alignment)
+    {
+        return Math::max((size > POINTER_SIZE) ? 2 * POINTER_SIZE : POINTER_SIZE, alignment);
+    }
 
 public:
     virtual ~CBEMemAlloc() = default;

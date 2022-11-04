@@ -24,11 +24,12 @@ WgViewportImGuiLayer::WgViewportImGuiLayer()
     defaultCamera.cameraProjection = ECameraProjection::Perspective;
     defaultCamera.setClippingPlane(0.1f, 6000.f);
 
-    Vector3D camTranslation = Vector3D(0.f, 1.f, 0.0f).safeNormalized() * (500);
+    //Vector3D camTranslation = Vector3D(0.f, 1.f, 0.0f).safeNormalized() * (500);
+    Vector3D camTranslation; 
     camTranslation.z() += 200;
 
     defaultCamera.setTranslation(camTranslation);
-    defaultCamera.lookAt(Vector3D::ZERO);
+    //defaultCamera.lookAt(Vector3D::ZERO);
 }
 
 void WgViewportImGuiLayer::draw(ImGuiDrawInterface *drawInterface)

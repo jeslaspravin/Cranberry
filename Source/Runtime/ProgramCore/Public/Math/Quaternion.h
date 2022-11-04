@@ -81,8 +81,13 @@ public:
 
     Rotation toRotation() const;
     RotationMatrix toRotationMatrix() const;
-    Vector3D rotateVector(const Vector3D &vector) const;
 
+    Vector3D rotateVector(const Vector3D &vector) const
+    {
+        Vector3D q{ x, y, z };
+        return (w * w - q.sqrlength()) * vector + 2 * ((q | vector) * q + w * (q ^ vector));
+    }
+    
     FORCE_INLINE static Quat fromRotation(const Rotation &rotation)
     {
         Quat ret;

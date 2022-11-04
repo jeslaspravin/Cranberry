@@ -30,6 +30,9 @@ private:
 
     FORCE_INLINE SizeT calcHeaderPadding(uint32 alignment) const;
     FORCE_INLINE SizeT calcExtraWidth(uint32 alignment) const;
+    /**
+     * Writes allocation meta to header and returns aligned usable pointer
+     */
     FORCE_INLINE void *writeAllocMeta(void *allocatedPtr, SizeT size, uint32 alignment) const;
     FORCE_INLINE void *getAllocationInfo(void *ptr, SizeT &outSize, uint32 &outAlignment) const;
 

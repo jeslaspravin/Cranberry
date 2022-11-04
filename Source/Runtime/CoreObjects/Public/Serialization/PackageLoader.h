@@ -34,13 +34,14 @@ private:
 
     std::vector<PackageContainedData> containedObjects;
     std::vector<PackageDependencyData> dependentObjects;
-
     UPtrInt delayLinkPtrMask = 0;
     SizeT streamStartAt;
-    BinaryArchive packageArchive;
 
+    BinaryArchive packageArchive;
     // Only should be set if not going to serialize from file by default
     ArrayArchiveStream *inStream = nullptr;
+
+    bool bDelayLinkRequired = false;
 
 private:
     /**

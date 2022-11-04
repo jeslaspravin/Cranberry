@@ -651,14 +651,14 @@ FORCE_INLINE void EngineRenderScene::removeInstanceDataAt(EVertexType::Type vert
 }
 
 FORCE_INLINE void EngineRenderScene::createMaterialCopies(
-    MaterialShaderParams &shaderMats, const ComponentRenderInfo &compRenderInfo, IRenderCommandList *cmdList,
+    MaterialShaderParams &shaderMats, SizeT materialIdx, IRenderCommandList *cmdList,
     IGraphicsInstance *graphicsInstance
 ) const
 {
     // TODO(Jeslas) : This is test code, must be unique per shader
     debugAssert(shaderMats.shaderParameter.isValid() && shaderMats.materialData.isValid());
     StringID paramPath[] = { MATERIAL_BUFFER_NAME, STRID("meshData"), STRID("meshColor") };
-    uint32 indices[] = { 0, uint32(materialIdxToVectorIdx(compRenderInfo.materialIndex)), 0 };
+    uint32 indices[] = { 0, uint32(materialIdxToVectorIdx(materialIdx)), 0 };
     shaderMats.shaderParameter->setVector4AtPath(paramPath, indices, LinearColorConst::random());
     paramPath[2] = STRID("roughness");
     shaderMats.shaderParameter->setFloatAtPath(paramPath, indices, Math::random());
@@ -710,7 +710,7 @@ FORCE_INLINE void EngineRenderScene::addCompMaterialData(SizeT compRenderInfoIdx
             compRenderInfo.materialIndex = vectorIdxToMaterialIdx(matIdx);
             IRenderInterfaceModule *renderInterface = IRenderInterfaceModule::get();
             createMaterialCopies(
-                shaderMats, compRenderInfo, renderInterface->getRenderManager()->getRenderCmds(), renderInterface->currentGraphicsInstance()
+                shaderMats, compRenderInfo.materialIndex, renderInterface->getRenderManager()->getRenderCmds(), renderInterface->currentGraphicsInstance()
             );
         }
         else
@@ -879,7 +879,7 @@ void EngineRenderScene::createRenderInfo(cbe::RenderableComponent *comp, SizeT c
 
     // TODO(Jeslas): Remove below demo code
     compRenderInfo.shaderName = TCHAR("SingleColor");
-    compRenderInfo.matObjPath = comp->getActor()->getName().getChar();
+    compRenderInfo.matObjPath = comp->getActor()->getFullPath().getChar();
     addCompMaterialData(compRenderInfoIdx);
     addCompInstanceData(compRenderInfoIdx);
 }
@@ -1030,13 +1030,14 @@ void EngineRenderScene::updateVisibility(const RenderSceneViewParams &viewParams
 {
     const SizeT totalCompCapacity = compsRenderInfo.totalCount();
     compsVisibility.resize(totalCompCapacity);
+
     compsVisibility.resetRange(0, totalCompCapacity);
 
     ApplicationInstance *appInstance = IApplicationModule::get()->getApplication();
 
     // Below ds must be either cache line separated boolean or atomic bool to avoid memory stomping
     // Will be inside frustum only if every other condition to render a mesh is valid
-    std::vector<std::atomic_flag, CBEStrStackAllocatorExclusive<std::atomic_flag>> compsInsideFrustum(
+    std::vector<std::atomic_flag, CBEStlStackAllocatorExclusive<std::atomic_flag>> compsInsideFrustum(
         totalCompCapacity, appInstance->getRenderFrameAllocator()
     );
 
@@ -1058,6 +1059,9 @@ void EngineRenderScene::updateVisibility(const RenderSceneViewParams &viewParams
                 if (vertexBuffers[compRenderInfo.vertexType].meshes.contains(compRenderInfo.meshObjPath) && compRenderInfo.tfIndex != 0
                     && compRenderInfo.materialIndex != 0)
                 {
+                    compsInsideFrustum[idx].test_and_set(std::memory_order::relaxed);
+                    return;
+
                     if (!compRenderInfo.worldBound.isValidAABB())
                     {
                         return;
@@ -1267,7 +1271,7 @@ copat::NormalFuncAwaiter EngineRenderScene::recreateSceneVertexBuffers(
             const std::pair<const cbe::ObjectPath, SizeT> &meshToAdd = newSceneVerts.meshesToAdd[addIdx];
             if (meshesAdded.insert(meshToAdd.first).second)
             {
-                const ComponentRenderInfo &compRenderInfo = compsRenderInfo[newSceneVerts.meshesToAdd[0].second];
+                const ComponentRenderInfo &compRenderInfo = compsRenderInfo[newSceneVerts.meshesToAdd[addIdx].second];
                 addVertsCount += compRenderInfo.cpuVertBuffer->bufferCount();
                 addIdxsCount += compRenderInfo.cpuIdxBuffer->bufferCount();
                 ++addIdx;
@@ -1514,7 +1518,6 @@ copat::NormalFuncAwaiter EngineRenderScene::recreateMaterialBuffers(
                 newShaderMats.second.materialRefs[matIdx] = 1;
 
                 compRenderInfo.materialIndex = vectorIdxToMaterialIdx(matIdx);
-                createMaterialCopies(newShaderMats.second, compRenderInfo, cmdList, graphicsInstance);
             }
         }
     }
@@ -1529,6 +1532,18 @@ copat::NormalFuncAwaiter EngineRenderScene::recreateMaterialBuffers(
 
     for (std::pair<const String, MaterialShaderParams> &newShaderMats : newShaderToMaterials)
     {
+        // First pull all copies
+        SizeT fromIdx = 0, count = 0;
+        while (newShaderMats.second.materialAllocTracker.findNextAllocatedBlock(fromIdx, fromIdx, count))
+        {
+            SizeT endIdx = fromIdx + count;
+            for (SizeT matArrayIdx = fromIdx; matArrayIdx != endIdx; ++matArrayIdx)
+            {
+                createMaterialCopies(newShaderMats.second, vectorIdxToMaterialIdx(matArrayIdx), cmdList, graphicsInstance);
+            }
+            fromIdx = endIdx;
+        }
+
         MaterialShaderParams &shaderMats = shaderToMaterials[newShaderMats.first];
 
         shaderMats.bMatsCopied = false;
@@ -1640,7 +1655,6 @@ copat::NormalFuncAwaiter EngineRenderScene::recreateInstanceBuffers(
             debugAssertf(bAllocated, "Allocation failed(This must never happen unless OOM!)");
 
             compRenderInfo.tfIndex = vectorIdxToInstanceIdx(instanceIdx);
-            createInstanceCopies(newInstances, compRenderInfo, cmdList, graphicsInstance);
         }
     }
 
@@ -1662,6 +1676,14 @@ copat::NormalFuncAwaiter EngineRenderScene::recreateInstanceBuffers(
             continue;
         }
 
+        // First create all new copies
+        for (uint32 compRenderInfoIdx : newInstances.compIdxToAdd)
+        {
+            ComponentRenderInfo &compRenderInfo = compsRenderInfo[compRenderInfoIdx];
+            createInstanceCopies(newInstances, compRenderInfo, cmdList, graphicsInstance);
+        }
+
+        // After update instance data has to be copied at least once
         instanceDataCopied[vertType] = false;
 
         instances.instanceData = std::move(newInstances.instanceData);
@@ -1688,6 +1710,12 @@ void EngineRenderScene::createNextDrawList(
     const GraphicsHelperAPI *graphicsHelper
 )
 {
+    static uint32 testCounter = 0;
+    static bool testFlag = false;
+    if (!bInstanceParamsUpdating && testCounter > 4)
+    {
+        return;
+    }
     const SizeT totalCompCapacity = compsRenderInfo.totalCount();
 
     for (std::pair<const String, MaterialShaderParams> &shaderMats : shaderToMaterials)
@@ -1710,14 +1738,23 @@ void EngineRenderScene::createNextDrawList(
         }
         compIndices.emplace_back(i);
     }
-    std::sort(
-        compIndices.begin(), compIndices.end(),
-        [this, &viewParams](SizeT lhs, SizeT rhs)
-        {
-            return (compsRenderInfo[lhs].worldTf.getTranslation() - viewParams.view.translation()).sqrlength()
-                   < (compsRenderInfo[rhs].worldTf.getTranslation() - viewParams.view.translation()).sqrlength();
-        }
-    );
+
+    if (bInstanceParamsUpdating || bVertexUpdating)
+    {
+        testFlag = true;
+    }
+    if (testFlag && !bInstanceParamsUpdating && !bVertexUpdating)
+    {
+        testCounter++;
+    }
+    // std::sort(
+    //     compIndices.begin(), compIndices.end(),
+    //     [this, &viewParams](SizeT lhs, SizeT rhs)
+    //     {
+    //         return (compsRenderInfo[lhs].worldTf.getTranslation() - viewParams.view.translation()).sqrlength()
+    //                < (compsRenderInfo[rhs].worldTf.getTranslation() - viewParams.view.translation()).sqrlength();
+    //     }
+    //);
     for (SizeT compIdx : compIndices)
     {
         const ComponentRenderInfo &compRenderInfo = compsRenderInfo[compIdx];
@@ -1942,7 +1979,7 @@ void EngineRenderScene::renderTheSceneRenderThread(
 
             GraphicsPipelineState pipelineState;
             pipelineState.pipelineQuery.drawMode = EPolygonDrawMode::Fill;
-            pipelineState.pipelineQuery.cullingMode = ECullingMode::None;
+            pipelineState.pipelineQuery.cullingMode = ECullingMode::BackFace;
             for (const std::pair<const String, MaterialShaderParams> &shaderMats : shaderToMaterials)
             {
                 LocalPipelineContext pipelineCntxt;

@@ -151,12 +151,6 @@ void Quat::fromAngleAxisImpl(float angle, Vector3D axis)
     w = Math::cos(hAngleRad);
 }
 
-Vector3D Quat::rotateVector(const Vector3D &vector) const
-{
-    Vector3D q{ x, y, z };
-    return (w * w - q.sqrlength()) * vector + 2 * ((q | vector) * q + w * (q ^ vector));
-}
-
 float Quat::dot(const Quat &a, const Quat &b) { return a | b; }
 
 float Quat::operator[](uint32 index) const { return (&this->x)[index]; }

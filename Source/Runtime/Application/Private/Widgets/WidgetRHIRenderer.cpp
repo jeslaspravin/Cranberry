@@ -227,20 +227,20 @@ void WidgetRHIRenderer::drawWindowWidgetsRenderThread(
         QuantShortBox2D scissor;
     };
     // 1:1 to windows, Request next image for all windows
-    std::vector<SemaphoreRef, CBEStrStackAllocatorExclusive<SemaphoreRef>> swapchainSemaphores(
-        drawingContexts.size(), CBEStrStackAllocatorExclusive<SemaphoreRef>{ app->getRenderFrameAllocator() }
+    std::vector<SemaphoreRef, CBEStlStackAllocatorExclusive<SemaphoreRef>> swapchainSemaphores(
+        drawingContexts.size(), CBEStlStackAllocatorExclusive<SemaphoreRef>{ app->getRenderFrameAllocator() }
     );
-    std::vector<WindowState *, CBEStrStackAllocatorExclusive<WindowState *>> statePerWnd(
-        drawingContexts.size(), CBEStrStackAllocatorExclusive<WindowState *>{ app->getRenderFrameAllocator() }
+    std::vector<WindowState *, CBEStlStackAllocatorExclusive<WindowState *>> statePerWnd(
+        drawingContexts.size(), CBEStlStackAllocatorExclusive<WindowState *>{ app->getRenderFrameAllocator() }
     );
-    std::vector<std::vector<WgDrawCmd>, CBEStrStackAllocatorExclusive<std::vector<WgDrawCmd>>> drawCmdsPerWnd(
-        drawingContexts.size(), CBEStrStackAllocatorExclusive<std::vector<WgDrawCmd>>{ app->getRenderFrameAllocator() }
+    std::vector<std::vector<WgDrawCmd>, CBEStlStackAllocatorExclusive<std::vector<WgDrawCmd>>> drawCmdsPerWnd(
+        drawingContexts.size(), CBEStlStackAllocatorExclusive<std::vector<WgDrawCmd>>{ app->getRenderFrameAllocator() }
     );
-    std::vector<const GraphicsResource *, CBEStrStackAllocatorExclusive<const GraphicsResource *>> cmdBufferPerWnd(
-        drawingContexts.size(), CBEStrStackAllocatorExclusive<const GraphicsResource *>{ app->getRenderFrameAllocator() }
+    std::vector<const GraphicsResource *, CBEStlStackAllocatorExclusive<const GraphicsResource *>> cmdBufferPerWnd(
+        drawingContexts.size(), CBEStlStackAllocatorExclusive<const GraphicsResource *>{ app->getRenderFrameAllocator() }
     );
-    std::vector<LocalPipelineContext, CBEStrStackAllocatorExclusive<LocalPipelineContext>> pipelineCntxPerWnd(
-        drawingContexts.size(), CBEStrStackAllocatorExclusive<LocalPipelineContext>{ app->getRenderFrameAllocator() }
+    std::vector<LocalPipelineContext, CBEStlStackAllocatorExclusive<LocalPipelineContext>> pipelineCntxPerWnd(
+        drawingContexts.size(), CBEStlStackAllocatorExclusive<LocalPipelineContext>{ app->getRenderFrameAllocator() }
     );
 
     // Setting up resources

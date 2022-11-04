@@ -12,14 +12,14 @@
 #include "Memory/StackAllocator.h"
 #include "Types/Platform/Threading/PlatformThreading.h"
 
-StackAllocator<ThreadSharing_Shared>::StackAllocator()
+StackAllocatorUnaligned<ThreadSharing_Shared>::StackAllocatorUnaligned()
     : byteSize(Traits::INITIAL_STACK_SIZE)
 {
     bool bTlsSlotCreated = PlatformThreadingFunctions::createTlsSlot(tlsSlot);
     fatalAssert(bTlsSlotCreated);
     allStackAllocators.emplace_back(nullptr);
 }
-StackAllocator<ThreadSharing_Shared>::StackAllocator(SizeType stackByteSize)
+StackAllocatorUnaligned<ThreadSharing_Shared>::StackAllocatorUnaligned(SizeType stackByteSize)
     : byteSize(stackByteSize)
 {
     debugAssert(stackByteSize > 0);
@@ -29,7 +29,7 @@ StackAllocator<ThreadSharing_Shared>::StackAllocator(SizeType stackByteSize)
     allStackAllocators.emplace_back(nullptr);
 }
 
-StackAllocator<ThreadSharing_Shared>::~StackAllocator()
+StackAllocatorUnaligned<ThreadSharing_Shared>::~StackAllocatorUnaligned()
 {
     std::unique_lock lock(allAllocatorsLock);
     for (PerThreadData *tlData : allStackAllocators)
@@ -53,7 +53,7 @@ StackAllocator<ThreadSharing_Shared>::~StackAllocator()
     PlatformThreadingFunctions::releaseTlsSlot(tlsSlot);
 }
 
-StackAllocator<ThreadSharing_Shared>::PerThreadData &StackAllocator<ThreadSharing_Shared>::getThreadData()
+StackAllocatorUnaligned<ThreadSharing_Shared>::PerThreadData &StackAllocatorUnaligned<ThreadSharing_Shared>::getThreadData()
 {
     PerThreadData *tlData = (PerThreadData *)PlatformThreadingFunctions::getTlsSlotValue(tlsSlot);
     if (tlData == nullptr)
@@ -62,12 +62,12 @@ StackAllocator<ThreadSharing_Shared>::PerThreadData &StackAllocator<ThreadSharin
     }
     return *tlData;
 }
-StackAllocator<ThreadSharing_Shared>::PerThreadData *StackAllocator<ThreadSharing_Shared>::getThreadData() const
+StackAllocatorUnaligned<ThreadSharing_Shared>::PerThreadData *StackAllocatorUnaligned<ThreadSharing_Shared>::getThreadData() const
 {
     return (PerThreadData *)PlatformThreadingFunctions::getTlsSlotValue(tlsSlot);
 }
 
-StackAllocator<ThreadSharing_Shared>::PerThreadData *StackAllocator<ThreadSharing_Shared>::createNewThreadData()
+StackAllocatorUnaligned<ThreadSharing_Shared>::PerThreadData *StackAllocatorUnaligned<ThreadSharing_Shared>::createNewThreadData()
 {
     PerThreadData *tlData = new PerThreadData{ .allocator = { byteSize } };
     bool bTlsSlotSet = PlatformThreadingFunctions::setTlsSlotValue(tlsSlot, tlData);

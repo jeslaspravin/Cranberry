@@ -53,7 +53,7 @@ void CranberryEngineApp::onTick()
 {
     gCBEEngine->onTick();
     // 4ms, Reduce if this is too much
-    coreObjModule->getGC().collect(0.004f);
+    //coreObjModule->getGC().collect(0.004f);
 }
 
 void CranberryEngineApp::onExit()
@@ -159,7 +159,7 @@ void tempTest()
     }
 #endif
 
-    bool bUseCubeScene = true;
+    bool bUseCubeScene = false;
     if (bUseCubeScene)
     {
         const TChar *scenePath = TCHAR("Scenes/TestCubes:TestCubes");
@@ -239,8 +239,8 @@ void tempTest()
     else
     {
 
-        const TChar *meshObjPath = TCHAR("D:/Workspace/Blender/Exports/Sponza.obj");
-        const TChar *meshEnginePath = TCHAR("Scenes/Sponze:Sponza");
+        const TChar *meshObjPath = TCHAR("D:/Assets/Scenes/CrytekSponza/sponza.obj");
+        const TChar *meshEnginePath = TCHAR("Scenes/sponza:sponza");
         cbe::World *sceneObj = cbe::getOrLoad<cbe::World>(meshEnginePath);
         if (sceneObj == nullptr)
         {
@@ -251,8 +251,11 @@ void tempTest()
             if (AssetImporterBase *importer = IEditorCore::get()->findAssetImporter(opt))
             {
                 bool bImportAsScene = true;
+                bool bIsYUp = true;
                 static_cast<const MemberFieldWrapper *>(PropertyHelper::findField(opt.structType, STRID("bImportAsScene"))->fieldPtr)
                                                             ->setTypeless(&bImportAsScene, opt.optionsStruct);
+                static_cast<const MemberFieldWrapper *>(PropertyHelper::findField(opt.structType, STRID("bFromYUp"))->fieldPtr)
+                                                            ->setTypeless(&bIsYUp, opt.optionsStruct);
 
                 std::vector<cbe::Object *> objs = importer->tryImporting(opt);
                 for (cbe::Object *obj : objs)

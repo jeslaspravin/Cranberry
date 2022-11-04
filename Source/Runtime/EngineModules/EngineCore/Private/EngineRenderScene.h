@@ -12,7 +12,7 @@
 #pragma once
 
 #include "Math/Box.h"
-#include "Memory/LinearAllocator.h"
+#include "Memory/FreeListAllocator.h"
 #include "Types/Containers/BitArray.h"
 #include "Types/Containers/SparseVector.h"
 #include "Types/Camera/Camera.h"
@@ -177,8 +177,8 @@ private:
         BufferResourceRef vertices;
         BufferResourceRef indices;
 
-        LinearAllocationTracker<1> vertsAllocTracker;
-        LinearAllocationTracker<1> idxsAllocTracker;
+        FreeListAllocTracker<1> vertsAllocTracker;
+        FreeListAllocTracker<1> idxsAllocTracker;
         std::unordered_map<cbe::ObjectPath, MeshVertexView> meshes;
 
         // List of meshes and Component render info index to add for first time
@@ -192,7 +192,7 @@ private:
     struct InstanceParamsPerVertType
     {
         BufferResourceRef instanceData;
-        LinearAllocationTracker<1> allocTracker;
+        FreeListAllocTracker<1> allocTracker;
 
         ShaderParametersRef shaderParameter;
 
@@ -215,7 +215,7 @@ private:
 
         BufferResourceRef materialData;
         ShaderParametersRef shaderParameter;
-        LinearAllocationTracker<1> materialAllocTracker;
+        FreeListAllocTracker<1> materialAllocTracker;
         std::vector<uint32> materialRefs;
         // Idx is not material idx but the direct vector idx. No need to do materialIdxToVectorIdx()
         std::unordered_map<cbe::ObjectPath, SizeT> materialToIdx;
@@ -298,7 +298,7 @@ private:
     FORCE_INLINE SizeT materialIdxToVectorIdx(SizeT materialIdx) const { return materialIdx - 1; }
     FORCE_INLINE SizeT vectorIdxToMaterialIdx(SizeT idx) const { return idx + 1; }
     FORCE_INLINE void createMaterialCopies(
-        MaterialShaderParams &shaderMats, const ComponentRenderInfo &compRenderInfo, IRenderCommandList *cmdList,
+        MaterialShaderParams &shaderMats, SizeT materialIdx, IRenderCommandList *cmdList,
         IGraphicsInstance *graphicsInstance
     ) const;
     FORCE_INLINE void addCompMaterialData(SizeT compRenderInfoIdx);
