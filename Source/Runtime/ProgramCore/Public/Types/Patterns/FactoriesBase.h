@@ -15,5 +15,6 @@ template <typename TargetBase, typename... ConstructParams>
 class FactoriesBase
 {
 public:
+    virtual ~FactoriesBase() = default;
     virtual TargetBase create(ConstructParams... params) const = 0;
 };

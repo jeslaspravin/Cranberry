@@ -52,13 +52,13 @@ public:
         {
             dword highPart;
             dword lowPart;
-        };
+        } dwords;
 #else
         struct
         {
             dword lowPart;
             dword highPart;
-        };
+        } dwords;
 #endif
         uint64 quadPart;
     };

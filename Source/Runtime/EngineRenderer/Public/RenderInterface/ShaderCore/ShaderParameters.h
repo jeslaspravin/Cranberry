@@ -46,8 +46,8 @@ struct ENGINERENDERER_EXPORT ShaderVertexField
     uint32 location = 0;
     EShaderInputAttribFormat::Type format = EShaderInputAttribFormat::Undefined;
 
-    ShaderVertexField(const TChar *attribName, const uint32 &offsetVal);
-    ShaderVertexField(const TChar *attribName, const uint32 &offsetVal, EShaderInputAttribFormat::Type overrideFormat);
+    ShaderVertexField(const TChar *attribName, uint32 offsetVal);
+    ShaderVertexField(const TChar *attribName, uint32 offsetVal, EShaderInputAttribFormat::Type overrideFormat);
 };
 
 template <typename OuterType, typename MemberType>
@@ -56,13 +56,13 @@ struct ShaderVertexMemberField : public ShaderVertexField
     using FieldPtr = ClassMemberField<false, OuterType, MemberType>;
     FieldPtr memberPtr;
 
-    ShaderVertexMemberField(const TChar *pName, const FieldPtr &fieldPtr, const uint32 &offsetVal)
+    ShaderVertexMemberField(const TChar *pName, const FieldPtr &fieldPtr, uint32 offsetVal)
         : ShaderVertexField(pName, offsetVal)
         , memberPtr(fieldPtr)
     {}
 
     ShaderVertexMemberField(
-        const TChar *pName, const FieldPtr &fieldPtr, const uint32 &offsetVal, EShaderInputAttribFormat::Type overrideFormat
+        const TChar *pName, const FieldPtr &fieldPtr, uint32 offsetVal, EShaderInputAttribFormat::Type overrideFormat
     )
         : ShaderVertexField(pName, offsetVal, overrideFormat)
         , memberPtr(fieldPtr)
@@ -511,7 +511,7 @@ public:
         const EShaderInputFrequency::Type vertexInputFreq = InputFrequency;                                                                    \
         uint32 paramStride() const final { return sizeof(VertexDataType); }                                                                    \
         uint32 paramNativeStride() const final { return sizeof(VertexDataType); }                                                              \
-        void setStride(uint32 newStride) final {}                                                                                              \
+        void setStride(uint32) final {}                                                                                              \
         EShaderInputFrequency::Type inputFrequency() const final { return vertexInputFreq; }
 
 #define ADD_VERTEX_FIELD(FieldName)                                                                                                            \

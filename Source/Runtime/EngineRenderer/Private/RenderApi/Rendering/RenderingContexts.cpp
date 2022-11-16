@@ -415,7 +415,7 @@ GenericRenderPassProperties GlobalRenderingContextBase::renderpassPropsFromFb(co
 }
 
 GenericRenderPassProperties
-    GlobalRenderingContextBase::renderpassPropsFromRpFormat(ERenderPassFormat::Type renderpassFormat, uint32 frameIdx) const
+    GlobalRenderingContextBase::renderpassPropsFromRpFormat(ERenderPassFormat::Type renderpassFormat, uint32 /*frameIdx*/) const
 {
     // const Framebuffer* fb = GlobalBuffers::getFramebuffer(renderpassFormat, frameIdx);
     // if (fb)
@@ -508,7 +508,7 @@ PipelineBase *
     );
     pipeline->setRenderpassProperties(renderpassProps);
 
-    initializeGenericGraphicsPipeline(shaderObject, pipeline);
+    initializeGenericGraphicsPipeline(pipeline);
     return pipeline;
 }
 

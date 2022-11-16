@@ -79,7 +79,6 @@ TextureLoader::TextureLoader(const String &texturePath)
 bool TextureLoader::isNormalTexture(const uint8 *texels) const
 {
     bool isNormal = false;
-    const uint32 pixelsCount = textureDimension.x * textureDimension.y;
 
     // New way based on histogram
     std::array<float, 32> histogram[3];

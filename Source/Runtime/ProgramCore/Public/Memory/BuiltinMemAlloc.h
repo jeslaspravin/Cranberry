@@ -28,22 +28,22 @@ private:
 #endif
     };
 
-    FORCE_INLINE SizeT calcHeaderPadding(uint32 alignment) const;
-    FORCE_INLINE SizeT calcExtraWidth(uint32 alignment) const;
+    FORCE_INLINE SizeT calcHeaderPadding(uint32 alignment) const noexcept;
+    FORCE_INLINE SizeT calcExtraWidth(uint32 alignment) const noexcept;
     /**
      * Writes allocation meta to header and returns aligned usable pointer
      */
-    FORCE_INLINE void *writeAllocMeta(void *allocatedPtr, SizeT size, uint32 alignment) const;
-    FORCE_INLINE void *getAllocationInfo(void *ptr, SizeT &outSize, uint32 &outAlignment) const;
+    FORCE_INLINE void *writeAllocMeta(void *allocatedPtr, SizeT size, uint32 alignment) const noexcept;
+    FORCE_INLINE void *getAllocationInfo(void *ptr, SizeT &outSize, uint32 &outAlignment) const noexcept;
 
 public:
-    void *tryMalloc(SizeT size, uint32 alignment = DEFAULT_ALIGNMENT) final;
-    void *memAlloc(SizeT size, uint32 alignment = DEFAULT_ALIGNMENT) final;
-    void *tryRealloc(void *currentPtr, SizeT size, uint32 alignment = DEFAULT_ALIGNMENT) final;
-    void *memRealloc(void *currentPtr, SizeT size, uint32 alignment = DEFAULT_ALIGNMENT) final;
-    void memFree(void *ptr) final;
+    void *tryMalloc(SizeT size, uint32 alignment = DEFAULT_ALIGNMENT) noexcept final;
+    void *memAlloc(SizeT size, uint32 alignment = DEFAULT_ALIGNMENT) noexcept final;
+    void *tryRealloc(void *currentPtr, SizeT size, uint32 alignment = DEFAULT_ALIGNMENT) noexcept final;
+    void *memRealloc(void *currentPtr, SizeT size, uint32 alignment = DEFAULT_ALIGNMENT) noexcept final;
+    void memFree(void *ptr) noexcept final;
 
-    SizeT getAllocationSize(void *ptr) const;
+    SizeT getAllocationSize(void *ptr) const noexcept final;
 };
 
 template <typename Type>

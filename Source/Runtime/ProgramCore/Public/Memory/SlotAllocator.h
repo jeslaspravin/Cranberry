@@ -69,7 +69,7 @@ public:
         return diff >= 0 && diff < (SlotSize * Count);
     }
 
-    FORCE_INLINE SizeType ptrToSlotIdx(void *ptr) const { return ((UPtrInt)(ptr) - (UPtrInt)(slots)) / SlotSize; }
+    FORCE_INLINE SizeType ptrToSlotIdx(void *ptr) const { return SizeType(((UPtrInt)(ptr) - (UPtrInt)(slots)) / SlotSize); }
 
     void *memAlloc(SizeT size, uint32 alignment = SlotAlignment)
     {

@@ -54,9 +54,9 @@ public:
     bool isSignaled() const override;
     void resetSignal() override;
 
-    virtual void waitForSignal(uint64 value) const {}
-    virtual bool isSignaled(uint64 value) const { return false; }
-    virtual void resetSignal(uint64 value) {}
+    virtual void waitForSignal(uint64 /*value*/) const {}
+    virtual bool isSignaled(uint64 /*value*/) const { return false; }
+    virtual void resetSignal(uint64 /*value*/) {}
     virtual uint64 currentValue() const { return 0; }
 };
 

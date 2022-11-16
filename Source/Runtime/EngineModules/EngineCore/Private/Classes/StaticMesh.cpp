@@ -84,8 +84,7 @@ void StaticMesh::destroy()
     ENQUEUE_RENDER_COMMAND(DestroyStaticMesh)
     (
         [vertsBuffer = vertexCpuBuffer,
-         idxBuffer
-         = indexCpuBuffer](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper) mutable
+         idxBuffer = indexCpuBuffer](IRenderCommandList *, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper) mutable
         {
             graphicsHelper->returnMappedPtr(graphicsInstance, vertsBuffer);
             graphicsHelper->returnMappedPtr(graphicsInstance, idxBuffer);
@@ -179,16 +178,16 @@ ObjectArchive &StaticMesh::serialize(ObjectArchive &ar)
 }
 
 void StaticMesh::copyResources(
-    const std::vector<StaticMeshVertex> &inVertices, const std::vector<uint32> &inIndices, IRenderCommandList *cmdList,
+    const std::vector<StaticMeshVertex> &inVertices, const std::vector<uint32> &inIndices, IRenderCommandList *,
     IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
 )
 {
-    vertexCpuBuffer = graphicsHelper->createReadOnlyVertexBuffer(graphicsInstance, sizeof(StaticMeshVertex), inVertices.size());
+    vertexCpuBuffer = graphicsHelper->createReadOnlyVertexBuffer(graphicsInstance, uint32(sizeof(StaticMeshVertex)), uint32(inVertices.size()));
     vertexCpuBuffer->setAsStagingResource(true);
     vertexCpuBuffer->setResourceName(getName() + TCHAR("_CPUVerts"));
     vertexCpuBuffer->init();
 
-    indexCpuBuffer = graphicsHelper->createReadOnlyIndexBuffer(graphicsInstance, sizeof(uint32), inIndices.size());
+    indexCpuBuffer = graphicsHelper->createReadOnlyIndexBuffer(graphicsInstance, uint32(sizeof(uint32)), uint32(inIndices.size()));
     indexCpuBuffer->setAsStagingResource(true);
     indexCpuBuffer->setResourceName(getName() + TCHAR("_CPUIndices"));
     indexCpuBuffer->init();

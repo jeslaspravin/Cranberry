@@ -262,7 +262,7 @@ Quat Quat::normalized() const { return (*this) * Math::invSqrt(sqrlength()); }
 Quat Quat::safeNormalize(float threshold /*= SMALL_EPSILON*/) const
 {
     float sqrLen = sqrlength();
-    if (sqrLen < SMALL_EPSILON)
+    if (sqrLen < threshold)
     {
         return IDENTITY;
     }

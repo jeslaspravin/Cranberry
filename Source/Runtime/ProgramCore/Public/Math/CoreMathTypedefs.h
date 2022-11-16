@@ -12,11 +12,26 @@
 #pragma once
 
 #include "Types/CoreTypes.h"
+#include "Types/CompilerDefines.h"
+
+// Math - GLM
+#ifndef GLM_HEADER_INCLUDES_BEGIN
+#define GLM_HEADER_INCLUDES_BEGIN                                                                                                              \
+    COMPILER_PRAGMA(COMPILER_PUSH_WARNING)                                                                                                     \
+    COMPILER_PRAGMA(COMPILER_DISABLE_WARNING(WARN_UNINITIALIZED))
+#endif
+#ifndef GLM_HEADER_INCLUDES_END
+#define GLM_HEADER_INCLUDES_END COMPILER_PRAGMA(COMPILER_POP_WARNING)
+#endif
+
+GLM_HEADER_INCLUDES_BEGIN
 
 #include <glm/detail/type_vec1.hpp>
 #include <glm/detail/type_vec2.hpp>
 #include <glm/detail/type_vec3.hpp>
 #include <glm/detail/type_vec4.hpp>
+
+GLM_HEADER_INCLUDES_BEGIN
 
 #undef PI
 #define PI (3.1415926535897932f)

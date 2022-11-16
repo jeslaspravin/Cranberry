@@ -40,6 +40,6 @@ public:
     constexpr static const uint32 AllocSlotCount = 2;
 
 public:
-    virtual bool supportsImporting(ImportOption &inOutOptions) { return false; }
-    virtual std::vector<cbe::Object *> tryImporting(const ImportOption &importOptions) const { return {}; }
+    virtual bool supportsImporting(ImportOption & /*inOutOptions*/) { return false; }
+    virtual std::vector<cbe::Object *> tryImporting(const ImportOption & /*importOptions*/) const { return {}; }
 };

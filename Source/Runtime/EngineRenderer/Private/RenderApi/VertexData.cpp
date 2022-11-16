@@ -192,30 +192,30 @@ String toString(Type vertexType)
 }
 
 template <>
-void vertexSpecConsts<Simple2>(SpecConstantNamedMap &specializationConst)
+void vertexSpecConsts<Simple2>(SpecConstantNamedMap &)
 {}
 
 template <>
-void vertexSpecConsts<UI>(SpecConstantNamedMap &specializationConst)
+void vertexSpecConsts<UI>(SpecConstantNamedMap &)
 {}
 
 template <>
-void vertexSpecConsts<Simple3>(SpecConstantNamedMap &specializationConst)
+void vertexSpecConsts<Simple3>(SpecConstantNamedMap &)
 {}
 template <>
-void vertexSpecConsts<Simple3DColor>(SpecConstantNamedMap &specializationConst)
+void vertexSpecConsts<Simple3DColor>(SpecConstantNamedMap &)
 {}
 template <>
-void vertexSpecConsts<BasicMesh>(SpecConstantNamedMap &specializationConst)
+void vertexSpecConsts<BasicMesh>(SpecConstantNamedMap &)
 {}
 template <>
-void vertexSpecConsts<StaticMesh>(SpecConstantNamedMap &specializationConst)
+void vertexSpecConsts<StaticMesh>(SpecConstantNamedMap &)
 {}
 template <>
-void vertexSpecConsts<InstancedSimple3DColor>(SpecConstantNamedMap &specializationConst)
+void vertexSpecConsts<InstancedSimple3DColor>(SpecConstantNamedMap &)
 {}
 template <>
-void vertexSpecConsts<NoVertex>(SpecConstantNamedMap &specializationConst)
+void vertexSpecConsts<NoVertex>(SpecConstantNamedMap &)
 {}
 
 void vertexSpecConsts(Type vertexType, SpecConstantNamedMap &specializationConst)
@@ -246,10 +246,10 @@ void vertexSpecConsts(Type vertexType, SpecConstantNamedMap &specializationConst
 
 void GlobalBuffers::destroyVertIndBuffers()
 {
-    lineGizmoVertxInds.first.reset();
-    lineGizmoVertxInds.second.reset();
+    lineGizmoVertsInds.first.reset();
+    lineGizmoVertsInds.second.reset();
 
-    quadTriVerts.reset();
+    quadTriVertsBuffer.reset();
 
     quadRectVertsInds.first.reset();
     quadRectVertsInds.second.reset();
@@ -389,15 +389,15 @@ void GlobalBuffers::createVertIndBuffers(
     lineGizmoIndicesBuffer->setResourceName(TCHAR("LineGizmosIndices"));
     lineGizmoIndicesBuffer->init();
 
-    GlobalBuffers::lineGizmoVertxInds.first = lineGizmoVertsBuffer;
-    GlobalBuffers::lineGizmoVertxInds.second = lineGizmoIndicesBuffer;
+    GlobalBuffers::lineGizmoVertsInds.first = lineGizmoVertsBuffer;
+    GlobalBuffers::lineGizmoVertsInds.second = lineGizmoIndicesBuffer;
 
     BufferResourceRef quadTriVertexBuffer
         = graphicsHelper->createReadOnlyVertexBuffer(graphicsInstance, sizeof(Vector3D), static_cast<uint32>(quadTriVerts.size()));
     quadTriVertexBuffer->setResourceName(TCHAR("ScreenQuadTriVertices"));
     quadTriVertexBuffer->init();
 
-    GlobalBuffers::quadTriVerts = quadTriVertexBuffer;
+    GlobalBuffers::quadTriVertsBuffer = quadTriVertexBuffer;
 
     BufferResourceRef quadRectVertexBuffer
         = graphicsHelper->createReadOnlyVertexBuffer(graphicsInstance, sizeof(Vector3D), static_cast<uint32>(quadRectVerts.size()));

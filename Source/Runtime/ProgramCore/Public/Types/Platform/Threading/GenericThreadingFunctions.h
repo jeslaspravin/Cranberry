@@ -28,7 +28,7 @@ struct SystemProcessorsCacheInfo
                 uint32 dCacheByteSize;
                 uint32 iCacheByteSize;
                 uint32 tCacheByteSize;
-            };
+            } caches;
             uint32 uCacheByteSize;
         };
         bool bSplitDesign;

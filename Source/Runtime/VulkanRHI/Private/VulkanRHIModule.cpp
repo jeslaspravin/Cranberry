@@ -48,7 +48,7 @@ void VulkanRHIModule::destroyGraphicsInstance()
 {
     if (graphicsInstance != nullptr)
     {
-        delete graphicsInstance;
+        delete static_cast<VulkanGraphicsInstance *>(graphicsInstance);
         graphicsInstance = nullptr;
     }
 }

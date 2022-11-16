@@ -63,7 +63,7 @@ struct std::equal_to<tinyobj::index_t>
 
 bool hasSmoothedNormals(const tinyobj::shape_t &mesh)
 {
-    for (const uint32 &smoothingGrpIdx : mesh.mesh.smoothing_group_ids)
+    for (uint32 smoothingGrpIdx : mesh.mesh.smoothing_group_ids)
     {
         if (smoothingGrpIdx > 0)
         {
@@ -158,6 +158,8 @@ void calcTangent(MeshLoaderData &loaderData, StaticMeshVertex &vertexData, const
     pt2.color = ColorConst::GREEN;
     loaderData.tbnVerts.emplace_back(pt1);
     loaderData.tbnVerts.emplace_back(pt2);
+#else
+    CompilerHacks::ignoreUnused(loaderData);
 #endif
 }
 
@@ -181,7 +183,7 @@ void fillVertexInfo(StaticMeshVertex &vertexData, const tinyobj::attrib_t &attri
 }
 
 Vector3D StaticMeshLoader::getFaceNormal(
-    const uint32 &index0, const uint32 &index1, const uint32 &index2, const std::vector<StaticMeshVertex> &verticesData
+    uint32 index0, uint32 index1, uint32 index2, const std::vector<StaticMeshVertex> &verticesData
 ) const
 {
     Vector4D temp1 = verticesData[index1].position - verticesData[index0].position;
@@ -455,8 +457,6 @@ void StaticMeshLoader::smoothAndLoad(
             };
             for (const std::pair<const uint32, std::vector<uint32>> &adjacentFaces : vertFaceAdjItr->second)
             {
-                float dotVal = 1;
-                bool bIsSameSmoothing = true;
                 if (adjacentFaces.second.size() == 2)
                 {
                     float dotVal = faceNormals[adjacentFaces.second[0]] | faceNormals[adjacentFaces.second[1]];
@@ -486,7 +486,7 @@ void StaticMeshLoader::smoothAndLoad(
                 uint32 newVertIndex = uint32(meshLoaderData.vertices.size());
                 meshLoaderData.vertices.push_back(meshLoaderData.vertices[vertIdx]);
 
-                for (const uint32 &faceIdx : *faceGrpsItr)
+                for (uint32 faceIdx : *faceGrpsItr)
                 {
                     uint32 faceStartIndex = faceIdx * FACE_MAX_VERTS;
                     for (uint32 i = 0; i < FACE_MAX_VERTS; ++i)
@@ -501,7 +501,7 @@ void StaticMeshLoader::smoothAndLoad(
                 }
             }
             // Smooth vertIdx vertex as well as this vertex is most likely will be unique to this mesh
-            for (const uint32 &faceIdx : faceGroups[0])
+            for (uint32 faceIdx : faceGroups[0])
             {
                 uint32 faceStartIndex = faceIdx * FACE_MAX_VERTS;
                 for (uint32 i = 0; i < FACE_MAX_VERTS; ++i)

@@ -38,7 +38,7 @@ void ModuleSources::printDiagnostics(CXDiagnostic diagnostic, uint32 formatOptio
     }
 
     LOG_WARN("Diagnostics", "%s%s", diagnosticLoc, diagnosticStr);
-    for (int32 i = 0; i < childDiagsNum; ++i)
+    for (uint32 i = 0; i < childDiagsNum; ++i)
     {
         CXDiagnostic childDiagnostic = clang_getDiagnosticInSet(childDiags, i);
         printDiagnostics(childDiagnostic, formatOptions, idx);
@@ -283,11 +283,11 @@ bool ModuleSources::compileAllSources(bool bFullCompile /*= false*/)
                 {
                     uint32 formatOptions = CXDiagnostic_DisplayCategoryName | CXDiagnostic_DisplayOption;
                     uint32 diagnosticsNum = clang_getNumDiagnostics(unit);
-                    for (uint32 i = 0; i < diagnosticsNum; ++i)
+                    for (uint32 diagIdx = 0; diagIdx < diagnosticsNum; ++diagIdx)
                     {
-                        LOG_WARN("Diagnostics", "------ Diagnostics %u ------", i);
-                        auto diagnostic = clang_getDiagnostic(unit, i);
-                        printDiagnostics(diagnostic, formatOptions, i);
+                        LOG_WARN("Diagnostics", "------ Diagnostics %u ------", diagIdx);
+                        auto diagnostic = clang_getDiagnostic(unit, diagIdx);
+                        printDiagnostics(diagnostic, formatOptions, diagIdx);
                         clang_disposeDiagnostic(diagnostic);
                     }
                 }
@@ -325,7 +325,7 @@ void ModuleSources::injectGeneratedFiles(const std::vector<const SourceInformati
         {
             std::vector<String> includeStmts;
             // Since stride is number of generated module files
-            for (uint32 j = i; j < sortedSources.size(); j += genFiles.size())
+            for (uint32 j = i; j < sortedSources.size(); j += uint32(genFiles.size()))
             {
                 includeStmts.emplace_back(
                     StringFormat::format(TCHAR("#include \"%s\""), PathFunctions::fileOrDirectoryName(sortedSources[j]->generatedTUPath))

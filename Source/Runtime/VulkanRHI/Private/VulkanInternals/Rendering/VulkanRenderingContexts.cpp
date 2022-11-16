@@ -121,7 +121,7 @@ void VulkanGlobalRenderingContext::initializeApiContext()
             VulkanGraphicsPipeline *graphicsPipeline = static_cast<VulkanGraphicsPipeline *>(shaderObject->getDefaultPipeline());
             graphicsPipeline->pipelineLayout = VulkanGraphicsHelper::createPipelineLayout(graphicsInstance, graphicsPipeline);
 
-            initializeGenericGraphicsPipeline(shaderObject, shaderObject->getDefaultPipeline());
+            initializeGenericGraphicsPipeline(shaderObject->getDefaultPipeline());
             pipelineLayouts[shaderObject->getShader()] = graphicsPipeline->pipelineLayout;
         }
         else if (shaderCollection.second.shaderObject->baseShaderType() == ComputeShaderConfig::staticType())
@@ -176,7 +176,7 @@ VkRenderPass VulkanGlobalRenderingContext::createGbufferRenderpass(
     return VulkanGraphicsHelper::createRenderPass(IVulkanRHIModule::get()->getGraphicsInstance(), renderpassProps, additionalProps);
 }
 
-void VulkanGlobalRenderingContext::initializeGenericGraphicsPipeline(UniqueUtilityShaderObject *shaderObject, PipelineBase *pipeline)
+void VulkanGlobalRenderingContext::initializeGenericGraphicsPipeline(PipelineBase *pipeline)
 {
     VulkanGraphicsPipeline *graphicsPipeline = static_cast<VulkanGraphicsPipeline *>(pipeline);
     GenericRenderPassProperties renderPassProps = graphicsPipeline->getRenderpassProperties();

@@ -157,13 +157,13 @@ void INTERNAL_ObjectCoreAccessors::setOuter(Object *object, Object *outer) { set
 void INTERNAL_ObjectCoreAccessors::renameObject(Object *object, const String &newName) { setOuterAndName(object, newName, object->objOuter); }
 } // namespace cbe
 
-ObjectArchive &ObjectArchive::serialize(cbe::Object *&obj)
+ObjectArchive &ObjectArchive::serialize(cbe::Object *& /*obj*/)
 {
     fatalAssertf(false, "cbe::Object serialization not implemented!");
     return *this;
 }
-void ObjectArchive::relinkSerializedPtr(void **objPtrPtr) const { fatalAssertf(false, "relinkSerializedPtr not implemented!"); }
-void ObjectArchive::relinkSerializedPtr(const void **objPtrPtr) const { fatalAssertf(false, "relinkSerializedPtr not implemented!"); }
+void ObjectArchive::relinkSerializedPtr(void ** /*objPtrPtr*/) const { fatalAssertf(false, "relinkSerializedPtr not implemented!"); }
+void ObjectArchive::relinkSerializedPtr(const void ** /*objPtrPtr*/) const { fatalAssertf(false, "relinkSerializedPtr not implemented!"); }
 
 //////////////////////////////////////////////////////////////////////////
 /// ObjectPathHelper implementations

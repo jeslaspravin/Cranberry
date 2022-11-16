@@ -22,11 +22,11 @@ void WgRenderTarget::init(WgRenderTargetCI createInfo)
     }
     ENQUEUE_RENDER_COMMAND(WgRenderTargetInit)
     (
-        [createInfo, this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        [createInfo, this](class IRenderCommandList */*cmdList*/, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
             bool bInitialize = !rtTexture.isValid() || !rtTexture->isValid() || rtTexture->sampleCount() != createInfo.sampleCount
-                               || rtTexture->getImageSize().x != createInfo.textureSize.x
-                               || rtTexture->getImageSize().y != createInfo.textureSize.y;
+                               || rtTexture->getImageSize().x != uint32(createInfo.textureSize.x)
+                               || rtTexture->getImageSize().y != uint32(createInfo.textureSize.y);
             if (createInfo.bIsSrgb)
             {
                 bInitialize = bInitialize || rtTexture->imageFormat() == EPixelDataFormat::BGRA_U8_Norm;

@@ -40,6 +40,8 @@ set(CMAKE_SHARED_LINKER_FLAGS_DEVELOPMENT ${CMAKE_SHARED_LINKER_FLAGS_RELWITHDEB
     "CPP exe shared library flags for Development configuration")
 
 # Global compile and link options
+set (CMAKE_CXX_STANDARD 20)
+set (CMAKE_C_STANDARD 17)
 
 # Not using since mimalloc does not work
 # add_compile_options(-fsanitize=address)
@@ -49,3 +51,24 @@ set(CMAKE_SHARED_LINKER_FLAGS_DEVELOPMENT ${CMAKE_SHARED_LINKER_FLAGS_RELWITHDEB
 
 # Strictly conform to standard    
 add_compile_options($<$<CXX_COMPILER_ID:MSVC>:/permissive->)
+
+# Enable all warnings as errors
+add_compile_options(
+    $<$<CXX_COMPILER_ID:MSVC>:/W4>
+    $<$<CXX_COMPILER_ID:MSVC>:/WX>
+)
+add_compile_options(
+    $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:GNU>>:-Wall>
+    $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:GNU>>:-Wextra>
+    $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:GNU>>:-Wshadow>
+    $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:GNU>>:-Wconversion>
+    $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:GNU>>:-Wpedantic>
+    $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:GNU>>:-Werror>
+)
+
+# Disabling unnecessary warnings
+add_compile_options(
+    $<$<CXX_COMPILER_ID:MSVC>:/wd4251> # dll-interface issues due to type size mismatch between dlls compiled from different compilers
+    $<$<CXX_COMPILER_ID:MSVC>:/wd4275> # dll-interface data corruption due to accessing static variables which will be different across dll boundaries
+    $<$<CXX_COMPILER_ID:MSVC>:/wd4324> # Warns using alignas to align structs
+)

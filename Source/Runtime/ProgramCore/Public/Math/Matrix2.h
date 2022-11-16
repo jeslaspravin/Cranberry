@@ -14,7 +14,11 @@
 #include "Math/CoreMathTypedefs.h"
 #include "ProgramCoreExports.h"
 
+GLM_HEADER_INCLUDES_BEGIN
+
 #include <glm/ext/matrix_float2x2.hpp>
+
+GLM_HEADER_INCLUDES_END
 
 class Vector2D;
 

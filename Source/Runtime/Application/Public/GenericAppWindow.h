@@ -18,7 +18,7 @@
 #include "Types/Delegates/Delegate.h"
 #include "Types/Platform/PlatformTypes.h"
 
-struct ApplicationInstance;
+class ApplicationInstance;
 
 class APPLICATION_EXPORT GenericAppWindow
 {
@@ -55,7 +55,7 @@ protected:
 
 public:
     void windowSize(uint32 &width, uint32 &height) const;
-    void setWindowSize(const uint32 &width, const uint32 &height, bool updateResources);
+    void setWindowSize(uint32 width, uint32 height, bool updateResources);
     FORCE_INLINE bool isMinimized() const { return windowWidth == 0 || windowHeight == 0; }
 
     float dpiScale() const { return dpiScaling; }
@@ -75,7 +75,9 @@ public:
     virtual bool isValidWindow() const = 0;
     virtual WindowHandle getWindowHandle() const = 0;
 
+    virtual ~GenericAppWindow() = default;
+
 public:
     // Helpers
-    static WindowHandle getWindowUnderPoint(Short2D point) { return nullptr; }
+    static WindowHandle getWindowUnderPoint(Short2D) { return nullptr; }
 };

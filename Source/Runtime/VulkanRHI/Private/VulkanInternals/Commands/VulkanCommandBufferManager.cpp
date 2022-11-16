@@ -72,7 +72,7 @@ public:
 
 #if EXPERIMENTAL
 
-VkCommandBuffer VulkanGraphicsHelper::getRawCmdBuffer(class IGraphicsInstance *graphicsInstance, const GraphicsResource *cmdBuffer)
+VkCommandBuffer VulkanGraphicsHelper::getRawCmdBuffer(class IGraphicsInstance * /*graphicsInstance*/, const GraphicsResource *cmdBuffer)
 {
     if (cmdBuffer->getType()->isChildOf<VulkanCommandBuffer>())
     {
@@ -452,8 +452,6 @@ void VulkanCmdBufferManager::endCmdBuffer(const GraphicsResource *cmdBuffer)
 
 void VulkanCmdBufferManager::cmdFinished(const GraphicsResource *cmdBuffer, VulkanResourcesTracker *resourceTracker)
 {
-    const auto *vCmdBuffer = static_cast<const VulkanCommandBuffer *>(cmdBuffer);
-
     cmdFinished(cmdBuffer->getResourceName(), resourceTracker);
 }
 
@@ -1821,7 +1819,7 @@ VulkanResourcesTracker::OptionalBarrierInfo
 }
 
 VulkanResourcesTracker::OptionalBarrierInfo
-    VulkanResourcesTracker::imageToGeneralLayout(const GraphicsResource *cmdBuffer, const ImageResourceRef &resource)
+    VulkanResourcesTracker::imageToGeneralLayout(const GraphicsResource *, const ImageResourceRef &resource)
 {
     OptionalBarrierInfo outBarrierInfo = {};
 

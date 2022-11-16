@@ -39,12 +39,12 @@ public:
     uint64 filePointer() const override;
     void seekEnd() const override;
     void seekBegin() const override;
-    void seek(const int64 &pointer) const override;
-    void offsetCursor(const int64 &offset) const override;
+    void seek(int64 pointer) const override;
+    void offsetCursor(int64 offset) const override;
 
-    bool setFileSize(const int64 &newSize) const override;
-    void read(std::vector<uint8> &readTo, const uint32 &bytesToRead = (~0u)) const override;
-    void read(uint8 *readTo, const uint32 &bytesToRead) const override;
+    bool setFileSize(int64 newSize) const override;
+    void read(std::vector<uint8> &readTo, uint32 bytesToRead = (~0u)) const override;
+    void read(uint8 *readTo, uint32 bytesToRead) const override;
     void write(const ArrayView<const uint8> &writeBytes) const override;
 
     bool deleteFile() override;

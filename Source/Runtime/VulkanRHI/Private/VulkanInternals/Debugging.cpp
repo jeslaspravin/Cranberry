@@ -46,8 +46,8 @@ String VulkanDebugLogger::messageTypeStr(VkDebugUtilsMessageTypeFlagsEXT message
 }
 
 VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackDebug(
-    VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes,
-    const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *pUserData
+    VkDebugUtilsMessageSeverityFlagBitsEXT /*messageSeverity*/, VkDebugUtilsMessageTypeFlagsEXT messageTypes,
+    const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void */*pUserData*/
 )
 {
     LOG_DEBUG(
@@ -95,8 +95,8 @@ VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackDebug(
 }
 
 VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackInfo(
-    VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes,
-    const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *pUserData
+    VkDebugUtilsMessageSeverityFlagBitsEXT /*messageSeverity*/, VkDebugUtilsMessageTypeFlagsEXT messageTypes,
+    const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void */*pUserData*/
 )
 {
     LOG("VulkanDebugUtils", "%s[ID : %d][Name : %s] Message : %s", messageTypeStr(messageTypes), pCallbackData->messageIdNumber,
@@ -136,8 +136,8 @@ VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackInfo(
 }
 
 VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackWarn(
-    VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes,
-    const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *pUserData
+    VkDebugUtilsMessageSeverityFlagBitsEXT /*messageSeverity*/, VkDebugUtilsMessageTypeFlagsEXT messageTypes,
+    const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void */*pUserData*/
 )
 {
     LOG_WARN(
@@ -185,8 +185,8 @@ VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackWarn(
 }
 
 VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackError(
-    VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes,
-    const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *pUserData
+    VkDebugUtilsMessageSeverityFlagBitsEXT /*messageSeverity*/, VkDebugUtilsMessageTypeFlagsEXT messageTypes,
+    const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void */*pUserData*/
 )
 {
     LOG_ERROR(
@@ -335,7 +335,7 @@ void VulkanDebugGraphics::markObject(const IVulkanResources *resource) const
     ownerDevice->vkSetDebugUtilsObjectNameEXT(VulkanGraphicsHelper::getDevice(ownerDevice), &objectNameInfo);
 }
 
-void VulkanDebugGraphics::markObject(const uint64 &objectHandle, const String &objectName, VkObjectType objectType) const
+void VulkanDebugGraphics::markObject(uint64 objectHandle, const String &objectName, VkObjectType objectType) const
 {
     if (objectHandle == 0)
         return;

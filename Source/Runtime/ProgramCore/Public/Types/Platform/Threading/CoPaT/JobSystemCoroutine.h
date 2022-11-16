@@ -365,11 +365,11 @@ public:
          * User provided JobSystem. First argument of coroutine function must be JobSystem & or JobSystem *
          */
         template <typename... FunctionParams>
-        PromiseType(JobSystem &jobSystem, FunctionParams... params)
+        PromiseType(JobSystem &jobSystem, FunctionParams...)
             : enqToJobSystem(&jobSystem)
         {}
         template <typename... FunctionParams>
-        PromiseType(JobSystem *jobSystem, FunctionParams... params)
+        PromiseType(JobSystem *jobSystem, FunctionParams...)
             : enqToJobSystem(jobSystem)
         {}
 

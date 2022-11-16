@@ -37,7 +37,7 @@ void FileArchiveStream::read(void *toPtr, SizeT byteLen)
 {
     if (hasMoreData(byteLen))
     {
-        file->read(reinterpret_cast<uint8 *>(toPtr), byteLen);
+        file->read(reinterpret_cast<uint8 *>(toPtr), uint32(byteLen));
         file->offsetCursor((int64)byteLen);
         fileCursor += byteLen;
     }
@@ -99,10 +99,10 @@ uint8 FileArchiveStream::readForwardAt(SizeT idx) const
     if (file->fileSize() <= fileCursor + idx)
         return 0;
 
-    file->offsetCursor(idx);
+    file->offsetCursor((int64)idx);
     uint8 outVal;
     file->read(&outVal, 1);
-    file->offsetCursor(-idx);
+    file->offsetCursor(-(int64)idx);
     return outVal;
 }
 
@@ -111,10 +111,10 @@ uint8 FileArchiveStream::readBackwardAt(SizeT idx) const
     if (fileCursor < idx)
         return 0;
 
-    file->offsetCursor(-idx);
+    file->offsetCursor(-(int64)idx);
     uint8 outVal;
     file->read(&outVal, 1);
-    file->offsetCursor(idx);
+    file->offsetCursor((int64)idx);
     return outVal;
 }
 

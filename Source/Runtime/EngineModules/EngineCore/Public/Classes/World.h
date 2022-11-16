@@ -156,8 +156,8 @@ private:
     void prepareForPlay();
 
     // bDelayedInit for actor created from class to allow setting up the prefab directly with in the world
-    Actor *addActor(CBEClass actorClass, const String &actorName, EObjectFlags flags, bool bDelayedInit);
-    Actor *addActor(ActorPrefab *inPrefab, const String &name, EObjectFlags flags);
+    Actor *addActor(CBEClass actorClass, const String &actorName, EObjectFlags actorFlags, bool bDelayedInit);
+    Actor *addActor(ActorPrefab *inPrefab, const String &name, EObjectFlags actorFlags);
     bool finalizeAddActor(ActorPrefab *prefab);
     Actor *setupActorInternal(ActorPrefab *actorPrefab);
     void removeActor(Actor *actor);

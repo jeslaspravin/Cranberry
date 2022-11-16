@@ -71,7 +71,7 @@ int32 appMain(String cmdLine, InstanceHandle appPlatformInstance)
 //#include <cstdlib>
 //#include <crtdbg.h>
 
-int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
+int wWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, PWSTR pCmdLine, int /*nCmdShow*/)
 {
     /*_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);*/
 

@@ -145,7 +145,7 @@ FORCE_INLINE void
 }
 
 #if DEFER_DELETION
-DeferredDeleter *VulkanGraphicsHelper::getDeferredDeleter(class IGraphicsInstance *graphicsInstance)
+DeferredDeleter *VulkanGraphicsHelper::getDeferredDeleter(class IGraphicsInstance *)
 {
     VulkanGlobalRenderingContext *renderingCntxt
         = static_cast<VulkanGlobalRenderingContext *>(IRenderInterfaceModule::get()->getRenderManager()->getGlobalRenderingContext());
@@ -412,7 +412,6 @@ void VulkanCommandList::
 
     if (dst->isStagingResource())
     {
-        auto *vulkanDst = dst.reference<VulkanBufferResource>();
         void *stagingPtr = reinterpret_cast<uint8 *>(graphicsHelperCache->borrowMappedPtr(graphicsInstanceCache, dst)) + dstOffset;
         memcpy(stagingPtr, dataToCopy, size);
         if (bFlushMemory)
@@ -542,7 +541,7 @@ BufferResourceRef VulkanCommandList::copyToBuffer_GenCopyBufferInfo(
         const void *srcData = srcDataPtrs[i];
 
         copyBufferInfo.src = stagingBuffer;
-        copyToBuffer_Internal(stagingBuffer, copyBufferInfo.copyInfo.srcOffset, srcData, copyBufferInfo.copyInfo.copySize, false);
+        copyToBuffer_Internal(stagingBuffer, uint32(copyBufferInfo.copyInfo.srcOffset), srcData, copyBufferInfo.copyInfo.copySize, false);
     }
 
     graphicsHelperCache->flushMappedPtr(graphicsInstanceCache, std::vector<BufferResourceRef>{ stagingBuffer });
@@ -553,7 +552,7 @@ BufferResourceRef VulkanCommandList::copyToBuffer_GenCopyBufferInfo(
 
 void VulkanCommandList::cmdCopyBuffer_GenBarriers(
     std::vector<VkBufferMemoryBarrier2> &outBarriers, const GraphicsResource *cmdBuffer, BufferResourceRef src, BufferResourceRef dst,
-    ArrayView<const CopyBufferInfo> copies
+    ArrayView<const CopyBufferInfo> /*copies*/
 )
 {
     VkBufferMemoryBarrier2 bufferBarriers[2];
@@ -858,8 +857,6 @@ bool VulkanCommandList::hasCmdsUsingResource(const MemoryResourceRef &resource, 
 
 void VulkanCommandList::setupInitialLayout(ImageResourceRef image)
 {
-    const EPixelDataFormat::PixelFormatInfo *formatInfo = EPixelDataFormat::getFormatInfo(image->imageFormat());
-
     const GraphicsResource *cmdBuffer
         = cmdBufferManager.beginTempCmdBuffer(TCHAR("LayoutTransition_") + image->getResourceName(), EQueueFunction::Graphics);
     VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
@@ -868,7 +865,7 @@ void VulkanCommandList::setupInitialLayout(ImageResourceRef image)
     layoutTransition.oldLayout = VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED;
     layoutTransition.newLayout = determineImageLayout(image);
     layoutTransition.srcQueueFamilyIndex = layoutTransition.dstQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(cmdBuffer);
-    layoutTransition.srcAccessMask = layoutTransition.dstAccessMask = determineImageAccessMask(image);
+    layoutTransition.srcAccessMask = layoutTransition.dstAccessMask = VkAccessFlags(determineImageAccessMask(image));
     layoutTransition.image = image.reference<VulkanImageResource>()->image;
     layoutTransition.subresourceRange = { determineImageAspect(image), 0, image->getNumOfMips(), 0, image->getLayerCount() };
 
@@ -2763,8 +2760,8 @@ void VulkanCommandList::copyToImage_Internal(ImageResourceRef dst, const BufferR
 
     // Layout that is acceptable for this image
     VkImageLayout postCopyLayout = determineImageLayout(dst);
-    VkAccessFlags postCopyAccessMask = determineImageAccessMask(dst);
-    VkPipelineStageFlags postCopyStages = resourceShaderStageFlags();
+    VkAccessFlags postCopyAccessMask = VkAccessFlags(determineImageAccessMask(dst));
+    VkPipelineStageFlags postCopyStages = VkPipelineStageFlags(resourceShaderStageFlags());
 
     // TODO(Jeslas) : change this to get current layout from some resource tracked layout
     VkImageLayout currentLayout = VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED;
@@ -2972,8 +2969,8 @@ void VulkanCommandList::copyOrResolveImage(
     VkImageAspectFlags srcImageAspect = determineImageAspect(src);
     VkImageAspectFlags dstImageAspect = determineImageAspect(dst);
 
-    VkAccessFlags srcAccessFlags = determineImageAccessMask(src);
-    VkAccessFlags dstAccessFlags = determineImageAccessMask(dst);
+    VkAccessFlags2 srcAccessFlags = determineImageAccessMask(src);
+    VkAccessFlags2 dstAccessFlags = determineImageAccessMask(dst);
 
     VkImageLayout srcOriginalLayout = getImageLayout(src);
     VkImageLayout dstOriginalLayout = getImageLayout(dst);

@@ -39,8 +39,7 @@ RenderThreadEnqTask RenderManager::initialize(IGraphicsInstance *graphicsInstanc
     engineRendererModule->renderStateEvents.invoke(ERenderStateEvent::PostLoadInstance);
 
     return RenderThreadEnqueuer::execInRenderThreadAwaitable(
-        [this,
-         engineRendererModule](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        [this, engineRendererModule](class IRenderCommandList *, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
             engineRendererModule->renderStateEvents.invoke(ERenderStateEvent::PreinitDevice);
             graphicsInstance->updateSurfaceDependents();
@@ -84,8 +83,9 @@ RenderThreadEnqTask RenderManager::destroy()
     engineRendererModule->renderStateEvents.invoke(ERenderStateEvent::PreCleanupCommands);
 
     return RenderThreadEnqueuer::execInRenderThreadAwaitable(
-        [this,
-         engineRendererModule](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        [this, engineRendererModule](
+            class IRenderCommandList * /*cmdList*/, IGraphicsInstance * /*graphicsInstance*/, const GraphicsHelperAPI * /*graphicsHelper*/
+        )
         {
             engineRendererModule->renderStateEvents.invoke(ERenderStateEvent::Cleanup);
 
@@ -142,26 +142,24 @@ IRenderCommandList *RenderManager::getRenderCmds() const
  */
 
 // Get generic render pass properties from Render targets
-DEBUG_INLINE GenericRenderPassProperties renderpassPropsFromRTs(ArrayView<const IRenderTargetTexture *> rtTextures)
+DEBUG_INLINE void renderpassPropsFromRTs(GenericRenderPassProperties &outRenderPassProps, ArrayView<const IRenderTargetTexture *> rtTextures)
 {
-    GenericRenderPassProperties renderpassProperties;
-    renderpassProperties.renderpassAttachmentFormat.rpFormat = ERenderPassFormat::Generic;
+    outRenderPassProps = {};
+    outRenderPassProps.renderpassAttachmentFormat.rpFormat = ERenderPassFormat::Generic;
     if (!rtTextures.empty())
     {
         // Since all the textures in a same framebuffer must have same properties on below two
-        renderpassProperties.bOneRtPerFormat = rtTextures[0]->renderResource() == rtTextures[0]->renderTargetResource();
-        renderpassProperties.multisampleCount = static_cast<ImageResource *>(rtTextures[0]->renderTargetResource().reference())->sampleCount();
+        outRenderPassProps.bOneRtPerFormat = rtTextures[0]->renderResource() == rtTextures[0]->renderTargetResource();
+        outRenderPassProps.multisampleCount = static_cast<ImageResource *>(rtTextures[0]->renderTargetResource().reference())->sampleCount();
 
-        renderpassProperties.renderpassAttachmentFormat.attachments.reserve(rtTextures.size());
+        outRenderPassProps.renderpassAttachmentFormat.attachments.reserve(rtTextures.size());
         for (const IRenderTargetTexture *const &rtTexture : rtTextures)
         {
-            renderpassProperties.renderpassAttachmentFormat.attachments.emplace_back(
+            outRenderPassProps.renderpassAttachmentFormat.attachments.emplace_back(
                 static_cast<ImageResource *>(rtTexture->renderTargetResource().reference())->imageFormat()
             );
         }
     }
-
-    return renderpassProperties;
 }
 
 DEBUG_INLINE void
@@ -185,7 +183,8 @@ DEBUG_INLINE void
 
 void RenderManager::preparePipelineContext(class LocalPipelineContext *pipelineContext, ArrayView<const IRenderTargetTexture *> rtTextures)
 {
-    GenericRenderPassProperties renderpassProps = renderpassPropsFromRTs(rtTextures);
+    GenericRenderPassProperties renderpassProps;
+    renderpassPropsFromRTs(renderpassProps, rtTextures);
     if (rtTextures.empty())
     {
         LOG_ERROR("RenderManager", "RT textures cannot be empty(Necessary to find GenericRenderPassProperties)");
@@ -205,7 +204,8 @@ void RenderManager::clearExternInitRtsFramebuffer(
     ArrayView<const IRenderTargetTexture *> rtTextures, ERenderPassFormat::Type rpFormat /*= ERenderPassFormat::Generic */
 )
 {
-    GenericRenderPassProperties renderpassProps = renderpassPropsFromRTs(rtTextures);
+    GenericRenderPassProperties renderpassProps;
+    renderpassPropsFromRTs(renderpassProps, rtTextures);
     renderpassProps.renderpassAttachmentFormat.rpFormat = rpFormat;
 
     std::vector<ImageResourceRef> frameAttachments;

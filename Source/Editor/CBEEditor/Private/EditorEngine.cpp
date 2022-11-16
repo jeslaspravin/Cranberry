@@ -64,7 +64,7 @@ void EditorEngine::engineStart()
     IApplicationModule::get()->getApplication()->getMainWindow()->setContent(std::static_pointer_cast<WidgetBase>(wgImgui));
 
     worldInitHandle = gCBEEngine->worldManager()->onWorldInitEvent().bindLambda(
-        [this](World *world, bool bIsMain)
+        [this](World * /*inWorld*/, bool bIsMain)
         {
             if (bIsMain)
             {
@@ -79,7 +79,7 @@ void EditorEngine::engineStart()
     worldLayer->onSelected.bindObject(this, &EditorEngine::selectionChanged);
 }
 
-void EditorEngine::engineTick(float timeDelta) {}
+void EditorEngine::engineTick(float /*timeDelta*/) {}
 
 void EditorEngine::engineExit()
 {

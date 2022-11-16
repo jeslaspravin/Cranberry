@@ -59,19 +59,19 @@ public:
 
     // Helpers
     template <typename T>
-    FORCE_INLINE T *createComponent(const TChar *componentName, EObjectFlags flags);
+    FORCE_INLINE T *createComponent(const TChar *componentName, EObjectFlags componentFlags);
     template <typename T>
-    FORCE_INLINE T *createComponent(ObjectTemplate *objTemplate, const TChar *componentName, EObjectFlags flags);
+    FORCE_INLINE T *createComponent(ObjectTemplate *objTemplate, const TChar *componentName, EObjectFlags componentFlags);
 
 private:
-    Object *componentFromClass(CBEClass clazz, const TChar *componentName, EObjectFlags flags);
-    Object *componentFromTemplate(ObjectTemplate *objTemplate, const TChar *componentName, EObjectFlags flags);
+    Object *componentFromClass(CBEClass clazz, const TChar *componentName, EObjectFlags componentFlags);
+    Object *componentFromTemplate(ObjectTemplate *objTemplate, const TChar *componentName, EObjectFlags componentFlags);
 } META_ANNOTATE(NoExport);
 
 template <typename T>
-FORCE_INLINE T *Actor::createComponent(const TChar *componentName, EObjectFlags flags)
+FORCE_INLINE T *Actor::createComponent(const TChar *componentName, EObjectFlags componentFlags)
 {
-    Object *component = componentFromClass(T::staticType(), componentName, flags);
+    Object *component = componentFromClass(T::staticType(), componentName, componentFlags);
     T *comp = cast<T>(component);
     if (comp)
     {
@@ -84,9 +84,9 @@ FORCE_INLINE T *Actor::createComponent(const TChar *componentName, EObjectFlags 
     return comp;
 }
 template <typename T>
-FORCE_INLINE T *Actor::createComponent(ObjectTemplate *objTemplate, const TChar *componentName, EObjectFlags flags)
+FORCE_INLINE T *Actor::createComponent(ObjectTemplate *objTemplate, const TChar *componentName, EObjectFlags componentFlags)
 {
-    Object *component = componentFromTemplate(objTemplate, componentName, flags);
+    Object *component = componentFromTemplate(objTemplate, componentName, componentFlags);
     T *comp = cast<T>(component);
     if (comp)
     {

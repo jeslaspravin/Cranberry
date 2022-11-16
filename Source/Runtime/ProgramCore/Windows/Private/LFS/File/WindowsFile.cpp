@@ -213,7 +213,7 @@ uint64 WindowsFile::fileSize() const
 
     if (getFileHandle())
     {
-        fSize.lowPart = ::GetFileSize(getFileHandle(), &fSize.highPart);
+        fSize.dwords.lowPart = ::GetFileSize(getFileHandle(), &fSize.dwords.highPart);
     }
     else
     {
@@ -222,12 +222,12 @@ uint64 WindowsFile::fileSize() const
         HANDLE fHandle = ::FindFirstFile(getFullPath().getChar(), &data);
         if (fHandle != INVALID_HANDLE_VALUE)
         {
-            fSize.lowPart = data.nFileSizeLow;
-            fSize.highPart = data.nFileSizeHigh;
+            fSize.dwords.lowPart = data.nFileSizeLow;
+            fSize.dwords.highPart = data.nFileSizeHigh;
         }
     }
 
-    if (fSize.lowPart == INVALID_FILE_SIZE)
+    if (fSize.dwords.lowPart == INVALID_FILE_SIZE)
     {
         fSize.quadPart = 0;
     }
@@ -265,7 +265,7 @@ void WindowsFile::seekBegin() const
     }
 }
 
-void WindowsFile::seek(const int64 &pointer) const
+void WindowsFile::seek(int64 pointer) const
 {
     if (getFileHandle())
     {
@@ -276,7 +276,7 @@ void WindowsFile::seek(const int64 &pointer) const
     }
 }
 
-void WindowsFile::offsetCursor(const int64 &offset) const
+void WindowsFile::offsetCursor(int64 offset) const
 {
     if (getFileHandle())
     {
@@ -287,7 +287,7 @@ void WindowsFile::offsetCursor(const int64 &offset) const
     }
 }
 
-bool WindowsFile::setFileSize(const int64 &newSize) const
+bool WindowsFile::setFileSize(int64 newSize) const
 {
     if (!getFileHandle() || BIT_NOT_SET(fileFlags, EFileFlags::Write))
     {
@@ -307,14 +307,12 @@ bool WindowsFile::setFileSize(const int64 &newSize) const
     return bResized;
 }
 
-void WindowsFile::read(std::vector<uint8> &readTo, const uint32 &bytesToRead /*= (~0u)*/) const
+void WindowsFile::read(std::vector<uint8> &readTo, uint32 bytesToRead /*= (~0u)*/) const
 {
     if (!getFileHandle() || BIT_NOT_SET(fileFlags, EFileFlags::Read))
     {
         return;
     }
-
-    const dword readBufferSize = 10 * 1024 * 1024; // 10MB
 
     uint64 filePointerCache = filePointer();
     uint64 availableSizeCanRead = (fileSize() - filePointerCache);
@@ -325,7 +323,7 @@ void WindowsFile::read(std::vector<uint8> &readTo, const uint32 &bytesToRead /*=
     read(readTo.data(), bytesLeftToRead);
 }
 
-void WindowsFile::read(uint8 *readTo, const uint32 &bytesToRead) const
+void WindowsFile::read(uint8 *readTo, uint32 bytesToRead) const
 {
     if (!getFileHandle() || BIT_NOT_SET(fileFlags, EFileFlags::Read))
     {
@@ -436,8 +434,8 @@ TickRep WindowsFile::lastWriteTimeStamp() const
     {
         FILETIME writeTime;
         ::GetFileTime(getFileHandle(), nullptr, nullptr, &writeTime);
-        timeStamp.lowPart = writeTime.dwLowDateTime;
-        timeStamp.highPart = writeTime.dwHighDateTime;
+        timeStamp.dwords.lowPart = writeTime.dwLowDateTime;
+        timeStamp.dwords.highPart = writeTime.dwHighDateTime;
     }
     else
     {
@@ -445,8 +443,8 @@ TickRep WindowsFile::lastWriteTimeStamp() const
         HANDLE fHandle = ::FindFirstFile(getFullPath().getChar(), &data);
         if (fHandle != INVALID_HANDLE_VALUE)
         {
-            timeStamp.lowPart = data.ftLastWriteTime.dwLowDateTime;
-            timeStamp.highPart = data.ftLastWriteTime.dwHighDateTime;
+            timeStamp.dwords.lowPart = data.ftLastWriteTime.dwLowDateTime;
+            timeStamp.dwords.highPart = data.ftLastWriteTime.dwHighDateTime;
             ::FindClose(fHandle);
         }
     }
@@ -466,8 +464,8 @@ bool WindowsFile::setLastWriteTimeStamp(TickRep timeTick) const
     timeStamp.quadPart = uint64(Time::toPlatformTime(timeTick));
 
     FILETIME writeTime;
-    writeTime.dwLowDateTime = timeStamp.lowPart;
-    writeTime.dwHighDateTime = timeStamp.highPart;
+    writeTime.dwLowDateTime = timeStamp.dwords.lowPart;
+    writeTime.dwHighDateTime = timeStamp.dwords.highPart;
 
     ::SetFileTime(getFileHandle(), nullptr, nullptr, &writeTime);
     return true;
@@ -481,8 +479,8 @@ TickRep WindowsFile::createTimeStamp() const
     {
         FILETIME createdTime;
         ::GetFileTime(getFileHandle(), &createdTime, nullptr, nullptr);
-        timeStamp.lowPart = createdTime.dwLowDateTime;
-        timeStamp.highPart = createdTime.dwHighDateTime;
+        timeStamp.dwords.lowPart = createdTime.dwLowDateTime;
+        timeStamp.dwords.highPart = createdTime.dwHighDateTime;
     }
     else
     {
@@ -490,8 +488,8 @@ TickRep WindowsFile::createTimeStamp() const
         HANDLE fHandle = ::FindFirstFile(getFullPath().getChar(), &data);
         if (fHandle != INVALID_HANDLE_VALUE)
         {
-            timeStamp.lowPart = data.ftCreationTime.dwLowDateTime;
-            timeStamp.highPart = data.ftCreationTime.dwHighDateTime;
+            timeStamp.dwords.lowPart = data.ftCreationTime.dwLowDateTime;
+            timeStamp.dwords.highPart = data.ftCreationTime.dwHighDateTime;
             ::FindClose(fHandle);
         }
     }

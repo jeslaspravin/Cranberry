@@ -108,7 +108,7 @@ public:
         {
             CBEMemory::memFree(memoryPtr);
             memoryPtr = CBEMemory::memAlloc(newByteSize);
-            stackTop = newByteSize;
+            stackTop = SizeType(newByteSize);
         }
         bytesOverAlloc = 0;
         bsp = 0;
@@ -120,12 +120,12 @@ public:
         {
             UPtrInt basePtr = (UPtrInt)(memoryPtr);
             basePtr += bsp;
-            bsp += size;
+            bsp += SizeType(size);
             return (void *)basePtr;
         }
         // Out of stack, Use heap
         void *outPtr = CBEMemory::memAlloc(size);
-        bytesOverAlloc += size;
+        bytesOverAlloc += SizeType(size);
         return outPtr;
     }
     void memFree(void *ptr, SizeType size)
@@ -137,7 +137,7 @@ public:
         if (isOwningMemory(ptr))
         {
             const UPtrInt basePtr = (UPtrInt)(memoryPtr);
-            const SizeType bspAfterFree = UPtrInt(ptr) - basePtr;
+            const SizeType bspAfterFree = SizeType(UPtrInt(ptr) - basePtr);
             void *expectedPtr = (void *)(basePtr + (bsp - size));
             debugAssertf(
                 ptr == expectedPtr, "Out of order freeing allocated stack memory! Freeing ptr %llu expected ptr %llu", UPtrInt(ptr), expectedPtr
@@ -308,7 +308,7 @@ public:
         );
 
         void *ptr = BaseType::memAlloc(size + calcExtraWidth(alignment));
-        return writeAllocMeta(ptr, size, alignment);
+        return writeAllocMeta(ptr, alignment);
     }
     void memFree(void *ptr, SizeType size, uint32 alignment = MIN_ALIGNMENT)
     {
@@ -322,7 +322,7 @@ private:
     FORCE_INLINE static void alignAllocSize(SizeType &inOutSize, uint32 &inOutAlignment)
     {
         debugAssert(Math::isPowOf2(inOutAlignment));
-        inOutAlignment = Math::max(alignof(StackAllocHeader), CBEMemAlloc::alignBy(inOutSize, inOutAlignment), MIN_ALIGNMENT);
+        inOutAlignment = uint32(Math::max(alignof(StackAllocHeader), CBEMemAlloc::alignBy(inOutSize, inOutAlignment), MIN_ALIGNMENT));
         inOutSize = Math::alignByUnsafe(inOutSize, inOutAlignment);
     }
 
@@ -338,19 +338,19 @@ private:
         }
         else
         {
-            return alignedBsp - basePtr;
+            return SizeType(alignedBsp - basePtr);
         }
     }
 
-    FORCE_INLINE void *writeAllocMeta(void *allocatedPtr, SizeT size, uint32 alignment) const
+    FORCE_INLINE void *writeAllocMeta(void *allocatedPtr, uint32 alignment) const
     {
         static_assert(sizeof(StackAllocHeader) == 1, "Assumes that StackAllocHeader is a byte!");
         UPtrInt alignedOutPtr = Math::alignByUnsafe((UPtrInt)(allocatedPtr), alignment);
-        uint32 padding = alignedOutPtr - (UPtrInt)allocatedPtr;
+        uint8 padding = uint8(alignedOutPtr - (UPtrInt)allocatedPtr);
         if (padding == 0)
         {
             alignedOutPtr += alignment;
-            padding = alignment;
+            padding = uint8(alignment);
         }
 
         StackAllocHeader *allocHeader = (((StackAllocHeader *)alignedOutPtr) - 1);
@@ -407,7 +407,7 @@ public:
         if (stackAllocator == nullptr)
             return;
 
-        stackAllocator->memFree(ptr, count * sizeof(Type), alignof(Type));
+        stackAllocator->memFree(ptr, AllocatorType::SizeType(count * sizeof(Type)), uint32(alignof(Type)));
     }
 
     NODISCARD CONST_EXPR Type *allocate(const SizeT count)
@@ -415,7 +415,7 @@ public:
         if (stackAllocator == nullptr)
             return nullptr;
 
-        return static_cast<Type *>(stackAllocator->memAlloc(count * sizeof(Type), alignof(Type)));
+        return static_cast<Type *>(stackAllocator->memAlloc(AllocatorType::SizeType(count * sizeof(Type)), uint32(alignof(Type))));
     }
 
     NODISCARD CONST_EXPR AllocatorType *allocator() const { return stackAllocator; }

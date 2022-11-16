@@ -73,9 +73,6 @@ else ()
     set (WIN32 0)
 endif ()
 
-# Setting CMAKE Variables
-set (CMAKE_CXX_STANDARD 20)
-set (CMAKE_C_STANDARD 17)
 # Setting all Runtime(exe, dll, so) to project binary directory by default
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 # Group projects under folders for easy access

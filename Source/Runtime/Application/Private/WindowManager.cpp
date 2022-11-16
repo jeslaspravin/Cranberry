@@ -43,7 +43,7 @@ void WindowManager::init()
 
     ENQUEUE_COMMAND(MainWindowInit)
     (
-        [this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        [this](IRenderCommandList * /*cmdList*/, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
             ManagerData &data = windowsOpened[appMainWindow];
             data.windowCanvas = graphicsHelper->createWindowCanvas(graphicsInstance, appMainWindow);
@@ -94,7 +94,7 @@ GenericAppWindow *WindowManager::createWindow(Size2D size, const TChar *name, Ge
 
     ENQUEUE_COMMAND(WindowInit)
     (
-        [this, appWindow](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        [this, appWindow](IRenderCommandList * /*cmdList*/, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
             ManagerData &data = windowsOpened[appWindow];
             data.windowCanvas = graphicsHelper->createWindowCanvas(graphicsInstance, appWindow);
@@ -169,7 +169,7 @@ void WindowManager::postInitGraphicCore()
 {
     ENQUEUE_COMMAND(InitWindowCanvas)
     (
-        [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        [this](class IRenderCommandList * /*cmdList*/, IGraphicsInstance * /*graphicsInstance*/, const GraphicsHelperAPI * /*graphicsHelper*/)
         {
             for (std::pair<GenericAppWindow *const, ManagerData> &windowData : windowsOpened)
             {
@@ -186,7 +186,7 @@ void WindowManager::updateWindowCanvas()
 {
     ENQUEUE_COMMAND(UpdateWindowCanvas)
     (
-        [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        [this](class IRenderCommandList *cmdList, IGraphicsInstance * /*graphicsInstance*/, const GraphicsHelperAPI * /*graphicsHelper*/)
         {
             auto *appModule = IApplicationModule::get();
             cmdList->flushAllcommands();
@@ -255,7 +255,7 @@ void WindowManager::onWindowResize(uint32 width, uint32 height, GenericAppWindow
         ENQUEUE_COMMAND(WindowResize)
         (
             [this, window, width,
-             height](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+             height](class IRenderCommandList *cmdList, IGraphicsInstance * /*graphicsInstance*/, const GraphicsHelperAPI * /*graphicsHelper*/)
             {
                 IApplicationModule *appModule = IApplicationModule::get();
 
@@ -345,7 +345,7 @@ void WindowManager::destroyPendingWindows()
         ENQUEUE_COMMAND(WindowsCanvasDestroy)
         (
             [canvasesToDestroy](
-                class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
+                class IRenderCommandList *cmdList, IGraphicsInstance * /*graphicsInstance*/, const GraphicsHelperAPI * /*graphicsHelper*/
             ) mutable
             {
                 cmdList->flushAllcommands();

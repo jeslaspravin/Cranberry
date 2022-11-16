@@ -15,7 +15,11 @@
 #include "Math/Vector4D.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 
+GLM_HEADER_INCLUDES_BEGIN
+
 #include <glm/geometric.hpp>
+
+GLM_HEADER_INCLUDES_END
 
 Vector3D::Vector3D(const Matrix3Col &vector3d)
     : value(vector3d)
@@ -182,7 +186,7 @@ Vector3D Vector3D::normalized() const { return Vector3D(glm::normalize(value)); 
 Vector3D Vector3D::safeNormalized(float threshold /*= SMALL_EPSILON*/) const
 {
     float sqrLen = sqrlength();
-    if (sqrLen < SMALL_EPSILON)
+    if (sqrLen < threshold)
     {
         return Vector3D::ZERO;
     }

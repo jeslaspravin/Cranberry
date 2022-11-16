@@ -10,6 +10,7 @@
  */
 
 #pragma once
+
 #include "ProgramCoreExports.h"
 #include "String/StringFormat.h"
 #include "Types/CompilerDefines.h"
@@ -81,7 +82,6 @@ private:
         ~LoggerAutoShutdown() { shutdown(); }
     };
     static LoggerAutoShutdown autoShutdown;
-
     static LoggerImpl *loggerImpl;
 
 #if ENABLE_VERBOSE_LOG

@@ -265,7 +265,7 @@ void EditorHelpers::removeActorFromWorld(cbe::World *world, cbe::Actor *actor)
     world->broadcastActorRemoved(actor);
 }
 
-void EditorHelpers::componentAddedToWorld(cbe::World *world, cbe::Actor *actor, cbe::Object *component)
+void EditorHelpers::componentAddedToWorld(cbe::World *world, cbe::Actor */*actor*/, cbe::Object *component)
 {
     cbe::TransformComponent *tfComponent = cbe::cast<cbe::TransformComponent>(component);
     if (tfComponent)
@@ -278,7 +278,7 @@ void EditorHelpers::componentAddedToWorld(cbe::World *world, cbe::Actor *actor, 
     }
 }
 
-void EditorHelpers::componentRemovedFromWorld(cbe::World *world, cbe::Actor *actor, cbe::Object *component)
+void EditorHelpers::componentRemovedFromWorld(cbe::World *world, cbe::Actor */*actor*/, cbe::Object *component)
 {
     // Just to be safe and not have any hanging references
     cbe::TransformComponent *tfComponent = cbe::cast<cbe::TransformComponent>(component);

@@ -23,7 +23,7 @@ void CubeTexture::reinitResources()
 
     ENQUEUE_COMMAND(ReinitCubeTexture)
     (
-        [this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        [this](IRenderCommandList *, IGraphicsInstance *, const GraphicsHelperAPI *)
         {
             if (textureResource->isValid())
             {
@@ -82,7 +82,7 @@ void CubeTexture::destroy(CubeTexture *texture)
 
     ENQUEUE_COMMAND(DestroyCubeTexture)
     (
-        [textureResource](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        [textureResource](IRenderCommandList *, IGraphicsInstance *, const GraphicsHelperAPI *)
         {
             textureResource->release();
         }
@@ -131,7 +131,7 @@ void CubeTextureRW::reinitResources()
 
     ENQUEUE_COMMAND(ReinitCubeTextureRW)
     (
-        [this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        [this](IRenderCommandList *cmdList, IGraphicsInstance *, const GraphicsHelperAPI *)
         {
             if (textureResource->isValid())
             {

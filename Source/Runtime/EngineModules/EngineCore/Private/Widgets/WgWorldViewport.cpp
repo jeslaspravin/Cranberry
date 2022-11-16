@@ -28,27 +28,29 @@ void WgWorldViewport::rebuildGeometry(WidgetGeomId thisId, WidgetGeomTree &geomT
     geomTree[thisId].box = geomTree[geomTree.getNode(thisId).parent].box;
 }
 
-void WgWorldViewport::drawWidget(QuantShortBox2D clipBound, WidgetGeomId thisId, const WidgetGeomTree &geomTree, WidgetDrawContext &context)
+void WgWorldViewport::
+    drawWidget(QuantShortBox2D /*clipBound*/, WidgetGeomId /*thisId*/, const WidgetGeomTree & /*geomTree*/, WidgetDrawContext & /*context*/)
 {
     // TODO(Jeslas) :
 }
 
-bool WgWorldViewport::hasWidget(SharedPtr<WidgetBase> widget) const { return false; }
+bool WgWorldViewport::hasWidget(SharedPtr<WidgetBase> /*widget*/) const { return false; }
 
-void WgWorldViewport::tick(float timeDelta) {}
+void WgWorldViewport::tick(float /*timeDelta*/) {}
 
-EInputHandleState WgWorldViewport::inputKey(Keys::StateKeyType key, Keys::StateInfoType state, const InputSystem *inputSystem)
+EInputHandleState WgWorldViewport::inputKey(Keys::StateKeyType /*key*/, Keys::StateInfoType /*state*/, const InputSystem * /*inputSystem*/)
 {
     return EInputHandleState::NotHandled;
 }
 
-EInputHandleState WgWorldViewport::analogKey(AnalogStates::StateKeyType key, AnalogStates::StateInfoType state, const InputSystem *inputSystem)
+EInputHandleState
+    WgWorldViewport::analogKey(AnalogStates::StateKeyType /*key*/, AnalogStates::StateInfoType /*state*/, const InputSystem * /*inputSystem*/)
 {
     return EInputHandleState::NotHandled;
 }
 
-void WgWorldViewport::mouseEnter(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) {}
+void WgWorldViewport::mouseEnter(Short2D /*absPos*/, Short2D /*widgetRelPos*/, const InputSystem * /*inputSystem*/) {}
 
-void WgWorldViewport::mouseMoved(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) {}
+void WgWorldViewport::mouseMoved(Short2D /*absPos*/, Short2D /*widgetRelPos*/, const InputSystem * /*inputSystem*/) {}
 
-void WgWorldViewport::mouseLeave(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) {}
+void WgWorldViewport::mouseLeave(Short2D /*absPos*/, Short2D /*widgetRelPos*/, const InputSystem * /*inputSystem*/) {}

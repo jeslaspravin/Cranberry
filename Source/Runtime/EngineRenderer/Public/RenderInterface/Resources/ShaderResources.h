@@ -65,7 +65,7 @@ public:
     /* GraphicsResources overrides */
     void init() override;
     String getResourceName() const override;
-    void setResourceName(const String &name) override {}
+    void setResourceName(const String &) override {}
     /* End overrides */
 
     const std::string &entryPoint() const;
@@ -98,11 +98,11 @@ public:
      * Binds BufferParamInfo for each buffer descriptor(Depending upon override corresponding set varies)
      * for eg: DrawMeshShader only binds set 3 using this while others bind all set this way
      */
-    virtual void bindBufferParamInfo(std::map<StringID, struct ShaderBufferDescriptorType *> &bindingBuffers) const {}
+    virtual void bindBufferParamInfo(std::map<StringID, struct ShaderBufferDescriptorType *> &) const {}
     /*
      * Fills specialization constants for this shader
      */
-    virtual void getSpecializationConsts(SpecConstantNamedMap &specializationConst) const {}
+    virtual void getSpecializationConsts(SpecConstantNamedMap &) const {}
 
     void setShaderConfigured(class ShaderResource *shaderResource) { shaderConfigured = shaderResource; }
 };
@@ -131,7 +131,7 @@ public:
     void release() override;
 
     String getResourceName() const final;
-    void setResourceName(const String &name) final {}
+    void setResourceName(const String &) final {}
 
     /* End overrides */
 

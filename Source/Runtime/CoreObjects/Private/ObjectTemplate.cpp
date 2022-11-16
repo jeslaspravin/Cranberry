@@ -204,14 +204,14 @@ void ObjectTemplate::createTemplate(CBEClass clazz, const TChar *name)
     objectClass = clazz;
     objectName = name;
 
-    EObjectFlags flags = EObjectFlagBits::ObjFlag_Transient | EObjectFlagBits::ObjFlag_TemplateDefault;
+    EObjectFlags templateObjflags = EObjectFlagBits::ObjFlag_Transient | EObjectFlagBits::ObjFlag_TemplateDefault;
     if (parentTemplate)
     {
-        templateObj = create(parentTemplate, name, this, flags);
+        templateObj = create(parentTemplate, name, this, templateObjflags);
     }
     else
     {
-        templateObj = INTERNAL_create(objectClass, name, this, flags);
+        templateObj = INTERNAL_create(objectClass, name, this, templateObjflags);
     }
 
     const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();

@@ -30,7 +30,7 @@ public:
         return CBEMemory::memAlloc(sizeof(Type), alignof(Type));
     }
     template <typename Type>
-    static bool canDeallocate(void *ptr)
+    static bool canDeallocate(void *)
     {
         return true;
     }
@@ -50,13 +50,13 @@ public:
     // Unwanted impls
     // Called for new Type(...) allocation if raw allocation failed
     template <typename Type, typename... CtorArgs>
-    static Type *newObject(CtorArgs &&...args)
+    static Type *newObject(CtorArgs &&...)
     {
         fatalAssertf(false, "newObject is not supported interface and must not happen");
         return nullptr;
     }
     template <typename Type>
-    static void deleteObject(Type *ptr)
+    static void deleteObject(Type *)
     {
         fatalAssertf(false, "deleteObject is not supported interface and must not happen");
     }
@@ -161,24 +161,19 @@ public:
     META_ANNOTATE()
     void testThisFunction(
         std::pair<uint32, TestNS::BerryObject *> &aValue, const std::unordered_map<uint64, BerrySecondData *> &bValue, uint32 values
-    )
-    {}
+    );
 
     META_ANNOTATE()
     void testConstFunction(
         std::vector<std::pair<uint32, TestNS::BerryObject *>> &aValues, const std::unordered_map<uint64, TestNS::BerryObject *> &bValue,
         uint32 values
-    ) const
-    {}
+    ) const;
 
     META_ANNOTATE()
     static std::set<std::pair<uint32, TestNS::BerryObject *>> testStaticFunc(
         std::vector<std::pair<uint32, TestNS::BerryObject *>> *&aValues, const std::unordered_map<uint64, TestNS::BerryObject *> &bValue,
         uint32 values
-    )
-    {
-        return {};
-    }
+    );
 
     META_ANNOTATE()
     static void testStaticVoidNoParam() {}

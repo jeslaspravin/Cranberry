@@ -23,28 +23,28 @@
 CBEMemAllocWrapper CBEMemory::GAlloc;
 #endif
 
-FUNCTION_QUALIFIER void *CBEMemory::tryMalloc(SizeT size, uint32 alignment /*= CBEMemAllocWrapper::AllocType::DEFAULT_ALIGNMENT*/)
+FUNCTION_QUALIFIER void *CBEMemory::tryMalloc(SizeT size, uint32 alignment /*= CBEMemAllocWrapper::AllocType::DEFAULT_ALIGNMENT*/) noexcept
 {
     return GALLOC->tryMalloc(size, alignment);
 }
 
-FUNCTION_QUALIFIER void *CBEMemory::memAlloc(SizeT size, uint32 alignment /*= CBEMemAllocWrapper::AllocType::DEFAULT_ALIGNMENT*/)
+FUNCTION_QUALIFIER void *CBEMemory::memAlloc(SizeT size, uint32 alignment /*= CBEMemAllocWrapper::AllocType::DEFAULT_ALIGNMENT*/) noexcept
 {
     return GALLOC->memAlloc(size, alignment);
 }
 
 FUNCTION_QUALIFIER void *
-    CBEMemory::tryRealloc(void *currentPtr, SizeT size, uint32 alignment /*= CBEMemAllocWrapper::AllocType::DEFAULT_ALIGNMENT*/)
+    CBEMemory::tryRealloc(void *currentPtr, SizeT size, uint32 alignment /*= CBEMemAllocWrapper::AllocType::DEFAULT_ALIGNMENT*/) noexcept
 {
     return GALLOC->tryRealloc(currentPtr, size, alignment);
 }
 
 FUNCTION_QUALIFIER void *
-    CBEMemory::memRealloc(void *currentPtr, SizeT size, uint32 alignment /*= CBEMemAllocWrapper::AllocType::DEFAULT_ALIGNMENT*/)
+    CBEMemory::memRealloc(void *currentPtr, SizeT size, uint32 alignment /*= CBEMemAllocWrapper::AllocType::DEFAULT_ALIGNMENT*/) noexcept
 {
     return GALLOC->memRealloc(currentPtr, size, alignment);
 }
 
-FUNCTION_QUALIFIER void CBEMemory::memFree(void *ptr) { return GALLOC->memFree(ptr); }
+FUNCTION_QUALIFIER void CBEMemory::memFree(void *ptr) noexcept { return GALLOC->memFree(ptr); }
 
-FUNCTION_QUALIFIER SizeT CBEMemory::getAllocationSize(void *ptr) { return GALLOC->getAllocationSize(ptr); }
+FUNCTION_QUALIFIER SizeT CBEMemory::getAllocationSize(void *ptr) noexcept { return GALLOC->getAllocationSize(ptr); }

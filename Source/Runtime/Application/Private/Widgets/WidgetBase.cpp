@@ -89,7 +89,7 @@ void WidgetDrawContext::beginLayer()
     if (layerAlt >= 0)
     {
         debugAssert(!altToVertRange[layerAlt].empty());
-        altToVertRange[layerAlt].back().maxBound = vertices.empty() ? 0 : vertices.size() - 1;
+        altToVertRange[layerAlt].back().maxBound = vertices.empty() ? 0 : uint32(vertices.size() - 1);
         // If no vertices were added just remove the layer vertices
         if (!altToVertRange[layerAlt].back().isValidAABB()
             || altToVertRange[layerAlt].back().minBound == altToVertRange[layerAlt].back().maxBound)
@@ -100,13 +100,13 @@ void WidgetDrawContext::beginLayer()
 
     layerAlt++;
     std::vector<ValueRange<uint32>> &layerVerts = (altToVertRange.size() > layerAlt) ? altToVertRange[layerAlt] : altToVertRange.emplace_back();
-    layerVerts.emplace_back(ValueRange<uint32>(vertices.size(), 0));
+    layerVerts.emplace_back(ValueRange<uint32>(uint32(vertices.size()), 0));
 }
 
 void WidgetDrawContext::endLayer()
 {
     debugAssert(layerAlt >= 0);
-    altToVertRange[layerAlt].back().maxBound = vertices.empty() ? 0 : vertices.size() - 1;
+    altToVertRange[layerAlt].back().maxBound = vertices.empty() ? 0 : uint32(vertices.size() - 1);
     // If no vertices were added just remove the layer vertices
     if (!altToVertRange[layerAlt].back().isValidAABB() || altToVertRange[layerAlt].back().minBound == altToVertRange[layerAlt].back().maxBound)
     {
@@ -116,7 +116,7 @@ void WidgetDrawContext::endLayer()
     layerAlt--;
     if (layerAlt >= 0)
     {
-        altToVertRange[layerAlt].emplace_back(ValueRange<uint32>(vertices.size(), 0));
+        altToVertRange[layerAlt].emplace_back(ValueRange<uint32>(uint32(vertices.size()), 0));
     }
 }
 

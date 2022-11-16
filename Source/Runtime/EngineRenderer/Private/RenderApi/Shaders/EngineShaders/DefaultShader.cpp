@@ -37,34 +37,36 @@ public:
         {
             return;
         }
-
-        const std::map<StringID, ShaderBufferParamInfo *> *paramInfo = nullptr;
-        if constexpr (RenderpassFormat == ERenderPassFormat::DirectionalLightDepth)
+        else
         {
-            static const std::map<StringID, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{
-                {TCHAR("lightViews"), DirectionalShadowCascadeViews::paramInfo()}
-            };
-
-            paramInfo = &SHADER_PARAMS_INFO;
-        }
-        else if constexpr (RenderpassFormat == ERenderPassFormat::PointLightDepth)
-        {
-            static const std::map<StringID, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{
-                {TCHAR("lightViews"), PointShadowDepthViews::paramInfo()}
-            };
-
-            paramInfo = &SHADER_PARAMS_INFO;
-        }
-
-        if (paramInfo != nullptr)
-        {
-            for (const std::pair<const StringID, ShaderBufferParamInfo *> &bufferInfo : *paramInfo)
+            const std::map<StringID, ShaderBufferParamInfo *> *paramInfo = nullptr;
+            if constexpr (RenderpassFormat == ERenderPassFormat::DirectionalLightDepth)
             {
-                auto foundDescBinding = bindingBuffers.find(bufferInfo.first);
+                static const std::map<StringID, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{
+                    {TCHAR("lightViews"), DirectionalShadowCascadeViews::paramInfo()}
+                };
 
-                debugAssert(foundDescBinding != bindingBuffers.end());
+                paramInfo = &SHADER_PARAMS_INFO;
+            }
+            else if constexpr (RenderpassFormat == ERenderPassFormat::PointLightDepth)
+            {
+                static const std::map<StringID, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{
+                    {TCHAR("lightViews"), PointShadowDepthViews::paramInfo()}
+                };
 
-                foundDescBinding->second->bufferParamInfo = bufferInfo.second;
+                paramInfo = &SHADER_PARAMS_INFO;
+            }
+
+            if (paramInfo != nullptr)
+            {
+                for (const std::pair<const StringID, ShaderBufferParamInfo *> &bufferInfo : *paramInfo)
+                {
+                    auto foundDescBinding = bindingBuffers.find(bufferInfo.first);
+
+                    debugAssert(foundDescBinding != bindingBuffers.end());
+
+                    foundDescBinding->second->bufferParamInfo = bufferInfo.second;
+                }
             }
         }
     }

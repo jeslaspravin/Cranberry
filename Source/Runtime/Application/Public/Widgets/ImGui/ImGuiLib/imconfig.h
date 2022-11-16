@@ -24,10 +24,20 @@
 // If your macro uses multiple statements, make sure is enclosed in a 'do { .. } while (0)' block so it can be used as a single statement.
 //#define IM_ASSERT(_EXPR)  MyAssert(_EXPR)
 //#define IM_ASSERT(_EXPR)  ((void)(_EXPR))     // Disable asserts
+#define imAssert(EXPR, AssertMacro)                                                                                                            \
+    do                                                                                                                                         \
+    {                                                                                                                                          \
+        COMPILER_PRAGMA(COMPILER_PUSH_WARNING)                                                                                                 \
+        COMPILER_PRAGMA(COMPILER_DISABLE_WARNING(WARN_IF_COULD_BE_CONSTEXPR))                                                                  \
+        AssertMacro(EXPR);                                                                                                                     \
+        COMPILER_PRAGMA(COMPILER_POP_WARNING)                                                                                                  \
+    }                                                                                                                                          \
+    while (0)
+
 #if _DEBUG
-#define IM_ASSERT(EXPR) debugAssert(EXPR)
+#define IM_ASSERT(EXPR) imAssert(EXPR, debugAssert)
 #elif NDEBUG
-#define IM_ASSERT(EXPR) fatalAssert(EXPR)
+#define IM_ASSERT(EXPR) imAssert(EXPR, fatalAssert)
 #endif
 
 //---- Define attributes of all API symbols declarations, e.g. for DLL under Windows

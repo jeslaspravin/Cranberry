@@ -11,10 +11,10 @@
 
 #pragma once
 
+#include "ProgramCoreExports.h"
 #include "Types/CoreDefines.h"
 #include "Types/CompilerDefines.h"
 #include "Types/Templates/TypeTraits.h"
-#include "ProgramCoreExports.h"
 
 #include <utility>
 
@@ -62,7 +62,7 @@ DEBUG_INLINE size_t hashRange(It first, It last)
 template <typename... SeedTypes>
 void combineSeeds(size_t &outSeed, SeedTypes &&...seeds);
 template <>
-FORCE_INLINE void combineSeeds(size_t &outSeed)
+FORCE_INLINE void combineSeeds(size_t &/*outSeed*/)
 {}
 template <typename FirstSeedType, typename... SeedTypes>
 FORCE_INLINE void combineSeeds(size_t &outSeed, FirstSeedType &&seed, SeedTypes &&...seeds)
@@ -84,7 +84,7 @@ DEBUG_INLINE size_t hashAllReturn(Types &&...hashables)
 template <typename... Types>
 void hashAllInto(size_t &outSeed, Types &&...hashables);
 template <>
-FORCE_INLINE void hashAllInto(size_t &outSeed)
+FORCE_INLINE void hashAllInto(size_t &/*outSeed*/)
 {}
 template <typename FirstType, typename... Types>
 FORCE_INLINE void hashAllInto(size_t &outSeed, FirstType &&hashable, Types &&...hashables)

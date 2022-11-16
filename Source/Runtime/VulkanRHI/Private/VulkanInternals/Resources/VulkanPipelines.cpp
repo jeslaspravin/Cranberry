@@ -65,9 +65,6 @@ void VulkanGraphicsHelper::getMergedCacheData(
     class IGraphicsInstance *graphicsInstance, std::vector<uint8> &cacheData, const std::vector<const class PipelineBase *> &pipelines
 )
 {
-    const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
-    const VulkanDevice *device = &gInstance->selectedDevice;
-
     std::vector<VkPipelineCache> cachesToMerge;
     cachesToMerge.reserve(pipelines.size());
     for (const PipelineBase *pipeline : pipelines)

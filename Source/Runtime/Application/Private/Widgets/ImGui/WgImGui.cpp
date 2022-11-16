@@ -90,7 +90,7 @@ void WgImGui::drawWidget(QuantShortBox2D clipBound, WidgetGeomId thisId, const W
     debugAssertf(widgetSize.x >= 0 && widgetSize.y >= 0, "Widget size is invalid [%d, %d]", widgetSize.x, widgetSize.y);
     bool bRegenRt = false;
     bool bFlushCmdBuffers = false;
-    uint32 bufferingCount = swapchainBuffered.size();
+    uint32 bufferingCount = uint32(swapchainBuffered.size());
     if (wgWindow.expired() || wgWindow.lock() != window)
     {
         // If changing window from another window, Have to wait until all previous rendering finished
@@ -114,7 +114,7 @@ void WgImGui::drawWidget(QuantShortBox2D clipBound, WidgetGeomId thisId, const W
     {
         const WgRenderTarget &rtResources = swapchainBuffered[imageIdx].rt;
         ImageResourceRef rtImage = rtResources.renderTargetResource();
-        if (rtImage == nullptr || textureSize.x != rtImage->getImageSize().x || textureSize.y != rtImage->getImageSize().y)
+        if (rtImage == nullptr || uint32(textureSize.x) != rtImage->getImageSize().x || uint32(textureSize.y) != rtImage->getImageSize().y)
         {
             bRegenRt = true;
         }
@@ -327,10 +327,10 @@ void WgImGui::flushFreeResources(const String &cmdBufferBaseName, bool bClearRtF
     ENQUEUE_RENDER_COMMAND(FreeWgImGuiCmds)
     (
         [cmdBufferBaseName, bClearRtFbs,
-         rts](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+         rts](IRenderCommandList *cmdList, IGraphicsInstance * /*graphicsInstance*/, const GraphicsHelperAPI * /*graphicsHelper*/)
         {
-            uint32 bufferingCount = rts.size();
-            for (uint32 i = 0; i < bufferingCount; ++i)
+            SizeT bufferingCount = rts.size();
+            for (SizeT i = 0; i < bufferingCount; ++i)
             {
                 String cmdBufferName = cmdBufferBaseName + String::toString(i);
                 String layerDrawCmdBufferName = cmdBufferName + TCHAR("_LayerDraw");
@@ -353,7 +353,7 @@ void WgImGui::flushFreeResources(const String &cmdBufferBaseName, bool bClearRtF
             if (bClearRtFbs)
             {
                 RenderManager *renderMan = IRenderInterfaceModule::get()->getRenderManager();
-                for (uint32 i = 0; i < bufferingCount; ++i)
+                for (SizeT i = 0; i < bufferingCount; ++i)
                 {
                     deleteRTDeferred(rts[i], renderMan);
                 }
@@ -368,7 +368,8 @@ void WgImGui::clearResources()
     imgui->release();
     ENQUEUE_RENDER_COMMAND(ClearWgImGui)
     (
-        [imgui = imgui](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        [imgui
+         = imgui](IRenderCommandList * /*cmdList*/, IGraphicsInstance * /*graphicsInstance*/, const GraphicsHelperAPI * /*graphicsHelper*/)
         {
             delete imgui;
         }
@@ -390,7 +391,7 @@ void WgImGui::regenerateFrameRt(Short2D widgetSize, Short2D textureSize)
     // Any cmdList dependents initialized and wait
     ENQUEUE_RENDER_COMMAND(WgImGuiRegenResources)
     (
-        [rtToClear, this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        [rtToClear, this](IRenderCommandList * /*cmdList*/, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
             String cmdBufferNameBase = getCmdBufferBaseName();
             if (!swapchainBuffered[imageIdx].semaphore.isValid())

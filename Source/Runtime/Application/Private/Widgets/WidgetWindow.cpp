@@ -96,7 +96,7 @@ WidgetGeom WgWindow::findWidgetGeom(SharedPtr<WidgetBase> widget) const
     return allWidgetGeoms[currentLinkIdx];
 }
 
-void WgWindow::rebuildGeometry(WidgetGeomId thisId, WidgetGeomTree &geomTree)
+void WgWindow::rebuildGeometry(WidgetGeomId /*thisId*/, WidgetGeomTree &geomTree)
 {
     if (!content)
     {
@@ -190,9 +190,9 @@ EInputHandleState WgWindow::analogKey(AnalogStates::StateKeyType key, AnalogStat
     return EInputHandleState::NotHandled;
 }
 
-void WgWindow::mouseEnter(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) {}
+void WgWindow::mouseEnter(Short2D /*absPos*/, Short2D /*widgetRelPos*/, const InputSystem */*inputSystem*/) {}
 
-void WgWindow::mouseMoved(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem)
+void WgWindow::mouseMoved(Short2D absPos, Short2D /*widgetRelPos*/, const InputSystem *inputSystem)
 {
     // All inner most children will be at last
     std::vector<WidgetGeomTree::NodeIdx> children;

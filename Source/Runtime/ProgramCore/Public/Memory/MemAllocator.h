@@ -27,8 +27,8 @@ public:
     NODISCARD void *operator new(SizeT size, const std::nothrow_t &);
     NODISCARD void *operator new(SizeT size, SizeT);
     NODISCARD void *operator new(SizeT size, SizeT, const std::nothrow_t &);
-    NODISCARD void *operator new(std::size_t count, void *allocatedPtr) { return allocatedPtr; }
-    NODISCARD void *operator new(std::size_t count, std::align_val_t al, void *allocatedPtr) { return allocatedPtr; }
+    NODISCARD void *operator new(std::size_t, void *allocatedPtr) { return allocatedPtr; }
+    NODISCARD void *operator new(std::size_t, std::align_val_t, void *allocatedPtr) { return allocatedPtr; }
     void operator delete(void *ptr) noexcept;
     void operator delete(void *ptr, const std::nothrow_t &) noexcept;
     void operator delete(void *ptr, SizeT) noexcept;
@@ -38,8 +38,8 @@ public:
     NODISCARD void *operator new[](SizeT size, const std::nothrow_t &);
     NODISCARD void *operator new[](SizeT size, SizeT);
     NODISCARD void *operator new[](SizeT size, SizeT, const std::nothrow_t &);
-    NODISCARD void *operator new[](std::size_t count, void *allocatedPtr) { return allocatedPtr; }
-    NODISCARD void *operator new[](std::size_t count, std::align_val_t al, void *allocatedPtr) { return allocatedPtr; }
+    NODISCARD void *operator new[](std::size_t, void *allocatedPtr) { return allocatedPtr; }
+    NODISCARD void *operator new[](std::size_t, std::align_val_t, void *allocatedPtr) { return allocatedPtr; }
     void operator delete[](void *ptr) noexcept;
     void operator delete[](void *ptr, const std::nothrow_t &) noexcept;
     void operator delete[](void *ptr, SizeT) noexcept;
@@ -63,12 +63,12 @@ public:
     // remembering whether allocated aligned when freeing. That is unnecessary overhead for
     // programmer/code. delete does not call aligned delete operator unless alignment exceeds
     // __STDCPP_DEFAULT_NEW_ALIGNMENT__(16 in MSVC16 when last checked)
-    virtual void *tryMalloc(SizeT size, uint32 alignment = DEFAULT_ALIGNMENT) = 0;
-    virtual void *memAlloc(SizeT size, uint32 alignment = DEFAULT_ALIGNMENT) = 0;
-    virtual void *tryRealloc(void *currentPtr, SizeT size, uint32 alignment = DEFAULT_ALIGNMENT) = 0;
-    virtual void *memRealloc(void *currentPtr, SizeT size, uint32 alignment = DEFAULT_ALIGNMENT) = 0;
-    virtual void memFree(void *ptr) = 0;
+    virtual void *tryMalloc(SizeT size, uint32 alignment = DEFAULT_ALIGNMENT) noexcept = 0;
+    virtual void *memAlloc(SizeT size, uint32 alignment = DEFAULT_ALIGNMENT) noexcept = 0;
+    virtual void *tryRealloc(void *currentPtr, SizeT size, uint32 alignment = DEFAULT_ALIGNMENT) noexcept = 0;
+    virtual void *memRealloc(void *currentPtr, SizeT size, uint32 alignment = DEFAULT_ALIGNMENT) noexcept = 0;
+    virtual void memFree(void *ptr) noexcept = 0;
 
     // Allocation size of this allocator
-    virtual SizeT getAllocationSize(void *ptr) const = 0;
+    virtual SizeT getAllocationSize(void *ptr) const noexcept = 0;
 };

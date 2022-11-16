@@ -40,8 +40,8 @@ public:
 
     /* WidgetBase overrides */
     void drawWidget(QuantShortBox2D clipBound, WidgetGeomId thisId, const WidgetGeomTree &geomTree, WidgetDrawContext &context) override;
-    bool hasWidget(SharedPtr<WidgetBase> widget) const override { return false; }
-    void tick(float timeDelta) override {}
+    bool hasWidget(SharedPtr<WidgetBase>) const override { return false; }
+    void tick(float /*timeDelta*/) override {}
     /* Overrides ends */
 
     void setWorldViewport(SharedPtr<WorldViewport> inViewport) { worldViewport = inViewport; }

@@ -105,7 +105,7 @@ protected:
 
     // Fills necessary render pass info to pipeline(Pipeline render pass properties has to filled before
     // using this) and initializes it
-    virtual void initializeGenericGraphicsPipeline(UniqueUtilityShaderObject *shaderObject, PipelineBase *pipeline) = 0;
+    virtual void initializeGenericGraphicsPipeline(PipelineBase *pipeline) = 0;
     // Get generic render pass properties from Render targets, Moved to RenderManager.h
     // GenericRenderPassProperties renderpassPropsFromRTs(const std::vector<RenderTargetTexture*>&
     // rtTextures) const;

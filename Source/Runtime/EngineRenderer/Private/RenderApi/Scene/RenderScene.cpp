@@ -29,4 +29,4 @@ const std::map<StringID, ShaderBufferParamInfo *> &RenderSceneBase::sceneViewPar
     return VIEW_PARAMS_INFO;
 }
 
-void RenderSceneBase::sceneViewSpecConsts(SpecConstantNamedMap &specializationConst) {}
+void RenderSceneBase::sceneViewSpecConsts(SpecConstantNamedMap &/*specializationConst*/) {}

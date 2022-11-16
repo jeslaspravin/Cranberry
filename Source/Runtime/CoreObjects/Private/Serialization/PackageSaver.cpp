@@ -120,8 +120,8 @@ EPackageLoadSaveResult PackageSaver::savePackage()
     SizeT finalPackageSize = containedObjects.back().streamStart + containedObjects.back().streamSize;
 
     // Step 5 : Setup Array stream to write
-    ArrayArchiveStream archiveStream;
-    ArrayArchiveStream *archiveStreamPtr = outStream ? outStream : &archiveStream;
+    ArrayArchiveStream localStream;
+    ArrayArchiveStream *archiveStreamPtr = outStream ? outStream : &localStream;
     archiveStreamPtr->allocate(finalPackageSize);
     packageArchive.setStream(archiveStreamPtr);
 

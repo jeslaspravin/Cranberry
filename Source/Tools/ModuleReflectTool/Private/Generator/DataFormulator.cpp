@@ -138,7 +138,7 @@ void visitEnums(CXCursor cursor, SourceGeneratorContext *srcGenContext)
                            .pNext = &enumFieldsCanBeFlags };
     clang_visitChildren(
         cursor,
-        [](CXCursor c, CXCursor p, CXClientData clientData)
+        [](CXCursor c, CXCursor /*p*/, CXClientData clientData)
         {
             LocalContext *localCntxt = ((LocalContext *)(clientData));
             CXCursorKind cursorKind = clang_getCursorKind(c);
@@ -254,7 +254,7 @@ void visitMemberCppMethods(CXCursor cursor, LocalContext &localCntxt)
     ParserHelper::parseFunctionMeta(metaFlags, metaData, buildFlags, funcMetaStr);
 
     CXType funcRetType = clang_getCursorResultType(cursor);
-    int32 paramsCount = clang_Cursor_getNumArguments(cursor);
+    uint32 paramsCount = clang_Cursor_getNumArguments(cursor);
     std::vector<String> paramsList(paramsCount);
     std::vector<String> paramsName(paramsCount);
     for (uint32 i = 0; i < paramsCount; ++i)
@@ -473,7 +473,7 @@ void visitStructs(CXCursor cursor, SourceGeneratorContext *srcGenContext)
 
     clang_visitChildren(
         cursor,
-        [](CXCursor c, CXCursor p, CXClientData clientData)
+        [](CXCursor c, CXCursor /*p*/, CXClientData clientData)
         {
             // It is okay to use same visitor function as class here. Only BaseProperty gets populated
             // and It has no meaning now
@@ -572,7 +572,7 @@ void visitClasses(CXCursor cursor, SourceGeneratorContext *srcGenContext)
     // Visit all members
     clang_visitChildren(
         cursor,
-        [](CXCursor c, CXCursor p, CXClientData clientData)
+        [](CXCursor c, CXCursor /*p*/, CXClientData clientData)
         {
             visitClassMember(c, *(LocalContext *)(clientData));
             return CXChildVisit_Continue;
@@ -753,7 +753,7 @@ void visitTUCusor(CXCursor cursor, SourceGeneratorContext *srcGenContext)
     {
         clang_visitChildren(
             cursor,
-            [](CXCursor c, CXCursor p, CXClientData clientData)
+            [](CXCursor c, CXCursor /*p*/, CXClientData clientData)
             {
                 visitTUCusor(c, (SourceGeneratorContext *)(clientData));
                 return CXChildVisit_Continue;
@@ -770,7 +770,7 @@ FORCE_INLINE void parseSource(const SourceInformation *srcInfo, SourceGeneratorC
     CXCursor cursor = clang_getTranslationUnitCursor(srcInfo->tu);
     clang_visitChildren(
         cursor,
-        [](CXCursor c, CXCursor parent, CXClientData client_data)
+        [](CXCursor c, CXCursor /*parent*/, CXClientData client_data)
         {
             // If this symbol is from this Source file?
             // CXSourceLocation is not need to be freed

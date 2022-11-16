@@ -421,7 +421,7 @@ void EngineRenderScene::initRenderThread(
 void EngineRenderScene::clearScene()
 {
     RenderThreadEnqueuer::execInRenderThreadAndWait(
-        [this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        [this](IRenderCommandList *cmdList, IGraphicsInstance *, const GraphicsHelperAPI *)
         {
             rtPool.clearPool(cmdList);
 
@@ -651,8 +651,7 @@ FORCE_INLINE void EngineRenderScene::removeInstanceDataAt(EVertexType::Type vert
 }
 
 FORCE_INLINE void EngineRenderScene::createMaterialCopies(
-    MaterialShaderParams &shaderMats, SizeT materialIdx, IRenderCommandList *cmdList,
-    IGraphicsInstance *graphicsInstance
+    MaterialShaderParams &shaderMats, SizeT materialIdx, IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance
 ) const
 {
     // TODO(Jeslas) : This is test code, must be unique per shader
@@ -710,7 +709,8 @@ FORCE_INLINE void EngineRenderScene::addCompMaterialData(SizeT compRenderInfoIdx
             compRenderInfo.materialIndex = vectorIdxToMaterialIdx(matIdx);
             IRenderInterfaceModule *renderInterface = IRenderInterfaceModule::get();
             createMaterialCopies(
-                shaderMats, compRenderInfo.materialIndex, renderInterface->getRenderManager()->getRenderCmds(), renderInterface->currentGraphicsInstance()
+                shaderMats, compRenderInfo.materialIndex, renderInterface->getRenderManager()->getRenderCmds(),
+                renderInterface->currentGraphicsInstance()
             );
         }
         else
@@ -907,9 +907,7 @@ void EngineRenderScene::destroyRenderInfo(const cbe::RenderableComponent *comp, 
     }
 }
 
-void EngineRenderScene::performTransferCopies(
-    IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
-)
+void EngineRenderScene::performTransferCopies(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *)
 {
     // Perform other transfers
     bool bNeedTransferCommand = !bVertexUpdating || !bMaterialsUpdating || !bInstanceParamsUpdating;
@@ -1028,7 +1026,7 @@ void EngineRenderScene::performTransferCopies(
 
 void EngineRenderScene::updateVisibility(const RenderSceneViewParams &viewParams)
 {
-    const SizeT totalCompCapacity = compsRenderInfo.totalCount();
+    const uint32 totalCompCapacity = uint32(compsRenderInfo.totalCount());
     compsVisibility.resize(totalCompCapacity);
 
     compsVisibility.resetRange(0, totalCompCapacity);
@@ -1059,9 +1057,10 @@ void EngineRenderScene::updateVisibility(const RenderSceneViewParams &viewParams
                 if (vertexBuffers[compRenderInfo.vertexType].meshes.contains(compRenderInfo.meshObjPath) && compRenderInfo.tfIndex != 0
                     && compRenderInfo.materialIndex != 0)
                 {
+#if 1
                     compsInsideFrustum[idx].test_and_set(std::memory_order::relaxed);
                     return;
-
+#else
                     if (!compRenderInfo.worldBound.isValidAABB())
                     {
                         return;
@@ -1084,6 +1083,7 @@ void EngineRenderScene::updateVisibility(const RenderSceneViewParams &viewParams
                             return;
                         }
                     }
+#endif
                 }
             }
         ),
@@ -1294,12 +1294,12 @@ copat::NormalFuncAwaiter EngineRenderScene::recreateSceneVertexBuffers(
 
         newSceneVerts.meshes.reserve(sceneVerts.meshes.size() + newSceneVerts.meshesToAdd.size());
 
-        newSceneVerts.vertices = graphicsHelper->createReadOnlyVertexBuffer(graphicsInstance, vertexStride, newVertsCount);
+        newSceneVerts.vertices = graphicsHelper->createReadOnlyVertexBuffer(graphicsInstance, vertexStride, uint32(newVertsCount));
         newSceneVerts.vertices->setResourceName(
             world.getObjectName() + TCHAR("_") + EVertexType::toString(EVertexType::Type(vertType)) + TCHAR("_Vertices"));
         newSceneVerts.vertices->init();
 
-        newSceneVerts.indices = graphicsHelper->createReadOnlyIndexBuffer(graphicsInstance, idxStride, newIdxsCount);
+        newSceneVerts.indices = graphicsHelper->createReadOnlyIndexBuffer(graphicsInstance, idxStride, uint32(newIdxsCount));
         newSceneVerts.indices->setResourceName(
             world.getObjectName() + TCHAR("_") + EVertexType::toString(EVertexType::Type(vertType)) + TCHAR("_Indices"));
         newSceneVerts.indices->init();
@@ -1489,7 +1489,7 @@ copat::NormalFuncAwaiter EngineRenderScene::recreateMaterialBuffers(
             shaderMats.materialCopies.emplace_back(std::move(copyInfo));
         }
 
-        for (uint32 compRenderInfoIdx : newShaderMats.second.compIdxToAdd)
+        for (SizeT compRenderInfoIdx : newShaderMats.second.compIdxToAdd)
         {
             ComponentRenderInfo &compRenderInfo = compsRenderInfo[compRenderInfoIdx];
             debugAssert(compRenderInfo.materialIndex == 0 && compRenderInfo.shaderName.isEqual(newShaderMats.first));
@@ -1645,7 +1645,7 @@ copat::NormalFuncAwaiter EngineRenderScene::recreateInstanceBuffers(
             instances.copies.emplace_back(std::move(copyInfo));
         }
 
-        for (uint32 compRenderInfoIdx : newInstances.compIdxToAdd)
+        for (SizeT compRenderInfoIdx : newInstances.compIdxToAdd)
         {
             ComponentRenderInfo &compRenderInfo = compsRenderInfo[compRenderInfoIdx];
             debugAssert(compRenderInfo.materialIndex != 0 && compRenderInfo.tfIndex == 0);
@@ -1677,7 +1677,7 @@ copat::NormalFuncAwaiter EngineRenderScene::recreateInstanceBuffers(
         }
 
         // First create all new copies
-        for (uint32 compRenderInfoIdx : newInstances.compIdxToAdd)
+        for (SizeT compRenderInfoIdx : newInstances.compIdxToAdd)
         {
             ComponentRenderInfo &compRenderInfo = compsRenderInfo[compRenderInfoIdx];
             createInstanceCopies(newInstances, compRenderInfo, cmdList, graphicsInstance);
@@ -1706,8 +1706,7 @@ copat::NormalFuncAwaiter EngineRenderScene::recreateInstanceBuffers(
 }
 
 void EngineRenderScene::createNextDrawList(
-    const RenderSceneViewParams &viewParams, IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
-    const GraphicsHelperAPI *graphicsHelper
+    const RenderSceneViewParams &viewParams, IRenderCommandList *, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
 )
 {
     static uint32 testCounter = 0;
@@ -1747,14 +1746,15 @@ void EngineRenderScene::createNextDrawList(
     {
         testCounter++;
     }
-    // std::sort(
-    //     compIndices.begin(), compIndices.end(),
-    //     [this, &viewParams](SizeT lhs, SizeT rhs)
-    //     {
-    //         return (compsRenderInfo[lhs].worldTf.getTranslation() - viewParams.view.translation()).sqrlength()
-    //                < (compsRenderInfo[rhs].worldTf.getTranslation() - viewParams.view.translation()).sqrlength();
-    //     }
-    //);
+
+    std::sort(
+        compIndices.begin(), compIndices.end(),
+        [this, &viewParams](SizeT lhs, SizeT rhs)
+        {
+            return (compsRenderInfo[lhs].worldTf.getTranslation() - viewParams.view.translation()).sqrlength()
+                   < (compsRenderInfo[rhs].worldTf.getTranslation() - viewParams.view.translation()).sqrlength();
+        }
+    );
     for (SizeT compIdx : compIndices)
     {
         const ComponentRenderInfo &compRenderInfo = compsRenderInfo[compIdx];
@@ -1792,8 +1792,9 @@ void EngineRenderScene::createNextDrawList(
             shaderMats.drawListCounts[drawListIdx] = uint32(cpuDrawList.size());
             if (!bufferRes.isValid() || !bufferRes->isValid() || bufferRes->bufferCount() < cpuDrawList.size())
             {
-                bufferRes
-                    = graphicsHelper->createReadOnlyIndirectBuffer(graphicsInstance, sizeof(DrawIndexedIndirectCommand), cpuDrawList.size());
+                bufferRes = graphicsHelper->createReadOnlyIndirectBuffer(
+                    graphicsInstance, uint32(sizeof(DrawIndexedIndirectCommand)), uint32(cpuDrawList.size())
+                );
                 bufferRes->setResourceName(
                     world.getObjectName()
                     + TCHAR("_") + shaderMatsPair.first + EVertexType::toString(EVertexType::Type(vertType)) + TCHAR("_IdxIndirect"));
@@ -1815,7 +1816,7 @@ void EngineRenderScene::createNextDrawList(
 
 void EngineRenderScene::renderTheSceneRenderThread(
     const RenderSceneViewParams &viewParams, IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
-    const GraphicsHelperAPI *graphicsHelper
+    const GraphicsHelperAPI * /*graphicsHelper*/
 )
 {
     IRenderInterfaceModule *renderModule = IRenderInterfaceModule::get();

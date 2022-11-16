@@ -14,7 +14,7 @@
 
 DEFINE_GRAPHICS_RESOURCE(GenericWindowCanvas)
 
-uint32 GenericWindowCanvas::requestNextImage(SemaphoreRef *waitOnSemaphore, FenceRef *waitOnFence /*= nullptr*/) { return 0; }
+uint32 GenericWindowCanvas::requestNextImage(SemaphoreRef *, FenceRef *) { return 0; }
 
 void GenericWindowCanvas::addRef() { refCounter.fetch_add(1, std::memory_order::release); }
 

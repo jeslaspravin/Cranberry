@@ -244,7 +244,7 @@ struct CapturedFunctor
         {
             UPtrInt nullptrs[(MAX_INLINED_SIZE / sizeof(UPtrInt)) - 1];
             void *dataPtr;
-        };
+        } heapAlloc;
     };
     LambdaFunctionCapInterface *lambdaDataInterface = nullptr;
     using TrampolineFunc = ReturnType (*)(const CapturedFunctor &, Parameters...);
@@ -341,34 +341,34 @@ struct CapturedFunctor
     public:
         void copy(CapturedFunctor &copyTo, const CapturedFunctor &copyFrom) const override
         {
-            construct(copyTo, *reinterpret_cast<CallableType *>(copyFrom.dataPtr));
+            construct(copyTo, *reinterpret_cast<CallableType *>(copyFrom.heapAlloc.dataPtr));
         }
         void move(CapturedFunctor &moveTo, CapturedFunctor &&moveFrom) const override
         {
-            if (moveTo.dataPtr)
+            if (moveTo.heapAlloc.dataPtr)
             {
-                delete reinterpret_cast<CallableType *>(moveTo.dataPtr);
+                delete reinterpret_cast<CallableType *>(moveTo.heapAlloc.dataPtr);
             }
-            moveTo.dataPtr = moveFrom.dataPtr;
-            moveFrom.dataPtr = nullptr;
+            moveTo.heapAlloc.dataPtr = moveFrom.heapAlloc.dataPtr;
+            moveFrom.heapAlloc.dataPtr = nullptr;
         }
-        void destruct(CapturedFunctor &functor) const override { delete reinterpret_cast<CallableType *>(functor.dataPtr); }
+        void destruct(CapturedFunctor &functor) const override { delete reinterpret_cast<CallableType *>(functor.heapAlloc.dataPtr); }
 
         template <typename Callable>
         static void construct(CapturedFunctor &functor, Callable &&func)
         {
-            if (functor.dataPtr)
+            if (functor.heapAlloc.dataPtr)
             {
-                new (functor.dataPtr) CallableType(std::forward<Callable>(func));
+                new (functor.heapAlloc.dataPtr) CallableType(std::forward<Callable>(func));
             }
             else
             {
-                functor.dataPtr = new CallableType(std::forward<Callable>(func));
+                functor.heapAlloc.dataPtr = new CallableType(std::forward<Callable>(func));
             }
         }
         static ReturnType invoke(const CapturedFunctor &thisFunctor, Parameters... params)
         {
-            (*reinterpret_cast<CallableType *>(thisFunctor.dataPtr))(std::forward<Parameters>(params)...);
+            (*reinterpret_cast<CallableType *>(thisFunctor.heapAlloc.dataPtr))(std::forward<Parameters>(params)...);
         }
     };
 

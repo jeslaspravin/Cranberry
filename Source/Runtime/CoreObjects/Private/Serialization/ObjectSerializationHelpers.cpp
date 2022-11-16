@@ -43,14 +43,14 @@ struct ReadFieldVisitable
 {
     // Ignore const type
     template <UnsupportedFundamentalOrSpecial Type>
-    static void visit(Type *val, const PropertyInfo &propInfo, void *userData)
+    static void visit(Type */*val*/, const PropertyInfo &propInfo, void */*userData*/)
     {
         alertAlwaysf(false, "Why?! This isn't supposed to be invoked %s", propInfo.thisProperty->nameString);
     }
 
     // above UnsupportedFundamentalOrSpecial takes precedence over below generic support
     template <typename Type>
-    static void visit(Type *val, const PropertyInfo &propInfo, void *userData)
+    static void visit(Type *val, const PropertyInfo &, void *userData)
     {
         ReadObjectFieldUserData *readUserData = (ReadObjectFieldUserData *)(userData);
         if (readUserData->fieldEndCursor > readUserData->ar->stream()->cursorPos())
@@ -176,7 +176,7 @@ struct ReadFieldVisitable
         }
     }
     // Ignoring const types
-    static void visit(const void *val, const PropertyInfo &propInfo, void *userData)
+    static void visit(const void *, const PropertyInfo &propInfo, void *)
     {
         alertAlwaysf(false, "Why?! This isn't supposed to be invoked %s", propInfo.thisProperty->nameString);
     }
@@ -230,14 +230,14 @@ struct WriteFieldVisitable
 {
     // Ignore const type
     template <UnsupportedFundamentalOrSpecial Type>
-    static void visit(Type *val, const PropertyInfo &propInfo, void *userData)
+    static void visit(Type */*val*/, const PropertyInfo &propInfo, void */*userData*/)
     {
         alertAlwaysf(false, "Why?! This isn't supposed to be invoked %s", propInfo.thisProperty->nameString);
     }
 
     // above UnsupportedFundamentalOrSpecial takes precedence over below generic support
     template <typename Type>
-    static void visit(Type *val, const PropertyInfo &propInfo, void *userData)
+    static void visit(Type *val, const PropertyInfo &, void *userData)
     {
         WriteObjectFieldUserData *writeUserData = (WriteObjectFieldUserData *)(userData);
         (*writeUserData->ar) << (*val);
@@ -318,7 +318,7 @@ struct WriteFieldVisitable
         }
     }
     // Ignoring const types
-    static void visit(const void *val, const PropertyInfo &propInfo, void *userData)
+    static void visit(const void *, const PropertyInfo &propInfo, void *)
     {
         alertAlwaysf(false, "Why?! This isn't supposed to be invoked %s", propInfo.thisProperty->nameString);
     }
@@ -480,7 +480,6 @@ ObjectArchive &serializeObjectFieldsHelper(cbe::Object *obj, ObjectArchive &ar, 
         ar.setCustomVersion(uint32(FIELDS_SER_CUSTOM_VERSION_ID), OBJECTFIELD_SER_VERSION);
         return writeFieldsHelper(obj, obj->getType(), ar, fieldsToSerialize);
     }
-    return ar;
 }
 
 ObjectArchive &ObjectSerializationHelpers::serializeAllFields(cbe::Object *obj, ObjectArchive &ar)

@@ -65,7 +65,7 @@ public:
         {
             if (*itr)
             {
-                retVal.emplace_back((AsType *)getAllocAt(itr - beginItr));
+                retVal.emplace_back((AsType *)getAllocAt(AllocIdx(itr - beginItr)));
             }
         }
         return retVal;
@@ -276,7 +276,7 @@ FORCE_INLINE SizeT ObjectAllocator<ClassType>::findAllocator()
         if (!(*itr))
         {
             SlotIdxType slotIdx;
-            SizeT poolIdx = allocIdxToSlotIdx(slotIdx, (itr - beginItr));
+            SizeT poolIdx = allocIdxToSlotIdx(slotIdx, AllocIdx(itr - beginItr));
             if (allocatorPools[poolIdx])
             {
                 return poolIdx;

@@ -13,7 +13,7 @@
 #include "Math/Math.h"
 #include "Memory/Memory.h"
 
-FORCE_INLINE SizeT CBEBuiltinMemAlloc::calcHeaderPadding(uint32 alignment) const
+FORCE_INLINE SizeT CBEBuiltinMemAlloc::calcHeaderPadding(uint32 alignment) const noexcept
 {
 #ifndef PLATFORM_ALIGNED_MALLOC
     // Since we do manual alignment
@@ -25,7 +25,7 @@ FORCE_INLINE SizeT CBEBuiltinMemAlloc::calcHeaderPadding(uint32 alignment) const
 #endif // PLATFORM_ALIGNED_MALLOC
 }
 
-FORCE_INLINE SizeT CBEBuiltinMemAlloc::calcExtraWidth(uint32 alignment) const
+FORCE_INLINE SizeT CBEBuiltinMemAlloc::calcExtraWidth(uint32 alignment) const noexcept
 {
 #ifndef PLATFORM_ALIGNED_MALLOC
     // + number of extra byte for worst alignment
@@ -35,7 +35,7 @@ FORCE_INLINE SizeT CBEBuiltinMemAlloc::calcExtraWidth(uint32 alignment) const
 #endif // PLATFORM_ALIGNED_MALLOC
 }
 
-FORCE_INLINE void *CBEBuiltinMemAlloc::writeAllocMeta(void *allocatedPtr, SizeT size, uint32 alignment) const
+FORCE_INLINE void *CBEBuiltinMemAlloc::writeAllocMeta(void *allocatedPtr, SizeT size, uint32 alignment) const noexcept
 {
     void *outPtr = ((uint8 *)allocatedPtr) + calcHeaderPadding(alignment);
 #ifndef PLATFORM_ALIGNED_MALLOC
@@ -52,7 +52,7 @@ FORCE_INLINE void *CBEBuiltinMemAlloc::writeAllocMeta(void *allocatedPtr, SizeT 
     return outPtr;
 }
 
-FORCE_INLINE void *CBEBuiltinMemAlloc::getAllocationInfo(void *ptr, SizeT &outSize, uint32 &outAlignment) const
+FORCE_INLINE void *CBEBuiltinMemAlloc::getAllocationInfo(void *ptr, SizeT &outSize, uint32 &outAlignment) const noexcept
 {
     AllocHeader &allocHeader = *(((AllocHeader *)ptr) - 1);
     outSize = allocHeader.size;
@@ -65,7 +65,7 @@ FORCE_INLINE void *CBEBuiltinMemAlloc::getAllocationInfo(void *ptr, SizeT &outSi
 #endif // PLATFORM_ALIGNED_MALLOC
 }
 
-void *CBEBuiltinMemAlloc::tryMalloc(SizeT size, uint32 alignment /*= DEFAULT_ALIGNMENT*/)
+void *CBEBuiltinMemAlloc::tryMalloc(SizeT size, uint32 alignment /*= DEFAULT_ALIGNMENT*/) noexcept
 {
     debugAssert(Math::isPowOf2(alignment));
     if (size == 0)
@@ -73,7 +73,7 @@ void *CBEBuiltinMemAlloc::tryMalloc(SizeT size, uint32 alignment /*= DEFAULT_ALI
         return nullptr;
     }
 
-    alignment = Math::max(alignof(AllocHeader), alignBy(size, alignment));
+    alignment = uint32(Math::max(alignof(AllocHeader), alignBy(size, alignment)));
 
 #ifndef PLATFORM_ALIGNED_MALLOC
     if (void *ptr = CBEMemory::builtinMalloc(size + calcExtraWidth(alignment)))
@@ -86,14 +86,14 @@ void *CBEBuiltinMemAlloc::tryMalloc(SizeT size, uint32 alignment /*= DEFAULT_ALI
     return nullptr;
 }
 
-void *CBEBuiltinMemAlloc::memAlloc(SizeT size, uint32 alignment /*= DEFAULT_ALIGNMENT*/)
+void *CBEBuiltinMemAlloc::memAlloc(SizeT size, uint32 alignment /*= DEFAULT_ALIGNMENT*/) noexcept
 {
     void *ptr = tryMalloc(size, alignment);
     fatalAssertf(size == 0 || ptr, "Allocation failed!");
     return ptr;
 }
 
-void *CBEBuiltinMemAlloc::tryRealloc(void *currentPtr, SizeT size, uint32 alignment /*= DEFAULT_ALIGNMENT*/)
+void *CBEBuiltinMemAlloc::tryRealloc(void *currentPtr, SizeT size, uint32 alignment /*= DEFAULT_ALIGNMENT*/) noexcept
 {
     debugAssert(Math::isPowOf2(alignment));
 
@@ -106,7 +106,7 @@ void *CBEBuiltinMemAlloc::tryRealloc(void *currentPtr, SizeT size, uint32 alignm
         return nullptr;
     }
 
-    alignment = Math::max(alignof(AllocHeader), alignBy(size, alignment));
+    alignment = uint32(Math::max(alignof(AllocHeader), alignBy(size, alignment)));
 
 #ifndef PLATFORM_ALIGNED_MALLOC
     if (void *ptr = CBEMemory::builtinRealloc(actualPtr, size + calcExtraWidth(alignment)))
@@ -119,14 +119,14 @@ void *CBEBuiltinMemAlloc::tryRealloc(void *currentPtr, SizeT size, uint32 alignm
     return nullptr;
 }
 
-void *CBEBuiltinMemAlloc::memRealloc(void *currentPtr, SizeT size, uint32 alignment /*= DEFAULT_ALIGNMENT*/)
+void *CBEBuiltinMemAlloc::memRealloc(void *currentPtr, SizeT size, uint32 alignment /*= DEFAULT_ALIGNMENT*/) noexcept
 {
     void *ptr = tryRealloc(currentPtr, size, alignment);
     fatalAssertf(size == 0 || ptr, "Reallocation failed!");
     return ptr;
 }
 
-void CBEBuiltinMemAlloc::memFree(void *ptr)
+void CBEBuiltinMemAlloc::memFree(void *ptr) noexcept
 {
     if (ptr == nullptr)
     {
@@ -150,7 +150,7 @@ void CBEBuiltinMemAlloc::memFree(void *ptr)
 #endif // PLATFORM_ALIGNED_MALLOC
 }
 
-SizeT CBEBuiltinMemAlloc::getAllocationSize(void *ptr) const
+SizeT CBEBuiltinMemAlloc::getAllocationSize(void *ptr) const noexcept
 {
     if (ptr == nullptr)
     {

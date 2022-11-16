@@ -131,7 +131,7 @@ public:
     static void registerTypeFactory(const ReflectTypeInfo *typeInfo, const TypedPropertyFactoryCell &factoryCell);
     // Just a function to have same register signature as other factor register functions
     FORCE_INLINE static void
-        registerTypeFactory(const StringID &typeName, const ReflectTypeInfo *typeInfo, const TypedPropertyFactoryCell &factoryCell)
+        registerTypeFactory(const StringID &, const ReflectTypeInfo *typeInfo, const TypedPropertyFactoryCell &factoryCell)
     {
         registerTypeFactory(typeInfo, factoryCell);
     }

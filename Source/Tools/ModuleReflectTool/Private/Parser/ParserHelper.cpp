@@ -81,7 +81,7 @@ CXCursor ParserHelper::getTypeRefInCursor(CXCursor cursor)
     {
         clang_visitChildren(
             cursor,
-            [](CXCursor c, CXCursor p, CXClientData clientData)
+            [](CXCursor c, CXCursor /*parent*/, CXClientData clientData)
             {
                 CXCursorKind cursorKind = clang_getCursorKind(c);
                 if (cursorKind == CXCursor_TypeRef || cursorKind == CXCursor_TemplateRef)
@@ -297,7 +297,7 @@ bool ParserHelper::isReflectedDecl(CXCursor declCursor)
     bool bHasAnnotation = false;
     clang_visitChildren(
         declCursor,
-        [](CXCursor c, CXCursor p, CXClientData clientData)
+        [](CXCursor c, CXCursor /*p*/, CXClientData clientData)
         {
             CXCursorKind cursorKind = clang_getCursorKind(c);
             if (cursorKind == CXCursor_AnnotateAttr)
@@ -324,7 +324,7 @@ bool ParserHelper::isReflectedClass(CXCursor declCursor)
     bool bHasAnnotationAndGenCode[] = { false, false };
     clang_visitChildren(
         declCursor,
-        [](CXCursor c, CXCursor p, CXClientData clientData)
+        [](CXCursor c, CXCursor /*p*/, CXClientData clientData)
         {
             bool *bValid = (bool *)(clientData);
             CXCursorKind cursorKind = clang_getCursorKind(c);
@@ -358,7 +358,7 @@ bool ParserHelper::isInterfaceClass(CXCursor declCursor)
     bool bHasAnnotationAndGenCodeAndInterfaceFlag[] = { false, false, false };
     clang_visitChildren(
         declCursor,
-        [](CXCursor c, CXCursor p, CXClientData clientData)
+        [](CXCursor c, CXCursor /*p*/, CXClientData clientData)
         {
             bool *bValid = (bool *)(clientData);
             CXCursorKind cursorKind = clang_getCursorKind(c);
@@ -403,7 +403,7 @@ bool ParserHelper::getInterfaceHierarchy(std::vector<CXCursor> &allInterfaces, C
 
     clang_visitChildren(
         declCursor,
-        [](CXCursor c, CXCursor p, CXClientData clientData)
+        [](CXCursor c, CXCursor /*p*/, CXClientData clientData)
         {
             InterfaceHierarchyAndValidity *hierarchy = (InterfaceHierarchyAndValidity *)(clientData);
             CXCursorKind cursorKind = clang_getCursorKind(c);
@@ -439,7 +439,7 @@ bool ParserHelper::hasOverridenCtorPolicy(CXCursor declCursor)
     bool bHasOverridenCtorPolicy = false;
     clang_visitChildren(
         declCursor,
-        [](CXCursor c, CXCursor p, CXClientData clientData)
+        [](CXCursor c, CXCursor /*p*/, CXClientData clientData)
         {
             bool &bValid = *(bool *)(clientData);
             CXCursorKind cursorKind = clang_getCursorKind(c);
@@ -466,7 +466,7 @@ CXCursor ParserHelper::getGeneratedCodeCursor(CXCursor declCursor)
 
     clang_visitChildren(
         declCursor,
-        [](CXCursor c, CXCursor p, CXClientData clientData)
+        [](CXCursor c, CXCursor /*p*/, CXClientData clientData)
         {
             CXCursorKind cursorKind = clang_getCursorKind(c);
             // If generated type alias/typedef decl is present
@@ -488,7 +488,7 @@ String ParserHelper::getCursorMetaString(CXCursor cursor)
     String metaStr;
     clang_visitChildren(
         cursor,
-        [](CXCursor c, CXCursor p, CXClientData clientData)
+        [](CXCursor c, CXCursor /*p*/, CXClientData clientData)
         {
             CXCursorKind cursorKind = clang_getCursorKind(c);
             if (cursorKind == CXCursor_AnnotateAttr)
@@ -602,7 +602,7 @@ bool ParserHelper::commonTypeValidity(CXType clangType)
     return bIsValid;
 }
 
-bool ParserHelper::isValidFuncParamType(CXType clangType, CXCursor paramCursor)
+bool ParserHelper::isValidFuncParamType(CXType clangType, CXCursor /*paramCursor*/)
 {
     // bool bIsValid = commonTypeValidity(clangType);
     // Right now we do not have any validation other than common for param type
@@ -642,7 +642,7 @@ bool ParserHelper::isValidFunction(CXCursor funcCursor)
         return false;
     }
 
-    int32 paramsCount = clang_Cursor_getNumArguments(funcCursor);
+    uint32 paramsCount = clang_Cursor_getNumArguments(funcCursor);
     for (uint32 i = 0; i < paramsCount; ++i)
     {
         CXCursor paramCursor = clang_Cursor_getArgument(funcCursor, i);

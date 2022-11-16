@@ -15,7 +15,11 @@
 #include "ProgramCoreExports.h"
 #include "Types/CoreDefines.h"
 
+GLM_HEADER_INCLUDES_BEGIN
+
 #include <glm/ext/vector_float3.hpp>
+
+GLM_HEADER_INCLUDES_BEGIN
 
 class Vector4D;
 class Vector2D;

@@ -87,15 +87,15 @@ public:
 
     /* ArchiveStream overrides */
     void read(void *toPtr, SizeT byteLen) override;
-    void write(const void *ptr, SizeT byteLen) override { cursor += byteLen; }
+    void write(const void *, SizeT byteLen) override { cursor += byteLen; }
     void moveForward(SizeT byteCount) override { cursor += byteCount; }
     void moveBackward(SizeT byteCount) override { cursor = Math::max(cursor - byteCount, 0); }
-    bool allocate(SizeT byteCount) override { return false; }
+    bool allocate(SizeT) override { return false; }
     uint8 readForwardAt(SizeT idx) const override;
     uint8 readBackwardAt(SizeT idx) const override;
     FORCE_INLINE uint64 cursorPos() const override { return cursor; }
     FORCE_INLINE bool isAvailable() const override { return true; }
-    bool hasMoreData(SizeT requiredByteCount) const override { return true; }
+    bool hasMoreData(SizeT) const override { return true; }
     /* overrides ends */
 };
 

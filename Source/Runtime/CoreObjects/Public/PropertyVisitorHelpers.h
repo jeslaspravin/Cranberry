@@ -24,7 +24,7 @@ private:
 public:
     // For editing pointer in keys only, and any value in values
     template <typename Visitable>
-    static void visitEditMapEntriesPtrOnly(const MapProperty *mapProp, void *val, const PropertyInfo &propInfo, void *userData)
+    static void visitEditMapEntriesPtrOnly(const MapProperty *mapProp, void *val, const PropertyInfo &/*propInfo*/, void *userData)
     {
         const IterateableDataRetriever *dataRetriever = static_cast<const IterateableDataRetriever *>(mapProp->dataRetriever);
         const TypedProperty *keyProp = static_cast<const TypedProperty *>(mapProp->keyProp);
@@ -95,7 +95,7 @@ public:
     }
 
     template <typename Visitable>
-    static void visitEditMapEntries(const MapProperty *mapProp, void *val, const PropertyInfo &propInfo, void *userData)
+    static void visitEditMapEntries(const MapProperty *mapProp, void *val, const PropertyInfo &/*propInfo*/, void *userData)
     {
         const IterateableDataRetriever *dataRetriever = static_cast<const IterateableDataRetriever *>(mapProp->dataRetriever);
         const TypedProperty *keyProp = static_cast<const TypedProperty *>(mapProp->keyProp);
@@ -160,7 +160,7 @@ public:
      * set key can be either fundamental or special or struct or class ptr but it can never be custom types
      */
     template <typename Visitable>
-    static void visitEditSetEntries(const ContainerProperty *setProp, void *val, const PropertyInfo &propInfo, void *userData)
+    static void visitEditSetEntries(const ContainerProperty *setProp, void *val, const PropertyInfo &/*propInfo*/, void *userData)
     {
         const IterateableDataRetriever *dataRetriever = static_cast<const IterateableDataRetriever *>(setProp->dataRetriever);
         const TypedProperty *elementProp = static_cast<const TypedProperty *>(setProp->elementProp);

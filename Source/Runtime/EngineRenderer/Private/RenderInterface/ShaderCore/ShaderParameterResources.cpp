@@ -390,7 +390,7 @@ void ShaderParameters::removeRef()
     {
         ENQUEUE_COMMAND(DeleteShaderParameter)
         (
-            [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+            [this](class IRenderCommandList *, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
             {
                 graphicsHelper->markForDeletion(graphicsInstance, this, EDeferredDelStrategy::SwapchainCount);
             }
@@ -802,7 +802,7 @@ void *ShaderParameters::getOuterPtrForPath(
     const BufferParametersData &boundBufferData = shaderBufferItr->second;
     // -1 since 0th pathNames is just boundBufferData, And filling innerBufferParams that are more than 1 level deep from bound buffer
     outInnerBufferParams.resize(pathNames.size() - 1);
-    for (uint32 i = pathNames.size() - 1; i != 1; --i)
+    for (SizeT i = pathNames.size() - 1; i != 1; --i)
     {
         auto itr = boundBufferData.bufferParams.find(pathNames[i]);
         if (itr != boundBufferData.bufferParams.cend() && pathNames[i - 1] == itr->second.outerName) [[likely]]
@@ -834,7 +834,7 @@ void *ShaderParameters::getOuterPtrForPath(
         "Cannot set buffer %s using setFieldAtPath", pathNames.back()
     );
     // 0th innerBufferParam will be filled after
-    for (int32 i = outInnerBufferParams.size() - 2; i > 0; --i)
+    for (SizeT i = outInnerBufferParams.size() - 2; i > 0; --i)
     {
         fatalAssertf(
             BIT_SET(outInnerBufferParams[i]->bufferField->fieldDecorations, ShaderBufferField::IsStruct),
@@ -859,7 +859,7 @@ void *ShaderParameters::getOuterPtrForPath(
     // Do not have to handle runtime parameter separately as it will be last entry and There is no support for dynamic runtime array inside one
     // Now offset the outerPtr value of param field we are looking for
     UPtrInt paramOuterPtr = (UPtrInt)(outInnerBufferParams.back()->outerPtr);
-    for (uint32 i = 0; i != (outInnerBufferParams.size() - 1); ++i)
+    for (SizeT i = 0; i != (outInnerBufferParams.size() - 1); ++i)
     {
         if (outInnerBufferParams[i]->bufferField->isIndexAccessible())
         {
@@ -1280,7 +1280,7 @@ Matrix4 ShaderParameters::getMatrixParam(StringID paramName, uint32 index /* = 0
 
 Matrix4 ShaderParameters::getMatrixParam(StringID paramName, StringID bufferName, uint32 index /* = 0 */) const
 {
-    return getFieldParam<Matrix4>(paramName, index);
+    return getFieldParam<Matrix4>(paramName, bufferName, index);
 }
 
 int32 ShaderParameters::getIntAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const
@@ -1290,12 +1290,12 @@ int32 ShaderParameters::getIntAtPath(ArrayView<const StringID> pathNames, ArrayV
 
 uint32 ShaderParameters::getUintAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const
 {
-    return getFieldAtPath<int32>(pathNames, indices);
+    return getFieldAtPath<uint32>(pathNames, indices);
 }
 
 float ShaderParameters::getFloatAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const
 {
-    return getFieldAtPath<int32>(pathNames, indices);
+    return getFieldAtPath<float>(pathNames, indices);
 }
 
 Vector2D ShaderParameters::getVector2AtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const
@@ -1377,7 +1377,7 @@ bool ShaderParameters::setBufferResource(StringID bufferName, BufferResourceRef 
             const uint32 dataStride = BIT_SET(runtimeField->fieldDecorations, ShaderBufferField::IsStruct)
                                           ? runtimeField->paramInfo->paramNativeStride()
                                           : runtimeField->stride;
-            bufferData.runtimeArray->currentCount = gpuByteSize / gpuDataStride;
+            bufferData.runtimeArray->currentCount = uint32(gpuByteSize / gpuDataStride);
             bufferData.runtimeArray->runtimeArrayCpuBuffer.resize(bufferData.runtimeArray->currentCount * dataStride);
 
             // Set buffer ptr and regenerate buffer param maps

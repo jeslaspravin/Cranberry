@@ -157,7 +157,7 @@ bool FileHelper::readString(String &outStr, const String &fileName)
     else
     {
         // Insert a null terminated characters
-        bytes.emplace_back(0);
+        bytes.push_back(0);
         outStr = UTF8_TO_TCHAR(&bytes[isUtf8Bom(bytes.data(), bytes.size()) ? 3 : 0]);
     }
     return true;

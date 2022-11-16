@@ -285,7 +285,7 @@ struct GCObjectFieldVisitable
 {
     // Ignore fundamental and special types, we need none const custom types or pointers
     template <typename Type>
-    static void visit(Type *val, const PropertyInfo &propInfo, void *userData)
+    static void visit(Type *, const PropertyInfo &, void *)
     {}
     static void visit(void *val, const PropertyInfo &propInfo, void *userData)
     {
@@ -344,7 +344,7 @@ struct GCObjectFieldVisitable
         }
     }
     // Ignoring const types
-    static void visit(const void *val, const PropertyInfo &propInfo, void *userData) {}
+    static void visit(const void *, const PropertyInfo &, void *) {}
     static void visit(void **ptr, const PropertyInfo &propInfo, void *userData)
     {
         const TypedProperty *prop = PropertyHelper::getUnqualified(propInfo.thisProperty);

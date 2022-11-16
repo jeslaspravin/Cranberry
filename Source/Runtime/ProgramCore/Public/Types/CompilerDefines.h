@@ -13,6 +13,8 @@
 
 #include "Types/CoreMiscDefines.h"
 
+#include <version>
+
 // Aggregated blog -
 // https://blog.kowalczyk.info/article/j/guide-to-predefined-macros-in-c-compilers-gcc-clang-msvc-etc..html
 
@@ -37,9 +39,12 @@
 #define WARN_UNUSED_FUNC_PARAM -Wunused-parameter
 #define WARN_UNUSED_LOCAL_VARIABLE -Wunused-variable
 #define WARN_UNUSED_LABEL -Wunused-label
+#define WARN_IF_COULD_BE_CONSTEXPR
 #define WARN_UNKNOWN_PRAGMAS -Wunknown-pragmas
 #define WARN_UNINITIALIZED -Wuninitialized
+#define WARN_UNINITIALIZED_POINTER
 #define WARN_MISMATCHED_NEW_DELETE -Wmismatched-new-delete
+#define WARN_UNNEEDED_INTERNAL_FUNCTION -Wunneeded-internal-declaration
 #define WARN_IMPLICIT_DESTRUCTOR_DELETE
 #define WARN_MISSING_OVERRIDE -Winconsistent-missing-override
 
@@ -60,9 +65,12 @@
 #define WARN_UNUSED_FUNC_PARAM 4100
 #define WARN_UNUSED_LOCAL_VARIABLE 4101
 #define WARN_UNUSED_LABEL 4102
+#define WARN_IF_COULD_BE_CONSTEXPR 4127
 #define WARN_UNKNOWN_PRAGMAS
-#define WARN_UNINITIALIZED
+#define WARN_UNINITIALIZED 4701
+#define WARN_UNINITIALIZED_POINTER 4703
 #define WARN_MISMATCHED_NEW_DELETE 4291
+#define WARN_UNNEEDED_INTERNAL_FUNCTION 4505
 #define WARN_IMPLICIT_DESTRUCTOR_DELETE 4624
 #define WARN_MISSING_OVERRIDE
 
@@ -87,8 +95,8 @@ static_assert(false, "Unsupported compiler");
 namespace CompilerHacks
 {
 
-template <typename T>
-void ignoreUnused(T &&)
+template <typename... Args>
+void ignoreUnused(Args &&...)
 {}
 
 } // namespace CompilerHacks

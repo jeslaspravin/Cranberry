@@ -95,7 +95,7 @@ struct IntermediateImportData
 
 bool hasSmoothedNormals(const tinyobj::shape_t &mesh)
 {
-    for (const uint32 &smoothingGrpIdx : mesh.mesh.smoothing_group_ids)
+    for (uint32 smoothingGrpIdx : mesh.mesh.smoothing_group_ids)
     {
         if (smoothingGrpIdx > 0)
         {
@@ -637,8 +637,6 @@ void smoothAndLoad(
             };
             for (const std::pair<const uint32, std::vector<uint32>> &adjacentFaces : vertFaceAdjItr->second)
             {
-                float dotVal = 1;
-                bool bIsSameSmoothing = true;
                 if (adjacentFaces.second.size() == 2)
                 {
                     float dotVal = faceNormals[adjacentFaces.second[0]] | faceNormals[adjacentFaces.second[1]];
@@ -668,7 +666,7 @@ void smoothAndLoad(
                 uint32 newVertIndex = uint32(outImportData.vertices.size());
                 outImportData.vertices.push_back(outImportData.vertices[vertIdx]);
 
-                for (const uint32 &faceIdx : *faceGrpsItr)
+                for (uint32 faceIdx : *faceGrpsItr)
                 {
                     uint32 faceStartIndex = faceIdx * FACE_MAX_VERTS;
                     for (uint32 i = 0; i < FACE_MAX_VERTS; ++i)
@@ -683,7 +681,7 @@ void smoothAndLoad(
                 }
             }
             // Smooth vertIdx vertex as well as this vertex is most likely will be unique to this mesh
-            for (const uint32 &faceIdx : faceGroups[0])
+            for (uint32 faceIdx : faceGroups[0])
             {
                 uint32 faceStartIndex = faceIdx * FACE_MAX_VERTS;
                 for (uint32 i = 0; i < FACE_MAX_VERTS; ++i)

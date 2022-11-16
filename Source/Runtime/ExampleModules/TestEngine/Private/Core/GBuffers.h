@@ -30,7 +30,7 @@ private:
     static void onSampleCountChanged(uint32 oldValue, uint32 newValue);
 
 public:
-    static void initialize(int32 swapchainCount);
+    static void initialize(uint32 swapchainCount);
     static void destroy();
 
     static void onScreenResized(Size2D newSize);

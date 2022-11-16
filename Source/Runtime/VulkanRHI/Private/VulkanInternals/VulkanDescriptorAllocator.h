@@ -80,7 +80,7 @@ private:
 
     bool isSupportedPool(
         std::vector<VkDescriptorSet> &availableSets, const VulkanDescriptorsSetAllocatorInfo &allocationPool, const DescriptorsSetQuery &query,
-        const uint32 &setsCount
+        uint32 setsCount
     ) const;
     VkDescriptorSet
         allocateSetFromPool(VulkanDescriptorsSetAllocatorInfo &allocationPool, const VkDescriptorSetLayout &descriptorsSetLayout) const;
@@ -89,7 +89,7 @@ private:
         const std::vector<VkDescriptorSetLayout> &layouts
     ) const;
     VulkanDescriptorsSetAllocatorInfo &createNewPool(
-        const DescriptorsSetQuery &query, const uint32 &setsCount, std::vector<VulkanDescriptorsSetAllocatorInfo> &poolGroup
+        const DescriptorsSetQuery &query, uint32 setsCount, std::vector<VulkanDescriptorsSetAllocatorInfo> &poolGroup
     ) const;
     /*
      * If allocation pool is found with requested available sets then that allocation pool is returned
@@ -99,12 +99,12 @@ private:
      * allocated remaining amount from returned allocation pool.
      */
     VulkanDescriptorsSetAllocatorInfo &
-        findOrCreateAllocPool(std::vector<VkDescriptorSet> &availableSets, const DescriptorsSetQuery &query, const uint32 &setsCount);
+        findOrCreateAllocPool(std::vector<VkDescriptorSet> &availableSets, const DescriptorsSetQuery &query, uint32 setsCount);
     /*
      * Similar to above method but never uses available sets.
      * Useful in case of sets with varying layouts
      */
-    VulkanDescriptorsSetAllocatorInfo &findOrCreateAllocPool(const DescriptorsSetQuery &query, const uint32 &setsCount);
+    VulkanDescriptorsSetAllocatorInfo &findOrCreateAllocPool(const DescriptorsSetQuery &query, uint32 setsCount);
     void resetAllocationPool(VulkanDescriptorsSetAllocatorInfo &allocationPool) const;
 
 public:
@@ -119,7 +119,7 @@ public:
         std::vector<VkDescriptorSet> &sets, const DescriptorsSetQuery &query, const std::vector<VkDescriptorSetLayout> &layouts
     );
     bool allocDescriptorsSets(
-        std::vector<VkDescriptorSet> &sets, const DescriptorsSetQuery &query, const VkDescriptorSetLayout &layout, const uint32 &setsCount
+        std::vector<VkDescriptorSet> &sets, const DescriptorsSetQuery &query, const VkDescriptorSetLayout &layout, uint32 setsCount
     );
     void releaseDescriptorsSet(VkDescriptorSet descriptorSet);
 

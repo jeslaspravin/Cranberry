@@ -23,7 +23,7 @@ void GenericAppWindow::windowSize(uint32 &width, uint32 &height) const
     height = windowHeight;
 }
 
-void GenericAppWindow::setWindowSize(const uint32 &width, const uint32 &height, bool updateResources)
+void GenericAppWindow::setWindowSize(uint32 width, uint32 height, bool updateResources)
 {
     windowWidth = width;
     windowHeight = height;

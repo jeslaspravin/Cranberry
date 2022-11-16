@@ -51,7 +51,7 @@ private:
 
     std::map<String, struct MeshLoaderData> loadedMeshes;
 
-    Vector3D getFaceNormal(const uint32 &index0, const uint32 &index1, const uint32 &index2, const std::vector<StaticMeshVertex> &verticesData)
+    Vector3D getFaceNormal(uint32 index0, uint32 index1, uint32 index2, const std::vector<StaticMeshVertex> &verticesData)
         const;
     void addNormal(StaticMeshVertex &vertex, Vector3D &normal) const;
     void normalize(Vector4D &normal) const;

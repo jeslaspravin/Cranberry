@@ -29,7 +29,8 @@ public:
 
     ReferenceCountPtr(PtrType *ptr)
     {
-        if ((refPtr = ptr))
+        refPtr = ptr;
+        if (refPtr)
         {
             refPtr->addRef();
         }
@@ -44,7 +45,8 @@ public:
     }
     ReferenceCountPtr(const ReferenceCountPtr &refCountPtr)
     {
-        if ((refPtr = refCountPtr.reference()))
+        refPtr = refCountPtr.reference();
+        if (refPtr)
         {
             refPtr->addRef();
         }
@@ -58,7 +60,8 @@ public:
     template <class InPtrType>
     ReferenceCountPtr(const ReferenceCountPtr<InPtrType> &refCountPtr)
     {
-        if ((refPtr = static_cast<PtrType *>(refCountPtr.reference())))
+        refPtr = static_cast<PtrType *>(refCountPtr.reference());
+        if (refPtr)
         {
             refPtr->addRef();
         }
@@ -76,8 +79,8 @@ public:
     ReferenceCountPtr &operator=(PtrType *ptr)
     {
         PtrType *oldRef = refPtr;
-
-        if ((refPtr = ptr))
+        refPtr = ptr;
+        if (refPtr)
         {
             refPtr->addRef();
         }

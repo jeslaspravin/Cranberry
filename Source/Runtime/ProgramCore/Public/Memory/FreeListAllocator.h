@@ -232,7 +232,7 @@ private:
     // Finds first allocated block from startIdx
     bool findAllocatedBlock(SizeType startIdx, SizeType &outPageIdx, SizeType &outPageCount)
     {
-        SizeType foundAtOffset = pageUsage.size(), blockStartIdx = 0, pageIdx = startIdx;
+        SizeType blockStartIdx = 0, pageIdx = startIdx;
         bool bInsideBlock = false;
         for (; pageIdx != pageUsage.size(); pageIdx++)
         {
@@ -265,7 +265,7 @@ private:
     // Finds first available fragment block from startIdx
     bool findAvailableFragment(SizeType startIdx, SizeType &outPageIdx, SizeType &outPageCount)
     {
-        SizeType foundAtOffset = pageUsage.size(), blockStartIdx = 0, pageIdx = startIdx;
+        SizeType blockStartIdx = 0, pageIdx = startIdx;
         bool bInsideFragment = false;
         for (; pageIdx != pageUsage.size(); pageIdx++)
         {

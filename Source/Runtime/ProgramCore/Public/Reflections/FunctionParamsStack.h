@@ -175,14 +175,14 @@ public:
         }
     }
     template <template <typename RetType, typename... Params> typename FuncType, typename RetType, typename... Args, SizeT... Indices>
-    static RetType invoke(const FuncType<RetType, Args...> &func, uint8 *data, SizeT size, std::index_sequence<Indices...>)
+    static RetType invoke(const FuncType<RetType, Args...> &func, uint8 *data, SizeT /*size*/, std::index_sequence<Indices...>)
     {
         return func(popAnArg<Indices>(data)...);
     }
 
     template <bool bIsConst, typename ClassType, typename ObjectType, typename RetType, typename... Args, SizeT... Indices>
     static RetType
-        invoke(const ClassFunction<bIsConst, ClassType, RetType, Args...> &func, ObjectType &&object, uint8 *data, SizeT size, std::index_sequence<Indices...>)
+        invoke(const ClassFunction<bIsConst, ClassType, RetType, Args...> &func, ObjectType &&object, uint8 *data, SizeT /*size*/, std::index_sequence<Indices...>)
     {
         return func(object, popAnArg<Indices>(data)...);
     }
@@ -211,7 +211,7 @@ RetType invoke(const FuncType<RetType, Args...> &func, uint8 *data, SizeT byteSi
     );
 }
 template <template <typename RetType, typename... Params> typename FuncType, typename RetType>
-RetType invoke(const FuncType<RetType> &func, uint8 *data, SizeT byteSize)
+RetType invoke(const FuncType<RetType> &func, uint8 */*data*/, SizeT /*byteSize*/)
 {
     return func();
 }
@@ -227,7 +227,7 @@ RetType invoke(const ClassFunction<bIsConst, ClassType, RetType, Args...> &func,
     );
 }
 template <bool bIsConst, typename ClassType, typename ObjectType, typename RetType>
-RetType invoke(const ClassFunction<bIsConst, ClassType, RetType> &func, ObjectType &&object, uint8 *data, SizeT byteSize)
+RetType invoke(const ClassFunction<bIsConst, ClassType, RetType> &func, ObjectType &&object, uint8 * /*data*/, SizeT /*byteSize*/)
 {
     return func(std::forward<ObjectType>(object));
 }

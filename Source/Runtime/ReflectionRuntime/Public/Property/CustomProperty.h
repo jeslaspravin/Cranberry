@@ -19,7 +19,7 @@ class CustomProperty;
 
 // Helper class that can help with data access of advanced data types that do not have reflection
 // informations
-class PropertyDataRetriever
+class REFLECTIONRUNTIME_EXPORT PropertyDataRetriever
 {
 public:
     const CustomProperty *ownerProperty;
@@ -124,7 +124,7 @@ public:
 };
 
 // Iterate able data retriever
-class REFLECTIONRUNTIME_EXPORT IteratorElementWrapper : public RefCountable
+class IteratorElementWrapper : public RefCountable
 {
 public:
     virtual void *getElement() const = 0;
@@ -237,7 +237,7 @@ public:
         return false;
     }
 
-    bool removeAt(void *object, SizeT idx) const override { return false; }
+    bool removeAt(void * /*object*/, SizeT /*idx*/) const override { return false; }
 
     SizeT size(const void *object) const override { return reinterpret_cast<const MapType *>(object)->size(); }
     void clear(void *object) const override { reinterpret_cast<MapType *>(object)->clear(); }
@@ -285,8 +285,8 @@ public:
         const TypedProperty *kProp = static_cast<const TypedProperty *>(keyProp);
         const TypedProperty *vProp = static_cast<const TypedProperty *>(valueProp);
         pairAlignment = Math::max(kProp->typeInfo->alignment, vProp->typeInfo->alignment);
-        pairSize = secondOffset = Math::alignByUnsafe(kProp->typeInfo->size, vProp->typeInfo->alignment);
-        pairSize = Math::alignByUnsafe(pairSize + vProp->typeInfo->size, pairAlignment);
+        pairSize = secondOffset = uint32(Math::alignByUnsafe(kProp->typeInfo->size, vProp->typeInfo->alignment));
+        pairSize = uint32(Math::alignByUnsafe(pairSize + vProp->typeInfo->size, pairAlignment));
 
         return this;
     }
@@ -380,7 +380,7 @@ public:
         return IteratorElementWrapperRef(new IndexableContainerIteratorWrapperImpl<ContainerType>((ContainerType *)(object)));
     }
 
-    bool add(void *object, const void *data, bool bTryForced = false) const override
+    bool add(void *object, const void *data, bool /* bTryForced = false*/) const override
     {
         ContainerType *container = reinterpret_cast<ContainerType *>(object);
         container->emplace_back(*reinterpret_cast<const ContainerType::value_type *>(data));
@@ -425,8 +425,11 @@ public:
         {
             return (*reinterpret_cast<const ContainerType::value_type *>(lhs)) == (*reinterpret_cast<const ContainerType::value_type *>(rhs));
         }
-        alertAlwaysf(std::equality_comparable<ContainerType::value_type>, "LOGICAL ERROR: Type does not have equality check!");
-        return false;
+        else
+        {
+            alertAlwaysf(std::equality_comparable<ContainerType::value_type>, "LOGICAL ERROR: Type does not have equality check!");
+            return false;
+        }
     }
 };
 
@@ -440,7 +443,7 @@ public:
         return IteratorElementWrapperRef(new ContainerIteratorWrapperImpl<ContainerType>((ContainerType *)(object)));
     }
 
-    bool add(void *object, const void *data, bool bTryForced = false) const override
+    bool add(void *object, const void *data, bool /*bTryForced = false*/) const override
     {
         ContainerType *container = reinterpret_cast<ContainerType *>(object);
         auto result = container->insert(*reinterpret_cast<const ContainerType::value_type *>(data));
@@ -459,7 +462,7 @@ public:
         return false;
     }
 
-    bool removeAt(void *object, SizeT idx) const override { return false; }
+    bool removeAt(void * /*object*/, SizeT /*idx*/) const override { return false; }
 
     SizeT size(const void *object) const override { return reinterpret_cast<const ContainerType *>(object)->size(); }
     void clear(void *object) const override { reinterpret_cast<ContainerType *>(object)->clear(); }

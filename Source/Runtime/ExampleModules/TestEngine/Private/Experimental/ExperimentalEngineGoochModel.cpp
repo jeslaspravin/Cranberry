@@ -188,7 +188,7 @@ void SceneEntity::updateInstanceParams(ShaderParametersRef &shaderParams, uint32
 }
 
 void SceneEntity::updateMaterialParams(
-    ShaderParametersRef &shaderParams, const std::unordered_map<ImageResourceRef, uint32> &tex2dToBindlessIdx, uint32 batchIdx
+    ShaderParametersRef &shaderParams, const std::unordered_map<ImageResourceRef, uint32> & /*tex2dToBindlessIdx*/, uint32 batchIdx
 ) const
 {
     SingleColorMeshData singleColorMeshData;
@@ -481,7 +481,7 @@ void ExperimentalEngineGoochModel::createDrawCmdsBuffer(IGraphicsInstance *graph
 
     ENQUEUE_COMMAND(CreateAllEntityDrawCmds)
     (
-        [drawCmds, this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        [drawCmds, this](class IRenderCommandList *cmdList, IGraphicsInstance *, const GraphicsHelperAPI *)
         {
             cmdList->copyToBuffer(allEntityDrawCmds, 0, drawCmds.data(), uint32(allEntityDrawCmds->getResourceSize()));
         }
@@ -530,7 +530,7 @@ void ExperimentalEngineGoochModel::createScene()
             sceneFloor.transform.setTranslation(offset + Vector3D(-450, -450, 250));
             sceneData.emplace_back(sceneFloor);
 
-            for (uint32 i = 0; i < 5; ++i)
+            for (uint32 idx = 0; idx < 5; ++idx)
             {
                 SceneEntity entity;
                 entity.meshAsset = assets[std::rand() % assets.size()];
@@ -625,7 +625,7 @@ void ExperimentalEngineGoochModel::destroyScene()
 {
     ENQUEUE_COMMAND(DestroyScene)
     (
-        [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        [this](class IRenderCommandList *, IGraphicsInstance *, const GraphicsHelperAPI *)
         {
             sceneVertexBuffer.reset();
             sceneIndexBuffer.reset();
@@ -703,7 +703,7 @@ void ExperimentalEngineGoochModel::createShaderParameters(
     setupShaderParameterParams(graphicsInstance, graphicsHelper);
 }
 
-void ExperimentalEngineGoochModel::setupShaderParameterParams(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+void ExperimentalEngineGoochModel::setupShaderParameterParams(IGraphicsInstance *, const GraphicsHelperAPI *)
 {
     ViewData viewData;
     viewData.view = camera.viewMatrix();
@@ -1076,18 +1076,18 @@ void ExperimentalEngineGoochModel::updateTextRenderData(
             textVertsBuffer = graphicsHelper->createReadOnlyVertexBuffer(graphicsInstance, int32(sizeof(ImDrawVert)));
             textVertsBuffer->setResourceName(TCHAR("TestTextRenderVertices"));
         }
-        textVertsBuffer->setBufferCount(fontVerts.size());
+        textVertsBuffer->setBufferCount(uint32(fontVerts.size()));
         textVertsBuffer->init();
-        textIndexBuffer->setBufferCount((fontVerts.size() * 6) / 4);
+        textIndexBuffer->setBufferCount(uint32(fontVerts.size() * 6) / 4);
         textIndexBuffer->init();
     }
 
-    textVertCount = fontVerts.size();
+    textVertCount = uint32(fontVerts.size());
     textIdxCount = (textVertCount * 6) / 4;
     // Copying directly as we can use transform to move the vertices in place
     std::vector<ImDrawVert> verts(textVertCount);
     std::vector<uint32> idxs(textIdxCount);
-    uint32 endIdx = verts.size() / 4;
+    uint32 endIdx = uint32(verts.size() / 4);
     for (uint32 idx = 0; idx < endIdx; ++idx)
     {
         uint32 vertIdx = idx * 4;
@@ -1112,7 +1112,7 @@ void ExperimentalEngineGoochModel::updateTextRenderData(
     cmdList->copyToBuffer(copies);
 
     Int2D textSize = textBB.size();
-    Vector2D scale = 2.0f / Vector2D(textSize.x, textSize.y);
+    Vector2D scale = 2.0f / Vector2D(float(textSize.x), float(textSize.y));
     Vector2D translate{ -1.0f - Vector2D(textBB.minBound) * scale };
     // Now offset transforms so that text will be centered in middle of screen
     textBB += (Int2D(ApplicationSettings::screenSize.get()) - textSize) / 2;
@@ -1229,7 +1229,11 @@ void ExperimentalEngineGoochModel::onStartUp()
                                            boxes.data() + 5, boxes.data() + 6, boxes.data() + 7, boxes.data() + 8 };
     std::vector<PackedRectsBin<ShortSizeBox2D>> packedbins;
     ShortSize2D binSize{ 256 };
-    bool bValue = MathGeom::packRectangles(packedbins, binSize, boxPtrs);
+    bool bPacked = MathGeom::packRectangles(packedbins, binSize, boxPtrs);
+    if (!bPacked)
+    {
+        LOG_ERROR("ExperimentalEngineGoochModel", "Failed packing rectangles!");
+    }
 
     tempTest();
 }
@@ -1253,7 +1257,7 @@ void ExperimentalEngineGoochModel::onQuit()
 {
     ENQUEUE_COMMAND(EngineQuit)
     (
-        [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        [this](class IRenderCommandList *cmdList, IGraphicsInstance *, const GraphicsHelperAPI *)
         {
             cmdList->flushAllcommands();
             renderQuit();
@@ -1581,22 +1585,26 @@ void ExperimentalEngineGoochModel::tickEngine()
 
     if (!application->windowManager->getMainWindow()->isMinimized())
     {
-        ENQUEUE_COMMAND_NODEBUG(
-            TickFrame, { frameRender(cmdList, graphicsInstance, graphicsHelper); }, this
+        ENQUEUE_COMMAND(TickFrame)
+        (
+            [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+            {
+                frameRender(cmdList, graphicsInstance, graphicsHelper);
+            }
         );
     }
 
     if (renderSize != ApplicationSettings::screenSize.get())
     {
-        ENQUEUE_COMMAND_NODEBUG(
-            WritingDescs,
+        ENQUEUE_COMMAND(WritingDescs)
+        (
+            [this](class IRenderCommandList *, IGraphicsInstance *, const GraphicsHelperAPI *)
             {
                 GBuffers::onScreenResized(renderSize);
                 resizeLightingRts(renderSize);
                 reupdateTextureParamsOnResize();
                 ApplicationSettings::screenSize.set(renderSize);
-            },
-            this
+            }
         );
     }
 

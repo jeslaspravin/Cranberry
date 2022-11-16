@@ -132,7 +132,7 @@ protected:
     ShaderSetParametersLayout(const ShaderResource *shaderResource, uint32 setID);
 
     // Bind buffer info so it can be filled with offset, stride and size informations
-    virtual void bindBufferParamInfo(std::map<StringID, struct ShaderBufferDescriptorType *> &bindingBuffers) const {};
+    virtual void bindBufferParamInfo(std::map<StringID, struct ShaderBufferDescriptorType *> &) const {};
 
 public:
     /* GraphicsResource overrides */
@@ -171,7 +171,7 @@ public:
     virtual void release() override;
     /* Override ends */
 
-    virtual bool hasBindless(uint32 setIdx) const { return false; }
+    virtual bool hasBindless(uint32) const { return false; }
 
     const ShaderDescriptorParamType *parameterDescription(uint32 &outSetIdx, StringID paramName) const;
     const ShaderDescriptorParamType *parameterDescription(StringID paramName) const;

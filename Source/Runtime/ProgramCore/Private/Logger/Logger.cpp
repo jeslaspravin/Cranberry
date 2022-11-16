@@ -218,12 +218,11 @@ bool LoggerImpl::openNewLogFile()
     return logFile.openOrCreate();
 }
 
-Logger::LoggerAutoShutdown Logger::autoShutdown;
-
 //////////////////////////////////////////////////////////////////////////
 /// Logger
 //////////////////////////////////////////////////////////////////////////
 
+Logger::LoggerAutoShutdown Logger::autoShutdown;
 LoggerImpl *Logger::loggerImpl = nullptr;
 
 NODISCARD constexpr const AChar *filterFileName(const AChar *fileName) noexcept
@@ -275,6 +274,8 @@ void Logger::verboseInternal(const SourceLocationType srcLoc, const TChar *categ
 #endif // LOG_TO_CONSOLE
     }
 
+#else // DEV_BUILD
+    CompilerHacks::ignoreUnused(srcLoc, category, message);
 #endif // DEV_BUILD
 }
 #endif // ENABLE_VERBOSE_LOG
@@ -320,6 +321,8 @@ void Logger::debugInternal(const SourceLocationType srcLoc, const TChar *categor
 #endif // LOG_TO_CONSOLE
     }
 
+#else  // DEV_BUILD
+    CompilerHacks::ignoreUnused(srcLoc, category, message);
 #endif // DEV_BUILD
 }
 

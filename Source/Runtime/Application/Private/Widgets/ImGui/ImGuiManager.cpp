@@ -240,7 +240,7 @@ void ImGuiManager::release()
     DestroyContext(context);
 }
 
-void ImGuiManager::setClipboard(void *userData, const char *text) { PlatformFunctions::setClipboard(UTF8_TO_TCHAR(text)); }
+void ImGuiManager::setClipboard(void */*userData*/, const char *text) { PlatformFunctions::setClipboard(UTF8_TO_TCHAR(text)); }
 
 const char *ImGuiManager::getClipboard(void *userData)
 {
@@ -452,19 +452,19 @@ void ImGuiManager::updateRenderResources(
         uint32 idxOffset = 0;
         for (int32 n = 0; n < drawData->CmdListsCount; ++n)
         {
-            const ImDrawList *cmdList = drawData->CmdLists[n];
+            const ImDrawList *drawCmdList = drawData->CmdLists[n];
             BatchCopyBufferData &vertCpy = bufferCopies.emplace_back();
             vertCpy.dst = vertexBuffer;
             vertCpy.dstOffset = vertOffset;
-            vertCpy.dataToCopy = cmdList->VtxBuffer.Data;
-            vertCpy.size = cmdList->VtxBuffer.Size * vertexBuffer->bufferStride();
+            vertCpy.dataToCopy = drawCmdList->VtxBuffer.Data;
+            vertCpy.size = drawCmdList->VtxBuffer.Size * vertexBuffer->bufferStride();
             vertOffset += vertCpy.size;
 
             BatchCopyBufferData &idxCpy = bufferCopies.emplace_back();
             idxCpy.dst = idxBuffer;
             idxCpy.dstOffset = idxOffset;
-            idxCpy.dataToCopy = cmdList->IdxBuffer.Data;
-            idxCpy.size = cmdList->IdxBuffer.Size * idxBuffer->bufferStride();
+            idxCpy.dataToCopy = drawCmdList->IdxBuffer.Data;
+            idxCpy.size = drawCmdList->IdxBuffer.Size * idxBuffer->bufferStride();
             idxOffset += idxCpy.size;
         }
         cmdList->copyToBuffer(bufferCopies);
@@ -535,7 +535,7 @@ void ImGuiManager::releaseRendering()
 {
     ENQUEUE_COMMAND(ReleaseImGui)
     (
-        [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        [this](class IRenderCommandList */*cmdList*/, IGraphicsInstance */*graphicsInstance*/, const GraphicsHelperAPI */*graphicsHelper*/)
         {
             if (textureAtlas.isValid())
             {
@@ -809,7 +809,7 @@ bool ImGuiManager::inputKey(Keys::StateKeyType key, Keys::StateInfoType state, c
     return bCaptureInput;
 }
 
-bool ImGuiManager::analogKey(AnalogStates::StateKeyType key, AnalogStates::StateInfoType state, const InputSystem *inputSystem)
+bool ImGuiManager::analogKey(AnalogStates::StateKeyType key, AnalogStates::StateInfoType state, const InputSystem */*inputSystem*/)
 {
     setCurrentContext();
     ImGuiIO &io = GetIO();
@@ -831,7 +831,7 @@ bool ImGuiManager::analogKey(AnalogStates::StateKeyType key, AnalogStates::State
     return io.WantCaptureMouse;
 }
 
-void ImGuiManager::updateMouse(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem)
+void ImGuiManager::updateMouse(Short2D /*absPos*/, Short2D widgetRelPos, const InputSystem */*inputSystem*/)
 {
     setCurrentContext();
     ImGuiIO &io = GetIO();

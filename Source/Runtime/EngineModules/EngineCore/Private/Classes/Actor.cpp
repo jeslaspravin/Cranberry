@@ -771,7 +771,6 @@ void ActorPrefab::createComponentOverride(ComponentOverrideInfo &overrideInfo, b
 void ActorPrefab::clearComponentOverride(ComponentOverrideInfo &overrideInfo, bool bReplaceReferences)
 {
     ObjectTemplate *revertToCompTemplate = getTemplateToOverride(overrideInfo);
-    ActorPrefab *revertToCompPrefab = prefabFromCompTemplate(revertToCompTemplate);
     TransformComponent *revertToTfComponent = revertToCompTemplate->getTemplateAs<TransformComponent>();
 
     if (revertToTfComponent)
@@ -1045,15 +1044,15 @@ cbe::Actor *Actor::getActorAttachedTo() const
 
 void Actor::detachActor() { rootComponent->detachComponent(); }
 
-cbe::Object *Actor::componentFromClass(CBEClass clazz, const TChar *componentName, EObjectFlags flags)
+cbe::Object *Actor::componentFromClass(CBEClass clazz, const TChar *componentName, EObjectFlags componentFlags)
 {
-    Object *comp = create(clazz, componentName, this, flags);
+    Object *comp = create(clazz, componentName, this, componentFlags);
     return comp;
 }
 
-Object *Actor::componentFromTemplate(ObjectTemplate *objTemplate, const TChar *componentName, EObjectFlags flags)
+Object *Actor::componentFromTemplate(ObjectTemplate *objTemplate, const TChar *componentName, EObjectFlags componentFlags)
 {
-    Object *comp = create(objTemplate, componentName, this, flags);
+    Object *comp = create(objTemplate, componentName, this, componentFlags);
     return comp;
 }
 

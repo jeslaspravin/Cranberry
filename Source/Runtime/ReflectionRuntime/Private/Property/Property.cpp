@@ -15,6 +15,8 @@
 #include "ReflectionRuntimeModule.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 #include "Types/TypesInfo.h"
+#include "Types/PropertyTypes.h"
+#include "Types/FunctionTypes.h"
 
 BaseProperty::BaseProperty(const StringID &propNameID, const TChar *propName, EPropertyType propType)
     : name(propNameID)

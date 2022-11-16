@@ -95,7 +95,7 @@ struct TypeSizeAndAlignment<T>
     static uint32 alignOf() { return 0; }
 };
 template <typename Type>
-FORCE_INLINE const ReflectTypeInfo *typeInfoFrom()
+const ReflectTypeInfo *typeInfoFrom()
 {
     // Pointer can be const reference cannot be const
     using InnerType
@@ -132,7 +132,7 @@ FORCE_INLINE std::vector<const ReflectTypeInfo *> typeInfoListFrom()
     << (BIT_SET(ti.qualifiers, EReflectTypeQualifiers::Type::QualifierEnum) ? TCHAR(" " #QualifierEnum) : TCHAR(""))
 
 // Logger overrides
-FORCE_INLINE OutputStream &operator<<(OutputStream &stream, const ReflectTypeInfo &ti)
+inline OutputStream &operator<<(OutputStream &stream, const ReflectTypeInfo &ti)
 {
     stream << TCHAR("Type info[0x") << std::hex << &ti << std::dec << TCHAR("]");
     stream << TCHAR("[Name:") << ti.typeID.name() << TCHAR(", ");

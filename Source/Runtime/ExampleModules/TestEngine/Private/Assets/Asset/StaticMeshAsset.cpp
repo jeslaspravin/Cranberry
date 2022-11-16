@@ -54,7 +54,7 @@ void StaticMeshAsset::clearAsset()
 {
     ENQUEUE_COMMAND(ClearSMVertices)
     (
-        [this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        [this](IRenderCommandList *, IGraphicsInstance *, const GraphicsHelperAPI *)
         {
             vertexBuffer->release();
             vertexBuffer.reset();
@@ -66,7 +66,7 @@ void StaticMeshAsset::clearAsset()
 #if DEV_BUILD
     ENQUEUE_COMMAND(InitializeSMTbnVertices)
     (
-        [this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        [this](IRenderCommandList *, IGraphicsInstance *, const GraphicsHelperAPI *)
         {
             tbnVertexBuffer->release();
             tbnVertexBuffer.reset();

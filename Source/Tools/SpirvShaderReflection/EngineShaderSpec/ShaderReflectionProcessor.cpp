@@ -109,7 +109,6 @@ uint32_t ShaderReflectionProcessor::engineStage(spv::ExecutionModel spirvStage)
         exit(1);
         break;
     }
-    return 0;
 }
 
 uint32_t ShaderReflectionProcessor::pipelineBindPoint(spv::ExecutionModel spirvStage)
@@ -130,7 +129,6 @@ uint32_t ShaderReflectionProcessor::pipelineBindPoint(spv::ExecutionModel spirvS
         exit(1);
         break;
     }
-    return VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_MAX_ENUM;
 }
 
 uint32_t ShaderReflectionProcessor::pipelineStageFlag(spv::ExecutionModel spirvStage)
@@ -155,7 +153,6 @@ uint32_t ShaderReflectionProcessor::pipelineStageFlag(spv::ExecutionModel spirvS
         exit(1);
         break;
     }
-    return 0;
 }
 
 uint32_t ShaderReflectionProcessor::shaderStageFlag(spv::ExecutionModel spirvStage)
@@ -180,7 +177,6 @@ uint32_t ShaderReflectionProcessor::shaderStageFlag(spv::ExecutionModel spirvSta
         exit(1);
         break;
     }
-    return 0;
 }
 
 uint8_t ShaderReflectionProcessor::readWriteQualifier(bool read, bool write)
@@ -507,6 +503,12 @@ bool validateSpecializationConst(const SPIRV_CROSS_NAMESPACE::SPIRConstant &cons
     if (getReflectPrimitiveType(typeRef.basetype) == RelectPrimitive_invalid)
     {
         printf("ERROR: [%s] unsupported specialization constant primitive type", __func__);
+        return false;
+    }
+
+    if (constantRef.constant_is_null())
+    {
+        printf("ERROR: [%s] spec constant is null!", __func__);
         return false;
     }
     return true;
@@ -1423,7 +1425,7 @@ void PipelineShaderStageProcessor::processDescriptorsSets(const std::vector<std:
         // Input attachments
         for (const Resource &resource : resources.subpass_inputs)
         {
-            const SPIRType &type = shaderStage->compiledData->get_type(resource.type_id);
+            //const SPIRType &type = shaderStage->compiledData->get_type(resource.type_id);
             const uint32_t set = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationDescriptorSet);
             const uint32_t binding = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationBinding);
             descriptorSetsBinding[set].insert(binding);

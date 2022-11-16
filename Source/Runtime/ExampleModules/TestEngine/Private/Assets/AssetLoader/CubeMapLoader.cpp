@@ -23,6 +23,8 @@ class ICubeMapLoader
 public:
     virtual bool isLoadSuccess() const = 0;
     virtual void fillCubeMapAsset(EnvironmentMapAsset *envMaps) const = 0;
+
+    virtual ~ICubeMapLoader() = default;
 };
 
 class HDRLoader : public ICubeMapLoader

@@ -494,7 +494,16 @@ bool BoundingVolume<StorageType>::raycast(
                 {
                     resultIdxs.emplace_back(objIdx);
                     resultIdxAdded[objIdx] = true;
+
+                    if (bExitOnHit)
+                    {
+                        break;
+                    }
                 }
+            }
+            if (bExitOnHit && !resultIdxs.empty())
+            {
+                break;
             }
 
             Vector3D cellCenter = volumeGrid.location(nextCellIdx);

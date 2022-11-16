@@ -138,27 +138,27 @@ public:
     const String &getFullPath() const;
 
     // Direct OS specific flags maps directly to OS bits
-    void setAdvancedFlags(const uint64 &flags) { advancedFlags = flags; }
+    void setAdvancedFlags(uint64 flags) { advancedFlags = flags; }
     // Sharing mode for other handles
-    void setSharingMode(const uint8 &sharingFlags) { sharingMode = sharingFlags; }
+    void setSharingMode(uint8 sharingFlags) { sharingMode = sharingFlags; }
     // How to open the file (Read or write or both)
-    void setFileFlags(const uint8 &flags);
+    void setFileFlags(uint8 flags);
     // File specific attribute(Encodings and such)
-    void setAttributes(const uint32 &attribs) { attributes = attribs; }
+    void setAttributes(uint32 attribs) { attributes = attribs; }
     // File on open or creation actions
-    void setCreationAction(const uint8 &creationAction);
+    void setCreationAction(uint8 creationAction);
 
-    void addAdvancedFlags(const uint64 &flags);
-    void removeAdvancedFlags(const uint64 &flags);
+    void addAdvancedFlags(uint64 flags);
+    void removeAdvancedFlags(uint64 flags);
 
-    void addSharingFlags(const uint8 &sharingFlags);
-    void removeSharingFlags(const uint8 &sharingFlags);
+    void addSharingFlags(uint8 sharingFlags);
+    void removeSharingFlags(uint8 sharingFlags);
 
-    void addFileFlags(const uint8 &flags);
-    void removeFileFlags(const uint8 &flags);
+    void addFileFlags(uint8 flags);
+    void removeFileFlags(uint8 flags);
 
-    void addAttributes(const uint32 &attribs);
-    void removeAttributes(const uint32 &attribs);
+    void addAttributes(uint32 attribs);
+    void removeAttributes(uint32 attribs);
 
     // Operations after file handle is created
 
@@ -169,12 +169,12 @@ public:
     virtual uint64 filePointer() const = 0;
     virtual void seekEnd() const = 0;
     virtual void seekBegin() const = 0;
-    virtual void seek(const int64 &pointer) const = 0;
-    virtual void offsetCursor(const int64 &offset) const = 0;
+    virtual void seek(int64 pointer) const = 0;
+    virtual void offsetCursor(int64 offset) const = 0;
 
-    virtual bool setFileSize(const int64 &newSize) const = 0;
-    virtual void read(std::vector<uint8> &readTo, const uint32 &bytesToRead = (~0u)) const = 0;
-    virtual void read(uint8 *readTo, const uint32 &bytesToRead) const = 0;
+    virtual bool setFileSize(int64 newSize) const = 0;
+    virtual void read(std::vector<uint8> &readTo, uint32 bytesToRead = (~0u)) const = 0;
+    virtual void read(uint8 *readTo, uint32 bytesToRead) const = 0;
     virtual void write(const ArrayView<const uint8> &writeBytes) const = 0;
 
     virtual bool deleteFile() = 0;

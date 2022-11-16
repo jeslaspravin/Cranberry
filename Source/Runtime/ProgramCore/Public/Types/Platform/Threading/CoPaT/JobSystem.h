@@ -136,13 +136,13 @@ class SpecialThreadsPool<0>
 public:
     constexpr static const u32 COUNT = 0;
 
-    void initialize(JobSystem *jobSystem) {}
+    void initialize(JobSystem *) {}
     void shutdown() {}
 
-    void enqueueJob(std::coroutine_handle<> coro, EJobThreadType enqueueToThread, SpecialQHazardToken *fromThreadTokens) {}
+    void enqueueJob(std::coroutine_handle<>, EJobThreadType, SpecialQHazardToken *) {}
 
-    SpecialThreadQueueType *getThreadJobsQueue(u32 idx) { return nullptr; }
-    SpecialJobReceivedEvent *getJobEvent(u32 idx) { return nullptr; }
+    SpecialThreadQueueType *getThreadJobsQueue(u32) { return nullptr; }
+    SpecialJobReceivedEvent *getJobEvent(u32) { return nullptr; }
     void onSpecialThreadExit() {}
 
     SpecialQHazardToken *allocateEnqTokens() { return nullptr; }

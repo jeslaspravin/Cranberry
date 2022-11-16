@@ -43,7 +43,7 @@ void printDiagnostics(CXDiagnostic diagnostic, uint32 formatOptions)
 
     CXStringRef diagnosticStr(new CXStringWrapper(clang_formatDiagnostic(diagnostic, formatOptions)));
     LOG_WARN("Diagnostics", "%s", diagnosticStr);
-    for (int32 i = 0; i < childDiagsNum; ++i)
+    for (uint32 i = 0; i < childDiagsNum; ++i)
     {
         auto childDiagnostic = clang_getDiagnosticInSet(childDiags, i);
         printDiagnostics(childDiagnostic, formatOptions);
@@ -189,7 +189,7 @@ void printVariableTypeInfo(CXCursor cursor, SourceParsedInfo &srcParsedInfo, CXT
 
     clang_visitChildren(
         innerTypeCursor,
-        [](CXCursor c, CXCursor p, CXClientData clientData)
+        [](CXCursor c, CXCursor /*p*/, CXClientData clientData)
         {
             CXCursorKind cursorKind = clang_getCursorKind(c);
             CXStringRef cursorName(new CXStringWrapper(clang_getCursorSpelling(c)));
@@ -225,7 +225,7 @@ void printFunctionSignature(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
     // clang_getNumArgTypes to find total number of non template arguments
 
     CXType funcRetType = clang_getCursorResultType(cursor);
-    int32 paramsCount = clang_Cursor_getNumArguments(cursor);
+    uint32 paramsCount = clang_Cursor_getNumArguments(cursor);
     std::vector<CXCursor> paramsCursor(paramsCount);
     for (uint32 i = 0; i < paramsCount; ++i)
     {
@@ -813,7 +813,7 @@ void visitNameSpace(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
 
     clang_visitChildren(
         cursor,
-        [](CXCursor c, CXCursor p, CXClientData clientData)
+        [](CXCursor c, CXCursor /*p*/, CXClientData clientData)
         {
             CppReflectionParser::visitTUCusor(c, *(SourceParsedInfo *)(clientData));
             return CXChildVisit_Continue;
@@ -825,7 +825,7 @@ void visitNameSpace(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
     LOG("CppReflectionParser", "Namespace %s ends", namespaceName);
 }
 
-void visitMacroDefinition(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
+void visitMacroDefinition(CXCursor cursor, SourceParsedInfo &/*srcParsedInfo*/)
 {
     // Get cursor location and TU to get token at this location
     CXSourceLocation cursorSrcLoc = clang_getCursorLocation(cursor);
@@ -840,7 +840,7 @@ void visitMacroDefinition(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
     clang_disposeTokens(tu, token, 1);
 }
 
-void visitMacroExpansion(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
+void visitMacroExpansion(CXCursor cursor, SourceParsedInfo &/*srcParsedInfo*/)
 {
     // Get cursor location and TU to get token at this location
     CXSourceLocation cursorSrcLoc = clang_getCursorLocation(cursor);
@@ -904,7 +904,7 @@ void visitClasses(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
 
     clang_visitChildren(
         cursor,
-        [](CXCursor c, CXCursor p, CXClientData clientData)
+        [](CXCursor c, CXCursor /*p*/, CXClientData clientData)
         {
             CppReflectionParser::visitClassMember(c, *(SourceParsedInfo *)(clientData));
             return CXChildVisit_Continue;
@@ -1124,7 +1124,7 @@ void visitStructs(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
 
     clang_visitChildren(
         cursor,
-        [](CXCursor c, CXCursor p, CXClientData clientData)
+        [](CXCursor c, CXCursor /*p*/, CXClientData clientData)
         {
             CppReflectionParser::visitStructMember(c, *(SourceParsedInfo *)(clientData));
             return CXChildVisit_Continue;
@@ -1540,7 +1540,7 @@ void testLibClangParsing(String srcDir) noexcept
     CppReflectionParser::SourceParsedInfo parsedInfo;
     clang_visitChildren(
         cursor,
-        [](CXCursor c, CXCursor parent, CXClientData client_data)
+        [](CXCursor c, CXCursor /*parent*/, CXClientData client_data)
         {
             // If this symbol is from this Source file?
             // CXSourceLocation is not need to be freed
@@ -1578,7 +1578,7 @@ String TestDataProperties::staticVal = TCHAR("Hello World");
 String globalVal;
 int32 globalMod(int32 &reminder, int32 dividend, int32 divisor)
 {
-    int32 quotient = Math::floor(dividend / (float)divisor);
+    int32 quotient = int32(Math::floor(dividend / (float)divisor));
     reminder = dividend - (quotient * divisor);
     return quotient;
 }

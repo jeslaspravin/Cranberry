@@ -217,7 +217,7 @@ public:
     GlobalFunctionWrapper(const ReflectTypeInfo *retType, std::vector<const ReflectTypeInfo *> &&argsType)
         : BaseFunctionWrapper(retType, std::move(argsType))
     {}
-    GlobalFunctionWrapper(bool modifiesClass, const ReflectTypeInfo *retType, const std::vector<const ReflectTypeInfo *> &argsType)
+    GlobalFunctionWrapper(bool, const ReflectTypeInfo *retType, const std::vector<const ReflectTypeInfo *> &argsType)
         : BaseFunctionWrapper(retType, argsType)
     {}
 

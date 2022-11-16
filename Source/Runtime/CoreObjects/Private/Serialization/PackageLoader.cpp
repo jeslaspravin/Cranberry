@@ -32,7 +32,7 @@ struct LinkObjPtrsFieldVisitable
 {
     // Ignore fundamental and special types, we need none const custom types or pointers
     template <typename Type>
-    static void visit(Type *val, const PropertyInfo &propInfo, void *userData)
+    static void visit(Type *, const PropertyInfo &, void *)
     {}
     static void visit(void *val, const PropertyInfo &propInfo, void *userData)
     {
@@ -91,7 +91,7 @@ struct LinkObjPtrsFieldVisitable
         }
     }
     // Ignoring const types
-    static void visit(const void *val, const PropertyInfo &propInfo, void *userData) {}
+    static void visit(const void *, const PropertyInfo &, void *) {}
     static void visit(void **ptr, const PropertyInfo &propInfo, void *userData)
     {
         const TypedProperty *prop = PropertyHelper::getUnqualified(propInfo.thisProperty);
@@ -327,18 +327,18 @@ ObjectArchive &PackageLoader::serialize(cbe::Object *&obj)
 
 void PackageLoader::prepareLoader()
 {
-    ArrayArchiveStream archiveStream;
+    ArrayArchiveStream localStream;
     ArrayArchiveStream *archiveStreamPtr = inStream;
     if (inStream == nullptr)
     {
         std::vector<uint8> fileData;
         bool bRead = FileHelper::readBytes(fileData, packageFilePath);
         fatalAssertf(bRead, "Package %s at %s cannot be read!", package->getName(), packageFilePath);
-        archiveStream.setBuffer(fileData);
-        archiveStreamPtr = &archiveStream;
+        localStream.setBuffer(fileData);
+        archiveStreamPtr = &localStream;
     }
 
-    packageArchive.setStream(&archiveStream);
+    packageArchive.setStream(&localStream);
     // Set custom versions to this archive to ensure custom versions are available in ObjectArchive
     for (const std::pair<const uint32, uint32> &customVersion : packageArchive.getCustomVersions())
     {
@@ -380,7 +380,7 @@ void PackageLoader::prepareLoader()
 
 EPackageLoadSaveResult PackageLoader::load()
 {
-    ArrayArchiveStream archiveStream;
+    ArrayArchiveStream localStream;
     ArrayArchiveStream *archiveStreamPtr = inStream;
     if (inStream == nullptr)
     {
@@ -391,8 +391,8 @@ EPackageLoadSaveResult PackageLoader::load()
             alertAlwaysf(bRead, "Package %s at %s cannot be read!", package->getName(), packageFilePath);
             return EPackageLoadSaveResult::IOError;
         }
-        archiveStream.setBuffer(fileData);
-        archiveStreamPtr = &archiveStream;
+        localStream.setBuffer(fileData);
+        archiveStreamPtr = &localStream;
     }
 
     packageArchive.setStream(archiveStreamPtr);

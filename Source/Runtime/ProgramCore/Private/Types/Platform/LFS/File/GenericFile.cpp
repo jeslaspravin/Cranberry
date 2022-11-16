@@ -127,7 +127,7 @@ String GenericFile::getDirectoryName() const
 
 const String &GenericFile::getFullPath() const { return fullPath; }
 
-void GenericFile::setFileFlags(const uint8 &flags)
+void GenericFile::setFileFlags(uint8 flags)
 {
     uint8 accessFlags = flags & FileFlags::ACCESS_FLAGS;
     uint8 actionFlags = flags & FileFlags::OPEN_ACTION_FLAGS;
@@ -140,7 +140,7 @@ void GenericFile::setFileFlags(const uint8 &flags)
     fileFlags = accessFlags | actionFlags;
 }
 
-void GenericFile::setCreationAction(const uint8 &creationAction)
+void GenericFile::setCreationAction(uint8 creationAction)
 {
     uint8 actionFlags = creationAction & FileFlags::OPEN_ACTION_FLAGS;
 
@@ -156,15 +156,15 @@ void GenericFile::setCreationAction(const uint8 &creationAction)
     fileFlags |= actionFlags;
 }
 
-void GenericFile::addAdvancedFlags(const uint64 &flags) { advancedFlags |= flags; }
+void GenericFile::addAdvancedFlags(uint64 flags) { advancedFlags |= flags; }
 
-void GenericFile::removeAdvancedFlags(const uint64 &flags) { advancedFlags &= ~flags; }
+void GenericFile::removeAdvancedFlags(uint64 flags) { advancedFlags &= ~flags; }
 
-void GenericFile::addSharingFlags(const uint8 &sharingFlags) { sharingMode |= sharingFlags; }
+void GenericFile::addSharingFlags(uint8 sharingFlags) { sharingMode |= sharingFlags; }
 
-void GenericFile::removeSharingFlags(const uint8 &sharingFlags) { sharingMode &= ~sharingFlags; }
+void GenericFile::removeSharingFlags(uint8 sharingFlags) { sharingMode &= ~sharingFlags; }
 
-void GenericFile::addFileFlags(const uint8 &flags)
+void GenericFile::addFileFlags(uint8 flags)
 {
     uint8 accessFlags = flags & FileFlags::ACCESS_FLAGS;
     uint8 actionFlags = flags & FileFlags::OPEN_ACTION_FLAGS;
@@ -181,8 +181,8 @@ void GenericFile::addFileFlags(const uint8 &flags)
     fileFlags |= accessFlags | actionFlags;
 }
 
-void GenericFile::removeFileFlags(const uint8 &flags) { fileFlags &= ~flags; }
+void GenericFile::removeFileFlags(uint8 flags) { fileFlags &= ~flags; }
 
-void GenericFile::addAttributes(const uint32 &attribs) { attributes |= attribs; }
+void GenericFile::addAttributes(uint32 attribs) { attributes |= attribs; }
 
-void GenericFile::removeAttributes(const uint32 &attribs) { attributes &= ~attribs; }
+void GenericFile::removeAttributes(uint32 attribs) { attributes &= ~attribs; }

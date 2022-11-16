@@ -19,3 +19,17 @@ uint32 BerrySecond::value;
 TestNS::BerryObject *BerrySecond::value1;
 
 const TestNS::BerryObject *BerrySecond::value2;
+
+void BerrySecond::testThisFunction(std::pair<uint32, TestNS::BerryObject *> &, const std::unordered_map<uint64, BerrySecondData *> &, uint32) {}
+
+void BerrySecond::testConstFunction(
+    std::vector<std::pair<uint32, TestNS::BerryObject *>> &, const std::unordered_map<uint64, TestNS::BerryObject *> &, uint32
+) const
+{}
+
+std::set<std::pair<uint32, TestNS::BerryObject *>> BerrySecond::testStaticFunc(
+    std::vector<std::pair<uint32, TestNS::BerryObject *>> *&, const std::unordered_map<uint64, TestNS::BerryObject *> &, uint32
+)
+{
+    return {};
+}

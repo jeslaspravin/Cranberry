@@ -12,7 +12,7 @@
 #include "Widgets/WgContentsImGuiLayer.h"
 #include "Widgets/ImGui/ImGuiLib/imgui.h"
 
-void WgContentsImGuiLayer::draw(ImGuiDrawInterface *drawInterface)
+void WgContentsImGuiLayer::draw(ImGuiDrawInterface */*drawInterface*/)
 {
     if (ImGui::Begin("Contents"))
     {}

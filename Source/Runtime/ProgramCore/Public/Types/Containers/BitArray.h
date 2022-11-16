@@ -231,7 +231,7 @@ public:
         else
         {
             // Clear extra bits
-            for (uint32 idx = arraySizeForBits(newSize); idx < bits.size(); ++idx)
+            for (ArraySizeType idx = arraySizeForBits(newSize); idx < bits.size(); ++idx)
             {
                 bits[idx] = 0;
             }

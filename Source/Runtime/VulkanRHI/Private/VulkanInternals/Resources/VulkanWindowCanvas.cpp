@@ -124,7 +124,6 @@ void VulkanWindowCanvas::release()
 uint32 VulkanWindowCanvas::requestNextImage(SemaphoreRef *waitOnSemaphore, FenceRef *waitOnFence /*= nullptr*/)
 {
     currentSyncIdx = ++currentSyncIdx % swapchainImages.size();
-    uint32 nextSwapchainIdx = 0;
 
     if (fences[currentSyncIdx]->isSignaled())
     {
@@ -134,8 +133,9 @@ uint32 VulkanWindowCanvas::requestNextImage(SemaphoreRef *waitOnSemaphore, Fence
     SemaphoreRef *semaphorePtr = (waitOnSemaphore ? &semaphores[currentSyncIdx] : nullptr);
     FenceRef *fencePtr = ((waitOnFence || !waitOnSemaphore) ? &fences[currentSyncIdx] : nullptr);
 
-    nextSwapchainIdx
+    int32 nextSwapchainIdx
         = VulkanGraphicsHelper::getNextSwapchainImage(IVulkanRHIModule::get()->getGraphicsInstance(), swapchainPtr, semaphorePtr, fencePtr);
+    fatalAssertf(nextSwapchainIdx >= 0, "Acquiring next swapchain image failed!");
 
     if (waitOnSemaphore || waitOnFence)
     {
@@ -160,8 +160,8 @@ uint32 VulkanWindowCanvas::requestNextImage(SemaphoreRef *waitOnSemaphore, Fence
         currentFence = fences[currentSyncIdx];
         currentSemaphore.reset();
     }
-    currentSwapchainIdx = nextSwapchainIdx;
-    return nextSwapchainIdx;
+    currentSwapchainIdx = uint32(nextSwapchainIdx);
+    return currentSwapchainIdx;
 }
 
 EPixelDataFormat::Type VulkanWindowCanvas::windowCanvasFormat() const

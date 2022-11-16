@@ -89,7 +89,7 @@ void WindowsAppWindow::updateWindow()
     };
 
     uint32 ignoreFilterStart = 0;
-    for (const uint32 &msgFilter : IGNORED_MSGS)
+    for (uint32 msgFilter : IGNORED_MSGS)
     {
         peekMsgsLambda(ignoreFilterStart, msgFilter - 1, PM_REMOVE);
         ignoreFilterStart = msgFilter + 1;

@@ -76,11 +76,11 @@ std::unordered_map<FramebufferFormat, std::vector<GbufferWrapper>> &GBuffers::gB
     return GBUFFERS;
 }
 
-void GBuffers::onSampleCountChanged(uint32 oldValue, uint32 newValue)
+void GBuffers::onSampleCountChanged(uint32 /*oldValue*/, uint32 newValue)
 {
     ENQUEUE_COMMAND(GBufferSampleCountChange)
     (
-        [newValue](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        [newValue](class IRenderCommandList *cmdList, IGraphicsInstance *, const GraphicsHelperAPI *)
         {
             cmdList->flushAllcommands();
             RenderManager *renderManager = IRenderInterfaceModule::get()->getRenderManager();
@@ -130,7 +130,7 @@ void GBuffers::onScreenResized(Size2D newSize)
 {
     ENQUEUE_COMMAND(GBufferResize)
     (
-        [newSize](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        [newSize](class IRenderCommandList *cmdList, IGraphicsInstance *, const GraphicsHelperAPI *)
         {
             cmdList->flushAllcommands();
             RenderManager *renderManager = IRenderInterfaceModule::get()->getRenderManager();
@@ -154,7 +154,7 @@ void GBuffers::onScreenResized(Size2D newSize)
     );
 }
 
-void GBuffers::initialize(int32 swapchainCount)
+void GBuffers::initialize(uint32 swapchainCount)
 {
     const Size2D &initialSize = ApplicationSettings::screenSize.get();
     GlobalRenderVariables::GBUFFER_SAMPLE_COUNT.onConfigChanged().bindStatic(&GBuffers::onSampleCountChanged);

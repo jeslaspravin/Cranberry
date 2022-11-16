@@ -19,8 +19,8 @@ CBEMemAlloc *GenericPlatformMemory::createMemAllocator()
 {
 #if USE_MIMALLOC
     return new MimallocMemAlloc();
-#endif
-
+#else
     // fallback mem allocator
     return new CBEBuiltinMemAlloc();
+#endif
 }

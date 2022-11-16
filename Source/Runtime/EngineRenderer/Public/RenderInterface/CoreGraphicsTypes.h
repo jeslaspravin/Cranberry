@@ -250,7 +250,7 @@ struct PixelFormatInfo
     const uint8 componentSize[MAX_PIXEL_COMP_COUNT] = { 0, 0, 0, 0 };
     const EPixelComponent componentOrder[MAX_PIXEL_COMP_COUNT]
         = { EPixelComponent::R, EPixelComponent::G, EPixelComponent::B, EPixelComponent::A };
-    const uint32 componentCount = calcCompCount();
+    const uint8 componentCount = calcCompCount();
     // Packed offsets in bits 0b-7b R comp, 8b-15b G, 16b-23b B, 24b-31b A
     const uint32 componentOffsets = calcOffsets();
 
@@ -261,10 +261,10 @@ struct PixelFormatInfo
     }
 
     // Use componentCount over this function
-    constexpr uint32 calcCompCount() const
+    constexpr uint8 calcCompCount() const
     {
-        uint32 compCount = 0;
-        for (const uint8 &compSize : componentSize)
+        uint8 compCount = 0;
+        for (uint8 compSize : componentSize)
         {
             compCount += compSize > 0 ? 1 : 0;
         }

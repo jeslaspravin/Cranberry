@@ -71,7 +71,7 @@ public:
     void operator=(VulkanDebugGraphics &&rValue);
 
     void markObject(const IVulkanResources *resource) const;
-    void markObject(const uint64 &objectHandle, const String &objectName, VkObjectType objectType) const;
+    void markObject(uint64 objectHandle, const String &objectName, VkObjectType objectType) const;
     void beginCmdBufferMarker(VkCommandBuffer commandBuffer, const String &name, const LinearColor &color = LinearColorConst::WHITE) const;
     void insertCmdBufferMarker(VkCommandBuffer commandBuffer, const String &name, const LinearColor &color = LinearColorConst::WHITE) const;
     void endCmdBufferMarker(VkCommandBuffer commandBuffer) const;

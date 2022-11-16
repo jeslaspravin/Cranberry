@@ -199,7 +199,10 @@ constexpr EReflectBufferPrimitiveType toPrimitiveType()
     {
         return EReflectBufferPrimitiveType::ReflectPrimitive_double;
     }
-    return EReflectBufferPrimitiveType::RelectPrimitive_invalid;
+    else
+    {
+        return EReflectBufferPrimitiveType::RelectPrimitive_invalid;
+    }
 }
 
 template <typename ValueType>

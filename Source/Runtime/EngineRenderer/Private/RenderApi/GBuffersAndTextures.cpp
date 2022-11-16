@@ -44,7 +44,7 @@ ImageResourceRef GlobalBuffers::dummyDepthTexture;
 
 ImageResourceRef GlobalBuffers::integratedBRDF;
 
-BufferResourceRef GlobalBuffers::quadTriVerts = nullptr;
+BufferResourceRef GlobalBuffers::quadTriVertsBuffer = nullptr;
 
 SamplerRef GlobalBuffers::nearestFiltering = nullptr;
 SamplerRef GlobalBuffers::linearFiltering = nullptr;
@@ -52,7 +52,7 @@ SamplerRef GlobalBuffers::depthFiltering = nullptr;
 SamplerRef GlobalBuffers::shadowFiltering = nullptr;
 
 std::pair<BufferResourceRef, BufferResourceRef> GlobalBuffers::quadRectVertsInds{ nullptr, nullptr };
-std::pair<BufferResourceRef, BufferResourceRef> GlobalBuffers::lineGizmoVertxInds{ nullptr, nullptr };
+std::pair<BufferResourceRef, BufferResourceRef> GlobalBuffers::lineGizmoVertsInds{ nullptr, nullptr };
 
 bool FramebufferFormat::operator==(const FramebufferFormat &otherFormat) const
 {
@@ -143,7 +143,7 @@ const FramebufferFormat::AttachmentsFormatList &GlobalBuffers::getGBufferAttachm
     return attachmentFormatsItr->second;
 }
 
-void GlobalBuffers::createTexture2Ds(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+void GlobalBuffers::createTexture2Ds(IRenderCommandList *, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
 {
     ImageResourceCreateInfo imageCI;
     imageCI.dimensions = Size3D(1, 1, 1);
@@ -230,7 +230,7 @@ void GlobalBuffers::destroyTexture2Ds()
     integratedBRDF.reset();
 }
 
-void GlobalBuffers::createSamplers(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+void GlobalBuffers::createSamplers(IRenderCommandList *, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
 {
     SamplerCreateInfo samplerCI{
         .filtering = ESamplerFiltering::Nearest,
@@ -272,9 +272,7 @@ void GlobalBuffers::destroySamplers()
     shadowFiltering.reset();
 }
 
-void GlobalBuffers::createTextureCubes(
-    IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
-)
+void GlobalBuffers::createTextureCubes(IRenderCommandList *, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
 {
     ImageResourceCreateInfo imageCI;
     imageCI.dimensions = Size3D(1, 1, 1);

@@ -80,7 +80,7 @@ void windowsLogicalProcessorInfoVisitor(T &&func, std::vector<uint8> &buffer, LO
         SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *procInfo = (PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX)buffer.data();
         for (uint32 i = 0; i < processorsInfoLen; i += procInfo->Size)
         {
-            SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *procInfo = (PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX)(buffer.data() + i);
+            procInfo = (PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX)(buffer.data() + i);
             if (procInfo->Size == 0 || procInfo->Relationship != processorRelation)
             {
                 continue;
@@ -118,6 +118,8 @@ SystemProcessorsInfo WindowsThreadingFunctions::getSystemProcessorInfo()
     windowsLogicalProcessorInfoVisitor(
         [&processorInfo](const SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *procInfo)
         {
+            /* To allow clear parsing and highlighting, using below hack over using anonymous function param */
+            CompilerHacks::ignoreUnused(procInfo);
             processorInfo.physicalProcessorCount++;
         },
         buffer, RelationProcessorPackage
@@ -167,36 +169,36 @@ SystemProcessorsCacheInfo WindowsThreadingFunctions::getProcessorCacheInfo()
             break;
         }
         case CacheInstruction:
-            if (cacheUnit.iCacheByteSize == 0)
+            if (cacheUnit.caches.iCacheByteSize == 0)
             {
                 cacheUnit.bSplitDesign = true;
-                cacheUnit.iCacheByteSize = procInfo->Cache.CacheSize;
+                cacheUnit.caches.iCacheByteSize = procInfo->Cache.CacheSize;
             }
             else
             {
-                debugAssert(cacheUnit.bSplitDesign == true && cacheUnit.iCacheByteSize == procInfo->Cache.CacheSize);
+                debugAssert(cacheUnit.bSplitDesign == true && cacheUnit.caches.iCacheByteSize == procInfo->Cache.CacheSize);
             }
             break;
         case CacheData:
-            if (cacheUnit.dCacheByteSize == 0)
+            if (cacheUnit.caches.dCacheByteSize == 0)
             {
                 cacheUnit.bSplitDesign = true;
-                cacheUnit.dCacheByteSize = procInfo->Cache.CacheSize;
+                cacheUnit.caches.dCacheByteSize = procInfo->Cache.CacheSize;
             }
             else
             {
-                debugAssert(cacheUnit.bSplitDesign == true && cacheUnit.dCacheByteSize == procInfo->Cache.CacheSize);
+                debugAssert(cacheUnit.bSplitDesign == true && cacheUnit.caches.dCacheByteSize == procInfo->Cache.CacheSize);
             }
             break;
         case CacheTrace:
-            if (cacheUnit.tCacheByteSize == 0)
+            if (cacheUnit.caches.tCacheByteSize == 0)
             {
                 cacheUnit.bSplitDesign = true;
-                cacheUnit.tCacheByteSize = procInfo->Cache.CacheSize;
+                cacheUnit.caches.tCacheByteSize = procInfo->Cache.CacheSize;
             }
             else
             {
-                debugAssert(cacheUnit.bSplitDesign == true && cacheUnit.tCacheByteSize == procInfo->Cache.CacheSize);
+                debugAssert(cacheUnit.bSplitDesign == true && cacheUnit.caches.tCacheByteSize == procInfo->Cache.CacheSize);
             }
             break;
         }

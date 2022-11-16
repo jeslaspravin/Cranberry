@@ -155,7 +155,7 @@ public:
     virtual void onTick() = 0;
     void exitApp();
     virtual void onExit() = 0;
-    virtual void onRendererStateEvent(ERenderStateEvent state) {}
+    virtual void onRendererStateEvent(ERenderStateEvent /*state*/) {}
 
     FORCE_INLINE const String &getAppName() const { return applicationName; }
     FORCE_INLINE void getVersion(int32 &majorVer, int32 &minorVer, int32 &patchVer) const;

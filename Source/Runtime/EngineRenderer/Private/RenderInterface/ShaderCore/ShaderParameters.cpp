@@ -19,12 +19,12 @@ ShaderBufferField::ShaderBufferField(const TChar *pName, FieldDecorationFlags de
     CLEAR_BITS(fieldDecorations, INFERRED_DECO_FLAGS);
 }
 
-ShaderVertexField::ShaderVertexField(const TChar *attribName, const uint32 &offsetVal)
+ShaderVertexField::ShaderVertexField(const TChar *attribName, uint32 offsetVal)
     : attributeName(attribName)
     , offset(offsetVal)
 {}
 
-ShaderVertexField::ShaderVertexField(const TChar *attribName, const uint32 &offsetVal, EShaderInputAttribFormat::Type overrideFormat)
+ShaderVertexField::ShaderVertexField(const TChar *attribName, uint32 offsetVal, EShaderInputAttribFormat::Type overrideFormat)
     : attributeName(attribName)
     , offset(offsetVal)
     , format(overrideFormat)

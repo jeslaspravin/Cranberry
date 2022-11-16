@@ -17,9 +17,14 @@
 #include "Types/Templates/TypeTraits.h"
 
 #include <cmath>
+
+GLM_HEADER_INCLUDES_BEGIN
+
 #include <glm/common.hpp>
 #include <glm/exponential.hpp>
 #include <glm/trigonometric.hpp>
+
+GLM_HEADER_INCLUDES_END
 
 class Vector3D;
 class Vector2D;

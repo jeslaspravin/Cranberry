@@ -24,15 +24,15 @@ WgViewportImGuiLayer::WgViewportImGuiLayer()
     defaultCamera.cameraProjection = ECameraProjection::Perspective;
     defaultCamera.setClippingPlane(0.1f, 6000.f);
 
-    //Vector3D camTranslation = Vector3D(0.f, 1.f, 0.0f).safeNormalized() * (500);
-    Vector3D camTranslation; 
+    // Vector3D camTranslation = Vector3D(0.f, 1.f, 0.0f).safeNormalized() * (500);
+    Vector3D camTranslation;
     camTranslation.z() += 200;
 
     defaultCamera.setTranslation(camTranslation);
-    //defaultCamera.lookAt(Vector3D::ZERO);
+    // defaultCamera.lookAt(Vector3D::ZERO);
 }
 
-void WgViewportImGuiLayer::draw(ImGuiDrawInterface *drawInterface)
+void WgViewportImGuiLayer::draw(ImGuiDrawInterface * /*drawInterface*/)
 {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
@@ -44,10 +44,10 @@ void WgViewportImGuiLayer::draw(ImGuiDrawInterface *drawInterface)
     {
         ImVec2 pos = ImGui::GetCursorScreenPos();
         ImVec2 viewportSize = ImGui::GetContentRegionAvail();
-        viewportRegion.minBound.x = Math::max(0, int16(pos.x));
-        viewportRegion.minBound.y = Math::max(0, int16(pos.y));
-        viewportRegion.maxBound.x = Math::max(0, int16(pos.x + viewportSize.x));
-        viewportRegion.maxBound.y = Math::max(0, int16(pos.y + viewportSize.y));
+        viewportRegion.minBound.x = int16(Math::max(0, pos.x));
+        viewportRegion.minBound.y = int16(Math::max(0, pos.y));
+        viewportRegion.maxBound.x = int16(Math::max(0, pos.x + viewportSize.x));
+        viewportRegion.maxBound.y = int16(Math::max(0, pos.y + viewportSize.y));
 
         ImGui::PushStyleColor(ImGuiCol_Text, ColorConst::RED);
         ImGui::PushStyleColor(ImGuiCol_Border, ColorConst::GREEN);
@@ -96,10 +96,10 @@ bool WgViewportImGuiLayer::drawDirect(const DrawDirectParams &params)
     return false;
 }
 
-void WgViewportImGuiLayer::drawOnImGui(WidgetDrawContext &context) {}
+void WgViewportImGuiLayer::drawOnImGui(WidgetDrawContext & /*context*/) {}
 
 void WgViewportImGuiLayer::drawWidget(
-    QuantShortBox2D clipBound, WidgetGeomId thisId, const WidgetGeomTree &geomTree, WidgetDrawContext &context
+    QuantShortBox2D /*clipBound*/, WidgetGeomId /*thisId*/, const WidgetGeomTree &, WidgetDrawContext &context
 )
 {
     if (bDrawingViewport && viewportRegion.isValidAABB())

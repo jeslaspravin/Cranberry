@@ -42,11 +42,11 @@ public:
     EPackageLoadSaveResult savePackage();
 
     /* ObjectArchive overrides */
-    void relinkSerializedPtr(void **objPtrPtr) const final
+    void relinkSerializedPtr(void **) const final
     {
         // Nothing to link
     }
-    void relinkSerializedPtr(const void **objPtrPtr) const final
+    void relinkSerializedPtr(const void **) const final
     {
         // Nothing to link
     }

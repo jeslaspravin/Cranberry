@@ -89,7 +89,7 @@ std::vector<VulkanDescriptorsSetAllocatorInfo *> VulkanDescriptorsSetAllocator::
             allocationPoolsItr->first.supportedTypes.cend(), outSet.begin(), DescriptorPoolSizeLessThan{}
         );
 
-        if ((outEndItr - outSet.begin()) == query.supportedTypes.size())
+        if (SizeT(outEndItr - outSet.begin()) == query.supportedTypes.size())
         {
             for (VulkanDescriptorsSetAllocatorInfo &allocationPool : allocationPoolsItr->second)
             {
@@ -112,7 +112,7 @@ std::vector<VulkanDescriptorsSetAllocatorInfo *> VulkanDescriptorsSetAllocator::
 
 bool VulkanDescriptorsSetAllocator::isSupportedPool(
     std::vector<VkDescriptorSet> &availableSets, const VulkanDescriptorsSetAllocatorInfo &allocationPool, const DescriptorsSetQuery &query,
-    const uint32 &setsCount
+    uint32 setsCount
 ) const
 {
     bool bSizeQualification = true;
@@ -250,7 +250,7 @@ bool VulkanDescriptorsSetAllocator::allocateSetsFromPool(
 }
 
 VulkanDescriptorsSetAllocatorInfo &VulkanDescriptorsSetAllocator::createNewPool(
-    const DescriptorsSetQuery &query, const uint32 &setsCount, std::vector<VulkanDescriptorsSetAllocatorInfo> &poolGroup
+    const DescriptorsSetQuery &query, uint32 setsCount, std::vector<VulkanDescriptorsSetAllocatorInfo> &poolGroup
 ) const
 {
     uint32 poolGroupIndex = uint32(poolGroup.size());
@@ -285,7 +285,7 @@ VulkanDescriptorsSetAllocatorInfo &VulkanDescriptorsSetAllocator::createNewPool(
 }
 
 VulkanDescriptorsSetAllocatorInfo &VulkanDescriptorsSetAllocator::findOrCreateAllocPool(
-    std::vector<VkDescriptorSet> &availableSets, const DescriptorsSetQuery &query, const uint32 &setsCount
+    std::vector<VkDescriptorSet> &availableSets, const DescriptorsSetQuery &query, uint32 setsCount
 )
 {
     availableSets.clear();
@@ -343,7 +343,7 @@ VulkanDescriptorsSetAllocatorInfo &VulkanDescriptorsSetAllocator::findOrCreateAl
 }
 
 VulkanDescriptorsSetAllocatorInfo &
-    VulkanDescriptorsSetAllocator::findOrCreateAllocPool(const DescriptorsSetQuery &query, const uint32 &setsCount)
+    VulkanDescriptorsSetAllocator::findOrCreateAllocPool(const DescriptorsSetQuery &query, uint32 setsCount)
 {
     VulkanDescriptorsSetAllocatorInfo *allocationPool = nullptr;
     std::vector<VulkanDescriptorsSetAllocatorInfo *> allocationPoolsFound = findInAvailablePool(query);
@@ -525,7 +525,7 @@ bool VulkanDescriptorsSetAllocator::allocDescriptorsSets(
 }
 
 bool VulkanDescriptorsSetAllocator::allocDescriptorsSets(
-    std::vector<VkDescriptorSet> &sets, const DescriptorsSetQuery &query, const VkDescriptorSetLayout &layout, const uint32 &setsCount
+    std::vector<VkDescriptorSet> &sets, const DescriptorsSetQuery &query, const VkDescriptorSetLayout &layout, uint32 setsCount
 )
 {
     sets.clear();

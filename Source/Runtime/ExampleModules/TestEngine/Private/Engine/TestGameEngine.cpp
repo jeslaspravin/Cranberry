@@ -72,7 +72,7 @@ void TestGameEngine::startup(ApplicationInstance *appInst)
         = Vector2D(float(ApplicationSettings::surfaceSize.get().x), float(ApplicationSettings::surfaceSize.get().y)) / dpiScaleFactor;
     imguiManager->setDisplaySize(Short2D(int16(displaySize.x()), int16(displaySize.y())));
     surfaceResizeHandle = ApplicationSettings::surfaceSize.onConfigChanged().bindLambda(
-        [this](Size2D oldSize, Size2D newSize)
+        [this](Size2D /*oldSize*/, Size2D newSize)
         {
             float dpiScaleFactor = IApplicationModule::get()->getApplication()->windowManager->getMainWindow()->dpiScale();
             Vector2D displaySize = Vector2D(float(newSize.x), float(newSize.y)) / dpiScaleFactor;
@@ -95,7 +95,7 @@ void TestGameEngine::quit()
     ApplicationSettings::surfaceSize.onConfigChanged().unbind(surfaceResizeHandle);
     ENQUEUE_COMMAND(EngineQuit)
     (
-        [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        [this](class IRenderCommandList *, IGraphicsInstance *, const GraphicsHelperAPI *)
         {
             assetManager.clearToDestroy();
             delete imguiManager;
@@ -138,7 +138,7 @@ void TestGameEngine::engineLoop()
 
         ENQUEUE_COMMAND(Engineloop)
         (
-            [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+            [this](class IRenderCommandList *, IGraphicsInstance *, const GraphicsHelperAPI *)
             {
                 imguiManager->updateFrame(timeData.deltaTime);
             }

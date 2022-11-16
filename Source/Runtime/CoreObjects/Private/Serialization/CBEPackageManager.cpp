@@ -50,7 +50,7 @@ String ObjectPathHelper::getValidPackageName(const String &packageName)
     return output;
 }
 
-FORCE_INLINE String ObjectPathHelper::packagePathFromFilePath(const String &filePath, const String &contentDir)
+String ObjectPathHelper::packagePathFromFilePath(const String &filePath, const String &contentDir)
 {
     String relPath = PathFunctions::toRelativePath(filePath, contentDir);
     // Right now we use relative path as Package path. But in future once plug ins were added

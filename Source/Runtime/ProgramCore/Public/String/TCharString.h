@@ -474,7 +474,6 @@ CONST_EXPR bool parseHex(OutType &outVal, CharStringView<CharType> strView)
     }
 
     OutType retVal = 0;
-    OutType placeValue = 1;
     for (auto itr = strView.cbegin(); itr != strView.cend(); ++itr)
     {
         CharType diff = *itr - '0';

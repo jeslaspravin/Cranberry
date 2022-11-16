@@ -38,12 +38,12 @@ public:
     }
     // Return true if deallocate is valid for this policy and deallocation is allowed
     template <typename Type>
-    static bool canDeallocate(void *ptr)
+    static bool canDeallocate(void * /*ptr*/)
     {
         return false;
     }
     template <typename Type>
-    static void deallocate(void *ptr)
+    static void deallocate(void * /*ptr*/)
     {}
 
     // Called for new Type(...) allocation if raw allocation failed
@@ -62,13 +62,13 @@ public:
     // Policy available function used only in case of above raw allocation being successful
     // Must call the constructor in this function for your custom policy
     template <typename Type, typename... CtorArgs>
-    static Type *construct(void *allocatedPtr, CtorArgs &&...args)
+    static Type *construct(void * /*allocatedPtr*/, CtorArgs &&.../*args*/)
     {
         return nullptr;
     }
     // Must call the destructor in this function for your custom policy
     template <typename Type>
-    static void destruct(void *ptr)
+    static void destruct(void * /*ptr*/)
     {}
 };
 

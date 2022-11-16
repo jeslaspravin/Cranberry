@@ -169,7 +169,7 @@ bool VulkanDevice::createQueueResources()
         else
         {
             std::map<uint32, VkQueueFamilyProperties *> supportedQueues;
-            for (const uint32 &qIdx : presentQueues)
+            for (uint32 qIdx : presentQueues)
             {
                 supportedQueues.insert({ qIdx, &queueFamiliesSupported[qIdx] });
             }
@@ -225,7 +225,7 @@ bool VulkanDevice::collectDeviceExtensions(std::vector<const char *> &extensions
 }
 
 #if DEV_BUILD
-void VulkanDevice::collectDeviceLayers(std::vector<const char *> &layers) const {}
+void VulkanDevice::collectDeviceLayers(std::vector<const char *> &/*layers*/) const {}
 #endif
 
 void VulkanDevice::loadDeviceFunctions()

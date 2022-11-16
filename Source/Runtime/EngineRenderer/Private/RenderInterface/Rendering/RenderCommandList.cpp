@@ -573,7 +573,7 @@ void IRenderCommandList::copyPixelsTo(
 ) const
 {
     constexpr uint32 colorCompBits = sizeof(decltype(std::declval<Color>().r())) * 8;
-    debugAssert(colorCompBits == 8);
+    static_assert(colorCompBits == 8, "Unsupported color format");
 
     // Mask from component's first byte
     uint32 perCompMask[MAX_PIXEL_COMP_COUNT];
@@ -613,7 +613,6 @@ void IRenderCommandList::copyPixelsTo(
                 const uint8 compIdx = uint8(formatInfo->componentOrder[idx]);
 
                 const uint32 compOffset = formatInfo->getOffset(EPixelComponent(compIdx));
-                const uint8 compSizeBits = formatInfo->componentSize[compIdx];
 
                 // We are never going to go above 32 bits per channel
                 const uint32 compValue = pixelData[i].getColorValue()[compIdx];
@@ -639,7 +638,7 @@ void IRenderCommandList::copyPixelsTo(
 ) const
 {
     constexpr uint32 colorCompBits = sizeof(decltype(std::declval<LinearColor>().r())) * 8;
-    debugAssert(colorCompBits == 32);
+    static_assert(colorCompBits == 32, "Unsupported LinearColor format");
 
     memset(stagingPtr, 0, stagingBuffer->getResourceSize());
     if (bIsFloatingFormat)
@@ -729,7 +728,7 @@ void IRenderCommandList::copyPixelsLinearMappedTo(
 ) const
 {
     constexpr uint32 colorCompBits = sizeof(decltype(std::declval<Color>().r())) * 8;
-    debugAssert(colorCompBits == 8);
+    static_assert(colorCompBits == 8, "Unsupported color format");
 
     // Mask from component's first byte
     uint32 perCompMask[MAX_PIXEL_COMP_COUNT];
@@ -1091,7 +1090,7 @@ bool ShaderParameters::setBuffer(StringID paramName, const void *bufferValue, ui
                 if (bValueSet = foundInfo.second->bufferField->setFieldDataArray(foundInfo.second->outerPtr, bufferValue, index))
                 {
                     genericUpdates.emplace_back(
-                        [foundInfo, index](ParamUpdateLambdaOut &paramOut, IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance)
+                        [foundInfo, index](ParamUpdateLambdaOut &paramOut, IRenderCommandList *cmdList, IGraphicsInstance *)
                         {
                             const uint32 bufferNativeStride = foundInfo.second->bufferField->paramInfo->paramNativeStride();
                             void *bufferPtr = foundInfo.second->bufferField->fieldData(foundInfo.second->outerPtr, nullptr, nullptr);
@@ -1107,7 +1106,7 @@ bool ShaderParameters::setBuffer(StringID paramName, const void *bufferValue, ui
             else if (bValueSet = foundInfo.second->bufferField->setFieldData(foundInfo.second->outerPtr, bufferValue))
             {
                 genericUpdates.emplace_back(
-                    [foundInfo](ParamUpdateLambdaOut &paramOut, IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance)
+                    [foundInfo](ParamUpdateLambdaOut &paramOut, IRenderCommandList *cmdList, IGraphicsInstance *)
                     {
                         cmdList->recordCopyToBuffer(
                             *paramOut.bufferUpdates, foundInfo.first->gpuBuffer, foundInfo.second->bufferField->offset,
@@ -1132,7 +1131,7 @@ bool ShaderParameters::setBuffer(StringID paramName, const void *bufferValue, ui
             const uint32 bufferNativeStride = bufferDataPtr->descriptorInfo->bufferParamInfo->paramNativeStride();
             CBEMemory::memCopy(bufferDataPtr->cpuBuffer, bufferValue, bufferNativeStride);
             genericUpdates.emplace_back(
-                [bufferDataPtr](ParamUpdateLambdaOut &paramOut, IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance)
+                [bufferDataPtr](ParamUpdateLambdaOut &paramOut, IRenderCommandList *cmdList, IGraphicsInstance *)
                 {
                     cmdList->recordCopyToBuffer(
                         *paramOut.bufferUpdates, bufferDataPtr->gpuBuffer, 0, bufferDataPtr->cpuBuffer,

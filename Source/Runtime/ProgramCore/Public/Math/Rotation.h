@@ -14,7 +14,11 @@
 #include "Math/CoreMathTypedefs.h"
 #include "ProgramCoreExports.h"
 
+GLM_HEADER_INCLUDES_BEGIN
+
 #include <glm/ext/vector_float3.hpp>
+
+GLM_HEADER_INCLUDES_END
 
 class Vector3D;
 

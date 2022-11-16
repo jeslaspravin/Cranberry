@@ -83,7 +83,7 @@ void CranberryEngineApp::onExit()
 #endif // EDITOR_BUILD
 }
 
-void CranberryEngineApp::onRendererStateEvent(ERenderStateEvent state) {}
+void CranberryEngineApp::onRendererStateEvent(ERenderStateEvent /*state*/) {}
 
 #include "Types/Platform/LFS/Paths.h"
 #include "Property/PropertyHelper.h"
@@ -204,7 +204,6 @@ void tempTest()
                 cbe::ActorPrefab *smActorPrefab = cbe::ActorPrefab::prefabFromActorTemplate(cbe::ActorPrefab::objectTemplateFromObj(
                     EditorHelpers::addActorToWorld(sceneObj, cbe::Actor::staticType(), TCHAR("CubeActor_") + String::toString(i), 0)
                 ));
-                cbe::Actor *smActor = smActorPrefab->getActorTemplate();
                 cbe::StaticMeshComponent *smComp = static_cast<cbe::StaticMeshComponent *>(
                     EditorHelpers::addComponentToPrefab(smActorPrefab, cbe::StaticMeshComponent::staticType(), TCHAR("CubeSM"))
                 );

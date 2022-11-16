@@ -82,14 +82,14 @@ void WidgetRHIRenderer::clearWindowState(const SharedPtr<WgWindow> &window)
 }
 
 void WidgetRHIRenderer::initializeRenderThread(
-    IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
+    IRenderCommandList * /*cmdList*/, IGraphicsInstance * /*graphicsInstance*/, const GraphicsHelperAPI * /*graphicsHelper*/
 )
 {
     dummyTexture = GlobalBuffers::dummyWhite2D();
 }
 
 void WidgetRHIRenderer::destroyRenderThread(
-    IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
+    IRenderCommandList * /*cmdList*/, IGraphicsInstance * /*graphicsInstance*/, const GraphicsHelperAPI * /*graphicsHelper*/
 )
 {
     for (auto itr = windowStates.begin(); itr != windowStates.end();)
@@ -122,7 +122,7 @@ FORCE_INLINE void WidgetRHIRenderer::clearUnusedTextures()
 }
 
 WidgetRHIRenderer::WindowState &WidgetRHIRenderer::createWindowState(
-    const SharedPtr<WgWindow> &window, GenericWindowCanvas *swapchainCanvas, IRenderCommandList *cmdList,
+    const SharedPtr<WgWindow> &window, GenericWindowCanvas *swapchainCanvas, IRenderCommandList * /*cmdList*/,
     const LocalPipelineContext &pipelineContext, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
 )
 {
@@ -136,7 +136,7 @@ WidgetRHIRenderer::WindowState &WidgetRHIRenderer::createWindowState(
     state.perFrameCmdBuffers.resize(swapchainCanvas->imagesCount());
     state.perFrameSubmitFences.resize(swapchainCanvas->imagesCount());
     state.readyToPresent.resize(swapchainCanvas->imagesCount());
-    for (uint32 i = 0; i < swapchainCanvas->imagesCount(); ++i)
+    for (int32 i = 0; i < swapchainCanvas->imagesCount(); ++i)
     {
         state.perFrameCmdBuffers[i] = window->getAppWindow()->getWindowName() + TCHAR("_CmdBuffer_") + String::toString(i);
         state.perFrameSubmitFences[i] = graphicsHelper->createFence(
@@ -165,7 +165,7 @@ void WidgetRHIRenderer::createVerticesAndIndices(
 
     if (!indices.isValid() || !indices->isValid() || indices->bufferCount() < indexCount)
     {
-        indices = graphicsHelper->createReadOnlyIndexBuffer(graphicsInstance, sizeof(uint32), indexCount);
+        indices = graphicsHelper->createReadOnlyIndexBuffer(graphicsInstance, sizeof(uint32), uint32(indexCount));
         indices->setResourceName(TCHAR("WidgetRHIRendererIndices"));
         indices->setAsStagingResource(true);
         indices->init();
@@ -177,7 +177,8 @@ void WidgetRHIRenderer::presentWindows(const std::vector<SharedPtr<WgWindow>> &w
     debugAssert(swapchains.size() == windows.size());
     ENQUEUE_COMMAND(PresentAllWindows)
     (
-        [swapchains, windows, this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        [swapchains, windows,
+         this](IRenderCommandList *cmdList, IGraphicsInstance * /*graphicsInstance*/, const GraphicsHelperAPI * /*graphicsHelper*/)
         {
             std::vector<uint32> swapchainIdxs(swapchains.size());
             std::vector<SemaphoreRef> presentWaits(windows.size());
@@ -291,7 +292,7 @@ void WidgetRHIRenderer::drawWindowWidgetsRenderThread(
             statePerWnd[i]->windowTransformParam->setVector2Param(STRID("scale"), scale);
             statePerWnd[i]->windowTransformParam->setVector2Param(STRID("translate"), translate);
 
-            totalNoOfQuads += drawingContexts[i].second.perQuadTexture().size();
+            totalNoOfQuads += uint32(drawingContexts[i].second.perQuadTexture().size());
             for (ImageResourceRef texture : drawingContexts[i].second.perQuadTexture())
             {
                 if (!texture.isValid())
@@ -466,7 +467,7 @@ void WidgetRHIRenderer::drawWindowWidgetsRenderThread(
             cmdList->cmdSetScissor(cmdBuffer, scissor);
             cmdList->cmdBindDescriptorsSets(cmdBuffer, pipelineContext, textureParams[drawCmd.textureDescIdx].first);
 
-            cmdList->cmdDrawIndexed(cmdBuffer, drawCmd.indicesOffset, drawCmd.indicesCount);
+            cmdList->cmdDrawIndexed(cmdBuffer, uint32(drawCmd.indicesOffset), uint32(drawCmd.indicesCount));
         }
         cmdList->cmdEndRenderPass(cmdBuffer);
 

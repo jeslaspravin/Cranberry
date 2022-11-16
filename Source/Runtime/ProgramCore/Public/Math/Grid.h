@@ -107,16 +107,8 @@ struct CellIndex
         }
     }
 
-    FORCE_INLINE uint32 operator[](const uint32 &axis) const
-    {
-        if (axis < d)
-        {
-            return idx[axis];
-        }
-        return -1;
-    }
-
-    FORCE_INLINE uint32 &operator[](const uint32 &axis) { return idx[axis]; }
+    FORCE_INLINE uint32 operator[](uint32 axis) const { return idx[axis]; }
+    FORCE_INLINE uint32 &operator[](uint32 axis) { return idx[axis]; }
 
     FORCE_INLINE bool operator==(const CellIndex &other) const
     {

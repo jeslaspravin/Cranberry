@@ -114,9 +114,7 @@ void WindowsPlatformFunctions::getModuleInfo(PlatformHandle processHandle, LibHa
     moduleData.name = temp;
 }
 
-PlatformHandle WindowsPlatformFunctions::createProcess(
-    const String &applicationPath, const String &cmdLine, const String &environment, const String &workingDirectory
-)
+PlatformHandle WindowsPlatformFunctions::createProcess(const String &, const String &, const String &, const String &)
 {
     // TODO(ASAP) : Very important implement this asap
     return nullptr;
@@ -453,12 +451,12 @@ bool WindowsPlatformFunctions::toUpper(AChar *inOutStr)
 }
 WChar WindowsPlatformFunctions::toUpper(WChar ch)
 {
-    dword processedLen = ::CharUpperBuffW(&ch, 1);
+    ::CharUpperBuffW(&ch, 1);
     return ch;
 }
 AChar WindowsPlatformFunctions::toUpper(AChar ch)
 {
-    dword processedLen = ::CharUpperBuffA(&ch, 1);
+    ::CharUpperBuffA(&ch, 1);
     return ch;
 }
 
@@ -474,12 +472,11 @@ bool WindowsPlatformFunctions::toLower(AChar *inOutStr)
 }
 WChar WindowsPlatformFunctions::toLower(WChar ch)
 {
-    dword processedLen = ::CharLowerBuffW(&ch, 1);
-    // return processedLen == 1;
+    ::CharLowerBuffW(&ch, 1);
     return ch;
 }
 AChar WindowsPlatformFunctions::toLower(AChar ch)
 {
-    dword processedLen = ::CharLowerBuffA(&ch, 1);
+    ::CharLowerBuffA(&ch, 1);
     return ch;
 }

@@ -125,7 +125,7 @@ public:
     virtual ~IRenderCommandList() = default;
     static IRenderCommandList *genericInstance();
 
-    virtual void setup(IRenderCommandList *commandList){};
+    virtual void setup(IRenderCommandList *){};
     virtual void newFrame(float timeDelta) = 0;
 
     virtual void copyToBuffer(BufferResourceRef dst, uint32 dstOffset, const void *dataToCopy, uint32 size) = 0;
@@ -367,7 +367,7 @@ bool ShaderParameters::setBuffer(StringID paramName, const BufferType &bufferVal
                 if (bValueSet = foundInfo.second->bufferField->setFieldDataArray(foundInfo.second->outerPtr, bufferValue, index))
                 {
                     genericUpdates.emplace_back(
-                        [foundInfo, index](ParamUpdateLambdaOut &paramOut, IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance)
+                        [foundInfo, index](ParamUpdateLambdaOut &paramOut, IRenderCommandList *cmdList, IGraphicsInstance *)
                         {
                             BufferType *bufferPtr = reinterpret_cast<BufferType *>(
                                 foundInfo.second->bufferField->fieldData(foundInfo.second->outerPtr, nullptr, nullptr)
@@ -384,7 +384,7 @@ bool ShaderParameters::setBuffer(StringID paramName, const BufferType &bufferVal
             else if (bValueSet = foundInfo.second->bufferField->setFieldData(foundInfo.second->outerPtr, bufferValue))
             {
                 genericUpdates.emplace_back(
-                    [foundInfo](ParamUpdateLambdaOut &paramOut, IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance)
+                    [foundInfo](ParamUpdateLambdaOut &paramOut, IRenderCommandList *cmdList, IGraphicsInstance *)
                     {
                         cmdList->recordCopyToBuffer<BufferType>(
                             *paramOut.bufferUpdates, foundInfo.first->gpuBuffer, foundInfo.second->bufferField->offset,
@@ -411,7 +411,7 @@ bool ShaderParameters::setBuffer(StringID paramName, const BufferType &bufferVal
         {
             (*reinterpret_cast<BufferType *>(bufferDataPtr->cpuBuffer)) = bufferValue;
             genericUpdates.emplace_back(
-                [bufferDataPtr](ParamUpdateLambdaOut &paramOut, IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance)
+                [bufferDataPtr](ParamUpdateLambdaOut &paramOut, IRenderCommandList *cmdList, IGraphicsInstance *)
                 {
                     cmdList->recordCopyToBuffer<BufferType>(
                         *paramOut.bufferUpdates, bufferDataPtr->gpuBuffer, 0, reinterpret_cast<BufferType *>(bufferDataPtr->cpuBuffer),

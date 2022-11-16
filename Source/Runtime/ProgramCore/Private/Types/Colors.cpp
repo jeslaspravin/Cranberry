@@ -390,7 +390,7 @@ LinearColor random(float alpha /*= 1.0f*/)
     h += goldenRatioConjugate;
     h = Math::frac(h);
     // return LinearColor::fromHsl(Vector3D(h, 0.5f, 0.5f));
-    return LinearColor::fromHsv(Vector3D(h, 0.5f, 1.0f));
+    return LinearColor::fromHsv(Vector3D(h, 0.5f, 1.0f), alpha);
 }
 
 const LinearColor WHITE_Transparent(1, 1, 1, 0);

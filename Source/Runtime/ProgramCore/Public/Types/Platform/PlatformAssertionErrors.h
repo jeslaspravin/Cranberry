@@ -11,9 +11,8 @@
 
 #pragma once
 
-#include "Logger/Logger.h"
-#include "Types/CompilerDefines.h"
 #include "ProgramCoreExports.h"
+#include "Logger/Logger.h"
 
 class PROGRAMCORE_EXPORT UnexpectedErrorHandler
 {
@@ -71,8 +70,8 @@ public:
 #endif // #ifndef debugAssertf
 
 #else // DEBUG_VALIDATIONS
-#define debugAssert(Expr)
-#define debugAssertf(Expr, Message, ...)
+#define debugAssert(Expr) CompilerHacks::ignoreUnused((Expr))
+#define debugAssertf(Expr, Message, ...) CompilerHacks::ignoreUnused((Expr), Message, __VA_ARGS__)
 #endif // DEBUG_VALIDATIONS
 
 #ifndef fatalAssert

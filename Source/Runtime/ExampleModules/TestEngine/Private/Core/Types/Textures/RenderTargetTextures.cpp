@@ -82,7 +82,7 @@ void RenderTargetTexture::reinitResources()
         textureResource->setLayerCount(layerCount);
         ENQUEUE_COMMAND(RtReinitTexture)
         (
-            [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+            [this](class IRenderCommandList *cmdList, IGraphicsInstance *, const GraphicsHelperAPI *)
             {
                 rtResource->reinitResources();
                 cmdList->setupInitialLayout(rtResource);
@@ -186,7 +186,7 @@ void RenderTargetTexture::release(RenderTargetTexture *texture)
     ENQUEUE_COMMAND(RtDestroyTexture)
     (
         [rtResource,
-         textureResource](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+         textureResource](class IRenderCommandList *, IGraphicsInstance *, const GraphicsHelperAPI *)
         {
             if (textureResource.isValid())
             {

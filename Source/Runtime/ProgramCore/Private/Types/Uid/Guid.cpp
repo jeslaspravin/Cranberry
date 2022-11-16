@@ -20,28 +20,49 @@ String CBEGuid::toString(CBEGuid::EGuidFormat format /*= DWordWithHyphen*/) cons
     switch (format)
     {
     case CBEGuid::DigitsOnly:
-        return StringFormat::format(TCHAR("%08X%08X%08X%08X"), a, b, c, d);
+        return StringFormat::format(TCHAR("%08X%08X%08X%08X"), parts.a, parts.b, parts.c, parts.d);
         break;
     case CBEGuid::HexValues:
         // Hard coding prefix 0x instead of format specifier flag # as this will always be hex
         return StringFormat::format(
             TCHAR("{0x%08X,0x%04hX,0x%04hX,{0x%02hhX,0x%02hhX,0x%02hhX,0x%"
                   "02hhX,0x%02hhX,0x%02hhX,0x%02hhX,0x%02hhX}}"),
-            a, _b.highWord, _b.lowWord, _c.b3, _c.b2, _c.b1, _c.b0, _d.b3, _d.b2, _d.b1, _d.b0
+            parts.a, 
+            _comps.b.words.highWord, _comps.b.words.lowWord, 
+            _comps.c.bytes.b3, _comps.c.bytes.b2, _comps.c.bytes.b1, _comps.c.bytes.b0, 
+            _comps.d.bytes.b3, _comps.d.bytes.b2, _comps.d.bytes.b1, _comps.d.bytes.b0
         );
         break;
     case CBEGuid::DigitsWithHyphen:
-        return StringFormat::format(TCHAR("%08X-%04hX-%04hX-%04hX-%04hX%08X"), a, _b.highWord, _b.lowWord, _c.highWord, _c.lowWord, d);
+        return StringFormat::format(
+            TCHAR("%08X-%04hX-%04hX-%04hX-%04hX%08X"), 
+            parts.a, 
+            _comps.b.words.highWord, _comps.b.words.lowWord, 
+            _comps.c.words.highWord, _comps.c.words.lowWord, 
+            parts.d
+        );
         break;
     case CBEGuid::DigitsInBraces:
-        return StringFormat::format(TCHAR("{%08X-%04hX-%04hX-%04hX-%04hX%08X}"), a, _b.highWord, _b.lowWord, _c.highWord, _c.lowWord, d);
+        return StringFormat::format(
+            TCHAR("{%08X-%04hX-%04hX-%04hX-%04hX%08X}"), 
+            parts.a, 
+            _comps.b.words.highWord, _comps.b.words.lowWord, 
+            _comps.c.words.highWord, _comps.c.words.lowWord, 
+            parts.d
+        );
         break;
     case CBEGuid::DigitsInParans:
-        return StringFormat::format(TCHAR("(%08X-%04hX-%04hX-%04hX-%04hX%08X)"), a, _b.highWord, _b.lowWord, _c.highWord, _c.lowWord, d);
+        return StringFormat::format(
+            TCHAR("(%08X-%04hX-%04hX-%04hX-%04hX%08X)"),
+            parts.a, 
+            _comps.b.words.highWord, _comps.b.words.lowWord, 
+            _comps.c.words.highWord, _comps.c.words.lowWord, 
+            parts.d
+        );
         break;
     case CBEGuid::DWordWithHyphen:
     default:
-        return StringFormat::format(TCHAR("%08X-%08X-%08X-%08X"), a, b, c, d);
+        return StringFormat::format(TCHAR("%08X-%08X-%08X-%08X"), parts.a, parts.b, parts.c, parts.d);
         break;
     }
 }

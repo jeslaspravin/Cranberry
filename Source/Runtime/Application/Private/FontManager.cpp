@@ -41,7 +41,13 @@
 #define STBTT_fabs(x) Math::abs(x)
 
 #define STB_TRUETYPE_IMPLEMENTATION
+
+COMPILER_PRAGMA(COMPILER_PUSH_WARNING)
+COMPILER_PRAGMA(COMPILER_DISABLE_WARNING(WARN_UNNEEDED_INTERNAL_FUNCTION))
+
 #include "stb_truetype.h"
+
+COMPILER_PRAGMA(COMPILER_POP_WARNING)
 
 CONST_EXPR static const TChar TAB_CHAR = TCHAR('\t');
 CONST_EXPR static const TChar SPACE_CHAR = TCHAR(' ');
@@ -92,6 +98,8 @@ public:
     // A Glyph(Character) in a font
     struct FontGlyph
     {
+        // Bitmap data start index in cached bitmap data
+        int64 bitmapDataIdx = -1;
         // Index of a glyph in a font sheet
         int32 glyphIdx = 0;
         // Pixels to add to arrive at next character start for this glyph(Scaled)
@@ -103,10 +111,8 @@ public:
         // Number of pixels below baseline this glyph drops(Scaled)
         int32 descent = 0;
         // Index to texture atlas
-        int32 texAtlasIdx = -1;
         int32 texCoordIdx = -1;
-        // Bitmap data start index in cached bitmap data
-        int64 bitmapDataIdx = -1;
+        uint8 texAtlasIdx = 0;
     };
     // This struct is created such that GlyphCoord can be casted from textCoords after packing
     struct GlyphCoords
@@ -142,10 +148,10 @@ public:
 
     FORCE_INLINE static FontHeight pixelsToHeight(uint32 heightInPixels)
     {
-        FontHeight contextHeight = heightInPixels / 32u;
+        uint32 contextHeight = heightInPixels / 32u;
         // Only if height in pixels is above 16 then we have to ceil the value
         contextHeight += (heightInPixels > 16u) && (heightInPixels % 32u > 0);
-        return Math::min(contextHeight, 31);
+        return FontHeight(Math::min(contextHeight, 31u));
     }
 
     FORCE_INLINE static uint32 heightToPixels(FontHeight height) { return Math::max(height * 32u, 16u); }
@@ -274,7 +280,7 @@ public:
     FORCE_INLINE void addNecessaryGlyphs(FontIndex font, FontHeight height)
     {
         CONST_EXPR static const uint32 NECESSARY_CODEPOINTS[] = { SPACE_CHAR, UNKNOWN_GLYPH, QUESTION_CHAR };
-        for (const uint32 &codePt : NECESSARY_CODEPOINTS)
+        for (uint32 codePt : NECESSARY_CODEPOINTS)
         {
             GlyphIndex contextGlyphIdx = toGlyphIndex(codePt, font, height);
             if (!allGlyphs.contains(contextGlyphIdx) && codepointToFontGlyphIndex(font, codePt))
@@ -317,7 +323,7 @@ public:
         }
         case NEWLINE_CHAR:
         {
-            yAdvance = fontToHeightScale * allFonts[font].newLine;
+            yAdvance = int32(fontToHeightScale * allFonts[font].newLine);
             break;
         }
         case CRETURN_CHAR:
@@ -337,7 +343,7 @@ public:
 DEBUG_INLINE uint32 FontManagerContext::findFallbackCodepoint(FontIndex font)
 {
     CONST_EXPR static const uint32 FALLBACK_CHARS[] = { UNKNOWN_GLYPH, QUESTION_CHAR, SPACE_CHAR };
-    for (const uint32 &codePt : FALLBACK_CHARS)
+    for (uint32 codePt : FALLBACK_CHARS)
     {
         if (codepointToFontGlyphIndex(font, codePt))
         {
@@ -376,8 +382,8 @@ void FontManagerContext::updatePendingGlyphs()
         FontGlyph &glyph = allGlyphs[contextGlyphIdx];
         glyph.glyphIdx = glyphIdx;
         glyphHMetrics(font, glyph, glyph.advance, glyph.lsb);
-        glyph.advance *= fontToGlyphScale;
-        glyph.lsb *= fontToGlyphScale;
+        glyph.advance = int32(glyph.advance * fontToGlyphScale);
+        glyph.lsb = int32(glyph.lsb * fontToGlyphScale);
 
         QuantizedBox2D bitmapBox;
         glyphBitmapBoxSubPixel(
@@ -392,7 +398,7 @@ void FontManagerContext::updatePendingGlyphs()
             glyph.ascent = bitmapBox.minBound.y;
             glyph.descent = bitmapBox.maxBound.y;
             glyph.bitmapDataIdx = int64(bitmapCache.size());
-            glyph.texCoordIdx = uint32(allGlyphCoords.size());
+            glyph.texCoordIdx = int32(allGlyphCoords.size());
 
             GlyphCoords &glyphCoords = allGlyphCoords.emplace_back();
             glyphCoords.contextGlyphIdx = contextGlyphIdx;
@@ -433,8 +439,12 @@ void FontManagerContext::updatePendingGlyphs()
             packedBins.size() <= ARRAY_LENGTH(textureAtlases),
             "Packing fonts in unsuccessful in %d texture atlases extend atlas count if necessary", ARRAY_LENGTH(textureAtlases)
         );
+        static_assert(
+            ARRAY_LENGTH(textureAtlases) <= std::numeric_limits<decltype(FontGlyph::texAtlasIdx)>::max(),
+            "Texture atlas count is above max index that can be stored at FontGlyph::texAtlasIdx"
+        );
 
-        for (int32 i = 0; i < ARRAY_LENGTH(textureAtlases) && i < packedBins.size(); ++i)
+        for (uint8 i = 0; i < ARRAY_LENGTH(textureAtlases) && i < packedBins.size(); ++i)
         {
             const ShortSize2D &atlasSize = packedBins[i].binSize;
 
@@ -463,7 +473,7 @@ void FontManagerContext::updatePendingGlyphs()
                         uint32 texIdx = y * atlasSize.x + x;
                         // In Bitmap glyphs are stored as individual continuous
                         // stream so no need for additional stride
-                        uint32 bitmapIdx = glyph.bitmapDataIdx + (yOffset * boundSize.x) + xOffset;
+                        uint32 bitmapIdx = uint32(glyph.bitmapDataIdx + (yOffset * boundSize.x) + xOffset);
 
                         uint8 bitmap = bitmapCache[bitmapIdx];
                         atlasTexs[texIdx] = Color(bitmap, bitmap, bitmap, bitmap);
@@ -504,9 +514,6 @@ void FontManagerContext::updatePendingGlyphs()
 //////////////////////////////////////////////////////////////////////////
 /// FontManager Implementations
 //////////////////////////////////////////////////////////////////////////
-
-uint8 buffer[24 << 20];
-unsigned char screen[20][79];
 
 FontManager::FontManager(EInitType) { context = new FontManagerContext(this); }
 
@@ -578,7 +585,7 @@ void FontManager::addGlyphsFromStr(const String &str, FontIndex font, uint32 hei
 
 void FontManager::addGlyphs(FontIndex font, const std::vector<ValueRange<uint32>> &glyphCodeRanges, const std::vector<uint32> &heights) const
 {
-    for (const uint32 &height : heights)
+    for (uint32 height : heights)
     {
         FontManagerContext::FontHeight contextHeight = FontManagerContext::pixelsToHeight(height);
 
@@ -620,8 +627,9 @@ void FontManager::setupTextureAtlas(ShaderParameters *shaderParams, const String
 {
     ENQUEUE_COMMAND(SetupTextureAtlas)
     (
-        [this, shaderParams,
-         paramName](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        [this, shaderParams, paramName](
+            class IRenderCommandList * /*cmdList*/, IGraphicsInstance * /*graphicsInstance*/, const GraphicsHelperAPI * /*graphicsHelper*/
+        )
         {
             for (int32 i = 0; i < ARRAY_LENGTH(context->textureAtlases); ++i)
             {
@@ -681,7 +689,7 @@ uint32 FontManager::calculateRenderWidth(const String &text, FontIndex font, uin
         {
             if (lastGlyph)
             {
-                width += fontToGlyphScale * context->glyphKernAdvance(font, *lastGlyph, *codeGlyph);
+                width += int32(fontToGlyphScale * context->glyphKernAdvance(font, *lastGlyph, *codeGlyph));
             }
 
             width += codeGlyph->advance;
@@ -718,7 +726,7 @@ uint32 FontManager::calculateRenderHeight(const String &text, FontIndex font, ui
     // If empty text just returning single line size
     if (text.empty())
     {
-        return fontToHeightScale * outHeight;
+        return uint32(fontToHeightScale * outHeight);
     }
 
     // Last word width to add to lineWidth, all are height scaled
@@ -739,13 +747,13 @@ uint32 FontManager::calculateRenderHeight(const String &text, FontIndex font, ui
             // If wrap width is small or we do not have any word to wrap then skip wrapping
             else if (lineWidth > 0 && lastWordWidth > 0 && wrapWidth >= 0 && (lineWidth + lastWordWidth) > wrapWidth)
             {
-                lineWidth = lastWordWidth + (glyphToHeightScale * xAdvance);
+                lineWidth = lastWordWidth + int32(glyphToHeightScale * xAdvance);
                 outHeight += context->allFonts[font].newLine;
             }
             // No wrapping done just add last word and space to current line width
             else
             {
-                lineWidth += lastWordWidth + (glyphToHeightScale * xAdvance);
+                lineWidth += lastWordWidth + int32(glyphToHeightScale * xAdvance);
             }
             lastWordWidth = 0;
             lastGlyph = nullptr;
@@ -757,10 +765,10 @@ uint32 FontManager::calculateRenderHeight(const String &text, FontIndex font, ui
         {
             if (lastGlyph)
             {
-                lastWordWidth += fontToHeightScale * context->glyphKernAdvance(font, *lastGlyph, *codeGlyph);
+                lastWordWidth += int32(fontToHeightScale * context->glyphKernAdvance(font, *lastGlyph, *codeGlyph));
             }
 
-            lastWordWidth += glyphToHeightScale * codeGlyph->advance;
+            lastWordWidth += int32(glyphToHeightScale * codeGlyph->advance);
             lastGlyph = codeGlyph;
         }
     }
@@ -845,13 +853,13 @@ void FontManager::draw(
                 wrapLastWord(outVertices, cursorPos);
                 // New cursor pos after wrapping will have word width added to it
                 // Account for this space alone
-                cursorPos += (glyphToHeightScale * xAdvance);
+                cursorPos += int32(glyphToHeightScale * xAdvance);
                 baseline += newLineH;
             }
             // No auto wrapping is done just add last word and space to current line width
             else
             {
-                cursorPos += lastWordWidth + (glyphToHeightScale * xAdvance);
+                cursorPos += lastWordWidth + int32(glyphToHeightScale * xAdvance);
             }
 
             // If this space is a new line then add another new line after auto wrapping/cursor
@@ -873,16 +881,18 @@ void FontManager::draw(
         const FontManagerContext::FontGlyph *codeGlyph = context->findGlyph(codepoint, font, contextHeight);
         if (codeGlyph)
         {
+            debugAssert(codeGlyph->texCoordIdx >= 0);
+
             if (lastWordVertex < 0)
             {
                 lastWordVertex = int32(outVertices.size());
-                lastWordLsb = glyphToHeightScale * codeGlyph->lsb;
+                lastWordLsb = int32(glyphToHeightScale * codeGlyph->lsb);
                 lastWordWidth = 0;
             }
             // Kerning must be done before adding this glyph's vertices
             if (lastGlyph)
             {
-                lastWordWidth += fontToHeightScale * context->glyphKernAdvance(font, *lastGlyph, *codeGlyph);
+                lastWordWidth += int32(fontToHeightScale * context->glyphKernAdvance(font, *lastGlyph, *codeGlyph));
             }
             // Add vertices
             // Glyph related caches
@@ -890,16 +900,16 @@ void FontManager::draw(
             const auto &texSize = context->atlasSizes[codeGlyph->texAtlasIdx];
 
             // Width of this glyph's quad for given height scale
-            int32 glyphLeft = cursorPos + lastWordWidth + glyphToHeightScale * codeGlyph->lsb;
-            int32 glyphRight = glyphLeft + glyphTexCoordClipped.size().x * glyphToHeightScale;
-            int32 glyphTop = baseline + glyphToHeightScale * codeGlyph->ascent;
-            int32 glyphBottom = baseline + glyphToHeightScale * codeGlyph->descent;
+            int32 glyphLeft = cursorPos + lastWordWidth + int32(glyphToHeightScale * codeGlyph->lsb);
+            int32 glyphRight = glyphLeft + int32(glyphTexCoordClipped.size().x * glyphToHeightScale);
+            int32 glyphTop = baseline + int32(glyphToHeightScale * codeGlyph->ascent);
+            int32 glyphBottom = baseline + int32(glyphToHeightScale * codeGlyph->descent);
             Rect texCoord{
                 {glyphTexCoordClipped.minBound.x / float(texSize.x), glyphTexCoordClipped.minBound.y / float(texSize.y)},
                 {glyphTexCoordClipped.maxBound.x / float(texSize.x), glyphTexCoordClipped.maxBound.y / float(texSize.y)}
             };
 
-            uint32 glyphVert = outVertices.size();
+            uint32 glyphVert = uint32(outVertices.size());
             outVertices.resize(outVertices.size() + 4);
             // Add left edge 0 to 3
             outVertices[glyphVert + 0].atlasIdx = codeGlyph->texAtlasIdx;
@@ -917,7 +927,7 @@ void FontManager::draw(
             outVertices[glyphVert + 2].texCoord = texCoord.maxBound;
 
             // Now advance to next word from horizontal start of this glyph
-            lastWordWidth += glyphToHeightScale * codeGlyph->advance;
+            lastWordWidth += int32(glyphToHeightScale * codeGlyph->advance);
             lastGlyph = codeGlyph;
         }
     }
@@ -935,7 +945,7 @@ void FontManager::draw(
     // outBB.grow(outVertices[outVertices.size() - 2].pos);
 
     // Adding top left and bottom right of each glyph
-    const uint32 endIdx = outVertices.size() / 4;
+    const uint32 endIdx = uint32(outVertices.size() / 4);
     for (uint32 idx = 0; idx < endIdx; ++idx)
     {
         const uint32 glyphVert = idx * 4;

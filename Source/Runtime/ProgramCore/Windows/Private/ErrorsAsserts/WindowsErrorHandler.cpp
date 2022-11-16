@@ -48,7 +48,7 @@ public:
         if (!SymGetLineFromAddr64(process, address, &offset, &line))
         {
             line.FileName = nullptr;
-            line.LineNumber = -1;
+            line.LineNumber = ~(0u);
         }
     }
 

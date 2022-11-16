@@ -38,7 +38,7 @@ void StaticMeshComponent::setupRenderInfo(ComponentRenderInfo &compRenderInfo) c
     }
 }
 
-void StaticMeshComponent::clearRenderInfo(const ComponentRenderInfo &compRenderInfo) const {}
+void StaticMeshComponent::clearRenderInfo(const ComponentRenderInfo &/*compRenderInfo*/) const {}
 
 AABB StaticMeshComponent::getLocalBound() const
 {

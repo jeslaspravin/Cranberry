@@ -40,7 +40,7 @@ protected:
     void initApiInstances() final;
     void initializeApiContext() final;
     void clearApiContext() final;
-    void initializeGenericGraphicsPipeline(UniqueUtilityShaderObject *shaderObject, PipelineBase *pipeline) final;
+    void initializeGenericGraphicsPipeline(PipelineBase *pipeline) final;
 
     /* Override ends */
 

@@ -119,7 +119,7 @@ public:
         }
 #endif
     }
-    FORCE_INLINE std::vector<NodeIdx> getChildren(NodeIdx parent, bool bRecurse = false) const
+    std::vector<NodeIdx> getChildren(NodeIdx parent, bool bRecurse = false) const
     {
         std::vector<NodeIdx> children;
         getChildren(children, parent, bRecurse);
@@ -158,7 +158,7 @@ public:
             }
         }
     }
-    FORCE_INLINE std::vector<NodeIdx> getAllRoots() const
+    std::vector<NodeIdx> getAllRoots() const
     {
         std::vector<NodeIdx> roots;
         getAllRoots(roots);
@@ -175,7 +175,7 @@ public:
     // Adds a data to tree and creates a new node for it
     NodeIdx add(const_reference value, NodeIdx parent = InvalidIdx)
     {
-        NodeIdx newNodeIdx = nodes.get();
+        NodeIdx newNodeIdx = NodeIdx(nodes.get());
         resizeDataToIndex(newNodeIdx);
         treeData[newNodeIdx] = value;
 

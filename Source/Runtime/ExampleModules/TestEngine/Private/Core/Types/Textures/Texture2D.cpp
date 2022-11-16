@@ -106,7 +106,7 @@ void Texture2D::reinitResources()
 
     ENQUEUE_COMMAND(ReinitTexture2D)
     (
-        [this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        [this](IRenderCommandList *cmdList, IGraphicsInstance *, const GraphicsHelperAPI *)
         {
             const EPixelDataFormat::PixelFormatInfo *formatInfo = EPixelDataFormat::getFormatInfo(dataFormat);
             bool bIsNormalMap = (formatInfo->componentSize[uint8(EPixelComponent::R)] > 8);
@@ -165,7 +165,7 @@ void Texture2D::destroy(Texture2D *texture)
     ImageResourceRef textureResource = texture->textureResource;
     ENQUEUE_COMMAND(DestroyTexture2D)
     (
-        [textureResource](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        [textureResource](IRenderCommandList *, IGraphicsInstance *, const GraphicsHelperAPI *)
         {
             textureResource->release();
         }
@@ -183,7 +183,7 @@ void Texture2DRW::destroy(Texture2DRW *texture)
     ImageResourceRef textureResource = texture->textureResource;
     ENQUEUE_COMMAND(DestroyTexture2D)
     (
-        [textureResource](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        [textureResource](IRenderCommandList *, IGraphicsInstance *, const GraphicsHelperAPI *)
         {
             textureResource->release();
         }
@@ -226,7 +226,7 @@ void Texture2DRW::reinitResources()
 
     ENQUEUE_COMMAND(ReinitTexture2D)
     (
-        [this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        [this](IRenderCommandList *cmdList, IGraphicsInstance *, const GraphicsHelperAPI *)
         {
             if (textureResource->isValid())
             {

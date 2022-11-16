@@ -414,8 +414,8 @@ void MustacheStringFormatter::renderSection(
     const Section &section = sections[sectionIdx];
 
     const StringMatch &match = allMatches[section.sectionStartIdx];
+    // In {{abc}}, match[0] will be {{abc}} match[size - 1] will be abc
     const StringSubmatch &submatch = match[match.size() - 1];
-    const StringSubmatch &wholesubmatch = match[0];
 
     String matchStr = submatch.str();
     String argName = matchStr;
@@ -490,8 +490,8 @@ uint32 MustacheStringFormatter::renderTag(
     outStr << StringView(allMatches[matchIdx].prefix().first, allMatches[matchIdx].prefix().second);
 
     const StringMatch &match = allMatches[matchIdx];
+    // In {{abc}}, match[0] will be {{abc}} match[size - 1] will be abc
     const StringSubmatch &submatch = match[match.size() - 1];
-    const StringSubmatch &wholesubmatch = match[0];
 
     String matchStr = submatch.str();
     String argName = matchStr;
@@ -519,7 +519,7 @@ uint32 MustacheStringFormatter::renderTag(
             }
         );
         fatalAssertf(itr != sections.cend(), "Section %s not found in sections list", argName);
-        uint32 sectionIdx = std::distance(sections.cbegin(), itr);
+        uint32 sectionIdx = uint32(std::distance(sections.cbegin(), itr));
         renderSection(outStr, sectionIdx, context, partials);
 
         return itr->sectionEndIdx + 1;

@@ -36,31 +36,31 @@ public:
     union Component
     {
 #if BIG_ENDIAN
-        struct
+        struct CompBytes
         {
             uint8 b3;
             uint8 b2;
             uint8 b1;
             uint8 b0;
-        };
-        struct
+        } bytes;
+        struct CompWords
         {
             uint16 highWord;
             uint16 lowWord;
-        };
+        } words;
 #else  // BIG_ENDIAN
-        struct
+        struct CompBytes
         {
             uint8 b0;
             uint8 b1;
             uint8 b2;
             uint8 b3;
-        };
-        struct
+        } bytes;
+        struct CompWords
         {
             uint16 lowWord;
             uint16 highWord;
-        };
+        } words;
 #endif // BIG_ENDIAN
         uint32 dw;
     };
@@ -68,36 +68,32 @@ public:
     union
     {
         uint32 components[4];
-        struct
+
+        struct IDComponents
         {
-            Component _a;
-            Component _b;
-            Component _c;
-            Component _d;
-        };
-        struct
+            Component a;
+            Component b;
+            Component c;
+            Component d;
+        } _comps;
+
+        struct IDParts
         {
             uint32 a;
             uint32 b;
             uint32 c;
             uint32 d;
-        };
+        } parts;
     };
 
 public:
     CONST_EXPR CBEGuid()
-        : a(0)
-        , b(0)
-        , c(0)
-        , d(0)
+        : parts{ 0, 0, 0, 0 }
     {}
     // Generates Guid to valid value
     CBEGuid(EInitType);
     CONST_EXPR CBEGuid(uint32 inA, uint32 inB, uint32 inC, uint32 inD)
-        : a(inA)
-        , b(inB)
-        , c(inC)
-        , d(inD)
+        : parts{ inA, inB, inC, inD }
     {}
 
     // Equality
@@ -113,8 +109,11 @@ public:
         return std::strong_ordering::equal;
     }
     // Better than xor based equality
-    CONST_EXPR bool operator==(const CBEGuid &rhs) const noexcept { return a == rhs.a && b == rhs.b && c == rhs.c && d == rhs.d; }
-    FORCE_INLINE bool isValid() const { return (a | b | c | d) > 0; };
+    CONST_EXPR bool operator==(const CBEGuid &rhs) const noexcept
+    {
+        return parts.a == rhs.parts.a && parts.b == rhs.parts.b && parts.c == rhs.parts.c && parts.d == rhs.parts.d;
+    }
+    FORCE_INLINE bool isValid() const { return (parts.a | parts.b | parts.c | parts.d) > 0; };
 
     String toString(EGuidFormat format = DWordWithHyphen) const;
 
@@ -186,7 +185,7 @@ struct PROGRAMCORE_EXPORT std::hash<CBEGuid>
     NODISCARD SizeT operator()(const CBEGuid &val) const noexcept
     {
         SizeT hashVal = 0;
-        HashUtility::hashAllInto(hashVal, val.a, val.b, val.c, val.d);
+        HashUtility::hashAllInto(hashVal, val.parts.a, val.parts.b, val.parts.c, val.parts.d);
         return hashVal;
     }
 };
@@ -197,7 +196,11 @@ struct CBEGuid::ParseFromFormat<CBEGuid::DigitsOnly, CharType>
     NODISCARD CONST_EXPR CBEGuid operator()(const CharType *str, SizeT len) const
     {
         // AAAAAAAABBBBBBBBCCCCCCCCDDDDDDDD
-        debugAssert(len == 32);
+        if (len != 32)
+        {
+            return {};
+        }
+
         uint32 a, b, c, d;
         bool bParsed = TCharUtils::parseHex(a, CharStringView<CharType>(str, 8));
         bParsed = bParsed && TCharUtils::parseHex(b, CharStringView<CharType>(str + 8, 8));
@@ -218,7 +221,11 @@ struct CBEGuid::ParseFromFormat<CBEGuid::DWordWithHyphen, CharType>
     NODISCARD CONST_EXPR CBEGuid operator()(const CharType *str, SizeT len) const
     {
         // AAAAAAAA-BBBBBBBB-CCCCCCCC-DDDDDDDD
-        debugAssert(len == 35);
+        if (len != 35)
+        {
+            return {};
+        }
+
         uint32 a, b, c, d;
         bool bParsed = TCharUtils::parseHex(a, CharStringView<CharType>(str, 8));
         bParsed = bParsed && TCharUtils::parseHex(b, CharStringView<CharType>(str + 9, 8));
@@ -239,19 +246,23 @@ struct CBEGuid::ParseFromFormat<CBEGuid::HexValues, CharType>
     NODISCARD CONST_EXPR CBEGuid operator()(const CharType *str, SizeT len) const
     {
         // {0xAAAAAAAA,0xBBBB,0xBBBB,{0xCC,0xCC,0xCC,0xCC,0xDD,0xDD,0xDD,0xDD}}
-        debugAssert(len == 68);
+        if (len != 68)
+        {
+            return {};
+        }
+
         Component a, b, c, d;
         bool bParsed = TCharUtils::parseHex(a.dw, CharStringView<CharType>(str + 1, 10));
-        bParsed = bParsed && TCharUtils::parseHex(b.highWord, CharStringView<CharType>(str + 12, 6));
-        bParsed = bParsed && TCharUtils::parseHex(b.lowWord, CharStringView<CharType>(str + 19, 6));
-        bParsed = bParsed && TCharUtils::parseHex(c.b3, CharStringView<CharType>(str + 27, 4));
-        bParsed = bParsed && TCharUtils::parseHex(c.b2, CharStringView<CharType>(str + 32, 4));
-        bParsed = bParsed && TCharUtils::parseHex(c.b1, CharStringView<CharType>(str + 37, 4));
-        bParsed = bParsed && TCharUtils::parseHex(c.b0, CharStringView<CharType>(str + 42, 4));
-        bParsed = bParsed && TCharUtils::parseHex(d.b3, CharStringView<CharType>(str + 47, 4));
-        bParsed = bParsed && TCharUtils::parseHex(d.b2, CharStringView<CharType>(str + 52, 4));
-        bParsed = bParsed && TCharUtils::parseHex(d.b1, CharStringView<CharType>(str + 57, 4));
-        bParsed = bParsed && TCharUtils::parseHex(d.b0, CharStringView<CharType>(str + 62, 4));
+        bParsed = bParsed && TCharUtils::parseHex(b.words.highWord, CharStringView<CharType>(str + 12, 6));
+        bParsed = bParsed && TCharUtils::parseHex(b.words.lowWord, CharStringView<CharType>(str + 19, 6));
+        bParsed = bParsed && TCharUtils::parseHex(c.bytes.b3, CharStringView<CharType>(str + 27, 4));
+        bParsed = bParsed && TCharUtils::parseHex(c.bytes.b2, CharStringView<CharType>(str + 32, 4));
+        bParsed = bParsed && TCharUtils::parseHex(c.bytes.b1, CharStringView<CharType>(str + 37, 4));
+        bParsed = bParsed && TCharUtils::parseHex(c.bytes.b0, CharStringView<CharType>(str + 42, 4));
+        bParsed = bParsed && TCharUtils::parseHex(d.bytes.b3, CharStringView<CharType>(str + 47, 4));
+        bParsed = bParsed && TCharUtils::parseHex(d.bytes.b2, CharStringView<CharType>(str + 52, 4));
+        bParsed = bParsed && TCharUtils::parseHex(d.bytes.b1, CharStringView<CharType>(str + 57, 4));
+        bParsed = bParsed && TCharUtils::parseHex(d.bytes.b0, CharStringView<CharType>(str + 62, 4));
 
         if (bParsed)
         {
@@ -267,13 +278,17 @@ struct CBEGuid::ParseFromFormat<CBEGuid::DigitsWithHyphen, CharType>
     NODISCARD CONST_EXPR CBEGuid operator()(const CharType *str, SizeT len) const
     {
         // AAAAAAAA-BBBB-BBBB-CCCC-CCCCDDDDDDDD
-        debugAssert(len == 36);
+        if (len != 36)
+        {
+            return {};
+        }
+
         Component a, b, c, d;
         bool bParsed = TCharUtils::parseHex(a.dw, CharStringView<CharType>(str, 8));
-        bParsed = bParsed && TCharUtils::parseHex(b.highWord, CharStringView<CharType>(str + 9, 4));
-        bParsed = bParsed && TCharUtils::parseHex(b.lowWord, CharStringView<CharType>(str + 14, 4));
-        bParsed = bParsed && TCharUtils::parseHex(c.highWord, CharStringView<CharType>(str + 19, 4));
-        bParsed = bParsed && TCharUtils::parseHex(c.lowWord, CharStringView<CharType>(str + 24, 4));
+        bParsed = bParsed && TCharUtils::parseHex(b.words.highWord, CharStringView<CharType>(str + 9, 4));
+        bParsed = bParsed && TCharUtils::parseHex(b.words.lowWord, CharStringView<CharType>(str + 14, 4));
+        bParsed = bParsed && TCharUtils::parseHex(c.words.highWord, CharStringView<CharType>(str + 19, 4));
+        bParsed = bParsed && TCharUtils::parseHex(c.words.lowWord, CharStringView<CharType>(str + 24, 4));
         bParsed = bParsed && TCharUtils::parseHex(d.dw, CharStringView<CharType>(str + 28, 8));
 
         if (bParsed)
@@ -290,7 +305,10 @@ struct CBEGuid::ParseFromFormat<CBEGuid::DigitsInBraces, CharType>
     NODISCARD CONST_EXPR CBEGuid operator()(const CharType *str, SizeT len) const
     {
         // {AAAAAAAA-BBBB-BBBB-CCCC-CCCCDDDDDDDD}
-        debugAssert(len == 38);
+        if (len != 38)
+        {
+            return {};
+        }
         return CBEGuid::ParseFromFormat<CBEGuid::DigitsWithHyphen, CharType>{}(str + 1, len - 2);
     }
 };
@@ -301,7 +319,10 @@ struct CBEGuid::ParseFromFormat<CBEGuid::DigitsInParans, CharType>
     NODISCARD CONST_EXPR CBEGuid operator()(const CharType *str, SizeT len) const
     {
         // (AAAAAAAA-BBBB-BBBB-CCCC-CCCCDDDDDDDD)
-        debugAssert(len == 38);
+        if (len != 38)
+        {
+            return {};
+        }
         return CBEGuid::ParseFromFormat<CBEGuid::DigitsWithHyphen, CharType>{}(str + 1, len - 2);
     }
 };

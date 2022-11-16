@@ -36,9 +36,9 @@ private:
 
     static ImageResourceRef integratedBRDF;
 
-    static BufferResourceRef quadTriVerts;
+    static BufferResourceRef quadTriVertsBuffer;
     static std::pair<BufferResourceRef, BufferResourceRef> quadRectVertsInds;
-    static std::pair<BufferResourceRef, BufferResourceRef> lineGizmoVertxInds;
+    static std::pair<BufferResourceRef, BufferResourceRef> lineGizmoVertsInds;
 
     static SamplerRef nearestFiltering;
     static SamplerRef linearFiltering;
@@ -67,9 +67,9 @@ public:
     static SamplerRef depthSampler() { return depthFiltering; }
     static SamplerRef shadowSampler() { return shadowFiltering; }
 
-    static BufferResourceRef getQuadTriVertexBuffer() { return quadTriVerts; }
+    static BufferResourceRef getQuadTriVertexBuffer() { return quadTriVertsBuffer; }
     static std::pair<BufferResourceRef, BufferResourceRef> getQuadRectVertexIndexBuffers() { return quadRectVertsInds; }
-    static std::pair<BufferResourceRef, BufferResourceRef> getLineGizmoVertexIndexBuffers() { return lineGizmoVertxInds; }
+    static std::pair<BufferResourceRef, BufferResourceRef> getLineGizmoVertexIndexBuffers() { return lineGizmoVertsInds; }
 
 private:
     static void createTextureCubes(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);

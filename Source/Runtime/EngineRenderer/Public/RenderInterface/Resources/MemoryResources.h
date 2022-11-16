@@ -195,11 +195,11 @@ public:
 
     // Valid value only in case of texel buffer, ordinary buffer gives EPixelDataFormat::Undefined
     EPixelDataFormat::Type texelFormat() const { return dataFormat; }
-    virtual void setTexelFormat(EPixelDataFormat::Type format) {}
+    virtual void setTexelFormat(EPixelDataFormat::Type /*format*/) {}
     virtual uint32 bufferStride() const { return 0; }
-    virtual void setBufferStride(uint32 newStride) {}
+    virtual void setBufferStride(uint32 /*newStride*/) {}
     virtual uint32 bufferCount() const { return 0; }
-    virtual void setBufferCount(uint32 newCount) {}
+    virtual void setBufferCount(uint32 /*newCount*/) {}
 };
 using BufferResourceRef = ReferenceCountPtr<BufferResource>;
 

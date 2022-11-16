@@ -159,7 +159,7 @@ void World::tfAttachmentChanged(TransformComponent *attachingComp, TransformComp
     updateWorldTf(idxsToUpdate);
 }
 
-void World::tfComponentAdded(Actor *actor, TransformComponent *tfComponent)
+void World::tfComponentAdded(Actor */*actor*/, TransformComponent *tfComponent)
 {
     auto compWorldTfItr = compToTf.find(tfComponent);
     debugAssert(compWorldTfItr == compToTf.end());
@@ -209,9 +209,9 @@ void World::tfComponentRemoved(Actor *actor, TransformComponent *tfComponent)
     broadcastTfCompRemoved(tfComponent);
 }
 
-void World::logicComponentAdded(Actor *actor, LogicComponent *logicComp) { broadcastLogicCompAdded(logicComp); }
+void World::logicComponentAdded(Actor */*actor*/, LogicComponent *logicComp) { broadcastLogicCompAdded(logicComp); }
 
-void World::logicComponentRemoved(Actor *actor, LogicComponent *logicComp) { broadcastLogicCompRemoved(logicComp); }
+void World::logicComponentRemoved(Actor */*actor*/, LogicComponent *logicComp) { broadcastLogicCompRemoved(logicComp); }
 
 bool World::copyFrom(World *otherWorld)
 {
@@ -416,7 +416,7 @@ void World::
 
         for (TFHierarchyIdx attachedIdx : attachments)
         {
-            outAttaches.emplace_back(txHierarchy[compTfIdx].component);
+            outAttaches.emplace_back(txHierarchy[attachedIdx].component);
         }
     }
 }
@@ -512,14 +512,14 @@ void World::prepareForPlay()
     }
 }
 
-Actor *World::addActor(CBEClass actorClass, const String &actorName, EObjectFlags flags, bool bDelayedInit)
+Actor *World::addActor(CBEClass actorClass, const String &actorName, EObjectFlags actorFlags, bool bDelayedInit)
 {
     if (EWorldState::isPlayState(worldState))
     {
-        flags |= EObjectFlagBits::ObjFlag_Transient;
+        actorFlags |= EObjectFlagBits::ObjFlag_Transient;
     }
     // If modifying how actor gets created then check EditorHelpers::addActorToWorld, World::copyFrom and World::mergeWorld
-    ActorPrefab *prefab = create<ActorPrefab, StringID, const String &>(actorName, this, flags, actorClass->name, actorName);
+    ActorPrefab *prefab = create<ActorPrefab, StringID, const String &>(actorName, this, actorFlags, actorClass->name, actorName);
     if (bDelayedInit)
     {
         delayInitPrefabs.insert(prefab);
@@ -529,14 +529,14 @@ Actor *World::addActor(CBEClass actorClass, const String &actorName, EObjectFlag
     return setupActorInternal(prefab);
 }
 
-Actor *World::addActor(ActorPrefab *inPrefab, const String &name, EObjectFlags flags)
+Actor *World::addActor(ActorPrefab *inPrefab, const String &name, EObjectFlags actorFlags)
 {
     if (EWorldState::isPlayState(worldState))
     {
-        flags |= EObjectFlagBits::ObjFlag_Transient;
+        actorFlags |= EObjectFlagBits::ObjFlag_Transient;
     }
     // If modifying how actor gets created then check EditorHelpers::addActorToWorld, World::copyFrom and World::mergeWorld
-    ActorPrefab *prefab = create<ActorPrefab, ActorPrefab *, const String &>(name, this, flags, inPrefab, name);
+    ActorPrefab *prefab = create<ActorPrefab, ActorPrefab *, const String &>(name, this, actorFlags, inPrefab, name);
     actorPrefabs.emplace_back(prefab);
     return setupActorInternal(prefab);
 }

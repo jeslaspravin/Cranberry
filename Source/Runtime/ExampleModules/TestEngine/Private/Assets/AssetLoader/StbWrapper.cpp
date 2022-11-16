@@ -20,7 +20,13 @@
 #define STBI_NO_STDIO
 #define STBI_ASSERT(x) debugAssert(x)
 #define STB_IMAGE_IMPLEMENTATION
+
+COMPILER_PRAGMA(COMPILER_PUSH_WARNING)
+COMPILER_PRAGMA(COMPILER_DISABLE_WARNING(WARN_UNNEEDED_INTERNAL_FUNCTION))
+
 #include <stb_image.h>
+
+COMPILER_PRAGMA(COMPILER_POP_WARNING)
 
 uint8 *STB::loadFromMemory(uint8 const *buffer, int32 bufferLen, int32 *x, int32 *y, int32 *channelsInFile, int desiredChannels)
 {

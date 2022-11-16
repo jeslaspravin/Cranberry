@@ -49,13 +49,14 @@ void INTERNAL_printSystemThreadingInfo(SystemProcessorsInfo processorInfo, Syste
         if (cacheUnit.bSplitDesign)
         {
             uint32 totalCacheSize
-                = ((cacheUnit.iCacheByteSize + cacheUnit.dCacheByteSize + cacheUnit.tCacheByteSize) / puShareCount) * logicalProcessorCount;
+                = ((cacheUnit.caches.iCacheByteSize + cacheUnit.caches.dCacheByteSize + cacheUnit.caches.tCacheByteSize) / puShareCount)
+                  * logicalProcessorCount;
             const TChar *localFmtStr = TCHAR(
             "        Cache Unit Size: [Instruction:%ubytes Data:%ubytes Trace:%ubytes]\n"\
             "|        Total Cache Size: %ubytes"
             );
             return StringFormat::format(
-                localFmtStr, cacheUnit.iCacheByteSize, cacheUnit.dCacheByteSize, cacheUnit.tCacheByteSize, totalCacheSize
+                localFmtStr, cacheUnit.caches.iCacheByteSize, cacheUnit.caches.dCacheByteSize, cacheUnit.caches.tCacheByteSize, totalCacheSize
             );
         }
         else

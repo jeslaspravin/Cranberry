@@ -347,7 +347,7 @@ void ApplicationInstance::startNewFrame()
      * so main thread run wild and fills render queue with commands more than it can process
      */
     RenderThreadEnqueuer::execInRenderThreadAndWait(
-        [this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        [this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI */*graphicsHelper*/)
         {
             renderFrameAllocator.reset();
             IRenderInterfaceModule::get()->getRenderManager()->renderFrame(timeData.deltaTime);

@@ -14,7 +14,11 @@
 #include "Math/CoreMathTypedefs.h"
 #include "ProgramCoreExports.h"
 
+GLM_HEADER_INCLUDES_BEGIN
+
 #include <glm/ext/matrix_float4x4.hpp>
+
+GLM_HEADER_INCLUDES_END
 
 class Vector3D;
 class Vector4D;

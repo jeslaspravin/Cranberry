@@ -414,14 +414,14 @@ public:
     {
         for (TChar &ch : (*this))
         {
-            ch = std::toupper(ch);
+            ch = TChar(std::toupper(ch));
         }
     }
     void toLower()
     {
         for (TChar &ch : (*this))
         {
-            ch = std::tolower(ch);
+            ch = TChar(std::tolower(ch));
         }
     }
     String toUpperCopy() const

@@ -132,7 +132,6 @@ public:
         {
             static_assert(DependentFalseTypeValue<UnsignedType>, "Unsupported type! for getSetBitCount");
         }
-        return 0;
     }
 
     static void createGUID(CBEGuid &outGuid) { PlatformClass::createGUID(outGuid); }

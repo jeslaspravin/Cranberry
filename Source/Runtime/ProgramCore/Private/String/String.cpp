@@ -112,9 +112,9 @@ const AChar *StlStringConv<Utf32, AChar>::convert(const Utf32 *start)
     return str.c_str();
 }
 
-void StringCodePointsHelper::validateStartCode(AChar startChar) { debugAssert((startChar >= 192u) || (startChar < 128u)); }
+void StringCodePointsHelper::validateStartCode(AChar startChar) { alertAlways((startChar >= 192u) || (startChar < 128u)); }
 
 void StringCodePointsHelper::validateStartCode(WChar startChar)
 {
-    debugAssert(sizeof(WChar) == 4 || (startChar < 0xDC00u) || (startChar >= 0xE000u));
+    alertAlways(sizeof(WChar) == 4 || (startChar < 0xDC00u) || (startChar >= 0xE000u));
 }

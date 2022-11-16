@@ -83,17 +83,17 @@ public:
     void unmapMemory(const VulkanMemoryBlock *block, VulkanDevice *device);
 
     uint64 availableHeapSize() const;
-    FORCE_INLINE uint64 chunkSize() const { return cByteSize; }
+    FORCE_INLINE uint64 getChunkSize() const { return cByteSize; }
 
     FORCE_INLINE VkDeviceMemory getDeviceMemory() const { return deviceMemory; }
     // Must be a valid memoryBlock
-    FORCE_INLINE uint64 getBlockIndex(const VulkanMemoryBlock *block) const { return block - firstBlock(); }
+    FORCE_INLINE BlockIdxType getBlockIndex(const VulkanMemoryBlock *block) const { return BlockIdxType(block - firstBlock()); }
     FORCE_INLINE uint64 getBlockByteOffset(const VulkanMemoryBlock *block) const { return alignment * getBlockIndex(block); }
 
 private:
     FORCE_INLINE const VulkanMemoryBlock *firstBlock() const { return blocks.data() + 1; }
     FORCE_INLINE VulkanMemoryBlock *firstBlock() { return blocks.data() + 1; }
-    FORCE_INLINE uint64 getArrayIndex(const VulkanMemoryBlock *block) const { return block - blocks.data(); }
+    FORCE_INLINE BlockIdxType getArrayIndex(const VulkanMemoryBlock *block) const { return BlockIdxType(block - blocks.data()); }
     FORCE_INLINE uint64 getBlockByteOffset(BlockIdxType idx) const { return alignment * idxToBlockIdx(idx); }
     FORCE_INLINE bool isValidBlock(const VulkanMemoryBlock *block) const { return block && block != blocks.data(); }
 
@@ -184,14 +184,14 @@ FORCE_INLINE VulkanMemoryBlock *VulkanMemoryChunk::allocateBlock(uint64 size, ui
 {
     // Ensure it is properly aligned
     fatalAssertf(size % alignment == 0, "Size allocating is not properly aligned");
-    BlockIdxType nOfBlocks = size / alignment;
+    BlockIdxType nOfBlocks = BlockIdxType(size / alignment);
 
     return findAndAlloc(nOfBlocks, offsetAlignment);
 }
 
 void VulkanMemoryChunk::freeBlock(const VulkanMemoryBlock *memoryBlock, uint64 byteSize)
 {
-    BlockIdxType nOfBlocks = byteSize / alignment;
+    BlockIdxType nOfBlocks = BlockIdxType(byteSize / alignment);
     BlockIdxType firstBlockIndex = getArrayIndex(memoryBlock);
     BlockIdxType lastBlockIndex = firstBlockIndex + nOfBlocks - 1;
 
@@ -245,7 +245,7 @@ NODISCARD void *VulkanMemoryChunk::mapMemory(const VulkanMemoryBlock *block, Vul
     return outPtr;
 }
 
-void VulkanMemoryChunk::unmapMemory(const VulkanMemoryBlock *block, VulkanDevice *device)
+void VulkanMemoryChunk::unmapMemory(const VulkanMemoryBlock * /*block*/, VulkanDevice *device)
 {
     mappedMemRefCounter--;
     if (mappedMemRefCounter == 0)
@@ -322,16 +322,16 @@ public:
         uint64 totalSize = 0;
         for (const VulkanMemoryChunk *chunk : chunks)
         {
-            totalSize += chunk->chunkSize();
+            totalSize += chunk->getChunkSize();
         }
         for (const VulkanMemoryChunk *chunk : chunks2xAligned)
         {
-            totalSize += chunk->chunkSize();
+            totalSize += chunk->getChunkSize();
         }
         return totalSize;
     }
 
-    VulkanMemoryAllocation allocate(const uint64 &size, const uint64 &offsetAlignment)
+    VulkanMemoryAllocation allocate(uint64 size, uint64 offsetAlignment)
     {
         // If using chunk allocator for first time, Moved from constructor allocation to here
         if (chunks.empty())
@@ -362,13 +362,13 @@ public:
             );
         }
 
-        for (auto &chunks : sortedChunks)
+        for (auto &chunksList : sortedChunks)
         {
-            uint64 alignedSize = size + chunks.second;
+            uint64 alignedSize = size + chunksList.second;
 
-            for (int32 index = (int32)chunks.first->size() - 1; index >= 0; --index)
+            for (int32 index = (int32)chunksList.first->size() - 1; index >= 0; --index)
             {
-                VulkanMemoryChunk *chunk = (*chunks.first)[index];
+                VulkanMemoryChunk *chunk = (*chunksList.first)[index];
                 VulkanMemoryBlock *allocatedBlock = chunk->allocateBlock(alignedSize, offsetAlignment);
                 if (allocatedBlock)
                 {
@@ -382,19 +382,19 @@ public:
             }
         }
 
-        for (auto &chunks : sortedChunks)
+        for (auto &chunksList : sortedChunks)
         {
-            uint64 alignedSize = size + chunks.second;
+            uint64 alignedSize = size + chunksList.second;
             uint64 alignment;
-            (*chunks.first)[0]->alignSize(1, alignment);
+            (*chunksList.first)[0]->alignSize(1, alignment);
             // In case if requested size is greater then allocate requested amount
-            int32 index = allocateNewChunk(*chunks.first, alignment, Math::max(cSize, alignedSize));
+            int32 index = allocateNewChunk(*chunksList.first, alignment, Math::max(cSize, alignedSize));
 
             if (index < 0)
             {
                 continue;
             }
-            VulkanMemoryChunk *chunk = (*chunks.first)[index];
+            VulkanMemoryChunk *chunk = (*chunksList.first)[index];
             VulkanMemoryBlock *allocatedBlock = chunk->allocateBlock(alignedSize, offsetAlignment);
             if (allocatedBlock)
             {
@@ -446,7 +446,7 @@ public:
     }
 
 private:
-    int32 allocateNewChunk(std::vector<VulkanMemoryChunk *> &chunks, uint64 alignment, uint64 chunkSize)
+    int32 allocateNewChunk(std::vector<VulkanMemoryChunk *> &outChunks, uint64 alignment, uint64 chunkSize)
     {
         uint64 currentUsageSize;
         uint64 totalHeapSize;
@@ -490,8 +490,8 @@ private:
         }
 
         chunk->setMemory(allocatingSize, memory);
-        int32 chunkIndex = static_cast<int32>(chunks.size());
-        chunks.push_back(chunk);
+        int32 chunkIndex = static_cast<int32>(outChunks.size());
+        outChunks.push_back(chunk);
         return chunkIndex;
     }
 
@@ -850,7 +850,7 @@ public:
         return allocation;
     }
 
-    void deallocateBuffer(VkBuffer buffer, const VulkanMemoryAllocation &block) override
+    void deallocateBuffer(VkBuffer /*buffer*/, const VulkanMemoryAllocation &block) override
     {
         for (const std::pair<const uint32, VkMemoryPropertyFlags> &indexPropPair : availableMemoryProps)
         {
@@ -861,7 +861,7 @@ public:
         }
     }
 
-    void deallocateImage(VkImage image, const VulkanMemoryAllocation &block, bool bIsOptimalTiled) override
+    void deallocateImage(VkImage /*image*/, const VulkanMemoryAllocation &block, bool bIsOptimalTiled) override
     {
         VulkanHeapAllocator **chunkAllocator = bIsOptimalTiled ? optimalChunkAllocators : linearChunkAllocators;
 

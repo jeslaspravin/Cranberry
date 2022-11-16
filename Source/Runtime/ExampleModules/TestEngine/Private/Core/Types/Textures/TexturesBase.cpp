@@ -34,13 +34,15 @@ void TextureBase::markResourceDirty()
     if (!bNeedsUpdate && textureResource.isValid())
     {
         bNeedsUpdate = true;
-        ENQUEUE_COMMAND_NODEBUG(
-            UpdateTexture,
+        ENQUEUE_COMMAND(UpdateTexture)
+        (
+            [this](
+                class IRenderCommandList * /*cmdList*/, IGraphicsInstance * /*graphicsInstance*/, const GraphicsHelperAPI * /*graphicsHelper*/
+            )
             {
                 reinitResources();
                 bNeedsUpdate = false;
-            },
-            this
+            }
         );
     }
 }

@@ -26,7 +26,7 @@ struct SourceInformation
     // Failing to parse will lead to termination. So this must be valid if this source is parsed
     CXTranslationUnit tu = nullptr;
     // File size used for sorting
-    uint32 fileSize = 0;
+    uint64 fileSize = 0;
 };
 
 /*

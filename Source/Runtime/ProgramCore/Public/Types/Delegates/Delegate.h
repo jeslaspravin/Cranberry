@@ -33,7 +33,7 @@ protected:
 
 public:
     virtual ReturnType invoke(Params... params) const = 0;
-    virtual bool hasSameObject(const void *object) const { return false; }
+    virtual bool hasSameObject(const void *) const { return false; }
 };
 
 template <typename... Variables>

@@ -199,13 +199,13 @@ public:
         allPerThreadData.clear();
         PlatformThreadingFuncs::releaseTlsSlot(perThreadSlot);
 
-        HazardPointersChunk *chunk = &head;
+        HazardPointersChunk *topChunk = &head;
         std::vector<HazardPointersChunk *> chunks;
-        while (HazardPointersChunk *nextChunk = chunk->pNext.load(std::memory_order::relaxed))
+        while (HazardPointersChunk *nextChunk = topChunk->pNext.load(std::memory_order::relaxed))
         {
             // Destruction must happen after external synchronization so relaxed if fine
             chunks.emplace_back(nextChunk);
-            chunk = nextChunk;
+            topChunk = nextChunk;
         }
 
         head.pNext = nullptr;
