@@ -14,8 +14,8 @@ if "%~1"=="" (
         call %~dp0/Setup.bat
     )
     
-    echo cmake --preset Engine-DynamicLinked
-    cmake --preset Engine-DynamicLinked
+    echo cmake --preset Editor-DynamicLinked
+    cmake --preset Editor-DynamicLinked
 ) else (
     echo cmake --preset %*
     cmake --preset %*
