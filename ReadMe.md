@@ -1,6 +1,11 @@
 # Cranberry Game Engine
 
-**Cranberry Game Engine** is my Personal hobby game engine. I work on this as best as I could during my holidays.
+**Cranberry Game Engine** is my Personal hobby game engine, This is my first from scratch game engine. I work on this as best as I could during my holidays.
+
+Why is `Cranberry` the name? I was eating cranberry and checking Twitter for my daily dose of imposter syndrome. Then suddenly 💡 why not write my engine? I created the project while still eating the berries!
+
+## Requirement
+* Vulkan 1.3 supported hardware is required
 
 ## Instructions
 
