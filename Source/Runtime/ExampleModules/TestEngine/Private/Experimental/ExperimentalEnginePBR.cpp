@@ -25,7 +25,6 @@
 #include "Widgets/ImGui/ImGuiLib/imgui.h"
 #include "Widgets/ImGui/IImGuiLayer.h"
 #include "Widgets/ImGui/ImGuiManager.h"
-#include "Widgets/ImGui/ImGuiLib/implot.h"
 #include "IApplicationModule.h"
 #include "ICoreObjectsModule.h"
 #include "Modules/ModuleManager.h"
@@ -1719,6 +1718,7 @@ void ExperimentalEnginePBR::setupShaderParameterParams(IGraphicsInstance *, cons
     viewData.invView = viewData.view.inverse();
     viewData.projection = camera.projectionMatrix();
     viewData.invProjection = viewData.projection.inverse();
+    viewData.w2clip = viewData.projection * viewData.invView;
     viewParameters->setBuffer(RenderSceneBase::VIEW_PARAM_NAME, viewData);
     viewParameters->init();
 
@@ -2298,10 +2298,14 @@ void ExperimentalEnginePBR::updateCameraParams()
 
         Matrix4 projectionMat = camera.projectionMatrix();
         Matrix4 invProjectionMat = projectionMat.inverse();
+        Matrix4 w2clip = projectionMat * camera.viewMatrix().inverse();
+
         viewParameters->setMatrixParam(TCHAR("projection"), projectionMat);
         viewParameters->setMatrixParam(TCHAR("invProjection"), invProjectionMat);
+        viewParameters->setMatrixParam(TCHAR("w2clip"), w2clip);
         lightCommon->setMatrixParam(TCHAR("projection"), projectionMat);
         lightCommon->setMatrixParam(TCHAR("invProjection"), invProjectionMat);
+        lightCommon->setMatrixParam(TCHAR("w2clip"), w2clip);
     };
     if (camera.cameraProjection != projection)
     {
@@ -2319,10 +2323,14 @@ void ExperimentalEnginePBR::updateCameraParams()
 
     viewDataTemp.view = camera.viewMatrix();
     viewDataTemp.invView = viewDataTemp.view.inverse();
+    viewDataTemp.w2clip = camera.projectionMatrix() * viewDataTemp.invView;
+
     viewParameters->setMatrixParam(TCHAR("view"), viewDataTemp.view);
     viewParameters->setMatrixParam(TCHAR("invView"), viewDataTemp.invView);
+    viewParameters->setMatrixParam(TCHAR("w2clip"), viewDataTemp.w2clip);
     lightCommon->setMatrixParam(TCHAR("view"), viewDataTemp.view);
     lightCommon->setMatrixParam(TCHAR("invView"), viewDataTemp.invView);
+    lightCommon->setMatrixParam(TCHAR("w2clip"), viewDataTemp.w2clip);
 
     if (bCamRotated)
     {
@@ -3200,10 +3208,6 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface *drawInterface)
     {
         ImGui::ShowDemoWindow(&bOpenImguiDemo);
     }
-    if (bOpenImPlotDemo)
-    {
-        ImPlot::ShowDemoWindow(&bOpenImPlotDemo);
-    }
 
     static bool bSettingOpen = true;
 
@@ -3432,6 +3436,8 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface *drawInterface)
 
                 if (selectedTexture != 0)
                 {
+                    // TODO(Jeslas): Replace with ImGUI custom draw
+                    /*
                     ImPlot::SetNextPlotLimits(0, 255, 0, 1.0, ImGuiCond_::ImGuiCond_Once);
                     if (ImPlot::BeginPlot(
                             "Texture Histogram", 0, 0, ImVec2(-1, 0), 0, ImPlotAxisFlags_::ImPlotAxisFlags_Lock,
@@ -3449,6 +3455,7 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface *drawInterface)
                         ImPlot::PlotShaded("Blue", histogram[2].data(), int32(histogram[2].size()), 0.0f, 8);
                         ImPlot::EndPlot();
                     }
+                    */
                 }
             }
             ImGui::PopStyleVar();
@@ -3469,7 +3476,7 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface *drawInterface)
     ImGui::PopStyleColor();
 }
 
-void ExperimentalEnginePBR::drawSelectionWidget(class ImGuiDrawInterface */*drawInterface*/)
+void ExperimentalEnginePBR::drawSelectionWidget(class ImGuiDrawInterface * /*drawInterface*/)
 {
     if (ImGui::CollapsingHeader("Selection"))
     {
@@ -3649,9 +3656,9 @@ void ExperimentalEnginePBR::tempTestPerFrame()
 
 void ExperimentalEnginePBR::tempTestQuit() {}
 
-// TestGameEngine *GameEngineWrapper::createEngineInstance()
-//{
-//     static SharedPtr<ExperimentalEnginePBR> engineInst = std::make_shared<ExperimentalEnginePBR>();
-//     return engineInst.get();
-// }
+TestGameEngine *GameEngineWrapper::createEngineInstance()
+{
+    static SharedPtr<ExperimentalEnginePBR> engineInst = std::make_shared<ExperimentalEnginePBR>();
+    return engineInst.get();
+}
 #endif

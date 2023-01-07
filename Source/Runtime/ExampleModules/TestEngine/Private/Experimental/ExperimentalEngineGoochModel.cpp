@@ -22,7 +22,6 @@
 #include "Widgets/ImGui/ImGuiLib/imgui.h"
 #include "Widgets/ImGui/IImGuiLayer.h"
 #include "Widgets/ImGui/ImGuiManager.h"
-#include "Widgets/ImGui/ImGuiLib/implot.h"
 #include "Core/GBuffers.h"
 #include "IApplicationModule.h"
 #include "InputSystem/InputSystem.h"
@@ -710,6 +709,7 @@ void ExperimentalEngineGoochModel::setupShaderParameterParams(IGraphicsInstance 
     viewData.invView = viewData.view.inverse();
     viewData.projection = camera.projectionMatrix();
     viewData.invProjection = viewData.projection.inverse();
+    viewData.w2clip = viewData.projection * viewData.invView;
     viewParameters->setBuffer(RenderSceneBase::VIEW_PARAM_NAME, viewData);
     viewParameters->init();
 
@@ -1167,11 +1167,14 @@ void ExperimentalEngineGoochModel::updateCameraParams()
         camera.cameraProjection = projection;
         viewDataTemp.projection = camera.projectionMatrix();
         viewDataTemp.invProjection = viewDataTemp.projection.inverse();
+        viewDataTemp.w2clip = viewDataTemp.projection * camera.viewMatrix().inverse();
 
         viewParameters->setMatrixParam(TCHAR("projection"), viewDataTemp.projection);
         viewParameters->setMatrixParam(TCHAR("invProjection"), viewDataTemp.invProjection);
+        viewParameters->setMatrixParam(TCHAR("w2clip"), viewDataTemp.w2clip);
         lightCommon->setMatrixParam(TCHAR("projection"), viewDataTemp.projection);
         lightCommon->setMatrixParam(TCHAR("invProjection"), viewDataTemp.invProjection);
+        lightCommon->setMatrixParam(TCHAR("w2clip"), viewDataTemp.w2clip);
     }
 
     camera.setRotation(cameraRotation);
@@ -1179,10 +1182,14 @@ void ExperimentalEngineGoochModel::updateCameraParams()
 
     viewDataTemp.view = camera.viewMatrix();
     viewDataTemp.invView = viewDataTemp.view.inverse();
+    viewDataTemp.w2clip = camera.projectionMatrix() * viewDataTemp.invView;
+
     viewParameters->setMatrixParam(TCHAR("view"), viewDataTemp.view);
     viewParameters->setMatrixParam(TCHAR("invView"), viewDataTemp.invView);
+    viewParameters->setMatrixParam(TCHAR("w2clip"), viewDataTemp.w2clip);
     lightCommon->setMatrixParam(TCHAR("view"), viewDataTemp.view);
     lightCommon->setMatrixParam(TCHAR("invView"), viewDataTemp.invView);
+    lightCommon->setMatrixParam(TCHAR("w2clip"), viewDataTemp.w2clip);
 }
 
 void ExperimentalEngineGoochModel::onStartUp()
@@ -1740,6 +1747,8 @@ void ExperimentalEngineGoochModel::draw(class ImGuiDrawInterface *drawInterface)
                     bitonic = TestBitonicSortIndices(bitonic.count);
                 }
 
+                // TODO(Jeslas): Replace with IMGUI based custom draw
+                /*
                 ImPlot::SetNextPlotLimits(0, bitonic.stepsCount + 1, -1, bitonic.count, ImGuiCond_::ImGuiCond_Always);
                 if (ImPlot::BeginPlot(
                         "Bitonic Threads", 0, 0, ImVec2(-1, 0), ImPlotFlags_::ImPlotFlags_CanvasOnly,
@@ -1790,6 +1799,7 @@ void ExperimentalEngineGoochModel::draw(class ImGuiDrawInterface *drawInterface)
 
                     ImPlot::EndPlot();
                 }
+                */
             }
 
             if (ImGui::CollapsingHeader("Rect Packer"))
@@ -1862,9 +1872,9 @@ void ExperimentalEngineGoochModel::draw(class ImGuiDrawInterface *drawInterface)
     }
 }
 
-TestGameEngine *GameEngineWrapper::createEngineInstance()
-{
-    static SharedPtr<ExperimentalEngineGoochModel> engineInst = std::make_shared<ExperimentalEngineGoochModel>();
-    return engineInst.get();
-}
+//TestGameEngine *GameEngineWrapper::createEngineInstance()
+//{
+//    static SharedPtr<ExperimentalEngineGoochModel> engineInst = std::make_shared<ExperimentalEngineGoochModel>();
+//    return engineInst.get();
+//}
 #endif
