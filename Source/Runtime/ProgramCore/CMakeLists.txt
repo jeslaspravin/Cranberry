@@ -16,7 +16,7 @@ if (${enable_mimalloc})
     # Also added development config to mimalloc cmake configs
     # Maybe I can move it to dll use once module manage is ready with malloc or may I can directly use platform library loader skipping module manager
     make_find_package_hints(mimalloc ${mimalloc_install_path} mimalloc_hints)
-    find_package(mimalloc 1.7
+    find_package(mimalloc 2.0
         REQUIRED CONFIG
         HINTS ${mimalloc_hints} ${mimalloc_debug_hints})
     map_imported_targets_config(TARGETS ${mimalloc_lib_name})

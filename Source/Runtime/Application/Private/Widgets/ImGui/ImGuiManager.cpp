@@ -12,7 +12,6 @@
 #include "Widgets/ImGui/ImGuiManager.h"
 #include "Widgets/ImGui/IImGuiLayer.h"
 #include "Widgets/ImGui/ImGuiLib/imgui.h"
-#include "Widgets/ImGui/ImGuiLib/implot.h"
 #include "Widgets/WidgetWindow.h"
 #include "InputSystem/InputSystem.h"
 #include "InputSystem/PlatformInputTypes.h"
@@ -32,7 +31,7 @@ using namespace ImGui;
 
 static_assert(std::is_same_v<uint32, ImGuiID>, "ImGuiID and uint32 type do not match!");
 static_assert(std::is_same_v<int32, ImGuiWindowFlags>, "ImGuiWindowFlags and int32 type do not match!");
-static_assert(std::is_same_v<int32, ImGuiKey>, "ImGuiKey and int32 type do not match!");
+static_assert(std::is_convertible_v<ImGuiKey, int32>, "ImGuiKey and int32 type do not match!");
 
 const int32 ImGuiManager::SIMPLE_READONLY_WINDOWFLAGS
     = ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar;
@@ -186,7 +185,6 @@ void ImGuiManager::initialize(ImGuiManagerOptions opts)
     {
         context = CreateContext();
     }
-    implotContext = ImPlot::CreateContext();
     setCurrentContext();
 
     ImGuiIO &io = GetIO();
@@ -236,7 +234,6 @@ void ImGuiManager::initialize(ImGuiManagerOptions opts)
 void ImGuiManager::release()
 {
     releaseRendering();
-    ImPlot::DestroyContext(implotContext);
     DestroyContext(context);
 }
 
@@ -289,7 +286,6 @@ void ImGuiManager::recreateFontAtlas(
 void ImGuiManager::setCurrentContext()
 {
     SetCurrentContext(context);
-    ImPlot::SetCurrentContext(implotContext);
 }
 
 ImageResourceRef ImGuiManager::getFontTextureAtlas() const { return parentGuiManager ? parentGuiManager->getFontTextureAtlas() : textureAtlas; }
@@ -776,7 +772,7 @@ bool ImGuiManager::inputKey(Keys::StateKeyType key, Keys::StateInfoType state, c
     }
     else
     {
-        io.AddKeyEvent(APPKEYS_TO_IMGUI_NAMEDKEYS[key->keyCode], state.isPressed);
+        io.AddKeyEvent((ImGuiKey)APPKEYS_TO_IMGUI_NAMEDKEYS[key->keyCode], state.isPressed);
 
         Utf32 keyChar = inputSystem->keyChar(*key);
         if (state.keyWentDown && keyChar != 0)

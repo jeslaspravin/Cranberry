@@ -29,7 +29,6 @@ class IImGuiLayer;
 class IRenderTargetTexture;
 class IGraphicsInstance;
 struct ImGuiContext;
-struct ImPlotContext;
 class GraphicsHelperAPI;
 class InputSystem;
 class LocalPipelineContext;
@@ -82,7 +81,6 @@ private:
 
     ImGuiManager *parentGuiManager;
     ImGuiContext *context;
-    ImPlotContext *implotContext;
     ImGuiDrawInterface drawInterface;
     // Per display size
     ShaderParametersRef imguiTransformParams;

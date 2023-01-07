@@ -725,7 +725,7 @@ bool Compiler::InterfaceVariableAccessHandler::handle(Op opcode, const uint32_t 
 
 	case OpExtInst:
 	{
-		if (length < 5)
+		if (length < 3)
 			return false;
 		auto &extension_set = compiler.get<SPIRExtension>(args[2]);
 		switch (extension_set.ext)
@@ -990,6 +990,10 @@ ShaderResources Compiler::get_shader_resources(const unordered_set<VariableID> *
 			// There can only be one push constant block, but keep the vector in case this restriction is lifted
 			// in the future.
 			res.push_constant_buffers.push_back({ var.self, var.basetype, type.self, get_name(var.self) });
+		}
+		else if (type.storage == StorageClassShaderRecordBufferKHR)
+		{
+			res.shader_record_buffers.push_back({ var.self, var.basetype, type.self, get_remapped_declared_block_name(var.self, ssbo_instance_name) });
 		}
 		// Images
 		else if (type.storage == StorageClassUniformConstant && type.basetype == SPIRType::Image &&
@@ -2341,6 +2345,11 @@ bool Compiler::is_tessellation_shader() const
 	return is_tessellation_shader(get_execution_model());
 }
 
+bool Compiler::is_tessellating_triangles() const
+{
+	return get_execution_mode_bitset().get(ExecutionModeTriangles);
+}
+
 void Compiler::set_remapped_variable_state(VariableID id, bool remap_enable)
 {
 	get<SPIRVariable>(id).remapped_variable = remap_enable;
@@ -3204,8 +3213,8 @@ void Compiler::AnalyzeVariableScopeAccessHandler::notify_variable_access(uint32_
 		return;
 
 	// Access chains used in multiple blocks mean hoisting all the variables used to construct the access chain as not all backends can use pointers.
-	auto itr = access_chain_children.find(id);
-	if (itr != end(access_chain_children))
+	auto itr = rvalue_forward_children.find(id);
+	if (itr != end(rvalue_forward_children))
 		for (auto child_id : itr->second)
 			notify_variable_access(child_id, block);
 
@@ -3313,14 +3322,14 @@ bool Compiler::AnalyzeVariableScopeAccessHandler::handle(spv::Op op, const uint3
 		if (var)
 		{
 			accessed_variables_to_block[var->self].insert(current_block->self);
-			access_chain_children[args[1]].insert(var->self);
+			rvalue_forward_children[args[1]].insert(var->self);
 		}
 
 		// args[2] might be another access chain we have to track use of.
 		for (uint32_t i = 2; i < length; i++)
 		{
 			notify_variable_access(args[i], current_block->self);
-			access_chain_children[args[1]].insert(args[i]);
+			rvalue_forward_children[args[1]].insert(args[i]);
 		}
 
 		// Also keep track of the access chain pointer itself.
@@ -3402,6 +3411,12 @@ bool Compiler::AnalyzeVariableScopeAccessHandler::handle(spv::Op op, const uint3
 
 		// Might be an access chain we have to track use of.
 		notify_variable_access(args[2], current_block->self);
+
+		// If we're loading an opaque type we cannot lower it to a temporary,
+		// we must defer access of args[2] until it's used.
+		auto &type = compiler.get<SPIRType>(args[0]);
+		if (compiler.type_is_opaque_value(type))
+			rvalue_forward_children[args[1]].insert(args[2]);
 		break;
 	}
 
