@@ -17,6 +17,8 @@
 #include "InputSystem/PlatformInputTypes.h"
 #include "Types/Platform/LFS/Paths.h"
 #include "Types/Platform/LFS/File/FileHelper.h"
+#include "Types/Platform/LFS/PathFunctions.h"
+#include "Types/Platform/LFS/PlatformLFS.h"
 #include "IRenderInterfaceModule.h"
 #include "RenderApi/RenderManager.h"
 #include "RenderApi/GBuffersAndTextures.h"
@@ -25,7 +27,6 @@
 #include "RenderInterface/GraphicsHelper.h"
 #include "RenderInterface/Rendering/IRenderCommandList.h"
 #include "RenderInterface/ShaderCore/ShaderParameterResources.h"
-#include "Types/Platform/LFS/PathFunctions.h"
 
 using namespace ImGui;
 
@@ -198,10 +199,19 @@ void ImGuiManager::initialize(ImGuiManagerOptions opts)
     fontConfig.RasterizerMultiply = 1.5f;
     // io.Fonts->AddFontDefault(&fontConfig);
 
-    io.Fonts->AddFontFromFileTTF(TCHAR_TO_UTF8(
-        PathFunctions::combinePath(Paths::engineRuntimeRoot(), TCHAR("Assets/Fonts/CascadiaMono-Regular.ttf")).getChar()
-        ),
-        14.0f, &fontConfig);
+    String fontPath = PathFunctions::combinePath(Paths::engineRuntimeRoot(), TCHAR("Assets/Fonts/CascadiaMono-Regular.ttf"));
+    if (FileSystemFunctions::fileExists(fontPath.getChar()))
+    {
+        io.Fonts->AddFontFromFileTTF(TCHAR_TO_UTF8(fontPath.getChar()), 14.0f, &fontConfig);
+    }
+    else
+    {
+        LOG_ERROR("ImGui", "Cannot find font file at %s", fontPath);
+        fontConfig.OversampleH = 3;
+        fontConfig.OversampleV = 3;
+        fontConfig.RasterizerMultiply = 2;
+        io.Fonts->AddFontDefault(&fontConfig);
+    }
 
     // https://github.com/google/material-design-icons/blob/master/font/MaterialIcons-Regular.codepoints
     // fontConfig.MergeMode = true;
@@ -237,7 +247,7 @@ void ImGuiManager::release()
     DestroyContext(context);
 }
 
-void ImGuiManager::setClipboard(void */*userData*/, const char *text) { PlatformFunctions::setClipboard(UTF8_TO_TCHAR(text)); }
+void ImGuiManager::setClipboard(void * /*userData*/, const char *text) { PlatformFunctions::setClipboard(UTF8_TO_TCHAR(text)); }
 
 const char *ImGuiManager::getClipboard(void *userData)
 {
@@ -283,10 +293,7 @@ void ImGuiManager::recreateFontAtlas(
     cmdList->copyToImage(textureAtlas, rawData);
 }
 
-void ImGuiManager::setCurrentContext()
-{
-    SetCurrentContext(context);
-}
+void ImGuiManager::setCurrentContext() { SetCurrentContext(context); }
 
 ImageResourceRef ImGuiManager::getFontTextureAtlas() const { return parentGuiManager ? parentGuiManager->getFontTextureAtlas() : textureAtlas; }
 
@@ -531,7 +538,7 @@ void ImGuiManager::releaseRendering()
 {
     ENQUEUE_COMMAND(ReleaseImGui)
     (
-        [this](class IRenderCommandList */*cmdList*/, IGraphicsInstance */*graphicsInstance*/, const GraphicsHelperAPI */*graphicsHelper*/)
+        [this](class IRenderCommandList * /*cmdList*/, IGraphicsInstance * /*graphicsInstance*/, const GraphicsHelperAPI * /*graphicsHelper*/)
         {
             if (textureAtlas.isValid())
             {
@@ -805,7 +812,7 @@ bool ImGuiManager::inputKey(Keys::StateKeyType key, Keys::StateInfoType state, c
     return bCaptureInput;
 }
 
-bool ImGuiManager::analogKey(AnalogStates::StateKeyType key, AnalogStates::StateInfoType state, const InputSystem */*inputSystem*/)
+bool ImGuiManager::analogKey(AnalogStates::StateKeyType key, AnalogStates::StateInfoType state, const InputSystem * /*inputSystem*/)
 {
     setCurrentContext();
     ImGuiIO &io = GetIO();
@@ -827,7 +834,7 @@ bool ImGuiManager::analogKey(AnalogStates::StateKeyType key, AnalogStates::State
     return io.WantCaptureMouse;
 }
 
-void ImGuiManager::updateMouse(Short2D /*absPos*/, Short2D widgetRelPos, const InputSystem */*inputSystem*/)
+void ImGuiManager::updateMouse(Short2D /*absPos*/, Short2D widgetRelPos, const InputSystem * /*inputSystem*/)
 {
     setCurrentContext();
     ImGuiIO &io = GetIO();

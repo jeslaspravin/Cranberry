@@ -48,4 +48,8 @@ public:
     {
         return FileSystemType::replaceFile(replaceWith, replacing, backupFile);
     }
+
+    NODISCARD static bool exists(const TChar *fullPath) { return FileSystemType::exists(fullPath); }
+    NODISCARD static bool fileExists(const TChar *fullPath) { return FileSystemType::fileExists(fullPath); }
+    NODISCARD static bool dirExists(const TChar *fullPath) { return FileSystemType::dirExists(fullPath); }
 };

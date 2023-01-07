@@ -94,7 +94,7 @@ ModuleSources::ModuleSources()
     LOG_DEBUG("ModuleReflectTool", "Reflecting source from %s", srcDir);
 
     fatalAssertf(
-        (PlatformFile(includesFile).exists() && PlatformFile(compileDefsFile).exists()),
+        (FileSystemFunctions::fileExists(includesFile.getChar()) && FileSystemFunctions::fileExists(compileDefsFile.getChar())),
         "Includes list file(%s) or Definitions(%s) list file does not exists, Configuring cmake "
         "will fix this!",
         includesFile, compileDefsFile

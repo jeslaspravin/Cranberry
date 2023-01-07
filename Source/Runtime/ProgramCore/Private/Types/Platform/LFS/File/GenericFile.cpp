@@ -13,6 +13,7 @@
 #include "Logger/Logger.h"
 #include "Types/CoreDefines.h"
 #include "Types/Platform/LFS/PathFunctions.h"
+#include "Types/Platform/LFS/PlatformLFS.h"
 
 void GenericFile::setPath(const String &fPath)
 {
@@ -91,6 +92,21 @@ bool GenericFile::closeFile()
         return true;
     }
     return false;
+}
+
+bool GenericFile::exists() const
+{
+    if (getFileName().compare(TCHAR(".")) == 0 || getFileName().compare(TCHAR("..")) == 0) // not valid files or folders
+    {
+        return false;
+    }
+
+    if (isDirectory())
+    {
+        return FileSystemFunctions::dirExists(getFullPath().getChar());
+    }
+
+    return FileSystemFunctions::fileExists(getFullPath().getChar());
 }
 
 bool GenericFile::isDirectory() const { return fileName.empty(); }

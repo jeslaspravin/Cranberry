@@ -157,7 +157,7 @@ void WgEditorImGuiLayer::aboutWindow()
             ApplicationInstance *appInstance = IApplicationModule::get()->getApplication();
             static const AChar *appNameText = TCHAR_TO_UTF8(appInstance->getAppName().getChar());
             static const AChar *engineNameText = "Cranberry Engine";
-            static const AChar *cpyRightText = "Copyright \xC2\xA9 Jeslas Pravin, 2022";
+            static const AChar *cpyRightText = "Copyright \xC2\xA9 Jeslas Pravin, 2023";
 
             int32 major, minor, patch;
             appInstance->getVersion(major, minor, patch);

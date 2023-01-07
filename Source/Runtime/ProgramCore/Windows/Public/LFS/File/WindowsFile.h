@@ -30,7 +30,6 @@ public:
     void operator=(WindowsFile &&otherFile);
 
     void flush() const override;
-    bool exists() const override;
 
     TickRep lastWriteTimeStamp() const override;
     bool setLastWriteTimeStamp(TickRep timeTick) const override;

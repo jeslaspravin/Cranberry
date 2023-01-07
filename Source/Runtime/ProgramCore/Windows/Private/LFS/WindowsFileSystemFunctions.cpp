@@ -177,3 +177,33 @@ bool WindowsFileSystemFunctions::replaceFile(GenericFile *replaceWith, GenericFi
         REPLACEFILE_IGNORE_ACL_ERRORS | REPLACEFILE_IGNORE_MERGE_ERRORS, nullptr, nullptr
     );
 }
+
+bool WindowsFileSystemFunctions::exists(const TChar *fullPath)
+{
+    dword fType = ::GetFileAttributes(fullPath);
+    return fType != INVALID_FILE_ATTRIBUTES;
+}
+
+bool WindowsFileSystemFunctions::fileExists(const TChar *fullPath)
+{
+    dword fType = ::GetFileAttributes(fullPath);
+
+    if (fType == INVALID_FILE_ATTRIBUTES)
+    {
+        return false;
+    }
+
+    return BIT_NOT_SET(fType, FILE_ATTRIBUTE_DIRECTORY);
+}
+
+bool WindowsFileSystemFunctions::dirExists(const TChar *fullPath)
+{
+    dword fType = ::GetFileAttributes(fullPath);
+
+    if (fType == INVALID_FILE_ATTRIBUTES)
+    {
+        return false;
+    }
+
+    return BIT_SET(fType, FILE_ATTRIBUTE_DIRECTORY);
+}

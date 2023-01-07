@@ -184,28 +184,6 @@ void WindowsFile::flush() const
     }
 }
 
-bool WindowsFile::exists() const
-{
-    if (getFileName().compare(TCHAR(".")) == 0 || getFileName().compare(TCHAR("..")) == 0) // not valid files or folders
-    {
-        return false;
-    }
-
-    dword fType = ::GetFileAttributes(getFullPath().getChar());
-
-    if (fType == INVALID_FILE_ATTRIBUTES)
-    {
-        return false;
-    }
-
-    if (isDirectory())
-    {
-        return fType & FILE_ATTRIBUTE_DIRECTORY;
-    }
-
-    return true;
-}
-
 uint64 WindowsFile::fileSize() const
 {
     UInt64 fSize;

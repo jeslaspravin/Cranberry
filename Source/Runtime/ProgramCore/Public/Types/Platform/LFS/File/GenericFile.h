@@ -123,10 +123,10 @@ public:
     bool closeFile();
 
     virtual void flush() const = 0;
-    virtual bool exists() const = 0;
+    NODISCARD bool exists() const;
 
-    bool isDirectory() const;
-    bool isFile() const;
+    NODISCARD bool isDirectory() const;
+    NODISCARD bool isFile() const;
 
     // Name of file if any(File name is one with .ext)
     const String &getFileName() const;
@@ -134,7 +134,7 @@ public:
     // path
     const String &getHostDirectory() const;
     // Returns last directory name of full directory path
-    String getDirectoryName() const;
+    NODISCARD String getDirectoryName() const;
     const String &getFullPath() const;
 
     // Direct OS specific flags maps directly to OS bits

@@ -21,10 +21,10 @@ FileChangesTracker::FileChangesTracker(const String name, const String &director
     , folderPath(directory)
     , writePath(intermediateDir)
 {
-    fatalAssertf(PlatformFile(folderPath).exists(), "Tracking base directory %s is not valid", folderPath);
+    fatalAssertf(FileSystemFunctions::dirExists(folderPath.getChar()), "Tracking base directory %s is not valid", folderPath);
     String manifestContent;
     String manifestFile = PathFunctions::combinePath(writePath, trackerManifestName);
-    if (PlatformFile(manifestFile).exists() && FileHelper::readString(manifestContent, manifestFile))
+    if (FileSystemFunctions::fileExists(manifestFile.getChar()) && FileHelper::readString(manifestContent, manifestFile))
     {
         std::vector<StringView> readLines = manifestContent.splitLines();
         for (String line : readLines)

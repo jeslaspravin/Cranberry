@@ -23,6 +23,10 @@ public:
     static bool moveFile(GenericFile *moveFrom, GenericFile *moveTo);
     static bool copyFile(GenericFile *copyFrom, GenericFile *copyTo);
     static bool replaceFile(GenericFile *replaceWith, GenericFile *replacing, GenericFile *backupFile);
+
+    static bool exists(const TChar *fullPath);
+    static bool fileExists(const TChar *fullPath);
+    static bool dirExists(const TChar *fullPath);
 };
 
 namespace LFS
