@@ -835,15 +835,9 @@ std::vector<cbe::Object *> ObjStaticMeshImporter::tryImporting(const ImportOptio
     {
         makePackageUnique(packageName);
 
-        cbe::Package *package = cbe::Package::createPackage(packageName, importOptions.importContentPath, false);
-        debugAssert(package);
-        cbe::markDirty(package);
-        SET_BITS(cbe::INTERNAL_ObjectCoreAccessors::getFlags(package), cbe::EObjectFlagBits::ObjFlag_PackageLoaded);
-
-        cbe::StaticMesh *mesh = cbe::create<cbe::StaticMesh, cbe::SMCreateInfo &&>(
-            meshName, package, cbe::EObjectFlagBits::ObjFlag_PackageLoaded, std::forward<decltype(createInfo)>(createInfo)
+        return EditorHelpers::createStaticMesh(
+            packageName, importOptions.importContentPath, meshName, std::forward<cbe::SMCreateInfo>(createInfo)
         );
-        return mesh;
     };
 
     if (options.bImportAsScene || options.bImportAllMesh)

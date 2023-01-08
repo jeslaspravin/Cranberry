@@ -23,6 +23,8 @@ Note that if using preset and not going to change library dependencies run Setup
 Right now I have two runtime applications `Cranberry` and `TestEngine`
 
 * For `Cranberry` start from [Cranberry-Main]
+    - Right now the scenes can be manually loaded using this line of code [CranberryAppLoadScene] at startup of the engine
+    - If engine cannot find any valid `obj` file then it auto creates a default scene with bunch of cubes like in the [Screen Shot](#CranberryEditor) 
 * For `TestEngine` start from [TestEngine-Main]. In order to run `TestEngine` additional Assets directory with raw assets are necessary. If you want to run `TestEngine.exe` download and extract [Assets.zip] in Runtime folder
 
 ## Features
@@ -56,6 +58,14 @@ Licenses for third party packages used is placed under `Licenses` folder
 * **`xxHash`**(Embedded into the project)
 * **`CoPaT`**(Embedded into the project)
 
+## Some screen shots
+
+### TestEngine
+![TestEngineSS]
+
+### CranberryEditor
+![CranberryEdSS]
+
 [//]: # (Below are link reference definitions)
 [CMake]: https://cmake.org/download/
 [VisualStudio]: https://visualstudio.microsoft.com/downloads/
@@ -65,3 +75,6 @@ Licenses for third party packages used is placed under `Licenses` folder
 
 [Cranberry-Main]: https://github.com/jeslaspravin/Cranberry/blob/main/Source/Runtime/EngineModules/Cranberry/Private/EngineMain.cpp#L22
 [TestEngine-Main]: https://github.com/jeslaspravin/Cranberry/blob/main/Source/Runtime/ExampleModules/TestEngine/Private/StartMain.cpp#L44
+[TestEngineSS]: https://jeslaspravin.github.io/assets/images/CranberryEngine/TestEngine(08-01-2023).jpg
+[CranberryEdSS]: https://jeslaspravin.github.io/assets/images/CranberryEngine/CranberryEngine(08-01-2023).jpg
+[CranberryAppLoadScene]: https://github.com/jeslaspravin/Cranberry/blob/main/Source/Runtime/EngineModules/Cranberry/Private/CranberryEngineApp.cpp#L165

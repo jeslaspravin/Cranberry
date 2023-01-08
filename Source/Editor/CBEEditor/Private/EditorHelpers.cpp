@@ -18,6 +18,26 @@
 #include "Classes/StaticMesh.h"
 #include "Components/StaticMeshComponent.h"
 
+cbe::StaticMesh *EditorHelpers::createStaticMesh(
+    const String &packageName, const String &packagePath, const String &meshName, cbe::SMCreateInfo &&createInfo
+)
+{
+    cbe::Package *package = cbe::Package::createPackage(packageName, packagePath, false);
+    if (package == nullptr)
+    {
+        return nullptr;
+    }
+    cbe::markDirty(package);
+    SET_BITS(cbe::INTERNAL_ObjectCoreAccessors::getFlags(package), cbe::EObjectFlagBits::ObjFlag_PackageLoaded);
+
+    cbe::StaticMesh *mesh = cbe::create<cbe::StaticMesh, cbe::SMCreateInfo &&>(
+        meshName, package, cbe::EObjectFlagBits::ObjFlag_PackageLoaded, std::forward<decltype(createInfo)>(createInfo)
+    );
+    debugAssert(mesh);
+
+    return mesh;
+};
+
 cbe::Actor *
     EditorHelpers::addStaticMeshesToWorld(const std::vector<cbe::StaticMesh *> &staticMeshes, cbe::World *world, const String &rootActorName)
 {
@@ -265,7 +285,7 @@ void EditorHelpers::removeActorFromWorld(cbe::World *world, cbe::Actor *actor)
     world->broadcastActorRemoved(actor);
 }
 
-void EditorHelpers::componentAddedToWorld(cbe::World *world, cbe::Actor */*actor*/, cbe::Object *component)
+void EditorHelpers::componentAddedToWorld(cbe::World *world, cbe::Actor * /*actor*/, cbe::Object *component)
 {
     cbe::TransformComponent *tfComponent = cbe::cast<cbe::TransformComponent>(component);
     if (tfComponent)
@@ -278,7 +298,7 @@ void EditorHelpers::componentAddedToWorld(cbe::World *world, cbe::Actor */*actor
     }
 }
 
-void EditorHelpers::componentRemovedFromWorld(cbe::World *world, cbe::Actor */*actor*/, cbe::Object *component)
+void EditorHelpers::componentRemovedFromWorld(cbe::World *world, cbe::Actor * /*actor*/, cbe::Object *component)
 {
     // Just to be safe and not have any hanging references
     cbe::TransformComponent *tfComponent = cbe::cast<cbe::TransformComponent>(component);

@@ -53,7 +53,7 @@ void CranberryEngineApp::onTick()
 {
     gCBEEngine->onTick();
     // 4ms, Reduce if this is too much
-    //coreObjModule->getGC().collect(0.004f);
+    // coreObjModule->getGC().collect(0.004f);
 }
 
 void CranberryEngineApp::onExit()
@@ -160,85 +160,9 @@ void tempTest()
 #endif
 
     bool bUseCubeScene = false;
-    if (bUseCubeScene)
+    if (!bUseCubeScene)
     {
-        const TChar *scenePath = TCHAR("Scenes/TestCubes:TestCubes");
-        cbe::World *sceneObj = cbe::getOrLoad<cbe::World>(scenePath);
-        if (sceneObj == nullptr)
-        {
-            String importContentTo = PathFunctions::combinePath(Paths::engineRuntimeRoot(), TCHAR("Content"));
-            cbe::StaticMesh *cubeMesh = cbe::getOrLoad<cbe::StaticMesh>(TCHAR("Meshes/Cube:Cube"));
-            if (!cbe::isValid(cubeMesh))
-            {
-                const TChar *cubeObjPath = TCHAR("D:/Assets/EngineAssets/Cube.obj");
-                ImportOption opt;
-                opt.filePath = cubeObjPath;
-                opt.importContentPath = importContentTo;
-                opt.relativeDirPath = TCHAR("Meshes");
-                if (AssetImporterBase *importer = IEditorCore::get()->findAssetImporter(opt))
-                {
-                    bool bImportAsScene = false;
-                    static_cast<const MemberFieldWrapper *>(PropertyHelper::findField(opt.structType, STRID("bImportAsScene"))->fieldPtr)
-                                                                ->setTypeless(&bImportAsScene, opt.optionsStruct);
-
-                    std::vector<cbe::Object *> objs = importer->tryImporting(opt);
-                    debugAssert(objs.size() == 1);
-
-                    cubeMesh = cbe::cast<cbe::StaticMesh>(objs[0]);
-                    cbe::save(cubeMesh);
-                }
-            }
-
-            debugAssert(cubeMesh);
-
-            cbe::Package *worldPackage = cbe::Package::createPackage(TCHAR("Scenes/TestCubes"), importContentTo, false);
-            debugAssert(worldPackage);
-            cbe::markDirty(worldPackage);
-            SET_BITS(cbe::INTERNAL_ObjectCoreAccessors::getFlags(worldPackage), cbe::EObjectFlagBits::ObjFlag_PackageLoaded);
-
-            sceneObj = cbe::create<cbe::World>(TCHAR("TestCubes"), worldPackage, cbe::EObjectFlagBits::ObjFlag_PackageLoaded);
-
-            // Create hundred thousand sm objects
-            for (uint32 i = 0; i < 10 * 100 * 100; ++i)
-            {
-                cbe::ActorPrefab *smActorPrefab = cbe::ActorPrefab::prefabFromActorTemplate(cbe::ActorPrefab::objectTemplateFromObj(
-                    EditorHelpers::addActorToWorld(sceneObj, cbe::Actor::staticType(), TCHAR("CubeActor_") + String::toString(i), 0)
-                ));
-                cbe::StaticMeshComponent *smComp = static_cast<cbe::StaticMeshComponent *>(
-                    EditorHelpers::addComponentToPrefab(smActorPrefab, cbe::StaticMeshComponent::staticType(), TCHAR("CubeSM"))
-                );
-
-                cbe::Object *modifyingComp = EditorHelpers::modifyPrefabCompField(
-                    PropertyHelper::findField(smComp->getType(), GET_MEMBER_ID_CHECKED(cbe::StaticMeshComponent, mesh)), smComp
-                );
-                modifyingComp = EditorHelpers::modifyPrefabCompField(PropertyHelper::findField(smComp->getType(), STRID("relativeTf")), smComp);
-                debugAssert(modifyingComp == smComp);
-                smComp->mesh = cubeMesh;
-
-                Vector3D pos;
-                pos.x() = (i % 100) * 50.0f + 25 - 2500;
-                pos.y() = ((i / 100) % 100) * 50.0f + 25 - 2500;
-                pos.z() = (i / (100 * 100)) * 50.0f + 25 - 250;
-                smComp->setRelativeLocation(pos);
-                smComp->setRelativeScale(Vector3D{ 0.25f });
-
-                // Reset root and remove default root component
-                cbe::TransformComponent *defaultRoot = smActorPrefab->getRootComponent();
-                smActorPrefab->setRootComponent(smComp);
-                smActorPrefab->removeComponent(defaultRoot);
-            }
-
-            cbe::save(sceneObj);
-        }
-        if (sceneObj)
-        {
-            gCBEEngine->worldManager()->initWorld(sceneObj, true);
-        }
-    }
-    else
-    {
-
-        const TChar *meshObjPath = TCHAR("D:/Assets/Scenes/CrytekSponza/sponza.obj");
+        const TChar *meshObjPath = TCHAR("D:/Assets/Scenes/CrytekSponza1/sponza.obj");
         const TChar *meshEnginePath = TCHAR("Scenes/sponza:sponza");
         cbe::World *sceneObj = cbe::getOrLoad<cbe::World>(meshEnginePath);
         if (sceneObj == nullptr)
@@ -268,6 +192,135 @@ void tempTest()
             }
         }
 
+        if (sceneObj)
+        {
+            gCBEEngine->worldManager()->initWorld(sceneObj, true);
+        }
+        else
+        {
+            bUseCubeScene = true;
+        }
+    }
+
+    if (bUseCubeScene)
+    {
+        const TChar *scenePath = TCHAR("Scenes/TestCubes:TestCubes");
+        cbe::World *sceneObj = cbe::getOrLoad<cbe::World>(scenePath);
+        if (sceneObj == nullptr)
+        {
+            String importContentTo = PathFunctions::combinePath(Paths::engineRuntimeRoot(), TCHAR("Content"));
+            cbe::StaticMesh *cubeMesh = cbe::getOrLoad<cbe::StaticMesh>(TCHAR("Meshes/Cube:Cube"));
+            if (!cbe::isValid(cubeMesh))
+            {
+#if 0 // Enable below if want to import cube from obj file
+                const TChar *cubeObjPath = TCHAR("D:/Assets/EngineAssets/Cube.obj");
+                ImportOption opt;
+                opt.filePath = cubeObjPath;
+                opt.importContentPath = importContentTo;
+                opt.relativeDirPath = TCHAR("Meshes");
+                if (AssetImporterBase *importer = IEditorCore::get()->findAssetImporter(opt))
+                {
+                    bool bImportAsScene = false;
+                    static_cast<const MemberFieldWrapper *>(PropertyHelper::findField(opt.structType, STRID("bImportAsScene"))->fieldPtr)
+                                                                ->setTypeless(&bImportAsScene, opt.optionsStruct);
+
+                    std::vector<cbe::Object *> objs = importer->tryImporting(opt);
+                    debugAssert(objs.size() == 1);
+
+                    cubeMesh = cbe::cast<cbe::StaticMesh>(objs[0]);
+                    cbe::save(cubeMesh);
+                }
+#else
+                cbe::SMCreateInfo createInfo;
+                createInfo.bounds = { Vector3D(-50, -50, -50), Vector3D(50, 50, 50) };
+
+                for (int32 f = 0; f < 6; ++f)
+                {
+                    int32 i = f / 2;
+                    int32 j = (i + 1) % 3;
+                    int32 k = (i + 2) % 3;
+
+                    float m = (f % 2) == 0 ? -1.f : 1.f;
+
+                    uint32 startVertIdx = uint32(createInfo.vertices.size());
+
+                    for (uint8 vIdx = 0; vIdx < 4; ++vIdx)
+                    {
+                        StaticMeshVertex vert;
+                        vert.normal[i] = m;
+                        vert.position[i] = 50 * m;
+                        vert.tangent[i] = 0;
+
+                        float jm = (vIdx >> 1) ^ (vIdx & 1) ? 1.f : -1.f;
+                        float km = ((vIdx >> 1) & 1) ? -1.f : 1.f;
+                        vert.position[j] = 50 * jm * m;
+                        vert.position[k] = 50 * km;
+
+                        vert.tangent[j] = (1 - (vIdx % 2)) * -jm;
+                        vert.tangent[k] = (vIdx % 2) * -km;
+
+                        createInfo.vertices.emplace_back(std::move(vert));
+                    }
+
+                    createInfo.indices.emplace_back(startVertIdx + 0);
+                    createInfo.indices.emplace_back(startVertIdx + 1);
+                    createInfo.indices.emplace_back(startVertIdx + 2);
+                    createInfo.indices.emplace_back(startVertIdx + 0);
+                    createInfo.indices.emplace_back(startVertIdx + 2);
+                    createInfo.indices.emplace_back(startVertIdx + 3);
+                }
+
+                createInfo.meshBatches.emplace_back(0, uint32(createInfo.indices.size()), TCHAR("Cube"));
+                cubeMesh = EditorHelpers::createStaticMesh(TCHAR("Meshes/Cube"), importContentTo, TCHAR("Cube"), std::move(createInfo));
+                cbe::save(cubeMesh);
+#endif
+            }
+
+            debugAssert(cubeMesh);
+
+            cbe::Package *worldPackage = cbe::Package::createPackage(TCHAR("Scenes/TestCubes"), importContentTo, false);
+            debugAssert(worldPackage);
+            cbe::markDirty(worldPackage);
+            SET_BITS(cbe::INTERNAL_ObjectCoreAccessors::getFlags(worldPackage), cbe::EObjectFlagBits::ObjFlag_PackageLoaded);
+
+            sceneObj = cbe::create<cbe::World>(TCHAR("TestCubes"), worldPackage, cbe::EObjectFlagBits::ObjFlag_PackageLoaded);
+
+            // Create hundred thousand sm objects
+            // uint32 xCount = 100, yCount = 100, zCount = 10;
+            uint32 xCount = 10, yCount = 10, zCount = 10;
+            for (uint32 i = 0; i <= (xCount * yCount * zCount); ++i)
+            {
+                cbe::ActorPrefab *smActorPrefab = cbe::ActorPrefab::prefabFromActorTemplate(cbe::ActorPrefab::objectTemplateFromObj(
+                    EditorHelpers::addActorToWorld(sceneObj, cbe::Actor::staticType(), TCHAR("CubeActor_") + String::toString(i), 0)
+                ));
+                cbe::StaticMeshComponent *smComp = static_cast<cbe::StaticMeshComponent *>(
+                    EditorHelpers::addComponentToPrefab(smActorPrefab, cbe::StaticMeshComponent::staticType(), TCHAR("CubeSM"))
+                );
+
+                cbe::Object *modifyingComp = EditorHelpers::modifyPrefabCompField(
+                    PropertyHelper::findField(smComp->getType(), GET_MEMBER_ID_CHECKED(cbe::StaticMeshComponent, mesh)), smComp
+                );
+                modifyingComp = EditorHelpers::modifyPrefabCompField(PropertyHelper::findField(smComp->getType(), STRID("relativeTf")), smComp);
+                debugAssert(modifyingComp == smComp);
+                smComp->mesh = cubeMesh;
+
+                const float scale = 0.25f, scalex2 = 0.5f;
+                Vector3D pos;
+                // 100 is size of cube
+                pos.x() = (i % xCount) * scalex2 * 100 - ((xCount - 1) * scale * 100);
+                pos.y() = ((i / xCount) % yCount) * scalex2 * 100 - ((yCount - 1) * scale * 100);
+                pos.z() = (i / (xCount * yCount)) * scalex2 * 100 - ((zCount - 1) * scale * 100);
+                smComp->setRelativeLocation(pos);
+                smComp->setRelativeScale(Vector3D{ scale });
+
+                // Reset root and remove default root component
+                cbe::TransformComponent *defaultRoot = smActorPrefab->getRootComponent();
+                smActorPrefab->setRootComponent(smComp);
+                smActorPrefab->removeComponent(defaultRoot);
+            }
+
+            cbe::save(sceneObj);
+        }
         if (sceneObj)
         {
             gCBEEngine->worldManager()->initWorld(sceneObj, true);

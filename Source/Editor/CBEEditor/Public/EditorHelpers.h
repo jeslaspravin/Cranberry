@@ -26,6 +26,8 @@ class StaticMesh;
 class World;
 class Actor;
 class TransformComponent;
+
+struct SMCreateInfo;
 } // namespace cbe
 
 class CBEEDITOR_EXPORT EditorHelpers
@@ -34,6 +36,8 @@ private:
     EditorHelpers() = default;
 
 public:
+    static cbe::StaticMesh *
+        createStaticMesh(const String &packageName, const String &packagePath, const String &meshName, cbe::SMCreateInfo &&createInfo);
     // Returns the root actor to which all this static mesh actors are attached to
     static cbe::Actor *
         addStaticMeshesToWorld(const std::vector<cbe::StaticMesh *> &staticMeshes, cbe::World *world, const String &rootActorName);

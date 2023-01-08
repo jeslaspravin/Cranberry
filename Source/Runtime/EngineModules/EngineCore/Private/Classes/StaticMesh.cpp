@@ -54,11 +54,14 @@ StaticMesh::StaticMesh(SMCreateInfo &&ci)
         {
             copyResources(vertices, indices, cmdList, graphicsInstance, graphicsHelper);
 
-            // Copy tangent, binormal, normal vertices
-            tbnVertexBuffer = graphicsHelper->createReadOnlyVertexBuffer(graphicsInstance, sizeof(SMTbnLinePoint), uint32(tbnVerts.size()));
-            tbnVertexBuffer->setResourceName(getName() + TCHAR("_TbnVerts"));
-            tbnVertexBuffer->init();
-            cmdList->copyToBuffer(tbnVertexBuffer, 0, tbnVerts.data(), uint32(tbnVertexBuffer->getResourceSize()));
+            if (!tbnVerts.empty())
+            { 
+                // Copy tangent, binormal, normal vertices
+                tbnVertexBuffer = graphicsHelper->createReadOnlyVertexBuffer(graphicsInstance, sizeof(SMTbnLinePoint), uint32(tbnVerts.size()));
+                tbnVertexBuffer->setResourceName(getName() + TCHAR("_TbnVerts"));
+                tbnVertexBuffer->init();
+                cmdList->copyToBuffer(tbnVertexBuffer, 0, tbnVerts.data(), uint32(tbnVertexBuffer->getResourceSize()));
+            }
         }
     );
 #else
@@ -116,7 +119,7 @@ ObjectArchive &StaticMesh::serialize(ObjectArchive &ar)
     // Once I have ways to cook separate for runtime I can move tbnVerts as Editor only
     ar << tbnVerts;
 #if EDITOR_BUILD
-    if (ar.isLoading())
+    if (ar.isLoading() && !tbnVerts.empty())
     {
         ENQUEUE_RENDER_COMMAND(LoadTBNData)
         (
