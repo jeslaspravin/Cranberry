@@ -11,11 +11,36 @@ Why is `Cranberry` the name? I was eating cranberry and checking Twitter for my 
 
 * Install CMake from [CMake]
 * Install Visual Studio 2022 from [VisualStudio]
-* Install Vulkan SDK from [VulkanSDK]
-* Run GenerateProject.bat to generate Visual Studio solution with one of following presets(eg., `GenerateProject.bat` or `GenerateProject.bat <preset> [Some Cmake arguments]..`)
-Note that if using custom preset and not going to change dependencies run Setup.bat first
+* Install Vulkan SDK from [VulkanSDK]. Necessary because I am using `glslangValidator`
+* Run GenerateProject.bat to generate Visual Studio solution. This will by default generate solution for `Editor-DynamicLinked` preset under `Build` folder
+* You can also run GenerateProject.bat with one of following presets(eg., `GenerateProject.bat` or `GenerateProject.bat <preset> [Some Cmake arguments]..`)
+Note that if using preset and not going to change library dependencies run Setup.bat first(It will download archive with necessary libraries)
     - `Editor-DynamicLinked` preset creates command `cmake -B Build -G "Visual Studio 17 2022" -A x64 -Thost=x64 -DCMAKE_INSTALL_PREFIX:STRING=${sourceDir}/Installed -Dengine_static_modules:BOOL=OFF`
     - `Runtime-DynamicLinked` preset creates command `cmake -B RuntimeBuild -G "Visual Studio 17 2022" -A x64 -Thost=x64 -DCMAKE_INSTALL_PREFIX:STRING=${sourceDir}/Installed -Dengine_static_modules:BOOL=OFF -Deditor_build:BOOL=OFF`
+    
+
+## Code lookups
+Right now I have two runtime applications `Cranberry` and `TestEngine`
+
+* For `Cranberry` start from [Cranberry-Main]
+* For `TestEngine` start from [TestEngine-Main]. In order to run `TestEngine` additional Assets directory with raw assets are necessary. If you want to run `TestEngine.exe` download and extract [Assets.zip] in Runtime folder
+
+## Features
+Many features are supported but tooling still needs to be developed
+* Reflection generator for C++
+* Reflection supports metadata classes and flags
+* Shaders are reflected and Parameters can be addressed with names
+* PBR Materials
+* Image base lighting
+* Point, Spot, Directional lights
+* Shadows, Cube mapped shadows and Cascaded shadows
+* Prototype garbage collector
+* Object tree actions like deep copy, traversal etc.,
+* Multiwindow widgets and Input handling
+* Supported inputs mouse and keyboard
+* World/Actor/Components
+* Unity style prefabs
+* Job system using [CoPaT]
     
 ## Third parties
 Licenses for third party packages used is placed under `Licenses` folder
@@ -35,3 +60,8 @@ Licenses for third party packages used is placed under `Licenses` folder
 [CMake]: https://cmake.org/download/
 [VisualStudio]: https://visualstudio.microsoft.com/downloads/
 [VulkanSDK]: https://vulkan.lunarg.com/
+[CoPaT]: https://github.com/jeslaspravin/CoPaT
+[Assets.zip]: https://drive.google.com/file/d/1UenyueBcAzApXHIep02ZaDYXuvtzqNjP/view?usp=sharing
+
+[Cranberry-Main]: https://github.com/jeslaspravin/Cranberry/blob/main/Source/Runtime/EngineModules/Cranberry/Private/EngineMain.cpp#L22
+[TestEngine-Main]: https://github.com/jeslaspravin/Cranberry/blob/main/Source/Runtime/ExampleModules/TestEngine/Private/StartMain.cpp#L44
