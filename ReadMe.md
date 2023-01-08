@@ -66,6 +66,10 @@ Licenses for third party packages used is placed under `Licenses` folder
 ### CranberryEditor
 ![CranberryEdSS]
 
+## PS
+If you found any piece of this software helpful or used it yourself, Please feel free to share it with your circle. I had invested substantial amount of my personal time in this project and would love some feedback in return😄
+
+
 [//]: # (Below are link reference definitions)
 [CMake]: https://cmake.org/download/
 [VisualStudio]: https://visualstudio.microsoft.com/downloads/
