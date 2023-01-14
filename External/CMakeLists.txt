@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-set (libs_archive_url "https://github.com/jeslaspravin/CranberryEngineDependenciesArchive/releases/download/latest/CranberryEngineDependenciesArchive.zip")
+set (libs_archive_url "https://github.com/jeslaspravin/CranberryEngineDependenciesArchive/releases/latest/download/CranberryEngineDependenciesArchive.zip")
 
 message ("Setting up CPP libraries...")
 set (libs_path ${CMAKE_CURRENT_LIST_DIR})
