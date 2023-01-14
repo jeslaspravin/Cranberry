@@ -12,6 +12,7 @@
 #include "Widgets/ImGui/ImGuiManager.h"
 #include "Widgets/ImGui/IImGuiLayer.h"
 #include "Widgets/ImGui/ImGuiLib/imgui.h"
+#include "Widgets/ImGui/ImGuiLib/implot.h"
 #include "Widgets/WidgetWindow.h"
 #include "InputSystem/InputSystem.h"
 #include "InputSystem/PlatformInputTypes.h"
@@ -186,6 +187,7 @@ void ImGuiManager::initialize(ImGuiManagerOptions opts)
     {
         context = CreateContext();
     }
+    implotContext = ImPlot::CreateContext();
     setCurrentContext();
 
     ImGuiIO &io = GetIO();
@@ -244,6 +246,7 @@ void ImGuiManager::initialize(ImGuiManagerOptions opts)
 void ImGuiManager::release()
 {
     releaseRendering();
+    ImPlot::DestroyContext(implotContext);
     DestroyContext(context);
 }
 
@@ -293,7 +296,11 @@ void ImGuiManager::recreateFontAtlas(
     cmdList->copyToImage(textureAtlas, rawData);
 }
 
-void ImGuiManager::setCurrentContext() { SetCurrentContext(context); }
+void ImGuiManager::setCurrentContext()
+{
+    SetCurrentContext(context);
+    ImPlot::SetCurrentContext(implotContext);
+}
 
 ImageResourceRef ImGuiManager::getFontTextureAtlas() const { return parentGuiManager ? parentGuiManager->getFontTextureAtlas() : textureAtlas; }
 

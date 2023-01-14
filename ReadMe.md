@@ -6,6 +6,7 @@ Why is `Cranberry` the name? I was eating cranberry and checking Twitter for my 
 
 ## Requirement
 * Vulkan 1.3 supported hardware is required
+* Windows platform
 
 ## Instructions
 
@@ -28,7 +29,7 @@ Right now I have two runtime applications `Cranberry` and `TestEngine`
 * For `TestEngine` start from [TestEngine-Main]. In order to run `TestEngine` additional Assets directory with raw assets are necessary. If you want to run `TestEngine.exe` download and extract [Assets.zip] in Runtime folder
 
 ## Features
-Many features are supported but tooling still needs to be developed
+Many features listed below are supported but tooling still needs to be developed
 * Reflection generator for C++
 * Reflection supports metadata classes and flags
 * Shaders are reflected and Parameters can be addressed with names
@@ -47,16 +48,17 @@ Many features are supported but tooling still needs to be developed
 ## Third parties
 Licenses for third party packages used is placed under `Licenses` folder
 ### Current dependencies:
-* **`SPIRVCross`**(Few necessary files are copied directly rather than using as include)
-* **`ImGui`**(Embedded into the project)
 * **`Vulkan`** headers
 * **`glm`**
 * **`tinyObjloader`**
 * **`stb`**
-* **`LLVM`**(**`CLang`**) CMake configs generated required some manual tweaking in LLVM project to support Debug,Development and Release config
-* **`mimalloc`** CMake configs generated required some manual tweaking in mimalloc project to support Debug,Development and Release config
-* **`xxHash`**(Embedded into the project)
-* **`CoPaT`**(Embedded into the project)
+* **`LLVM`**(**`CLang`**). CMake configs generated required some manual tweaking to support Debug,Development and Release config
+* **`mimalloc`**. CMake configs generated required some manual tweaking to support Debug,Development and Release config
+* **`tracy`** profiler. CMake configs generated required some manual tweaking project to support Debug,Development and Release config
+* **`xxHash`** (Embedded into the project)
+* **`CoPaT`** (Embedded into the project)
+* **`SPIRVCross`** (Few necessary files are copied directly rather than using as include)
+* **`ImGui`** and **`ImPlot`** (Embedded into the project)
 
 ## Some screen shots
 
@@ -65,6 +67,10 @@ Licenses for third party packages used is placed under `Licenses` folder
 
 ### CranberryEditor
 ![CranberryEdSS]
+
+## Project boards
+* [Cranberry Board-Trello] - This board will used for new features and research.
+* [Cranberry Board-Github] - This board is for issues and bug fixes.
 
 ## PS
 If you found any piece of this software helpful or used it yourself, Please feel free to share it with your circle. I had invested substantial amount of my personal time in this project and would love some feedback in return😄
@@ -82,3 +88,5 @@ If you found any piece of this software helpful or used it yourself, Please feel
 [TestEngineSS]: https://jeslaspravin.github.io/assets/images/CranberryEngine/TestEngine(08-01-2023).jpg
 [CranberryEdSS]: https://jeslaspravin.github.io/assets/images/CranberryEngine/CranberryEngine(08-01-2023).jpg
 [CranberryAppLoadScene]: https://github.com/jeslaspravin/Cranberry/blob/main/Source/Runtime/EngineModules/Cranberry/Private/CranberryEngineApp.cpp#L165
+[Cranberry Board-Trello]: https://trello.com/b/ZvopPmvj
+[Cranberry Board-Github]: https://github.com/users/jeslaspravin/projects/4 

@@ -22,6 +22,7 @@
 #include "Widgets/ImGui/ImGuiLib/imgui.h"
 #include "Widgets/ImGui/IImGuiLayer.h"
 #include "Widgets/ImGui/ImGuiManager.h"
+#include "Widgets/ImGui/ImGuiLib/implot.h"
 #include "Core/GBuffers.h"
 #include "IApplicationModule.h"
 #include "InputSystem/InputSystem.h"
@@ -1747,15 +1748,15 @@ void ExperimentalEngineGoochModel::draw(class ImGuiDrawInterface *drawInterface)
                     bitonic = TestBitonicSortIndices(bitonic.count);
                 }
 
-                // TODO(Jeslas): Replace with IMGUI based custom draw
-                /*
-                ImPlot::SetNextPlotLimits(0, bitonic.stepsCount + 1, -1, bitonic.count, ImGuiCond_::ImGuiCond_Always);
-                if (ImPlot::BeginPlot(
-                        "Bitonic Threads", 0, 0, ImVec2(-1, 0), ImPlotFlags_::ImPlotFlags_CanvasOnly,
-                        ImPlotAxisFlags_::ImPlotAxisFlags_Lock | ImPlotAxisFlags_::ImPlotAxisFlags_NoGridLines,
-                        ImPlotAxisFlags_::ImPlotAxisFlags_Lock | ImPlotAxisFlags_::ImPlotAxisFlags_Invert
-                    ))
+                if (ImPlot::BeginPlot("Bitonic Threads", ImVec2(-1, 0), ImPlotFlags_::ImPlotFlags_CanvasOnly))
                 {
+                    ImPlot::SetupAxis(
+                        ImAxis_X1, nullptr, ImPlotAxisFlags_::ImPlotAxisFlags_Lock | ImPlotAxisFlags_::ImPlotAxisFlags_NoGridLines
+                    );
+                    ImPlot::SetupAxis(ImAxis_Y1, nullptr, ImPlotAxisFlags_::ImPlotAxisFlags_Lock | ImPlotAxisFlags_::ImPlotAxisFlags_Invert);
+                    ImPlot::SetupAxisLimits(ImAxis_X1, 0, bitonic.stepsCount + 1, ImGuiCond_::ImGuiCond_Always);
+                    ImPlot::SetupAxisLimits(ImAxis_Y1, -1, bitonic.count, ImGuiCond_::ImGuiCond_Always);
+
                     int32 idx = 0;
                     for (const auto &threadInds : bitonic.perThreadIndices)
                     {
@@ -1774,13 +1775,15 @@ void ExperimentalEngineGoochModel::draw(class ImGuiDrawInterface *drawInterface)
                     ImPlot::EndPlot();
                 }
 
-                ImPlot::SetNextPlotLimits(0, bitonic.stepsCount + 1, -1, bitonic.count, ImGuiCond_::ImGuiCond_Always);
-                if (ImPlot::BeginPlot(
-                        "Bitonic Groups", 0, 0, ImVec2(-1, 0), ImPlotFlags_::ImPlotFlags_CanvasOnly,
-                        ImPlotAxisFlags_::ImPlotAxisFlags_Lock | ImPlotAxisFlags_::ImPlotAxisFlags_NoGridLines,
-                        ImPlotAxisFlags_::ImPlotAxisFlags_Lock | ImPlotAxisFlags_::ImPlotAxisFlags_Invert
-                    ))
+                if (ImPlot::BeginPlot("Bitonic Groups", ImVec2(-1, 0), ImPlotFlags_::ImPlotFlags_CanvasOnly))
                 {
+                    ImPlot::SetupAxis(
+                        ImAxis_X1, nullptr, ImPlotAxisFlags_::ImPlotAxisFlags_Lock | ImPlotAxisFlags_::ImPlotAxisFlags_NoGridLines
+                    );
+                    ImPlot::SetupAxis(ImAxis_Y1, nullptr, ImPlotAxisFlags_::ImPlotAxisFlags_Lock | ImPlotAxisFlags_::ImPlotAxisFlags_Invert);
+                    ImPlot::SetupAxisLimits(ImAxis_X1, 0, bitonic.stepsCount + 1, ImGuiCond_::ImGuiCond_Always);
+                    ImPlot::SetupAxisLimits(ImAxis_Y1, -1, bitonic.count, ImGuiCond_::ImGuiCond_Always);
+
                     int32 idx = 0;
                     for (const auto &grpInds : bitonic.perGroup)
                     {
@@ -1799,7 +1802,6 @@ void ExperimentalEngineGoochModel::draw(class ImGuiDrawInterface *drawInterface)
 
                     ImPlot::EndPlot();
                 }
-                */
             }
 
             if (ImGui::CollapsingHeader("Rect Packer"))

@@ -25,6 +25,7 @@
 #include "Widgets/ImGui/ImGuiLib/imgui.h"
 #include "Widgets/ImGui/IImGuiLayer.h"
 #include "Widgets/ImGui/ImGuiManager.h"
+#include "Widgets/ImGui/ImGuiLib/implot.h"
 #include "IApplicationModule.h"
 #include "ICoreObjectsModule.h"
 #include "Modules/ModuleManager.h"
@@ -760,7 +761,7 @@ void PBRSceneEntity::updateMaterialParams(
 
 void ExperimentalEnginePBR::setupLightSceneDrawCmdsBuffer(class IRenderCommandList *cmdList, IGraphicsInstance *)
 {
-    struct LightObjectCulling
+    struct alignas(2 * CACHELINE_SIZE) LightObjectCulling
     {
         std::vector<DrawIndexedIndirectCommand> drawCmds;
         std::vector<GridEntity> setIntersections;
@@ -828,14 +829,6 @@ void ExperimentalEnginePBR::setupLightSceneDrawCmdsBuffer(class IRenderCommandLi
         }
 
         bHasAnyBufferResize = bHasAnyBufferResize || (drawCmdsBuffer->bufferCount() < uint32(lightCulling.drawCmds.size()));
-        if (bIsPtLights)
-        {
-            scenePointLights[idx].drawCmdCount = uint32(lightCulling.drawCmds.size());
-        }
-        else
-        {
-            sceneSpotLights[idx].drawCmdCount = uint32(lightCulling.drawCmds.size());
-        }
     };
 
     auto sceneSptCullingJobs = copat::dispatch(
@@ -856,6 +849,8 @@ void ExperimentalEnginePBR::setupLightSceneDrawCmdsBuffer(class IRenderCommandLi
     {
         const LightObjectCulling &lightCulling = lightCullings[i];
         SpotLight &sptlit = sceneSpotLights[i];
+
+        sptlit.drawCmdCount = uint32(lightCulling.drawCmds.size());
         if (!sptlit.drawCmdsBuffer)
         {
             continue;
@@ -875,6 +870,8 @@ void ExperimentalEnginePBR::setupLightSceneDrawCmdsBuffer(class IRenderCommandLi
     {
         const LightObjectCulling &lightCulling = lightCullings[sceneSpotLights.size() + i];
         PointLight &ptlit = scenePointLights[i];
+
+        ptlit.drawCmdCount = uint32(lightCulling.drawCmds.size());
         if (!ptlit.drawCmdsBuffer)
         {
             continue;
@@ -929,7 +926,13 @@ void ExperimentalEnginePBR::sortSpotFromView(std::vector<uint32> &indices)
             const Vector3D lhsLen = (sceneSpotLights[lhs].transform.getTranslation() - camera.translation());
             const Vector3D rhsLen = (sceneSpotLights[rhs].transform.getTranslation() - camera.translation());
 
-            return (lhsLen | lhsLen) < (rhsLen | rhsLen);
+            const float lhsSqrLen = lhsLen.sqrlength();
+            const float rhsSqrLen = rhsLen.sqrlength();
+
+            const float lhsProj = Math::pow2(lhsLen | camera.rotation().fwdVector()) / lhsSqrLen;
+            const float rhsProj = Math::pow2(rhsLen | camera.rotation().fwdVector()) / rhsSqrLen;
+
+            return lhsSqrLen < rhsSqrLen || (Math::isEqual(lhsSqrLen, rhsSqrLen) && lhsProj > rhsProj);
         }
     );
 }
@@ -950,7 +953,13 @@ void ExperimentalEnginePBR::sortPointsFromView(std::vector<uint32> &indices)
             const Vector3D lhsLen = (scenePointLights[lhs].lightPos - camera.translation());
             const Vector3D rhsLen = (scenePointLights[rhs].lightPos - camera.translation());
 
-            return (lhsLen | lhsLen) < (rhsLen | rhsLen);
+            const float lhsSqrLen = lhsLen.sqrlength();
+            const float rhsSqrLen = rhsLen.sqrlength();
+
+            const float lhsProj = Math::pow2(lhsLen | camera.rotation().fwdVector()) / lhsSqrLen;
+            const float rhsProj = Math::pow2(rhsLen | camera.rotation().fwdVector()) / rhsSqrLen;
+
+            return lhsSqrLen < rhsSqrLen || (Math::isEqual(lhsSqrLen, rhsSqrLen) && lhsProj > rhsProj);
         }
     );
 }
@@ -3208,6 +3217,10 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface *drawInterface)
     {
         ImGui::ShowDemoWindow(&bOpenImguiDemo);
     }
+    if (bOpenImPlotDemo)
+    {
+        ImPlot::ShowDemoWindow(&bOpenImPlotDemo);
+    }
 
     static bool bSettingOpen = true;
 
@@ -3436,14 +3449,13 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface *drawInterface)
 
                 if (selectedTexture != 0)
                 {
-                    // TODO(Jeslas): Replace with ImGUI custom draw
-                    /*
-                    ImPlot::SetNextPlotLimits(0, 255, 0, 1.0, ImGuiCond_::ImGuiCond_Once);
-                    if (ImPlot::BeginPlot(
-                            "Texture Histogram", 0, 0, ImVec2(-1, 0), 0, ImPlotAxisFlags_::ImPlotAxisFlags_Lock,
-                            ImPlotAxisFlags_::ImPlotAxisFlags_Lock
-                        ))
+                    if (ImPlot::BeginPlot("Texture Histogram", ImVec2(-1, 0)))
                     {
+                        ImPlot::SetupAxis(ImAxis_X1, nullptr, ImPlotAxisFlags_::ImPlotAxisFlags_Lock);
+                        ImPlot::SetupAxis(ImAxis_Y1, nullptr, ImPlotAxisFlags_::ImPlotAxisFlags_Lock);
+                        ImPlot::SetupAxisLimits(ImAxis_X1, 0, 255);
+                        ImPlot::SetupAxisLimits(ImAxis_Y1, 0, 1);
+
                         ImPlot::SetNextFillStyle(LinearColorConst::RED, 1.0f);
                         ImPlot::PlotShaded("Red", histogram[0].data(), int32(histogram[0].size()), 0.0f,
                                            8); // 256/ binCount(32)
@@ -3455,7 +3467,6 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface *drawInterface)
                         ImPlot::PlotShaded("Blue", histogram[2].data(), int32(histogram[2].size()), 0.0f, 8);
                         ImPlot::EndPlot();
                     }
-                    */
                 }
             }
             ImGui::PopStyleVar();
