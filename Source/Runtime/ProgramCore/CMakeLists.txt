@@ -8,6 +8,7 @@ set(public_includes )
 set(delay_load_dlls )
 
 set (private_compile_defs )
+set (public_compile_defs )
 
 # Finding Mimalloc libraries
 if (${enable_mimalloc})
@@ -18,7 +19,8 @@ if (${enable_mimalloc})
     make_find_package_hints(mimalloc ${mimalloc_install_path} mimalloc_hints)
     find_package(mimalloc 2.0
         REQUIRED CONFIG
-        HINTS ${mimalloc_hints} ${mimalloc_debug_hints})
+        HINTS ${mimalloc_hints}
+    )
     map_imported_targets_config(TARGETS ${mimalloc_lib_name})
     
     get_target_property(lib_path ${mimalloc_lib_name} IMPORTED_LOCATION_RELEASE)
@@ -35,6 +37,35 @@ if (${enable_mimalloc})
     list (APPEND private_compile_defs USE_MIMALLOC=1)
 endif (${enable_mimalloc})
 
+# Finding Tracy libraries
+if (${enable_tracy})    
+    find_package(Threads REQUIRED)
+
+    set(tracyclient_lib_name Tracy::TracyClient)    
+
+    make_find_package_hints(Tracy ${tracy_install_path} tracy_hints)
+    find_package(Tracy
+        REQUIRED CONFIG
+        HINTS ${tracy_hints}
+    )
+    map_imported_targets_config(TARGETS ${tracyclient_lib_name})
+    
+    get_target_property(lib_path ${tracyclient_lib_name} IMPORTED_LOCATION_RELEASE)
+    get_target_property(dbg_lib_path ${tracyclient_lib_name} IMPORTED_LOCATION_DEBUG)
+    if (DEFINED Tracy_FOUND AND ${Tracy_FOUND})
+        message ("-- Tracy release location ${lib_path} debug location ${dbg_lib_path}")
+    else ()
+        message (FATAL_ERROR "Tracy package not found, Make sure to configure \"tracy_install_path\" config CACHE with path to tracy cmake install")
+    endif ()
+
+    list (APPEND public_libraries ${tracyclient_lib_name})
+    list (APPEND public_compile_defs USE_TRACY_PROFILER=1)
+    list (APPEND private_compile_defs TRACYCLIENT_LIB_PATH=$<TARGET_FILE:${tracyclient_lib_name}>)
+
+    get_filename_component(tracyclient_file_name ${lib_path} NAME_WLE)
+    list (APPEND delay_load_dlls ${tracyclient_file_name})    
+endif (${enable_tracy})
+
 # add glm
 list (APPEND public_includes ${cpp_libs_path}/glm)
 
@@ -45,6 +76,7 @@ target_compile_definitions(${target_name}
     PUBLIC 
         ${engine_def} 
         ${experimental_def} 
+        ${public_compile_defs}
         $<$<BOOL:${enable_console_log}>:LOG_TO_CONSOLE=1>
         $<$<BOOL:${enable_verbose_log}>:ENABLE_VERBOSE_LOG=1>
     PRIVATE

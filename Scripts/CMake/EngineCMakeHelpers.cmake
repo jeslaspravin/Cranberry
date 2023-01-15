@@ -15,7 +15,10 @@ function(make_find_package_hints package_name base_dir out_hint_paths)
         ${base_dir}/lib/cmake/
         ${base_dir}/cmake/
         ${base_dir}/${package_name}/lib/cmake/
-        ${base_dir}/${package_name}/cmake/
+        ${base_dir}/${package_name}/cmake/        
+        ${base_dir}/share/
+        ${base_dir}/share/${package_name}/
+        ${base_dir}
         PARENT_SCOPE
     )
 endfunction()
