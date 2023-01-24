@@ -7,7 +7,7 @@ set(private_modules
     CoreObjects
     RTTIExample
 )
-if (${engine_static_modules})
+if (${Cranberry_STATIC_MODULES})
     if(${WIN32} OR ${LINUX})
         set (private_modules ${private_modules} VulkanRHI)
     elseif(${APPLE})        
@@ -16,8 +16,8 @@ if (${engine_static_modules})
 endif ()
 
 set(private_includes
-    ${cpp_libs_path}/tinyobjloader
-    ${cpp_libs_path}/stb
+    ${Cranberry_CPP_LIBS_PATH}/tinyobjloader
+    ${Cranberry_CPP_LIBS_PATH}/stb
 )
 
 generate_cpp_console_project()
@@ -26,7 +26,7 @@ target_compile_options(${target_name} PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/MP>)
 
 set_target_properties(${target_name} 
     PROPERTIES 
-        WIN32_EXECUTABLE ${native_main}
+        WIN32_EXECUTABLE ${Cranberry_NATIVE_MAIN}
 )
 
 # To update below project when outdated

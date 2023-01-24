@@ -8,8 +8,8 @@ set (private_modules
 
 # TODO : Move unnecessary public includes to private
 set(public_includes
-    ${vulkan_sdk_path}/include/vulkan
-    ${cpp_libs_path}/glm
+    ${Cranberry_VULKAN_SDK_PATH}/include/vulkan
+    ${Cranberry_CPP_LIBS_PATH}/glm
 )
 
 generate_engine_library()

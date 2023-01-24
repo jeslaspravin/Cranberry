@@ -112,7 +112,7 @@ endfunction ()
 macro (cpp_common_options_and_defines)
     target_compile_definitions(${target_name}
         PRIVATE
-            $<$<BOOL:${engine_static_modules}>:STATIC_LINKED=1>
+            $<$<BOOL:${Cranberry_STATIC_MODULES}>:STATIC_LINKED=1>
             $<${WIN32}:PLATFORM_WINDOWS=1>
             $<${LINUX}:PLATFORM_LINUX=1>
             $<${APPLE}:PLATFORM_APPLE=1>
@@ -203,7 +203,7 @@ macro (engine_module_dependencies)
     # Private dependencies
     list (LENGTH private_modules private_modules_count)
     if (${private_modules_count} GREATER 0)
-        if (${engine_static_modules})
+        if (${Cranberry_STATIC_MODULES})
             target_link_libraries (${target_name} PUBLIC ${private_modules})
         else ()
             target_link_libraries (${target_name} PRIVATE ${private_modules})
@@ -223,7 +223,7 @@ macro (engine_module_dependencies)
     # For each INTERFACE exposed modules for transitive dependencies we have to explicitly add include and compile definitions to help when reflecting codes
     set(transitive_modules ${public_modules} ${interface_modules})
     # private_modules are exposed as well in static builds
-    if (${engine_static_modules})
+    if (${Cranberry_STATIC_MODULES})
         list (APPEND transitive_modules ${private_modules})
     endif ()
     foreach (module ${transitive_modules})
@@ -239,7 +239,7 @@ macro (engine_module_dependencies)
     # generate_enginelib_depends()
     
     # Since we do not want all symbols that are not referenced removed as some were left out in local context like static initialized factory registers    
-    if (${engine_static_modules})
+    if (${Cranberry_STATIC_MODULES})
         foreach (module ${private_modules} ${public_modules})
             target_link_options(${target_name} 
                 PRIVATE 
@@ -260,7 +260,7 @@ macro (mark_delay_loaded_dlls)
 
     # If static linked then having engine modules as delay loaded does not makes sense
     # and if IGNORE_MODULES option is not enabled
-    if (NOT ${engine_static_modules} AND (NOT ${delay_load_arg_IGNORE_MODULES}))
+    if (NOT ${Cranberry_STATIC_MODULES} AND (NOT ${delay_load_arg_IGNORE_MODULES}))
         # Private dependencies
         list (LENGTH private_modules private_modules_count)
         if (${private_modules_count} GREATER 0)
@@ -285,7 +285,7 @@ macro (mark_delay_loaded_dlls)
             # Remove ProgramCore
             list (REMOVE_ITEM delay_load_list ${program_core_module})
         endif (${program_core_idx} GREATER_EQUAL 0)
-    endif (NOT ${engine_static_modules} AND (NOT ${delay_load_arg_IGNORE_MODULES}))
+    endif (NOT ${Cranberry_STATIC_MODULES} AND (NOT ${delay_load_arg_IGNORE_MODULES}))
 
     # delay load dlls
     list (APPEND delay_load_list ${delay_load_dlls})    
@@ -389,7 +389,7 @@ endmacro()
 
 # Used for engine modules to determine whether to build as shared or static library
 macro (generate_engine_library)
-    if (${engine_static_modules})
+    if (${Cranberry_STATIC_MODULES})
         generate_cpp_static_lib()
     else ()
         generate_cpp_shared_lib()
@@ -400,7 +400,7 @@ macro (generate_engine_editor_library)
     generate_engine_library()
     
     # Exclude from all build if we are not building editor target
-    if (NOT ${editor_build})
+    if (NOT ${Cranberry_EDITOR_BUILD})
         set_target_properties(${target_name} PROPERTIES
             EXCLUDE_FROM_ALL ON
             EXCLUDE_FROM_DEFAULT_BUILD ON

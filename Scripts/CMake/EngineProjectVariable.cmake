@@ -15,29 +15,32 @@ include (StringUtilities)
 
 ##### ----CONFIG options start---- #####
 # Setting Global properties
-option (native_main "Whether to use native main function as application entry?" ON)
-option (experimental "Defines EXPERIMENTAL macro for Engine C++ modules" ON)
+option (Cranberry_NATIVE_MAIN "Whether to use native main function as application entry?" ON)
+option (Cranberry_EXPERIMENTAL "Defines EXPERIMENTAL macro for Engine C++ modules" ON)
 # option (multithread "Whether to do multi threaded compilation" ON)
 # Right now editor build is only supported
-option (editor_build "Should be compiled as editor(Enables all editor modules)?" ON)
-option (engine_static_modules "Should compile and link engine modules statically?" OFF)
-option (enable_console_log "Should log write to console as well?" ON)
-option (enable_verbose_log "Should write verbose log to log file?" OFF)
+option (Cranberry_EDITOR_BUILD "Should be compiled as editor(Enables all editor modules)?" ON)
+option (Cranberry_STATIC_MODULES "Should compile and link engine modules statically?" OFF)
+option (Cranberry_ENABLE_CONSOLE_LOG "Should log write to console as well?" ON)
+option (Cranberry_ENABLE_VERBOSE_LOG "Should write verbose log to log file?" OFF)
 
-set (vulkan_sdk_path $ENV{VULKAN_SDK} CACHE PATH "Vulkan SDK path")
+set (Cranberry_VULKAN_SDK_PATH $ENV{VULKAN_SDK} CACHE PATH "Vulkan SDK path")
 
 # Setup.bat will populate this directory
-set (cpp_libs_path ${CMAKE_SOURCE_DIR}/External CACHE PATH "Path to CPP libraries")
+set (Cranberry_CPP_LIBS_PATH ${CMAKE_SOURCE_DIR}/External CACHE PATH "Path to CPP libraries")
 # LLVM installed path
-set (llvm_install_path ${cpp_libs_path}/llvm CACHE PATH "LLVM installed path(For libclang)")
+set (Cranberry_LLVM_INSTALL_PATH ${Cranberry_CPP_LIBS_PATH}/llvm CACHE PATH "LLVM installed path(For libclang)")
 
-option (enable_mimalloc "Compile with mimalloc?" ON)
-set (mimalloc_install_path ${cpp_libs_path}/mimalloc CACHE PATH "mimalloc installed path")
+option (Cranberry_ENABLE_MIMALLOC "Compile with mimalloc?" ON)
+set (Cranberry_MIMALLOC_INSTALL_PATH ${Cranberry_CPP_LIBS_PATH}/mimalloc CACHE PATH "mimalloc installed path")
 
-option (enable_tracy "Should use tracy for profiling?" ON)
-set (tracy_install_path ${cpp_libs_path}/tracy CACHE PATH "tracy installed path")
+# Profiler options
+option (Cranberry_ENABLE_SECURE_PROFILING "Should the profiler availability needs to be check every time?" OFF)
+option (Cranberry_ENABLE_MEMORY_PROFILING "Should the memory allocations needs to be tracked?" OFF)
+option (Cranberry_ENABLE_TRACY "Should use tracy for profiling?" ON)
+set (Cranberry_TRACY_INSTALL_PATH ${Cranberry_CPP_LIBS_PATH}/tracy CACHE PATH "tracy installed path")
 
-option (enable_clang_format "If enabled, Creates clang formatting sources project" ON)
+option (Cranberry_ENABLE_CLANG_FORMAT "If enabled, Creates clang formatting sources project" ON)
 
 ##### ----CONFIG options end---- #####
 
@@ -46,10 +49,10 @@ TEST_BIG_ENDIAN(is_big_endian)
 
 # Relative to target binary directory
 set (target_generated_path Generated)
-set (experimental_def $<IF:$<BOOL:${experimental}>,EXPERIMENTAL=1,EXPERIMENTAL=0>)
+set (Cranberry_EXPERIMENTAL_def $<IF:$<BOOL:${Cranberry_EXPERIMENTAL}>,EXPERIMENTAL=1,EXPERIMENTAL=0>)
 set (engine_def RENDERAPI_VULKAN=1 ENGINE_VERSION=0 ENGINE_MINOR_VERSION=1 ENGINE_PATCH_VERSION=0 
     ENGINE_NAME=${CMAKE_PROJECT_NAME}
-    $<$<BOOL:${editor_build}>:EDITOR_BUILD=1>
+    $<$<BOOL:${Cranberry_EDITOR_BUILD}>:EDITOR_BUILD=1>
     $<IF:${is_big_endian},BIG_ENDIAN=1,LITTLE_ENDIAN=1>
     )
 set (configure_file_folder ConfigureFiles)

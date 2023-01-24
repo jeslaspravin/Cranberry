@@ -13,7 +13,7 @@ set (interface_libraries
 
 # EngineShaderData is general library so we need to manually include to propagate transitive includes and compile definitions
 set(public_includes
-    ${cpp_libs_path}/glm
+    ${Cranberry_CPP_LIBS_PATH}/glm
     $<TARGET_PROPERTY:EngineShaderData,INTERFACE_INCLUDE_DIRECTORIES>
 )
 

@@ -7,15 +7,15 @@ set (CMAKE_FOLDER "Tools")
 add_cmake_subdirectories()
 
 # clang-format
-if (${enable_clang_format})    
+if (${Cranberry_ENABLE_CLANG_FORMAT})    
     # We do not need to find_package and load all target just clang-format is enough
-    find_program(clang_format_exe 
+    find_program(Cranberry_clang_format_exe 
         NAMES "clang-format"
-        HINTS ${llvm_install_path}/bin
+        HINTS ${Cranberry_LLVM_INSTALL_PATH}/bin
         DOC "clang-format path"
     )
 
-    if (clang_format_exe)
+    if (Cranberry_clang_format_exe)
         get_all_cpp_files_in_dirs(
             file_list 
             RELATIVE ${CMAKE_SOURCE_DIR}/Source
@@ -40,7 +40,7 @@ if (${enable_clang_format})
 
         add_custom_target(FormatCPP
             DEPENDS ${formating_args_file}
-            COMMAND ${clang_format_exe} "@${formating_args_file}"
+            COMMAND ${Cranberry_clang_format_exe} "@${formating_args_file}"
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/Source
             COMMENT "Formatting ${len} engine sources using clang-format..."
             VERBATIM
@@ -54,5 +54,5 @@ if (${enable_clang_format})
 
     endif ()
 
-endif (${enable_clang_format})
+endif (${Cranberry_ENABLE_CLANG_FORMAT})
 

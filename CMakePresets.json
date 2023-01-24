@@ -19,12 +19,12 @@
                     "type": "STRING",
                     "value": "${sourceDir}/Installed"
                 },
-                "engine_static_modules":
+                "Cranberry_STATIC_MODULES":
                 {
                     "type": "BOOL",
                     "value": "OFF"
                 },
-                "editor_build":
+                "Cranberry_EDITOR_BUILD":
                 {
                     "type": "BOOL",
                     "value": "ON"
@@ -67,7 +67,7 @@
             "binaryDir": "${sourceDir}/StaticBuild",
             "cacheVariables":
             {
-                "engine_static_modules":
+                "Cranberry_STATIC_MODULES":
                 {
                     "type": "BOOL",
                     "value": "ON"
@@ -81,7 +81,7 @@
             "binaryDir": "${sourceDir}/RuntimeBuild",
             "cacheVariables":
             {
-                "editor_build":
+                "Cranberry_EDITOR_BUILD":
                 {
                     "type": "BOOL",
                     "value": "OFF"
@@ -95,7 +95,7 @@
             "binaryDir": "${sourceDir}/RuntimeStaticBuild",
             "cacheVariables":
             {
-                "engine_static_modules":
+                "Cranberry_STATIC_MODULES":
                 {
                     "type": "BOOL",
                     "value": "ON"

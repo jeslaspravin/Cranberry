@@ -16,8 +16,8 @@ Why is `Cranberry` the name? I was eating cranberry and checking Twitter for my 
 * Run GenerateProject.bat to generate Visual Studio solution. This will by default generate solution for `Editor-DynamicLinked` preset under `Build` folder
 * You can also run GenerateProject.bat with one of following presets(eg., `GenerateProject.bat` or `GenerateProject.bat <preset> [Some Cmake arguments]..`)
 Note that if using preset and not going to change library dependencies run Setup.bat first(It will download archive with necessary libraries)
-    - `Editor-DynamicLinked` preset creates command `cmake -B Build -G "Visual Studio 17 2022" -A x64 -Thost=x64 -DCMAKE_INSTALL_PREFIX:STRING=${sourceDir}/Installed -Dengine_static_modules:BOOL=OFF`
-    - `Runtime-DynamicLinked` preset creates command `cmake -B RuntimeBuild -G "Visual Studio 17 2022" -A x64 -Thost=x64 -DCMAKE_INSTALL_PREFIX:STRING=${sourceDir}/Installed -Dengine_static_modules:BOOL=OFF -Deditor_build:BOOL=OFF`
+    - `Editor-DynamicLinked` preset creates command `cmake -B Build -G "Visual Studio 17 2022" -A x64 -Thost=x64 -DCMAKE_INSTALL_PREFIX:STRING=${sourceDir}/Installed -DCranberry_STATIC_MODULES:BOOL=OFF`
+    - `Runtime-DynamicLinked` preset creates command `cmake -B RuntimeBuild -G "Visual Studio 17 2022" -A x64 -Thost=x64 -DCMAKE_INSTALL_PREFIX:STRING=${sourceDir}/Installed -DCranberry_STATIC_MODULES:BOOL=OFF -DCranberry_EDITOR_BUILD:BOOL=OFF`
     
 
 ## Code lookups

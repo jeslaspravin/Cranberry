@@ -7,7 +7,7 @@ set(private_modules
     CoreObjects
     EngineCore
 )
-if (${engine_static_modules})
+if (${Cranberry_STATIC_MODULES})
     if(${WIN32} OR ${LINUX})
         set (private_modules ${private_modules} VulkanRHI)
     elseif(${APPLE})        
@@ -15,7 +15,7 @@ if (${engine_static_modules})
     endif()
 endif ()
 
-if (${editor_build})    
+if (${Cranberry_EDITOR_BUILD})    
     set (editor_modules 
         EditorCore
         CBEEditor
@@ -28,15 +28,15 @@ if (${editor_build})
     set (delay_load_dlls ${editor_modules})
     mark_delay_loaded_dlls(IGNORE_MODULES)
     
-else (${editor_build})
+else (${Cranberry_EDITOR_BUILD})
     generate_cpp_console_project(TARGET_NAME ${CMAKE_PROJECT_NAME})
-endif (${editor_build})
+endif (${Cranberry_EDITOR_BUILD})
 
 target_compile_options(${target_name} PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/MP>)
 
 set_target_properties(${target_name} 
     PROPERTIES 
-        WIN32_EXECUTABLE ${native_main}
+        WIN32_EXECUTABLE ${Cranberry_NATIVE_MAIN}
 )
 
 # To update below project when outdated

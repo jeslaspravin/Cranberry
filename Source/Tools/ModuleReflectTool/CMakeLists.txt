@@ -6,24 +6,24 @@ get_filename_component(directory_name ${CMAKE_CURRENT_LIST_DIR} NAME)
 set (CMAKE_FOLDER Tools/${directory_name})
 
 # Finding LLVM libraries
-make_find_package_hints(LLVM ${llvm_install_path} llvm_hints)
+make_find_package_hints(LLVM ${Cranberry_LLVM_INSTALL_PATH} llvm_hints)
 find_package(LLVM 15
     REQUIRED CONFIG
     HINTS ${llvm_hints})    
 if (DEFINED LLVM_FOUND AND ${LLVM_FOUND})
     message ("-- LLVM found dir ${LLVM_INSTALL_PREFIX}")
 else ()
-    message (FATAL_ERROR "LLVM package not found, Make sure to configure \"llvm_install_path\" config CACHE with path to llvm install")
+    message (FATAL_ERROR "LLVM package not found, Make sure to configure \"Cranberry_LLVM_INSTALL_PATH\" config CACHE with path to llvm install")
 endif ()
 # Finding Clang libraries
-make_find_package_hints(CLang ${llvm_install_path} clang_hints)
+make_find_package_hints(CLang ${Cranberry_LLVM_INSTALL_PATH} clang_hints)
 find_package(Clang
     REQUIRED CONFIG
     HINTS ${clang_hints})
 if (DEFINED Clang_FOUND AND ${Clang_FOUND})
     message ("-- Clang include dir ${CLANG_INCLUDE_DIRS}")
 else ()
-    message (FATAL_ERROR "Clang package not found, Make sure to configure \"llvm_install_path\" config CACHE with path to llvm install")
+    message (FATAL_ERROR "Clang package not found, Make sure to configure \"Cranberry_LLVM_INSTALL_PATH\" config CACHE with path to llvm install")
 endif ()
 
 map_imported_targets_config(TARGETS libclang 

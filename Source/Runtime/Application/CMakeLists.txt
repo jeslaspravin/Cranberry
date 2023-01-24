@@ -12,7 +12,7 @@ set (interface_modules
 )
 
 set(private_includes
-    ${cpp_libs_path}/stb
+    ${Cranberry_CPP_LIBS_PATH}/stb
 )
 
 generate_engine_library()
