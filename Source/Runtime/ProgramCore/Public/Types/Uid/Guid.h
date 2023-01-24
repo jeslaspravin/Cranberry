@@ -201,7 +201,7 @@ struct CBEGuid::ParseFromFormat<CBEGuid::DigitsOnly, CharType>
             return {};
         }
 
-        uint32 a, b, c, d;
+        uint32 a = 0, b = 0, c = 0, d = 0;
         bool bParsed = TCharUtils::parseHex(a, CharStringView<CharType>(str, 8));
         bParsed = bParsed && TCharUtils::parseHex(b, CharStringView<CharType>(str + 8, 8));
         bParsed = bParsed && TCharUtils::parseHex(c, CharStringView<CharType>(str + 16, 8));
@@ -226,7 +226,7 @@ struct CBEGuid::ParseFromFormat<CBEGuid::DWordWithHyphen, CharType>
             return {};
         }
 
-        uint32 a, b, c, d;
+        uint32 a = 0, b = 0, c = 0, d = 0;
         bool bParsed = TCharUtils::parseHex(a, CharStringView<CharType>(str, 8));
         bParsed = bParsed && TCharUtils::parseHex(b, CharStringView<CharType>(str + 9, 8));
         bParsed = bParsed && TCharUtils::parseHex(c, CharStringView<CharType>(str + 18, 8));
@@ -251,7 +251,7 @@ struct CBEGuid::ParseFromFormat<CBEGuid::HexValues, CharType>
             return {};
         }
 
-        Component a, b, c, d;
+        Component a = {}, b = {}, c = {}, d = {};
         bool bParsed = TCharUtils::parseHex(a.dw, CharStringView<CharType>(str + 1, 10));
         bParsed = bParsed && TCharUtils::parseHex(b.words.highWord, CharStringView<CharType>(str + 12, 6));
         bParsed = bParsed && TCharUtils::parseHex(b.words.lowWord, CharStringView<CharType>(str + 19, 6));
@@ -283,7 +283,7 @@ struct CBEGuid::ParseFromFormat<CBEGuid::DigitsWithHyphen, CharType>
             return {};
         }
 
-        Component a, b, c, d;
+        Component a = {}, b = {}, c = {}, d = {};
         bool bParsed = TCharUtils::parseHex(a.dw, CharStringView<CharType>(str, 8));
         bParsed = bParsed && TCharUtils::parseHex(b.words.highWord, CharStringView<CharType>(str + 9, 4));
         bParsed = bParsed && TCharUtils::parseHex(b.words.lowWord, CharStringView<CharType>(str + 14, 4));

@@ -117,6 +117,23 @@ ModulePtr ModuleManager::tryLoadModule(const TChar *moduleName)
     return retModule;
 }
 
+DEBUG_INLINE bool ModuleManager::tryUnloadModule(const TChar *moduleName)
+{
+    WeakModulePtr existingModule = getModule(moduleName);
+    if (!existingModule.expired())
+    {
+        IModuleBase *moduleInterface = existingModule.lock().get();
+
+        onModuleUnload.invoke(moduleName);
+        moduleInterface->release();
+        loadedModuleInterfaces.erase(moduleName);
+        std::erase(moduleLoadedOrder, moduleName);
+        LOG_DEBUG("ModuleManager", "Unloaded module %s", moduleName);
+        return true;
+    }
+    return false;
+}
+
 ModuleManager::ModuleManager()
     : loadedLibraries()
 {
@@ -285,18 +302,12 @@ IModuleBase *ModuleManager::getOrLoadModulePtr(const TChar *moduleName)
     return retModule;
 }
 
-void ModuleManager::unloadModule(const TChar *moduleName)
-{
-    WeakModulePtr existingModule = getModule(moduleName);
-    if (!existingModule.expired())
-    {
-        IModuleBase *moduleInterface = existingModule.lock().get();
+void ModuleManager::unloadModule(const TChar *moduleName) { tryUnloadModule(moduleName); }
 
-        onModuleUnload.invoke(moduleName);
-        moduleInterface->release();
-        loadedModuleInterfaces.erase(moduleName);
-        std::erase(moduleLoadedOrder, moduleName);
-        LOG_DEBUG("ModuleManager", "Unloaded module %s", moduleName);
+void ModuleManager::unloadModule(const TChar *moduleName, bool bUnloadLib)
+{
+    if (tryUnloadModule(moduleName) && bUnloadLib)
+    {
 #if !STATIC_LINKED
         unloadLibrary(moduleName);
 #endif // STATIC_LINKED
@@ -309,17 +320,11 @@ void ModuleManager::unloadAll()
     std::vector<String> localModuleLoadOrder = std::move(moduleLoadedOrder);
     for (auto rItr = localModuleLoadOrder.crbegin(); rItr != localModuleLoadOrder.crend(); ++rItr)
     {
-        auto moduleItr = loadedModuleInterfaces.find(*rItr);
-        if (moduleItr == loadedModuleInterfaces.end())
+        if (!tryUnloadModule(rItr->getChar()))
         {
             LOG_DEBUG("ModuleManager", "Module %s is already unloaded in one of module that was unload", *rItr);
             continue;
         }
-
-        onModuleUnload.invoke(*rItr);
-        moduleItr->second->release();
-        loadedModuleInterfaces.erase(moduleItr);
-        LOG_DEBUG("ModuleManager", "Unloaded module %s", *rItr);
     }
     // Make a local copy and erase loadedModuleInterfaces
     LoadedModulesMap strandedModule = std::move(loadedModuleInterfaces);

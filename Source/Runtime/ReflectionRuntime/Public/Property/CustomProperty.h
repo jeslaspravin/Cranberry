@@ -14,6 +14,7 @@
 #include "Property/Property.h"
 #include "Types/Containers/ReferenceCountPtr.h"
 #include "Types/PropertyTypes.h"
+#include "Math/Math.h"
 
 class CustomProperty;
 

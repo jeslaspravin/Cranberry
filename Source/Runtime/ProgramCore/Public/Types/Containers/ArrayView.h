@@ -18,7 +18,7 @@ template <typename ElementType>
 class ArrayView;
 
 template <typename T>
-concept ArrayViewVectorQualifierInternal = IndexableCompound<T> &&(!std::same_as<T, ArrayView<typename T::value_type>>);
+concept ArrayViewVectorQualifierInternal = IndexableCompound<T> && (!std::same_as<T, ArrayView<typename T::value_type>>);
 template <typename T>
 concept ArrayViewVectorQualifier = ArrayViewVectorQualifierInternal<std::remove_cvref_t<T>>;
 

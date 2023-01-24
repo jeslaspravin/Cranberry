@@ -11,7 +11,9 @@
 
 #include "WindowsPlatformFunctions.h"
 #include "String/TCharString.h"
+#include "Math/Math.h"
 #include "Types/Time.h"
+#include "Memory/Memory.h"
 #include "WindowsCommonHeaders.h"
 
 #include <chrono>

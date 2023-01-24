@@ -92,8 +92,6 @@ Color Color::toLinear() const
 
 uint8 Color::operator[](uint32 idx) const { return colorValue[idx]; }
 
-Color::operator uint32() const { return *reinterpret_cast<const uint32 *>(this); }
-
 Color Color::fromHsl(const Vector3D &hsl, uint8 alpha /*= 255*/) { return Color(LinearColor::fromHsl(hsl), NORMALIZE_COLOR_COMP(alpha)); }
 
 LinearColor Color::fromHsv(const Vector3D &hsv, uint8 alpha /*= 255*/) { return Color(LinearColor::fromHsv(hsv), NORMALIZE_COLOR_COMP(alpha)); }
@@ -371,10 +369,13 @@ const Color BLACK_Transparent(0, 0, 0, 0);
 const Color WHITE(255, 255, 255, 255);
 const Color GRAY(128, 128, 128, 255);
 const Color BLACK(0, 0, 0, 255);
+const Color YELLOW(255, 255, 0, 255);
 const Color RED(255, 0, 0, 255);
-const Color BLUE(0, 0, 255, 255);
-const Color PALE_BLUE(195, 218, 234, 255);
 const Color GREEN(0, 255, 0, 255);
+const Color BLUE(0, 0, 255, 255);
+
+const Color DARK_GRAY(64, 64, 64, 255);
+const Color PALE_BLUE(195, 218, 234, 255);
 
 const Color CYAN(0, 255, 255, 255);
 } // namespace ColorConst
@@ -398,10 +399,13 @@ const LinearColor BLACK_Transparent(0, 0, 0, 0);
 const LinearColor WHITE(1, 1, 1, 1);
 const LinearColor GRAY(0.5, 0.5, 0.5, 1);
 const LinearColor BLACK(0, 0, 0, 1);
+const LinearColor YELLOW(1, 1, 0, 1);
 const LinearColor RED(1, 0, 0, 1);
-const LinearColor BLUE(0, 0, 1, 1);
-const LinearColor PALE_BLUE(0.764f, 0.854f, 0.917f, 1.0f);
 const LinearColor GREEN(0, 1, 0, 1);
+const LinearColor BLUE(0, 0, 1, 1);
+
+const LinearColor DARK_GRAY(0.25, 0.25, 0.25, 1);
+const LinearColor PALE_BLUE(0.764f, 0.854f, 0.917f, 1.0f);
 
 const LinearColor CYAN(0, 1, 1, 1);
 } // namespace LinearColorConst

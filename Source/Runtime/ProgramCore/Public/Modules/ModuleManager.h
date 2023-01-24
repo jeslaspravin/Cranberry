@@ -21,7 +21,10 @@
 #include <unordered_map>
 
 #define MODULE_CREATE_FUNCTION_CPP(ModuleName, ModuleClass)                                                                                    \
-    IModuleBase *createModule_##ModuleName() { return new ModuleClass(); }
+    IModuleBase *createModule_##ModuleName()                                                                                                   \
+    {                                                                                                                                          \
+        return new ModuleClass();                                                                                                              \
+    }
 
 #define DECLARE_STATIC_LINKED_MODULE(ModuleName, ModuleClass)                                                                                  \
     MODULE_CREATE_FUNCTION_CPP(ModuleName, ModuleClass)                                                                                        \
@@ -94,7 +97,9 @@ public:
     {
         return static_cast<ModuleType *>(getOrLoadModulePtr(moduleName));
     }
+    // unload module does not releases loaded dll, If you want dll to be removed use `unloadModule(moduleName, bUnloadLib)`
     void unloadModule(const TChar *moduleName);
+    void unloadModule(const TChar *moduleName, bool bUnloadLib);
     void unloadAll();
 
     // Just releases the module and keeps the runtime loaded library loaded
@@ -111,6 +116,7 @@ private:
      */
     LibHandle loadFromAdditionalPaths(const TChar *modulePath) const;
     ModulePtr tryLoadModule(const TChar *moduleName);
+    DEBUG_INLINE bool tryUnloadModule(const TChar *moduleName);
 
     ModuleManager();
 };

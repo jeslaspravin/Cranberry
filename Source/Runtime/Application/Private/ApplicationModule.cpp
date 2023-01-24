@@ -17,6 +17,7 @@
 #include "ApplicationSettings.h"
 #include "ApplicationInstance.h"
 #include "FontManager.h"
+#include "Profiler/ProgramProfiler.hpp"
 
 DECLARE_MODULE(Application, ApplicationModule)
 
@@ -69,6 +70,9 @@ void ApplicationModule::startAndRun(ApplicationInstance *appInst, const AppInsta
         LOG_ERROR("Engine", "Invalid command line");
         ProgramCmdLine::get()->printCommandLine();
     }
+    // Start the profiler immediately
+    CBE_START_PROFILER();
+    CBE_PROFILER_MESSAGE_LC("Hello Profiler! Cranberry Here!", ColorConst::GREEN);
 
     FontManager fontManager;
     PlatformAppInstance platformApp(appCI.platformAppHandle);
@@ -83,6 +87,9 @@ void ApplicationModule::startAndRun(ApplicationInstance *appInst, const AppInsta
         copat::JobSystem::MainThreadTickFunc::createLambda(
             [&jobSys](void *appModulePtr)
             {
+                CBE_PROFILER_MARKFRAME();
+                CBE_PROFILER_SCOPE_TC(CBE_PROFILER_CHAR("AppTick"), TCHAR("Hello Test!"), ColorConst::CYAN);
+
                 ApplicationModule *appModule = (ApplicationModule *)appModulePtr;
                 if (!appModule->appInstance->appTick())
                 {
@@ -155,6 +162,10 @@ void ApplicationModule::startAndRun(ApplicationInstance *appInst, const AppInsta
 
     // Shutdown the job system after renderer is released!
     jobSys.shutdown();
+
+    // Stop profiler once all systems are done
+    CBE_PROFILER_MESSAGE_LC("Bye Profiler from Cranberry!", ColorConst::RED);
+    CBE_STOP_PROFILER();
 
     appInstance = nullptr;
 }

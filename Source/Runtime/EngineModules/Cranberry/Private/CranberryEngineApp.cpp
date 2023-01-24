@@ -22,6 +22,7 @@
 
 void tempTest();
 void tempTickTest();
+void tempExitTest();
 
 void CranberryEngineApp::onStart()
 {
@@ -54,10 +55,14 @@ void CranberryEngineApp::onTick()
     gCBEEngine->onTick();
     // 4ms, Reduce if this is too much
     // coreObjModule->getGC().collect(0.004f);
+
+    tempTickTest();
 }
 
 void CranberryEngineApp::onExit()
 {
+    tempExitTest();
+
     gCBEEngine->onExit();
     gCBEEngine->worldManager()->unloadAllWorlds();
 
@@ -99,6 +104,7 @@ void CranberryEngineApp::onRendererStateEvent(ERenderStateEvent /*state*/) {}
 #include "Components/StaticMeshComponent.h"
 #include "RenderApi/RenderTaskHelpers.h"
 #include "EditorHelpers.h"
+#include "Profiler/ProgramProfiler.hpp"
 
 void tempTest()
 {
@@ -329,3 +335,5 @@ void tempTest()
 }
 
 void tempTickTest() {}
+
+void tempExitTest() {}

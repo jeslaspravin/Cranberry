@@ -30,6 +30,10 @@
 #define STRINGID_HASHFUNC xxHash::hashString
 #endif // !STRINGID_HASHFUNC
 
+#if ENABLE_STRID_DEBUG
+#include <unordered_map>
+#endif
+
 class StringID;
 inline namespace Literals
 {
@@ -58,17 +62,13 @@ private:
     // Holds pointer to debugStringsDB which will be used by debug to visualize string
     const std::unordered_map<StringID::IDType, String> *debugStrings = nullptr;
     static std::unordered_map<IDType, String> &debugStringDB();
-    template <typename StrType>
-    void insertDbgStr(StrType &&str)
-    {
-        debugStrings = &debugStringDB();
-        debugStringDB().insert({ id, std::forward<StrType>(str) });
-    }
+    static const TChar *findDebugString(IDType strId);
+    void insertDbgStr(StringView str);
 
     StringID(IDType strId, const TChar *debugStr, SizeT len)
         : id(strId)
     {
-        insertDbgStr(String(debugStr, len));
+        insertDbgStr({ debugStr, len });
     }
     explicit StringID(IDType strId)
         : id(strId)
@@ -80,15 +80,13 @@ private:
         : id(strId)
     {}
 
-    template <typename StrType>
-    CONST_EXPR void insertDbgStr(StrType &&)
-    {}
+    CONST_EXPR void insertDbgStr(StringView) {}
 #endif
 
     STRINGID_FUNCQUALIFIER void initFromAChar(const AChar *str)
     {
         id = STRINGID_HASHFUNC(str, Seed);
-        insertDbgStr(String(UTF8_TO_TCHAR(str)));
+        insertDbgStr(UTF8_TO_TCHAR(str));
     }
 
 public:
@@ -105,13 +103,13 @@ public:
     FORCE_INLINE explicit StringID(const String &str)
         : id(STRINGID_HASHFUNC(str, Seed))
     {
-        insertDbgStr(str);
+        insertDbgStr(str.getChar());
     }
     STRINGID_FUNCQUALIFIER
     StringID(const AChar *str, SizeT len)
         : id(STRINGID_HASHFUNC(str, IDType(len), Seed))
     {
-        insertDbgStr(String(str, len));
+        insertDbgStr({ str, len });
     }
     STRINGID_FUNCQUALIFIER
     StringID(const AChar *str) { initFromAChar(str); }
@@ -122,7 +120,7 @@ public:
     StringID &operator=(const String &str)
     {
         id = STRINGID_HASHFUNC(str, Seed);
-        insertDbgStr(str);
+        insertDbgStr(str.getChar());
         return *this;
     }
     STRINGID_FUNCQUALIFIER
@@ -150,15 +148,12 @@ public:
     FORCE_INLINE String toString() const
     {
 #if ENABLE_STRID_DEBUG
-        auto itr = debugStringDB().find(id);
-        if (itr == debugStringDB().cend())
+        if (const TChar *foundStr = findDebugString(id))
         {
-            return String::toString(id);
+            return foundStr;
         }
-        return itr->second;
-#else  // DEV_BUILD
-        return String::toString(id);
 #endif // DEV_BUILD
+        return String::toString(id);
     }
 
     FORCE_INLINE IDType getID() const noexcept { return id; }

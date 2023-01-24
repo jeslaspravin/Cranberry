@@ -11,7 +11,6 @@
 
 #pragma once
 
-#include "Memory/Memory.h"
 #include "Types/CoreDefines.h"
 #include "Types/CoreTypes.h"
 #include "Types/Platform/PlatformFunctions.h"
@@ -170,7 +169,7 @@ CONST_EXPR void replaceInPlace(CharType *replaceIn, SizeT replaceFrom, SizeT rep
     debugAssert(replaceLen < replaceWithLen);
 #endif
 
-    CBEMemory::memCopy(replaceIn + replaceFrom, replaceWith, replaceLen);
+    memcpy(replaceIn + replaceFrom, replaceWith, replaceLen);
 }
 
 // Allocated char array must be cleared including null terminated character as count
@@ -193,11 +192,11 @@ NODISCARD CONST_EXPR CharType *
     CharType *retVal = allocator.allocate(finalLen + 1);
 
     // First section not-replaced
-    CBEMemory::memCopy(retVal, replaceIn, replaceFrom);
+    memcpy(retVal, replaceIn, replaceFrom);
     // Replaced section
-    CBEMemory::memCopy(retVal + replaceFrom, replaceWith, replaceWithLen);
+    memcpy(retVal + replaceFrom, replaceWith, replaceWithLen);
     // Last section
-    CBEMemory::memCopy(retVal + replaceFrom + replaceWithLen, replaceIn + replaceFrom + replaceLen, replaceInLen - (replaceLen + replaceFrom));
+    memcpy(retVal + replaceFrom + replaceWithLen, replaceIn + replaceFrom + replaceLen, replaceInLen - (replaceLen + replaceFrom));
     // Set null termination
     retVal[finalLen] = 0;
     return retVal;
@@ -248,9 +247,9 @@ NODISCARD CONST_EXPR CharType *replaceAll(const CharType *replaceIn, const CharT
 
     SizeT totalLen = replaceInLen - foundCount * replaceFromLen + foundCount * replaceToLen;
     CharType *retVal = allocator.allocate(totalLen + 1);
-    CBEMemory::memZero(retVal, totalLen + 1);
+    memset(retVal, 0, totalLen + 1);
     // Set initial str
-    CBEMemory::memCopy(retVal, replaceIn, replaceInLen);
+    memcpy(retVal, replaceIn, replaceInLen);
 
     // Original string char idx to copy from
     SizeT originalStrIdx = 0;
@@ -265,7 +264,7 @@ NODISCARD CONST_EXPR CharType *replaceAll(const CharType *replaceIn, const CharT
         originalStrIdx += (replaceAtPos - retValStrIdx) + replaceFromLen;
         retValStrIdx = replaceAtPos + replaceToLen;
         // Copy rest of str to new search point to replace next from str
-        CBEMemory::memCopy(retVal + retValStrIdx, replaceIn + originalStrIdx, replaceInLen - originalStrIdx);
+        memcpy(retVal + retValStrIdx, replaceIn + originalStrIdx, replaceInLen - originalStrIdx);
     }
     return retVal;
 }

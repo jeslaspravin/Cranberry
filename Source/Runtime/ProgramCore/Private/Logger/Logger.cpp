@@ -20,6 +20,7 @@
 #include "Types/Platform/Threading/CoPaT/JobSystemCoroutine.h"
 #include "Types/Platform/Threading/CoPaT/JobSystem.h"
 #include "Types/Platform/PlatformFunctions.h"
+#include "Profiler/ProgramProfiler.hpp"
 
 #include <mutex>
 
@@ -274,7 +275,13 @@ void Logger::verboseInternal(const SourceLocationType srcLoc, const TChar *categ
 #endif // LOG_TO_CONSOLE
     }
 
-#else // DEV_BUILD
+    // Send to profiler
+    if (canLog(ELogServerity::Verbose, ELogOutputType::Profiler))
+    {
+        CBE_PROFILER_MESSAGE_C(message.getChar(), ColorConst::DARK_GRAY);
+    }
+
+#else  // DEV_BUILD
     CompilerHacks::ignoreUnused(srcLoc, category, message);
 #endif // DEV_BUILD
 }
@@ -321,6 +328,12 @@ void Logger::debugInternal(const SourceLocationType srcLoc, const TChar *categor
 #endif // LOG_TO_CONSOLE
     }
 
+    // Send to profiler
+    if (canLog(ELogServerity::Debug, ELogOutputType::Profiler))
+    {
+        CBE_PROFILER_MESSAGE_C(message.getChar(), ColorConst::GRAY);
+    }
+
 #else  // DEV_BUILD
     CompilerHacks::ignoreUnused(srcLoc, category, message);
 #endif // DEV_BUILD
@@ -364,6 +377,12 @@ void Logger::logInternal(const SourceLocationType srcLoc, const TChar *category,
             << std::endl;
 #endif // SHORT_MSG_IN_CONSOLE
 #endif // LOG_TO_CONSOLE
+    }
+
+    // Send to profiler
+    if (canLog(ELogServerity::Log, ELogOutputType::Profiler))
+    {
+        CBE_PROFILER_MESSAGE_C(message.getChar(), ColorConst::WHITE);
     }
 }
 
@@ -420,6 +439,12 @@ void Logger::warnInternal(const SourceLocationType srcLoc, const TChar *category
 
 #endif // LOG_TO_CONSOLE
     }
+
+    // Send to profiler
+    if (canLog(ELogServerity::Warning, ELogOutputType::Profiler))
+    {
+        CBE_PROFILER_MESSAGE_C(message.getChar(), ColorConst::YELLOW);
+    }
 }
 
 void Logger::errorInternal(const SourceLocationType srcLoc, const TChar *category, const String &message)
@@ -475,6 +500,12 @@ void Logger::errorInternal(const SourceLocationType srcLoc, const TChar *categor
 
 #endif // LOG_TO_CONSOLE
     }
+
+    // Send to profiler
+    if (canLog(ELogServerity::Error, ELogOutputType::Profiler))
+    {
+        CBE_PROFILER_MESSAGE_C(message.getChar(), ColorConst::RED);
+    }
 }
 
 CBESpinLock &Logger::consoleOutputLock()
@@ -485,13 +516,21 @@ CBESpinLock &Logger::consoleOutputLock()
 
 bool Logger::canLog(ELogServerity severity, ELogOutputType output)
 {
+    if (loggerImpl == nullptr)
+    {
+        return false;
+    }
+
     switch (output)
     {
     case Logger::File:
-        return loggerImpl != nullptr && BIT_NOT_SET(loggerImpl->muteFlags().back(), severity);
+        return BIT_NOT_SET(loggerImpl->muteFlags().back(), severity);
         break;
     case Logger::Console:
-        return loggerImpl != nullptr && PlatformFunctions::hasAttachedConsole() && BIT_NOT_SET(loggerImpl->muteFlags().back(), severity);
+        return PlatformFunctions::hasAttachedConsole() && BIT_NOT_SET(loggerImpl->muteFlags().back(), severity);
+        break;
+    case Logger::Profiler:
+        return ENABLE_PROFILING && CBEProfiler::profilerAvailable() && BIT_NOT_SET(loggerImpl->muteFlags().back(), severity);
         break;
     default:
         break;

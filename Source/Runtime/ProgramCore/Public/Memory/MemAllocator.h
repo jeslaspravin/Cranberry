@@ -51,7 +51,7 @@ class PROGRAMCORE_EXPORT CBEMemAlloc : public AllocFromBuiltInMalloc
 public:
     constexpr static const uint32 POINTER_SIZE = sizeof(void *);
     constexpr static const uint32 DEFAULT_ALIGNMENT = POINTER_SIZE;
-    FORCE_INLINE static uint32 alignBy(SizeT size, uint32 alignment)
+    FORCE_INLINE static uint32 adjustAlignment(SizeT size, uint32 alignment)
     {
         return Math::max((size > POINTER_SIZE) ? 2 * POINTER_SIZE : POINTER_SIZE, alignment);
     }

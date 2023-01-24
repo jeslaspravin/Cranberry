@@ -55,7 +55,11 @@ public:
 
     uint8 operator[](uint32 idx) const;
     // As RGBA packed
-    operator uint32() const;
+    FORCE_INLINE operator uint32() const { return *reinterpret_cast<const uint32 *>(this); }
+    // As RGBA packed, MSB <- 0xAAGGBBRR -> LSB
+    FORCE_INLINE uint32 rgba() const { return uint32(*this); }
+    // As BGRA packed, MSB <- 0xAARRBBBB -> LSB
+    FORCE_INLINE uint32 bgra() const { return (uint32(a()) << 24) | (uint32(r()) << 16) | (uint32(g()) << 8) | b(); }
 
     static Color fromHsl(const Vector3D &hsl, uint8 alpha = 255);
     static LinearColor fromHsv(const Vector3D &hsv, uint8 alpha = 255);
@@ -105,15 +109,19 @@ namespace ColorConst
 {
 PROGRAMCORE_EXPORT Color random(uint8 alpha = 255);
 
+// TODO(Jeslas) : Make these constants const expressionable
 extern PROGRAMCORE_EXPORT const Color WHITE_Transparent;
 extern PROGRAMCORE_EXPORT const Color BLACK_Transparent;
 extern PROGRAMCORE_EXPORT const Color WHITE;
 extern PROGRAMCORE_EXPORT const Color GRAY;
 extern PROGRAMCORE_EXPORT const Color BLACK;
+extern PROGRAMCORE_EXPORT const Color YELLOW;
 extern PROGRAMCORE_EXPORT const Color RED;
-extern PROGRAMCORE_EXPORT const Color BLUE;
-extern PROGRAMCORE_EXPORT const Color PALE_BLUE;
 extern PROGRAMCORE_EXPORT const Color GREEN;
+extern PROGRAMCORE_EXPORT const Color BLUE;
+
+extern PROGRAMCORE_EXPORT const Color DARK_GRAY;
+extern PROGRAMCORE_EXPORT const Color PALE_BLUE;
 
 extern PROGRAMCORE_EXPORT const Color CYAN;
 } // namespace ColorConst
@@ -127,10 +135,13 @@ extern PROGRAMCORE_EXPORT const LinearColor BLACK_Transparent;
 extern PROGRAMCORE_EXPORT const LinearColor WHITE;
 extern PROGRAMCORE_EXPORT const LinearColor GRAY;
 extern PROGRAMCORE_EXPORT const LinearColor BLACK;
+extern PROGRAMCORE_EXPORT const LinearColor YELLOW;
 extern PROGRAMCORE_EXPORT const LinearColor RED;
-extern PROGRAMCORE_EXPORT const LinearColor BLUE;
-extern PROGRAMCORE_EXPORT const LinearColor PALE_BLUE;
 extern PROGRAMCORE_EXPORT const LinearColor GREEN;
+extern PROGRAMCORE_EXPORT const LinearColor BLUE;
+
+extern PROGRAMCORE_EXPORT const LinearColor DARK_GRAY;
+extern PROGRAMCORE_EXPORT const LinearColor PALE_BLUE;
 
 extern PROGRAMCORE_EXPORT const LinearColor CYAN;
 } // namespace LinearColorConst

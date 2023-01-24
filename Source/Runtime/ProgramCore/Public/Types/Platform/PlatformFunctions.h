@@ -11,9 +11,6 @@
 
 #pragma once
 
-#include "Config/ProgramVarTypes.h"
-#include "GenericPlatformFunctions.h"
-
 #if PLATFORM_WINDOWS
 
 #include "WindowsPlatformFunctions.h"
@@ -24,24 +21,4 @@
 #error "Platform not supported!"
 #endif
 
-enum class EndianType
-{
-    Big,
-    Little
-};
-
-class PROGRAMCORE_EXPORT PlatformEndian : public ProgramConstant<EndianType>
-{
-public:
-    PlatformEndian();
-
-    bool isBigEndian() const;
-    bool isLittleEndian() const;
-};
-
 using PlatformFunctions = GPlatformFunctions::PlatformFunctions;
-
-namespace GPlatformConfigs
-{
-PROGRAMCORE_EXPORT extern PlatformEndian PLATFORM_ENDIAN;
-}

@@ -14,10 +14,13 @@
 #if USE_MIMALLOC
 
 #include "Memory/MemAllocator.h"
+#include "Profiler/ProgramProfiler.hpp"
 
 class MimallocMemAlloc final : public CBEMemAlloc
 {
 private:
+    static const CBEProfilerChar *ALLOC_NAME;
+
 public:
     void *tryMalloc(SizeT size, uint32 alignment = DEFAULT_ALIGNMENT) noexcept final;
     void *memAlloc(SizeT size, uint32 alignment = DEFAULT_ALIGNMENT) noexcept final;

@@ -63,12 +63,13 @@ public:
     enum ELogOutputType : uint8
     {
         File = 1,
-        Console = 2
+        Console = 2,
+        Profiler = 4
     };
 
     constexpr static const uint8 AllServerity
         = ELogServerity::Verbose | ELogServerity::Debug | ELogServerity::Log | ELogServerity::Warning | ELogServerity::Error;
-    constexpr static const uint8 AllOutputType = ELogOutputType::File | ELogOutputType::Console;
+    constexpr static const uint8 AllOutputType = ELogOutputType::File | ELogOutputType::Console | ELogOutputType::Profiler;
 
     constexpr static const TChar *CONSOLE_FOREGROUND_RED = TCHAR("\x1b[31m");
     constexpr static const TChar *CONSOLE_FOREGROUND_YELLOW = TCHAR("\x1b[33m");
@@ -181,4 +182,7 @@ struct ScopedMuteLogServerity
     ~ScopedMuteLogServerity() { Logger::popMuteSeverities(); }
 };
 #define SCOPED_MUTE_LOG_SEVERITIES(SeverityFlags)                                                                                              \
-    ScopedMuteLogServerity COMBINE(__zzzz__muteSeverities_, __LINE__) { SeverityFlags }
+    ScopedMuteLogServerity COMBINE(__zzzz__muteSeverities_, __LINE__)                                                                          \
+    {                                                                                                                                          \
+        SeverityFlags                                                                                                                          \
+    }

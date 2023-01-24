@@ -322,7 +322,7 @@ private:
     FORCE_INLINE static void alignAllocSize(SizeType &inOutSize, uint32 &inOutAlignment)
     {
         debugAssert(Math::isPowOf2(inOutAlignment));
-        inOutAlignment = uint32(Math::max(alignof(StackAllocHeader), CBEMemAlloc::alignBy(inOutSize, inOutAlignment), MIN_ALIGNMENT));
+        inOutAlignment = uint32(Math::max(alignof(StackAllocHeader), CBEMemAlloc::adjustAlignment(inOutSize, inOutAlignment), MIN_ALIGNMENT));
         inOutSize = Math::alignByUnsafe(inOutSize, inOutAlignment);
     }
 

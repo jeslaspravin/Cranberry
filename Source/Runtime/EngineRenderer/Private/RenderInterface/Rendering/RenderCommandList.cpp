@@ -20,6 +20,7 @@
 #include "Types/Colors.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 #include "Types/Platform/PlatformFunctions.h"
+#include "Memory/Memory.h"
 
 #include <utility>
 
@@ -602,34 +603,31 @@ void IRenderCommandList::copyPixelsTo(
 
     memset(stagingPtr, 0, stagingBuffer->getResourceSize());
 
-    if (GPlatformConfigs::PLATFORM_ENDIAN.isLittleEndian())
+#if LITTLE_ENDIAN
+    // Copying data
+    for (uint32 i = 0; i < pixelData.size(); ++i)
     {
-        // Copying data
-        for (uint32 i = 0; i < pixelData.size(); ++i)
+        uint8 *pixelStagingPtr = stagingPtr + (i * formatInfo->pixelDataSize);
+        for (uint8 idx = 0; idx < formatInfo->componentCount; ++idx)
         {
-            uint8 *pixelStagingPtr = stagingPtr + (i * formatInfo->pixelDataSize);
-            for (uint8 idx = 0; idx < formatInfo->componentCount; ++idx)
-            {
-                const uint8 compIdx = uint8(formatInfo->componentOrder[idx]);
+            const uint8 compIdx = uint8(formatInfo->componentOrder[idx]);
 
-                const uint32 compOffset = formatInfo->getOffset(EPixelComponent(compIdx));
+            const uint32 compOffset = formatInfo->getOffset(EPixelComponent(compIdx));
 
-                // We are never going to go above 32 bits per channel
-                const uint32 compValue = pixelData[i].getColorValue()[compIdx];
+            // We are never going to go above 32 bits per channel
+            const uint32 compValue = pixelData[i].getColorValue()[compIdx];
 
-                uint8 *offsetStagingPtr = pixelStagingPtr + (compOffset / 8);
+            uint8 *offsetStagingPtr = pixelStagingPtr + (compOffset / 8);
 
-                // Left shift
-                const uint32 byte1Shift = compOffset % 8;
+            // Left shift
+            const uint32 byte1Shift = compOffset % 8;
 
-                (*reinterpret_cast<uint32 *>(offsetStagingPtr)) |= (perCompMask[compIdx] & (compValue << byte1Shift));
-            }
+            (*reinterpret_cast<uint32 *>(offsetStagingPtr)) |= (perCompMask[compIdx] & (compValue << byte1Shift));
         }
     }
-    else
-    {
-        fatalAssertf(false, "Big endian platform not supported yet");
-    }
+#else
+#error Big endian platform not supported!
+#endif
 }
 
 void IRenderCommandList::copyPixelsTo(
@@ -690,36 +688,33 @@ void IRenderCommandList::copyPixelsTo(
             perCompMask[compIdx] = mask;
         }
 
-        if (GPlatformConfigs::PLATFORM_ENDIAN.isLittleEndian())
+#if LITTLE_ENDIAN
+        // Copying data
+        for (uint32 i = 0; i < pixelData.size(); ++i)
         {
-            // Copying data
-            for (uint32 i = 0; i < pixelData.size(); ++i)
+            uint8 *pixelStagingPtr = stagingPtr + (i * formatInfo->pixelDataSize);
+            for (uint8 idx = 0; idx < formatInfo->componentCount; ++idx)
             {
-                uint8 *pixelStagingPtr = stagingPtr + (i * formatInfo->pixelDataSize);
-                for (uint8 idx = 0; idx < formatInfo->componentCount; ++idx)
-                {
-                    const uint8 compIdx = uint8(formatInfo->componentOrder[idx]);
+                const uint8 compIdx = uint8(formatInfo->componentOrder[idx]);
 
-                    const uint32 compOffset = formatInfo->getOffset(EPixelComponent(compIdx));
-                    const uint8 compSizeBits = formatInfo->componentSize[compIdx];
+                const uint32 compOffset = formatInfo->getOffset(EPixelComponent(compIdx));
+                const uint8 compSizeBits = formatInfo->componentSize[compIdx];
 
-                    // We are never going to go above 32 bits per channel
-                    const uint32 maxVal = (Math::pow(2u, compSizeBits) - 1);
-                    const uint32 compValue = uint32(pixelData[i].getColorValue()[compIdx] * maxVal);
+                // We are never going to go above 32 bits per channel
+                const uint32 maxVal = (Math::pow(2u, compSizeBits) - 1);
+                const uint32 compValue = uint32(pixelData[i].getColorValue()[compIdx] * maxVal);
 
-                    uint8 *offsetStagingPtr = pixelStagingPtr + (compOffset / 8);
+                uint8 *offsetStagingPtr = pixelStagingPtr + (compOffset / 8);
 
-                    // Left shift
-                    const uint32 byte1Shift = compOffset % 8;
+                // Left shift
+                const uint32 byte1Shift = compOffset % 8;
 
-                    (*reinterpret_cast<uint32 *>(offsetStagingPtr)) |= (perCompMask[compIdx] & (compValue << byte1Shift));
-                }
+                (*reinterpret_cast<uint32 *>(offsetStagingPtr)) |= (perCompMask[compIdx] & (compValue << byte1Shift));
             }
         }
-        else
-        {
-            fatalAssertf(false, "Big endian platform not supported yet");
-        }
+#else
+#error Big endian platform not supported!
+#endif
     }
 }
 
@@ -757,36 +752,33 @@ void IRenderCommandList::copyPixelsLinearMappedTo(
 
     memset(stagingPtr, 0, stagingBuffer->getResourceSize());
 
-    if (GPlatformConfigs::PLATFORM_ENDIAN.isLittleEndian())
+#if LITTLE_ENDIAN
+    // Copying data
+    for (uint32 i = 0; i < pixelData.size(); ++i)
     {
-        // Copying data
-        for (uint32 i = 0; i < pixelData.size(); ++i)
+        uint8 *pixelStagingPtr = stagingPtr + (i * formatInfo->pixelDataSize);
+        for (uint8 idx = 0; idx < formatInfo->componentCount; ++idx)
         {
-            uint8 *pixelStagingPtr = stagingPtr + (i * formatInfo->pixelDataSize);
-            for (uint8 idx = 0; idx < formatInfo->componentCount; ++idx)
-            {
-                const uint8 compIdx = uint8(formatInfo->componentOrder[idx]);
+            const uint8 compIdx = uint8(formatInfo->componentOrder[idx]);
 
-                const uint32 compOffset = formatInfo->getOffset(EPixelComponent(compIdx));
-                const uint8 compSizeBits = formatInfo->componentSize[compIdx];
+            const uint32 compOffset = formatInfo->getOffset(EPixelComponent(compIdx));
+            const uint8 compSizeBits = formatInfo->componentSize[compIdx];
 
-                // We are never going to go above 32 bits per channel
-                const uint32 maxVal = (Math::pow(2u, compSizeBits) - 1);
-                const uint32 compValue = uint32((pixelData[i].getColorValue()[compIdx] / 255.0f) * maxVal);
+            // We are never going to go above 32 bits per channel
+            const uint32 maxVal = (Math::pow(2u, compSizeBits) - 1);
+            const uint32 compValue = uint32((pixelData[i].getColorValue()[compIdx] / 255.0f) * maxVal);
 
-                uint8 *offsetStagingPtr = pixelStagingPtr + (compOffset / 8);
+            uint8 *offsetStagingPtr = pixelStagingPtr + (compOffset / 8);
 
-                // Left shift
-                const uint32 byte1Shift = compOffset % 8;
+            // Left shift
+            const uint32 byte1Shift = compOffset % 8;
 
-                (*reinterpret_cast<uint32 *>(offsetStagingPtr)) |= (perCompMask[compIdx] & (compValue << byte1Shift));
-            }
+            (*reinterpret_cast<uint32 *>(offsetStagingPtr)) |= (perCompMask[compIdx] & (compValue << byte1Shift));
         }
     }
-    else
-    {
-        fatalAssertf(false, "Big endian platform not supported yet");
-    }
+#else
+#error Big endian platform not supported!
+#endif
 }
 
 void IRenderCommandList::copyToImage(ImageResourceRef dst, ArrayView<const Color> pixelData)

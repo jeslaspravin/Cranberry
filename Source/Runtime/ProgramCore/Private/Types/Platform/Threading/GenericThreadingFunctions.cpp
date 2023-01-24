@@ -84,12 +84,15 @@ struct ThreadExitListener
     ThreadExitListener() = default;
     ~ThreadExitListener() { callbacks.invoke(); }
 
-    static thread_local ThreadExitListener listener;
+    static ThreadExitListener &getListener()
+    {
+        static thread_local ThreadExitListener listener;
+        return listener;
+    }
 };
-thread_local ThreadExitListener ThreadExitListener::listener;
 
-void atThreadExit(Function<void> callback) { ThreadExitListener::listener.callbacks.bindStatic(std::move(callback)); }
+void atThreadExit(Function<void> callback) { ThreadExitListener::getListener().callbacks.bindStatic(std::move(callback)); }
 
-void atThreadExit(LambdaFunction<void> callback) { ThreadExitListener::listener.callbacks.bindLambda(std::move(callback)); }
+void atThreadExit(LambdaFunction<void> callback) { ThreadExitListener::getListener().callbacks.bindLambda(std::move(callback)); }
 
 } // namespace ThreadingHelpers

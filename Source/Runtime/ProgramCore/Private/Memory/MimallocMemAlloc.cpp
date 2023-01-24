@@ -16,6 +16,8 @@
 
 #include <mimalloc.h>
 
+const CBEProfilerChar *MimallocMemAlloc::ALLOC_NAME = CBE_PROFILER_CHAR("Mimalloc");
+
 void *MimallocMemAlloc::tryMalloc(SizeT size, uint32 alignment /*= DEFAULT_ALIGNMENT*/) noexcept
 {
     debugAssert(Math::isPowOf2(alignment));
@@ -23,8 +25,11 @@ void *MimallocMemAlloc::tryMalloc(SizeT size, uint32 alignment /*= DEFAULT_ALIGN
     {
         return nullptr;
     }
-    alignment = alignBy(size, alignment);
-    return mi_malloc_aligned(size, alignment);
+    alignment = adjustAlignment(size, alignment);
+    void *ptr = mi_malloc_aligned(size, alignment);
+
+    CBE_PROFILER_ALLOC_N(ptr, size, ALLOC_NAME);
+    return ptr;
 }
 
 void *MimallocMemAlloc::memAlloc(SizeT size, uint32 alignment /*= DEFAULT_ALIGNMENT*/) noexcept
@@ -39,16 +44,28 @@ void *MimallocMemAlloc::tryRealloc(void *currentPtr, SizeT size, uint32 alignmen
     debugAssert(Math::isPowOf2(alignment));
     if (size == 0)
     {
+        CBE_PROFILER_FREE_N(currentPtr, ALLOC_NAME);
         mi_free(currentPtr);
         return nullptr;
     }
+    void *outPtr = nullptr;
     // We try to reallocate with same old alignment if default alignment is send it
     if (alignment == DEFAULT_ALIGNMENT)
     {
-        return mi_realloc(currentPtr, size);
+        outPtr = mi_realloc(currentPtr, size);
     }
-    alignment = alignBy(size, alignment);
-    return mi_realloc_aligned(currentPtr, size, alignment);
+    else
+    {
+        alignment = adjustAlignment(size, alignment);
+        outPtr = mi_realloc_aligned(currentPtr, size, alignment);
+    }
+
+    if (outPtr != currentPtr)
+    {
+        CBE_PROFILER_FREE_N(currentPtr, ALLOC_NAME);
+        CBE_PROFILER_ALLOC_N(outPtr, size, ALLOC_NAME);
+    }
+    return outPtr;
 }
 
 void *MimallocMemAlloc::memRealloc(void *currentPtr, SizeT size, uint32 alignment /*= DEFAULT_ALIGNMENT*/) noexcept
@@ -64,6 +81,7 @@ void MimallocMemAlloc::memFree(void *ptr) noexcept
     {
         return;
     }
+    CBE_PROFILER_FREE_N(ptr, ALLOC_NAME);
     mi_free(ptr);
 }
 

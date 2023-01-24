@@ -15,6 +15,7 @@
 #include "ProgramCoreExports.h"
 #include "String/String.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
+#include "Profiler/ProgramProfiler.hpp"
 
 template <typename MemAllocType, typename AllocatorCreatePolicy>
 class MemAllocatorWrapper
@@ -80,9 +81,6 @@ private:
         return gallocWrapper;
     }
 #endif // !INLINE_FMEMORY_OPERATION
-private:
-    CBEMemory() = default;
-
 public:
     // To bring all memory copies to single spot
     FORCE_INLINE static void memCopy(void *dstPtr, const void *srcPtr, SizeT count) noexcept { memcpy(dstPtr, srcPtr, count); }
@@ -90,9 +88,65 @@ public:
     FORCE_INLINE static void memSet(void *ptr, uint8 value, SizeT count) noexcept { memset(ptr, value, count); }
     FORCE_INLINE static void memZero(void *ptr, SizeT count) noexcept { memset(ptr, 0, count); }
 
-    FORCE_INLINE static void *builtinMalloc(SizeT size) noexcept { return ::malloc(size); }
-    FORCE_INLINE static void *builtinRealloc(void *ptr, SizeT size) noexcept { return ::realloc(ptr, size); }
-    FORCE_INLINE static void builtinFree(void *ptr) noexcept { ::free(ptr); }
+    FORCE_INLINE static void *builtinMalloc(SizeT size) noexcept
+    {
+        void *ptr = ::malloc(size);
+        CBE_PROFILER_ALLOC_N(ptr, size, BUILTIN_ALLOC_NAME);
+        return ptr;
+    }
+    FORCE_INLINE static void *builtinRealloc(void *ptr, SizeT size) noexcept
+    {
+        void *outPtr = ::realloc(ptr, size);
+        if (outPtr != ptr)
+        {
+            CBE_PROFILER_FREE_N(ptr, BUILTIN_ALLOC_NAME);
+            CBE_PROFILER_ALLOC_N(outPtr, size, BUILTIN_ALLOC_NAME);
+        }
+        return outPtr;
+    }
+    FORCE_INLINE static void builtinFree(void *ptr) noexcept
+    {
+        CBE_PROFILER_FREE_N(ptr, BUILTIN_ALLOC_NAME);
+        ::free(ptr);
+    }
+
+    FORCE_INLINE static void *builtinAlignedMalloc(SizeT size, uint32 alignment = CBEMemAllocWrapper::AllocType::DEFAULT_ALIGNMENT) noexcept
+    {
+#ifdef PLATFORM_ALIGNED_MALLOC
+        void *ptr = ::PLATFORM_ALIGNED_MALLOC(size, alignment);
+        CBE_PROFILER_ALLOC_N(ptr, size, ALIGNED_ALLOC_NAME);
+        return ptr;
+#else
+        fatalAssert(!"Aligned malloc unsupported!");
+        return nullptr;
+#endif
+    }
+    FORCE_INLINE static void *
+        builtinAlignedRealloc(void *ptr, SizeT size, uint32 alignment = CBEMemAllocWrapper::AllocType::DEFAULT_ALIGNMENT) noexcept
+    {
+#ifdef PLATFORM_ALIGNED_MALLOC
+        void *outPtr = PLATFORM_ALIGNED_REALLOC(ptr, size, alignment);
+        if (outPtr != ptr)
+        {
+            CBE_PROFILER_FREE_N(ptr, ALIGNED_ALLOC_NAME);
+            CBE_PROFILER_ALLOC_N(outPtr, size, ALIGNED_ALLOC_NAME);
+        }
+        return outPtr;
+#else
+        fatalAssert(!"Aligned realloc unsupported!");
+        return nullptr;
+#endif
+    }
+    FORCE_INLINE static void builtinAlignedFree(void *ptr) noexcept
+    {
+#ifdef PLATFORM_ALIGNED_MALLOC
+        CBE_PROFILER_FREE_N(ptr, ALIGNED_ALLOC_NAME);
+        PLATFORM_ALIGNED_FREE(ptr);
+#else
+        fatalAssert(!"Aligned free unsupported!");
+        return nullptr;
+#endif
+    }
 
     FUNCTION_QUALIFIER static void *tryMalloc(SizeT size, uint32 alignment = CBEMemAllocWrapper::AllocType::DEFAULT_ALIGNMENT) noexcept;
     FUNCTION_QUALIFIER static void *memAlloc(SizeT size, uint32 alignment = CBEMemAllocWrapper::AllocType::DEFAULT_ALIGNMENT) noexcept;
@@ -102,6 +156,12 @@ public:
         memRealloc(void *currentPtr, SizeT size, uint32 alignment = CBEMemAllocWrapper::AllocType::DEFAULT_ALIGNMENT) noexcept;
     FUNCTION_QUALIFIER static void memFree(void *ptr) noexcept;
     FUNCTION_QUALIFIER static SizeT getAllocationSize(void *ptr) noexcept;
+
+private:
+    CBEMemory() = default;
+
+    static constexpr const CBEProfilerChar *BUILTIN_ALLOC_NAME = CBE_PROFILER_CHAR("BuiltinMalloc");
+    static constexpr const CBEProfilerChar *ALIGNED_ALLOC_NAME = CBE_PROFILER_CHAR("AlignedMalloc");
 };
 
 #if INLINE_MEMORY_FUNCS
@@ -112,8 +172,14 @@ public:
 #undef FUNCTION_QUALIFIER
 
 #define CBE_NEW_OPERATOR(MemAllocFunc, FuncQual, FuncSpec, ...)                                                                                \
-    NODISCARD FuncQual void *operator new(size_t size, __VA_ARGS__) FuncSpec { return MemAllocFunc((SizeT)size); }                             \
-    NODISCARD FuncQual void *operator new[](size_t size, __VA_ARGS__) FuncSpec { return MemAllocFunc((SizeT)size); }                           \
+    NODISCARD FuncQual void *operator new(size_t size, __VA_ARGS__) FuncSpec                                                                   \
+    {                                                                                                                                          \
+        return MemAllocFunc((SizeT)size);                                                                                                      \
+    }                                                                                                                                          \
+    NODISCARD FuncQual void *operator new[](size_t size, __VA_ARGS__) FuncSpec                                                                 \
+    {                                                                                                                                          \
+        return MemAllocFunc((SizeT)size);                                                                                                      \
+    }                                                                                                                                          \
     NODISCARD FuncQual void *operator new(size_t size, std::align_val_t alignment, __VA_ARGS__) FuncSpec                                       \
     {                                                                                                                                          \
         return MemAllocFunc((SizeT)size, (uint32)alignment);                                                                                   \
@@ -124,16 +190,40 @@ public:
     }
 
 #define CBE_DELETE_OPERATOR(MemFreeFunc, FuncQual, ...)                                                                                        \
-    FuncQual void operator delete(void *ptr, __VA_ARGS__) noexcept { MemFreeFunc(ptr); }                                                       \
-    FuncQual void operator delete[](void *ptr, __VA_ARGS__) noexcept { MemFreeFunc(ptr); }                                                     \
-    FuncQual void operator delete(void *ptr, std::align_val_t, __VA_ARGS__) noexcept { MemFreeFunc(ptr); }                                     \
-    FuncQual void operator delete[](void *ptr, std::align_val_t, __VA_ARGS__) noexcept { MemFreeFunc(ptr); }
+    FuncQual void operator delete(void *ptr, __VA_ARGS__) noexcept                                                                             \
+    {                                                                                                                                          \
+        MemFreeFunc(ptr);                                                                                                                      \
+    }                                                                                                                                          \
+    FuncQual void operator delete[](void *ptr, __VA_ARGS__) noexcept                                                                           \
+    {                                                                                                                                          \
+        MemFreeFunc(ptr);                                                                                                                      \
+    }                                                                                                                                          \
+    FuncQual void operator delete(void *ptr, std::align_val_t, __VA_ARGS__) noexcept                                                           \
+    {                                                                                                                                          \
+        MemFreeFunc(ptr);                                                                                                                      \
+    }                                                                                                                                          \
+    FuncQual void operator delete[](void *ptr, std::align_val_t, __VA_ARGS__) noexcept                                                         \
+    {                                                                                                                                          \
+        MemFreeFunc(ptr);                                                                                                                      \
+    }
 
 #define CBE_NOALLOC_PLACEMENT_NEW_OPERATOR(...)                                                                                                \
-    NODISCARD __VA_ARGS__ void *operator new(size_t /*count*/, void *allocatedPtr) noexcept { return allocatedPtr; }                           \
-    NODISCARD __VA_ARGS__ void *operator new[](size_t /*count*/, void *allocatedPtr) noexcept { return allocatedPtr; }                         \
-    NODISCARD __VA_ARGS__ void *operator new(size_t /*count*/, std::align_val_t, void *allocatedPtr) noexcept { return allocatedPtr; }         \
-    NODISCARD __VA_ARGS__ void *operator new[](size_t /*count*/, std::align_val_t, void *allocatedPtr) noexcept { return allocatedPtr; }
+    NODISCARD __VA_ARGS__ void *operator new(size_t /*count*/, void *allocatedPtr) noexcept                                                    \
+    {                                                                                                                                          \
+        return allocatedPtr;                                                                                                                   \
+    }                                                                                                                                          \
+    NODISCARD __VA_ARGS__ void *operator new[](size_t /*count*/, void *allocatedPtr) noexcept                                                  \
+    {                                                                                                                                          \
+        return allocatedPtr;                                                                                                                   \
+    }                                                                                                                                          \
+    NODISCARD __VA_ARGS__ void *operator new(size_t /*count*/, std::align_val_t, void *allocatedPtr) noexcept                                  \
+    {                                                                                                                                          \
+        return allocatedPtr;                                                                                                                   \
+    }                                                                                                                                          \
+    NODISCARD __VA_ARGS__ void *operator new[](size_t /*count*/, std::align_val_t, void *allocatedPtr) noexcept                                \
+    {                                                                                                                                          \
+        return allocatedPtr;                                                                                                                   \
+    }
 
 #define CBE_NOALLOC_PLACEMENT_DELETE_OPERATOR(...)                                                                                             \
     /*                                                                                                                                         \
@@ -165,9 +255,18 @@ public:
 
 #define CBE_CLASS_NEWDELETE_OVERRIDES(ClassName)                                                                                               \
 private:                                                                                                                                       \
-    static void *ClassName##_Alloc(SizeT size, uint32 alignment) { return CBEMemory::memAlloc(size, alignment); }                              \
-    static void *ClassName##_Alloc(SizeT size) { return CBEMemory::memAlloc(size); }                                                           \
-    static void ClassName##_Free(void *ptr) { CBEMemory::memFree(ptr); }                                                                       \
+    static void *ClassName##_Alloc(SizeT size, uint32 alignment)                                                                               \
+    {                                                                                                                                          \
+        return CBEMemory::memAlloc(size, alignment);                                                                                           \
+    }                                                                                                                                          \
+    static void *ClassName##_Alloc(SizeT size)                                                                                                 \
+    {                                                                                                                                          \
+        return CBEMemory::memAlloc(size);                                                                                                      \
+    }                                                                                                                                          \
+    static void ClassName##_Free(void *ptr)                                                                                                    \
+    {                                                                                                                                          \
+        CBEMemory::memFree(ptr);                                                                                                               \
+    }                                                                                                                                          \
                                                                                                                                                \
 public:                                                                                                                                        \
     CBE_NEW_OPERATOR(ClassName##_Alloc, static, )                                                                                              \

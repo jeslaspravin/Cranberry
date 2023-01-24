@@ -10,12 +10,15 @@
  */
 
 #pragma once
+
 #include "ReflectionRuntimeExports.h"
+#include "Reflections/Functions.h"
 #include "String/StringID.h"
 #include "Types/HashTypes.h"
 
 #include <map>
 #include <utility>
+#include <unordered_map>
 
 class BaseFieldWrapper;
 class BaseFunctionWrapper;

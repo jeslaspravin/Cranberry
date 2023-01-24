@@ -24,6 +24,7 @@
 #include "RenderApi/RenderManager.h"
 #include "IRenderInterfaceModule.h"
 #include "RenderInterface/Rendering/IRenderCommandList.h"
+#include "Profiler/ProgramProfiler.hpp"
 
 //////////////////////////////////////////////////////////////////////////
 /// WgWindow Implementations
@@ -347,8 +348,9 @@ void ApplicationInstance::startNewFrame()
      * so main thread run wild and fills render queue with commands more than it can process
      */
     RenderThreadEnqueuer::execInRenderThreadAndWait(
-        [this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI */*graphicsHelper*/)
+        [this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI * /*graphicsHelper*/)
         {
+            CBE_PROFILER_MARKFRAME_N(CBE_PROFILER_CHAR("RenderFrame"));
             renderFrameAllocator.reset();
             IRenderInterfaceModule::get()->getRenderManager()->renderFrame(timeData.deltaTime);
 
