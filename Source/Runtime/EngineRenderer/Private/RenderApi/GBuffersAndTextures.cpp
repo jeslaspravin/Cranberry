@@ -210,9 +210,12 @@ void GlobalBuffers::generateTexture2Ds(
     submitInfo.cmdBuffers.emplace_back(cmdBuffer);
     cmdList->submitCmd(EQueuePriority::High, submitInfo);
 
-    cmdList->copyToImage(dummyBlackTexture, { &ColorConst::BLACK, 1 });
-    cmdList->copyToImage(dummyWhiteTexture, { &ColorConst::WHITE, 1 });
-    cmdList->copyToImage(dummyNormalTexture, { &ColorConst::BLUE, 1 });
+    Color pixelColor = ColorConst::BLACK;
+    cmdList->copyToImage(dummyBlackTexture, { &pixelColor, 1 });
+    pixelColor = ColorConst::WHITE;
+    cmdList->copyToImage(dummyWhiteTexture, { &pixelColor, 1 });
+    pixelColor = ColorConst::BLUE;
+    cmdList->copyToImage(dummyNormalTexture, { &pixelColor, 1 });
     cmdList->copyToImage(dummyDepthTexture, { &LinearColorConst::BLACK, 1 }, { .extent = dummyDepthTexture->getImageSize() });
 
     cmdList->finishCmd(cmdBuffer);

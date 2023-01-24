@@ -12,6 +12,7 @@
 #pragma once
 
 #include "Math/CoreMathTypes.h"
+#include "Math/Math.h"
 #include "Types/CoreTypes.h"
 
 class LinearColor;
@@ -21,48 +22,84 @@ class LinearColor;
 class PROGRAMCORE_EXPORT Color
 {
 private:
-    Byte4D colorValue;
+    union
+    {
+        Byte4D colorValue;
+        uint32 rgbaValue;
+    };
 
 public:
-    Color();
-    explicit Color(Byte3D &value);
-    explicit Color(Byte4D &value);
+    constexpr Color()
+        : colorValue(0, 0, 0, 0)
+    {}
+    constexpr explicit Color(Byte3D value) { colorValue = Byte4D(value, 255); }
+    constexpr explicit Color(Byte4D value)
+        : colorValue(value)
+    {}
     // If values are in srgb bIsSrgb must be true
-    explicit Color(uint8 r, uint8 g, uint8 b, uint8 a = 255, bool bIsSrgb = false);
+    constexpr explicit Color(uint8 r, uint8 g, uint8 b, uint8 a = 255, bool bIsSrgb = false)
+    {
+        colorValue = Byte4D(r, g, b, a);
+        if (bIsSrgb)
+        {
+            colorValue = toLinear().colorValue;
+        }
+    }
+    // Below separation as consteval is necessary to keep colorValue and (x, y, z, w) as the active union member
+    constexpr explicit Color(uint32 inRGBA)
+    {
+        if (std::is_constant_evaluated())
+        {
+            colorValue = { (inRGBA & 0xFF), ((inRGBA >> 8) & 0xFF), ((inRGBA >> 16) & 0xFF), ((inRGBA >> 24) & 0xFF) };
+        }
+        else
+        {
+            rgbaValue = inRGBA;
+        }
+    }
     // if linear color has to be stored after converting to srgb then bAsSrgb must be true
     Color(const LinearColor &linearColor, bool bAsSrgb = false);
-    Color(const Color &otherColor);
-    Color(Color &&otherColor);
-    void operator=(const Color &otherColor);
-    void operator=(Color &&otherColor);
+    MAKE_TYPE_DEFAULT_COPY_MOVE(Color)
 
     Color toSrgb() const;
     Color toLinear() const;
-    Vector3D toHsl() const;
-    Vector3D toHsv() const;
 
-    const Byte4D &getColorValue() const { return colorValue; }
-    Byte4D &getColorValue() { return colorValue; }
-    uint8 r() const { return colorValue.r; }
-    void setR(uint8 r) { colorValue.r = r; }
-    uint8 g() const { return colorValue.g; }
-    void setG(uint8 g) { colorValue.g = g; }
-    uint8 b() const { return colorValue.b; }
-    void setB(uint8 b) { colorValue.b = b; }
-    uint8 a() const { return colorValue.a; }
-    void setA(uint8 a) { colorValue.a = a; }
-    Byte3D rgb() const { return Byte3D(colorValue.r, colorValue.g, colorValue.b); }
+    FORCE_INLINE Vector3D toHsl() const;
+    FORCE_INLINE Vector3D toHsv() const;
 
-    uint8 operator[](uint32 idx) const;
-    // As RGBA packed
-    FORCE_INLINE operator uint32() const { return *reinterpret_cast<const uint32 *>(this); }
+    FORCE_INLINE const Byte4D &getColorValue() const { return colorValue; }
+    FORCE_INLINE Byte4D &getColorValue() { return colorValue; }
+    constexpr uint8 r() const { return colorValue.x; }
+    FORCE_INLINE void setR(uint8 r) { colorValue.x = r; }
+    constexpr uint8 g() const { return colorValue.y; }
+    FORCE_INLINE void setG(uint8 g) { colorValue.y = g; }
+    constexpr uint8 b() const { return colorValue.z; }
+    FORCE_INLINE void setB(uint8 b) { colorValue.z = b; }
+    constexpr uint8 a() const { return colorValue.w; }
+    FORCE_INLINE void setA(uint8 a) { colorValue.w = a; }
+    constexpr Byte3D rgb() const { return Byte3D(colorValue.x, colorValue.y, colorValue.z); }
+
+    constexpr uint8 operator[](uint32 idx) const { return colorValue[idx]; }
+
     // As RGBA packed, MSB <- 0xAAGGBBRR -> LSB
-    FORCE_INLINE uint32 rgba() const { return uint32(*this); }
+    constexpr uint32 rgba() const
+    {
+        if (std::is_constant_evaluated())
+        {
+            return (uint32(a()) << 24) | (uint32(b()) << 16) | (uint32(g()) << 8) | r();
+        }
+        else
+        {
+            return rgbaValue;
+        }
+    }
     // As BGRA packed, MSB <- 0xAARRBBBB -> LSB
-    FORCE_INLINE uint32 bgra() const { return (uint32(a()) << 24) | (uint32(r()) << 16) | (uint32(g()) << 8) | b(); }
+    constexpr uint32 bgra() const { return (uint32(a()) << 24) | (uint32(r()) << 16) | (uint32(g()) << 8) | b(); }
+    // As RGBA packed
+    constexpr operator uint32() const { return rgba(); }
 
-    static Color fromHsl(const Vector3D &hsl, uint8 alpha = 255);
-    static LinearColor fromHsv(const Vector3D &hsv, uint8 alpha = 255);
+    FORCE_INLINE static Color fromHsl(const Vector3D &hsl, uint8 alpha = 255);
+    FORCE_INLINE static LinearColor fromHsv(const Vector3D &hsv, uint8 alpha = 255);
 };
 
 class PROGRAMCORE_EXPORT LinearColor
@@ -76,13 +113,10 @@ public:
     explicit LinearColor(glm::vec4 &value);
     explicit LinearColor(const Vector4D &value);
     LinearColor(float r, float g, float b, float a = 1.0f);
-    // If store the color value as it is bCheckSrgb must be false, if color has to be converted to linear
-    // then true
-    LinearColor(const Color &color);
-    LinearColor(const LinearColor &otherColor);
-    LinearColor(LinearColor &&otherColor);
-    void operator=(const LinearColor &otherColor);
-    void operator=(LinearColor &&otherColor);
+    LinearColor(Color color)
+        : colorValue(NORMALIZE_COLOR_COMP(glm::vec4(color.getColorValue())))
+    {}
+    MAKE_TYPE_DEFAULT_COPY_MOVE(LinearColor)
 
     Vector3D toHsl() const;
     Vector3D toHsv() const;
@@ -105,43 +139,16 @@ public:
     static LinearColor fromHsv(const Vector3D &hsv, float alpha = 1.0f);
 };
 
-namespace ColorConst
+FORCE_INLINE Color Color::fromHsl(const Vector3D &hsl, uint8 alpha /*= 255*/)
 {
-PROGRAMCORE_EXPORT Color random(uint8 alpha = 255);
-
-// TODO(Jeslas) : Make these constants const expressionable
-extern PROGRAMCORE_EXPORT const Color WHITE_Transparent;
-extern PROGRAMCORE_EXPORT const Color BLACK_Transparent;
-extern PROGRAMCORE_EXPORT const Color WHITE;
-extern PROGRAMCORE_EXPORT const Color GRAY;
-extern PROGRAMCORE_EXPORT const Color BLACK;
-extern PROGRAMCORE_EXPORT const Color YELLOW;
-extern PROGRAMCORE_EXPORT const Color RED;
-extern PROGRAMCORE_EXPORT const Color GREEN;
-extern PROGRAMCORE_EXPORT const Color BLUE;
-
-extern PROGRAMCORE_EXPORT const Color DARK_GRAY;
-extern PROGRAMCORE_EXPORT const Color PALE_BLUE;
-
-extern PROGRAMCORE_EXPORT const Color CYAN;
-} // namespace ColorConst
-
-namespace LinearColorConst
+    return Color(LinearColor::fromHsl(hsl), NORMALIZE_COLOR_COMP(alpha));
+}
+FORCE_INLINE LinearColor Color::fromHsv(const Vector3D &hsv, uint8 alpha /*= 255*/)
 {
-PROGRAMCORE_EXPORT LinearColor random(float alpha = 1.0f);
+    return Color(LinearColor::fromHsv(hsv), NORMALIZE_COLOR_COMP(alpha));
+}
 
-extern PROGRAMCORE_EXPORT const LinearColor WHITE_Transparent;
-extern PROGRAMCORE_EXPORT const LinearColor BLACK_Transparent;
-extern PROGRAMCORE_EXPORT const LinearColor WHITE;
-extern PROGRAMCORE_EXPORT const LinearColor GRAY;
-extern PROGRAMCORE_EXPORT const LinearColor BLACK;
-extern PROGRAMCORE_EXPORT const LinearColor YELLOW;
-extern PROGRAMCORE_EXPORT const LinearColor RED;
-extern PROGRAMCORE_EXPORT const LinearColor GREEN;
-extern PROGRAMCORE_EXPORT const LinearColor BLUE;
+FORCE_INLINE Vector3D Color::toHsv() const { return LinearColor(*this).toHsv(); }
+FORCE_INLINE Vector3D Color::toHsl() const { return LinearColor(*this).toHsl(); }
 
-extern PROGRAMCORE_EXPORT const LinearColor DARK_GRAY;
-extern PROGRAMCORE_EXPORT const LinearColor PALE_BLUE;
-
-extern PROGRAMCORE_EXPORT const LinearColor CYAN;
-} // namespace LinearColorConst
+#include "Types/ColorConstants.inl"

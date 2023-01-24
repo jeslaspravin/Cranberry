@@ -10,29 +10,9 @@
  */
 
 #include "Types/Colors.h"
-#include "Math/Math.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 
 /* Color implementations */
-
-Color::Color()
-    : colorValue(0, 0, 0, 0)
-{}
-
-Color::Color(Byte3D &value) { colorValue = Byte4D(value, 255); }
-
-Color::Color(Byte4D &value)
-    : colorValue(value)
-{}
-
-Color::Color(uint8 r, uint8 g, uint8 b, uint8 a /*= 255*/, bool bIsSrgb /*= false */)
-{
-    colorValue = Byte4D(r, g, b, a);
-    if (bIsSrgb)
-    {
-        colorValue = toLinear().colorValue;
-    }
-}
 
 Color::Color(const LinearColor &linearColor, bool bAsSrgb /*= false*/)
 {
@@ -50,18 +30,6 @@ Color::Color(const LinearColor &linearColor, bool bAsSrgb /*= false*/)
         );
     }
 }
-
-Color::Color(const Color &otherColor)
-    : colorValue(otherColor.colorValue)
-{}
-
-Color::Color(Color &&otherColor)
-    : colorValue(std::move(otherColor.colorValue))
-{}
-
-void Color::operator=(Color &&otherColor) { colorValue = otherColor.colorValue; }
-
-void Color::operator=(const Color &otherColor) { colorValue = std::move(otherColor.colorValue); }
 
 /*
  * sRGB to Linear and Vice versa referred from
@@ -90,16 +58,6 @@ Color Color::toLinear() const
     );
 }
 
-uint8 Color::operator[](uint32 idx) const { return colorValue[idx]; }
-
-Color Color::fromHsl(const Vector3D &hsl, uint8 alpha /*= 255*/) { return Color(LinearColor::fromHsl(hsl), NORMALIZE_COLOR_COMP(alpha)); }
-
-LinearColor Color::fromHsv(const Vector3D &hsv, uint8 alpha /*= 255*/) { return Color(LinearColor::fromHsv(hsv), NORMALIZE_COLOR_COMP(alpha)); }
-
-Vector3D Color::toHsv() const { return LinearColor(*this).toHsv(); }
-
-Vector3D Color::toHsl() const { return LinearColor(*this).toHsl(); }
-
 /* Linear Color implementations */
 
 LinearColor::LinearColor()
@@ -116,18 +74,6 @@ LinearColor::LinearColor(glm::vec4 &value)
 
 LinearColor::LinearColor(float r, float g, float b, float a /*= 1.0f*/)
     : colorValue(r, g, b, a)
-{}
-
-LinearColor::LinearColor(const Color &color)
-    : colorValue(NORMALIZE_COLOR_COMP(glm::vec4(color.getColorValue())))
-{}
-
-LinearColor::LinearColor(const LinearColor &otherColor)
-    : colorValue(otherColor.colorValue)
-{}
-
-LinearColor::LinearColor(LinearColor &&otherColor)
-    : colorValue(std::move(otherColor.colorValue))
 {}
 
 LinearColor::LinearColor(const Vector4D &value)
@@ -356,28 +302,9 @@ LinearColor LinearColor::fromHsv(const Vector3D &hsv, float alpha /*= 1.0f*/)
     return retColor;
 }
 
-void LinearColor::operator=(LinearColor &&otherColor) { colorValue = otherColor.colorValue; }
-
-void LinearColor::operator=(const LinearColor &otherColor) { colorValue = std::move(otherColor.colorValue); }
-
 namespace ColorConst
 {
 Color random(uint8 alpha /*= 255*/) { return Color(LinearColorConst::random(NORMALIZE_COLOR_COMP(alpha))); }
-
-const Color WHITE_Transparent(255, 255, 255, 0);
-const Color BLACK_Transparent(0, 0, 0, 0);
-const Color WHITE(255, 255, 255, 255);
-const Color GRAY(128, 128, 128, 255);
-const Color BLACK(0, 0, 0, 255);
-const Color YELLOW(255, 255, 0, 255);
-const Color RED(255, 0, 0, 255);
-const Color GREEN(0, 255, 0, 255);
-const Color BLUE(0, 0, 255, 255);
-
-const Color DARK_GRAY(64, 64, 64, 255);
-const Color PALE_BLUE(195, 218, 234, 255);
-
-const Color CYAN(0, 255, 255, 255);
 } // namespace ColorConst
 
 namespace LinearColorConst
@@ -394,18 +321,8 @@ LinearColor random(float alpha /*= 1.0f*/)
     return LinearColor::fromHsv(Vector3D(h, 0.5f, 1.0f), alpha);
 }
 
-const LinearColor WHITE_Transparent(1, 1, 1, 0);
-const LinearColor BLACK_Transparent(0, 0, 0, 0);
-const LinearColor WHITE(1, 1, 1, 1);
-const LinearColor GRAY(0.5, 0.5, 0.5, 1);
-const LinearColor BLACK(0, 0, 0, 1);
-const LinearColor YELLOW(1, 1, 0, 1);
-const LinearColor RED(1, 0, 0, 1);
-const LinearColor GREEN(0, 1, 0, 1);
-const LinearColor BLUE(0, 0, 1, 1);
-
-const LinearColor DARK_GRAY(0.25, 0.25, 0.25, 1);
-const LinearColor PALE_BLUE(0.764f, 0.854f, 0.917f, 1.0f);
-
-const LinearColor CYAN(0, 1, 1, 1);
 } // namespace LinearColorConst
+
+#define DEFINE_COLOR_CONSTANTS
+#include "Types/ColorConstants.inl"
+#undef DEFINE_COLOR_CONSTANTS

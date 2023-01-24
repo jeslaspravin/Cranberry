@@ -256,28 +256,28 @@ public:
 
 // Following scoped macro's Name must have global lifetime, If name is temporary use TRANSIENT variants or use CBEProfiler::setScopeName
 #define CBE_PROFILER_SCOPE_VAR_FULL(VarName, Name, ControlVar, Text, Colour, Value)                                                            \
-    static const CBEProfilerSrcLoc zzzCBE_PROFILER_UNIQ_NAME(cbeProfilerSrcLoc_                                                                \
+    static constexpr const CBEProfilerSrcLoc zzzCBE_PROFILER_UNIQ_NAME(cbeProfilerSrcLoc_                                                      \
     ){ Name, CBE_PROFILER_CHAR(__func__), CBE_PROFILER_CHAR(__FILE__), __LINE__, CBE_PROFILER_COLOR(Colour) };                                 \
     CBEProfilerStaticScope VarName                                                                                                             \
     {                                                                                                                                          \
         zzzCBE_PROFILER_UNIQ_NAME(cbeProfilerSrcLoc_), ControlVar, Text, Value                                                                 \
     }
 #define CBE_PROFILER_SCOPE_VAR_TC(VarName, Name, ControlVar, Text, Colour)                                                                     \
-    static const CBEProfilerSrcLoc zzzCBE_PROFILER_UNIQ_NAME(cbeProfilerSrcLoc_                                                                \
+    static constexpr const CBEProfilerSrcLoc zzzCBE_PROFILER_UNIQ_NAME(cbeProfilerSrcLoc_                                                      \
     ){ Name, CBE_PROFILER_CHAR(__func__), CBE_PROFILER_CHAR(__FILE__), __LINE__, CBE_PROFILER_COLOR(Colour) };                                 \
     CBEProfilerStaticScope VarName                                                                                                             \
     {                                                                                                                                          \
         zzzCBE_PROFILER_UNIQ_NAME(cbeProfilerSrcLoc_), ControlVar, Text                                                                        \
     }
 #define CBE_PROFILER_SCOPE_VAR_C(VarName, Name, ControlVar, Colour)                                                                            \
-    static const CBEProfilerSrcLoc zzzCBE_PROFILER_UNIQ_NAME(cbeProfilerSrcLoc_                                                                \
+    static constexpr const CBEProfilerSrcLoc zzzCBE_PROFILER_UNIQ_NAME(cbeProfilerSrcLoc_                                                      \
     ){ Name, CBE_PROFILER_CHAR(__func__), CBE_PROFILER_CHAR(__FILE__), __LINE__, CBE_PROFILER_COLOR(Colour) };                                 \
     CBEProfilerStaticScope VarName                                                                                                             \
     {                                                                                                                                          \
         zzzCBE_PROFILER_UNIQ_NAME(cbeProfilerSrcLoc_), ControlVar                                                                              \
     }
 #define CBE_PROFILER_SCOPE_VAR(VarName, Name, ControlVar)                                                                                      \
-    static const CBEProfilerSrcLoc zzzCBE_PROFILER_UNIQ_NAME(cbeProfilerSrcLoc_                                                                \
+    static constexpr const CBEProfilerSrcLoc zzzCBE_PROFILER_UNIQ_NAME(cbeProfilerSrcLoc_                                                      \
     ){ Name, CBE_PROFILER_CHAR(__func__), CBE_PROFILER_CHAR(__FILE__), __LINE__, CBE_PROFILER_COLOR(ColorConst::BLACK_Transparent) };          \
     CBEProfilerStaticScope VarName                                                                                                             \
     {                                                                                                                                          \

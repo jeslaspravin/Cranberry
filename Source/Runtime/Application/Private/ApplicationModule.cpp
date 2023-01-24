@@ -88,7 +88,7 @@ void ApplicationModule::startAndRun(ApplicationInstance *appInst, const AppInsta
             [&jobSys](void *appModulePtr)
             {
                 CBE_PROFILER_MARKFRAME();
-                CBE_PROFILER_SCOPE_TC(CBE_PROFILER_CHAR("AppTick"), TCHAR("Hello Test!"), ColorConst::CYAN);
+                CBE_PROFILER_SCOPE_C(CBE_PROFILER_CHAR("AppTick"), ColorConst::DARKSLATEBLUE);
 
                 ApplicationModule *appModule = (ApplicationModule *)appModulePtr;
                 if (!appModule->appInstance->appTick())

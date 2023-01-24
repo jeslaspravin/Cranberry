@@ -50,7 +50,6 @@ if (${Cranberry_ENABLE_TRACY})
     )
     map_imported_targets_config(TARGETS ${tracyclient_lib_name})
     
-    get_target_property(tracyclient_compile_defs ${tracyclient_lib_name} INTERFACE_COMPILE_DEFINITIONS)
     get_target_property(tracyclient_incl_path ${tracyclient_lib_name} INTERFACE_INCLUDE_DIRECTORIES)
     get_target_property(lib_path ${tracyclient_lib_name} IMPORTED_LOCATION_RELEASE)
     get_target_property(dbg_lib_path ${tracyclient_lib_name} IMPORTED_LOCATION_DEBUG)
@@ -63,7 +62,6 @@ if (${Cranberry_ENABLE_TRACY})
     list (APPEND private_libraries ${tracyclient_lib_name})
     list (APPEND public_includes ${tracyclient_incl_path})
     list (APPEND public_compile_defs
-        ${tracyclient_compile_defs}
         USE_TRACY_PROFILER
         HAS_ANY_PROFILER=1
     )

@@ -54,7 +54,7 @@ Licenses for third party packages used is placed under `Licenses` folder
 * **`stb`**
 * **`LLVM`**(**`CLang`**). CMake configs generated required some manual tweaking to support Debug,Development and Release config
 * **`mimalloc`**. CMake configs generated required some manual tweaking to support Debug,Development and Release config
-* **`tracy`** profiler. CMake configs generated required some manual tweaking project to support Debug,Development and Release config
+* **`tracy`** profiler. CMake configs generated required some manual tweaking to support Debug,Development and Release config
 * **`xxHash`** (Embedded into the project)
 * **`CoPaT`** (Embedded into the project)
 * **`SPIRVCross`** (Few necessary files are copied directly rather than using as include)
@@ -87,6 +87,6 @@ If you found any piece of this software helpful or used it yourself, Please feel
 [TestEngine-Main]: https://github.com/jeslaspravin/Cranberry/blob/main/Source/Runtime/ExampleModules/TestEngine/Private/StartMain.cpp#L44
 [TestEngineSS]: https://jeslaspravin.github.io/assets/images/CranberryEngine/TestEngine(08-01-2023).jpg
 [CranberryEdSS]: https://jeslaspravin.github.io/assets/images/CranberryEngine/CranberryEngine(08-01-2023).jpg
-[CranberryAppLoadScene]: https://github.com/jeslaspravin/Cranberry/blob/main/Source/Runtime/EngineModules/Cranberry/Private/CranberryEngineApp.cpp#L165
+[CranberryAppLoadScene]: https://github.com/jeslaspravin/Cranberry/blob/main/Source/Runtime/EngineModules/Cranberry/Private/CranberryEngineApp.cpp#L171
 [Cranberry Board-Trello]: https://trello.com/b/ZvopPmvj
 [Cranberry Board-Github]: https://github.com/users/jeslaspravin/projects/4 
