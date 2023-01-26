@@ -12,6 +12,7 @@
 #pragma once
 
 #include "EngineCoreExports.h"
+#include "Types/Delegates/Delegate.h"
 #include "CBEObject.h"
 #include "Types/Containers/FlatTree.h"
 

@@ -11,8 +11,11 @@
 
 #pragma once
 #include "ProgramCoreExports.h"
+#include "Types/Delegates/Delegate.h"
 #include "String/StringFormat.h"
 #include "String/StringRegex.h"
+
+#include <unordered_map>
 
 struct MustacheContext;
 class MustacheStringFormatter;
@@ -26,6 +29,126 @@ class MustacheStringFormatter;
 // SEE ALSO
 // mustache(1), http://mustache.github.io/
 //
+
+struct PROGRAMCORE_EXPORT FormatArg
+{
+    using ArgGetter = SingleCastDelegate<String>;
+    union ArgValue
+    {
+        String strVal;
+        ArgGetter argGetter;
+        CoreTypesUnion fundamentalVals;
+
+        ArgValue(CoreTypesUnion inFundamentalVals)
+            : fundamentalVals(inFundamentalVals)
+        {}
+        template <typename StrType>
+        requires StringType<StrType>
+        ArgValue(StrType &&inStrVal)
+            : strVal(std::forward<StrType>(inStrVal))
+        {}
+        ArgValue(const ArgGetter &getter)
+            : argGetter(getter)
+        {}
+        ArgValue()
+            : strVal()
+        {}
+        ~ArgValue() {}
+    };
+    ArgValue value;
+    enum
+    {
+        NoType,
+        Bool,
+        UInt8,
+        UInt16,
+        UInt32,
+        UInt64,
+        Int8,
+        Int16,
+        Int32,
+        Int64,
+        Float,
+        Double,
+        Getter,
+        AsString // Whatever other type that will be stored as string after toString conversion
+    } type;
+
+    FormatArg()
+        : value()
+        , type(NoType)
+    {}
+    FormatArg(bool argValue)
+        : type(Bool)
+    {
+        value.fundamentalVals.boolVal = argValue;
+    }
+    FormatArg(uint8 argValue)
+        : type(UInt8)
+    {
+        value.fundamentalVals.uint8Val = argValue;
+    }
+    FormatArg(uint16 argValue)
+        : type(UInt16)
+    {
+        value.fundamentalVals.uint16Val = argValue;
+    }
+    FormatArg(uint32 argValue)
+        : type(UInt32)
+    {
+        value.fundamentalVals.uint32Val = argValue;
+    }
+    FormatArg(uint64 argValue)
+        : type(UInt64)
+    {
+        value.fundamentalVals.uint64Val = argValue;
+    }
+    FormatArg(int8 argValue)
+        : type(Int8)
+    {
+        value.fundamentalVals.int8Val = argValue;
+    }
+    FormatArg(int16 argValue)
+        : type(Int16)
+    {
+        value.fundamentalVals.int16Val = argValue;
+    }
+    FormatArg(int32 argValue)
+        : type(Int32)
+    {
+        value.fundamentalVals.int32Val = argValue;
+    }
+    FormatArg(int64 argValue)
+        : type(Int64)
+    {
+        value.fundamentalVals.int64Val = argValue;
+    }
+    FormatArg(float argValue)
+        : type(Float)
+    {
+        value.fundamentalVals.floatVal = argValue;
+    }
+    FormatArg(double argValue)
+        : type(Double)
+    {
+        value.fundamentalVals.doubleVal = argValue;
+    }
+    FormatArg(ArgGetter argValue)
+        : value(argValue)
+        , type(Getter)
+    {}
+    template <typename InType>
+    FormatArg(InType &&argValue);
+
+    FormatArg(const FormatArg &arg);
+    FormatArg(FormatArg &&arg);
+    FormatArg &operator=(const FormatArg &arg);
+    FormatArg &operator=(FormatArg &&arg);
+
+    String toString() const;
+    operator bool() const;
+};
+using FormatArgsMap = std::unordered_map<String, FormatArg>;
 
 using MustacheSectionFormatter = SingleCastDelegate<
     String, const MustacheStringFormatter &, const MustacheContext &, const std::unordered_map<String, MustacheStringFormatter> &>;
@@ -119,4 +242,16 @@ public:
     // Warning use partials with caution to avoid infinite recursions, When using partials try to wrap
     // around a branch with lambda condition check
     String render(const MustacheContext &context, const std::unordered_map<String, MustacheStringFormatter> &partials) const;
+
+    static String formatMustache(const String &fmt, const FormatArgsMap &formatArgs) 
+    {
+        MustacheStringFormatter formatter(fmt);
+        return formatter.formatBasic(formatArgs);
+    }
 };
+
+template <typename InType>
+FormatArg::FormatArg(InType &&argValue)
+    : value(StringFormat::toString<InType>(std::forward<InType>(argValue)))
+    , type(FormatArg::AsString)
+{}

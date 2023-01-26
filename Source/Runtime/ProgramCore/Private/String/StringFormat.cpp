@@ -10,9 +10,13 @@
  */
 
 #include "String/StringFormat.h"
+#include "Types/Platform/PlatformAssertionErrors.h"
 #include "Logger/Logger.h"
 #include "String/MustacheFormatString.h"
-#include "Types/Platform/PlatformAssertionErrors.h"
+
+//////////////////////////////////////////////////////////////////////////
+/// MustacheFormatString
+//////////////////////////////////////////////////////////////////////////
 
 FormatArg::FormatArg(const FormatArg &arg)
     : type(arg.type)
@@ -220,16 +224,6 @@ FormatArg::operator bool() const
     }
     return false;
 }
-
-String StringFormat::formatMustache(const String &fmt, const FormatArgsMap &formatArgs)
-{
-    MustacheStringFormatter formatter(fmt);
-    return formatter.formatBasic(formatArgs);
-}
-
-//////////////////////////////////////////////////////////////////////////
-/// MustacheFormatString
-//////////////////////////////////////////////////////////////////////////
 
 MustacheStringFormatter::MustacheStringFormatter(const String &fmt)
     : fmtStr(fmt)

@@ -14,6 +14,8 @@
 #include "Widgets/ImGui/IImGuiLayer.h"
 #include "EditorTypes.h"
 
+#include <unordered_map>
+
 class WgEditorImGuiLayer : public IImGuiLayer
 {
 private:

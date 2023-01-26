@@ -12,6 +12,8 @@
 #pragma once
 
 #include "CBEEditorExports.h"
+#include "Types/Delegates/Delegate.h"
+#include "Memory/SmartPointers.h"
 #include "Classes/EngineBase.h"
 #include "Classes/Actor.h"
 

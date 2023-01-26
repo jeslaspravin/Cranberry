@@ -14,8 +14,7 @@
 #include "Types/CoreDefines.h"
 #include "Types/CoreTypes.h"
 #include "Types/Platform/PlatformFunctions.h"
-
-#include <string>
+#include "Types/Platform/PlatformAssertionErrors.h"
 
 //
 // Allows using character literals as template parameters like below
