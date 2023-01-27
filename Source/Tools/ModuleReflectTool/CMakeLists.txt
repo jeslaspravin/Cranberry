@@ -7,7 +7,7 @@ set (CMAKE_FOLDER Tools/${directory_name})
 
 # Finding LLVM libraries
 make_find_package_hints(LLVM ${Cranberry_LLVM_INSTALL_PATH} llvm_hints)
-find_package(LLVM 15
+find_package(LLVM 16
     REQUIRED CONFIG
     HINTS ${llvm_hints})    
 if (DEFINED LLVM_FOUND AND ${LLVM_FOUND})
