@@ -110,7 +110,7 @@ FORCE_INLINE VkPipelineStageFlags2 VulkanCommandList::resourceShaderStageFlags()
 }
 
 FORCE_INLINE void
-    VulkanCommandList::fillClearValue(EPixelDataFormat::Type format, VkClearColorValue &clearValue, const LinearColor &color) const
+VulkanCommandList::fillClearValue(EPixelDataFormat::Type format, VkClearColorValue &clearValue, const LinearColor &color) const
 {
     const EPixelDataFormat::PixelFormatInfo *formatInfo = EPixelDataFormat::getFormatInfo(format);
 

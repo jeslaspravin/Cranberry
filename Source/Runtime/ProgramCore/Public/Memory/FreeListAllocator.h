@@ -77,7 +77,7 @@ public:
         }
         return foundFragSize * PAGE_SIZE;
     }
-    FORCE_INLINE bool findNextAllocatedBlock(SizeType fromOffsetBytes, SizeType &outOffsetBytes, SizeType &outByteSize) 
+    FORCE_INLINE bool findNextAllocatedBlock(SizeType fromOffsetBytes, SizeType &outOffsetBytes, SizeType &outByteSize)
     {
         SizeType pageOffset = pageCountFromBytes(fromOffsetBytes);
         debugAssert(pageOffset <= pageUsage.size());

@@ -26,7 +26,7 @@
 template <typename QueueResType, EQueuePriority::Enum Priority>
 struct GetQueueOfPriority
 {
-    VkQueue operator()(QueueResType *queueRes) { return queueRes->getQueueOfPriority<Priority>(); }
+    VkQueue operator() (QueueResType *queueRes) { return queueRes->getQueueOfPriority<Priority>(); }
 };
 
 template <typename QueueResType>
@@ -1415,9 +1415,8 @@ void VulkanResourcesTracker::clearUnwanted()
     }
 }
 
-VulkanResourcesTracker::OptionalBarrierInfo VulkanResourcesTracker::readOnlyBuffers(
-    const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource
-)
+VulkanResourcesTracker::OptionalBarrierInfo
+VulkanResourcesTracker::readOnlyBuffers(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource)
 {
     const EQueueFunction cmdBufferQ = static_cast<const VulkanCommandBuffer *>(cmdBuffer)->fromQueue;
 
@@ -1493,9 +1492,8 @@ VulkanResourcesTracker::OptionalBarrierInfo VulkanResourcesTracker::readOnlyBuff
     return outBarrierInfo;
 }
 
-VulkanResourcesTracker::OptionalBarrierInfo VulkanResourcesTracker::readOnlyImages(
-    const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource
-)
+VulkanResourcesTracker::OptionalBarrierInfo
+VulkanResourcesTracker::readOnlyImages(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource)
 {
     const EQueueFunction cmdBufferQ = static_cast<const VulkanCommandBuffer *>(cmdBuffer)->fromQueue;
 
@@ -1561,9 +1559,8 @@ VulkanResourcesTracker::OptionalBarrierInfo VulkanResourcesTracker::readOnlyImag
     return outBarrierInfo;
 }
 
-VulkanResourcesTracker::OptionalBarrierInfo VulkanResourcesTracker::readOnlyTexels(
-    const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource
-)
+VulkanResourcesTracker::OptionalBarrierInfo
+VulkanResourcesTracker::readOnlyTexels(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource)
 {
     return readOnlyBuffers(cmdBuffer, resource);
 }
@@ -1754,7 +1751,9 @@ VulkanResourcesTracker::OptionalBarrierInfo VulkanResourcesTracker::writeReadOnl
     if (!accessors.lastReadsIn.empty())
     {
         for (const GraphicsResource *readInCmdBuffer : accessors.lastReadsIn)
+        {
             cmdWaitInfo[cmdBuffer].emplace_back(CommandResUsageInfo{ readInCmdBuffer, resource.second });
+        }
 
         ResourceBarrierInfo barrier;
         barrier.accessors.lastReadsIn = accessors.lastReadsIn;
@@ -1801,25 +1800,25 @@ VulkanResourcesTracker::OptionalBarrierInfo VulkanResourcesTracker::writeReadOnl
 }
 
 VulkanResourcesTracker::OptionalBarrierInfo
-    VulkanResourcesTracker::writeBuffers(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource)
+VulkanResourcesTracker::writeBuffers(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource)
 {
     return writeReadOnlyBuffers(cmdBuffer, resource);
 }
 
 VulkanResourcesTracker::OptionalBarrierInfo
-    VulkanResourcesTracker::writeImages(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource)
+VulkanResourcesTracker::writeImages(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource)
 {
     return writeReadOnlyImages(cmdBuffer, resource);
 }
 
 VulkanResourcesTracker::OptionalBarrierInfo
-    VulkanResourcesTracker::writeTexels(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource)
+VulkanResourcesTracker::writeTexels(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource)
 {
     return writeReadOnlyBuffers(cmdBuffer, resource);
 }
 
 VulkanResourcesTracker::OptionalBarrierInfo
-    VulkanResourcesTracker::imageToGeneralLayout(const GraphicsResource *, const ImageResourceRef &resource)
+VulkanResourcesTracker::imageToGeneralLayout(const GraphicsResource *, const ImageResourceRef &resource)
 {
     OptionalBarrierInfo outBarrierInfo = {};
 
@@ -1856,7 +1855,7 @@ VulkanResourcesTracker::OptionalBarrierInfo
 }
 
 VulkanResourcesTracker::OptionalBarrierInfo
-    VulkanResourcesTracker::colorAttachmentWrite(const GraphicsResource *cmdBuffer, const ImageResourceRef &resource)
+VulkanResourcesTracker::colorAttachmentWrite(const GraphicsResource *cmdBuffer, const ImageResourceRef &resource)
 {
     OptionalBarrierInfo outBarrierInfo = {};
     VkPipelineStageFlagBits stageFlag = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -1886,7 +1885,9 @@ VulkanResourcesTracker::OptionalBarrierInfo
         && std::find(accessors.lastReadsIn.cbegin(), accessors.lastReadsIn.cend(), cmdBuffer) == accessors.lastReadsIn.cend())
     {
         for (const GraphicsResource *readInCmdBuffer : accessors.lastReadsIn)
+        {
             cmdWaitInfo[cmdBuffer].emplace_back(CommandResUsageInfo{ readInCmdBuffer, VkPipelineStageFlags2(stageFlag) });
+        }
 
         accessors.lastWrite = cmdBuffer;
         accessors.lastWriteStage = stageFlag;

@@ -30,8 +30,8 @@ private:
     // TODO(Jeslas) : To allow vector - matrix product - Remove once using native implemented vectors and
     // matrices
     friend class Matrix2;
-    friend Vector2D operator/(float n, const Vector2D &d);
-    friend Vector2D operator-(float n, const Vector2D &d);
+    friend Vector2D operator/ (float n, const Vector2D &d);
+    friend Vector2D operator- (float n, const Vector2D &d);
 
 public:
     using value_type = glm::vec2::value_type;
@@ -44,38 +44,38 @@ public:
     Vector2D(const Vector2D &other);
     Vector2D(const Vector3D &other);
     Vector2D(Vector2D &&other);
-    Vector2D &operator=(const Vector2D &other);
-    Vector2D &operator=(Vector2D &&other);
+    Vector2D &operator= (const Vector2D &other);
+    Vector2D &operator= (Vector2D &&other);
 
     float &x();
     float &y();
     float x() const;
     float y() const;
-    float operator[](uint32 index) const;
-    float &operator[](uint32 index);
+    float operator[] (uint32 index) const;
+    float &operator[] (uint32 index);
 
 public:
-    bool operator==(const Vector2D &b) const;
-    float operator|(const Vector2D &b) const;
-    float operator^(const Vector2D &b) const;
+    bool operator== (const Vector2D &b) const;
+    float operator| (const Vector2D &b) const;
+    float operator^ (const Vector2D &b) const;
     // Component wise operations
-    Vector2D operator*(const Vector2D &b) const;
-    Vector2D &operator*=(const Vector2D &b);
-    Vector2D operator/(const Vector2D &b) const;
-    Vector2D &operator/=(const Vector2D &b);
-    Vector2D operator-(const Vector2D &b) const;
-    Vector2D &operator-=(const Vector2D &b);
-    Vector2D operator+(const Vector2D &b) const;
-    Vector2D &operator+=(const Vector2D &b);
-    Vector2D operator*(float scalar) const;
-    Vector2D &operator*=(float scalar);
-    Vector2D operator/(float scalar) const;
-    Vector2D &operator/=(float scalar);
-    Vector2D operator-(float scalar) const;
-    Vector2D &operator-=(float scalar);
-    Vector2D operator+(float scalar) const;
-    Vector2D &operator+=(float scalar);
-    Vector2D operator-() const;
+    Vector2D operator* (const Vector2D &b) const;
+    Vector2D &operator*= (const Vector2D &b);
+    Vector2D operator/ (const Vector2D &b) const;
+    Vector2D &operator/= (const Vector2D &b);
+    Vector2D operator- (const Vector2D &b) const;
+    Vector2D &operator-= (const Vector2D &b);
+    Vector2D operator+ (const Vector2D &b) const;
+    Vector2D &operator+= (const Vector2D &b);
+    Vector2D operator* (float scalar) const;
+    Vector2D &operator*= (float scalar);
+    Vector2D operator/ (float scalar) const;
+    Vector2D &operator/= (float scalar);
+    Vector2D operator- (float scalar) const;
+    Vector2D &operator-= (float scalar);
+    Vector2D operator+ (float scalar) const;
+    Vector2D &operator+= (float scalar);
+    Vector2D operator- () const;
 
     bool isSame(const Vector2D &b, float epsilon = SMALL_EPSILON) const;
     bool isFinite() const;
@@ -112,10 +112,10 @@ public:
     static Vector2D modf(Vector2D &wholePart, const Vector2D &value);
 };
 
-FORCE_INLINE Vector2D operator/(float n, const Vector2D &d) { return Vector2D(n / d.value); }
+FORCE_INLINE Vector2D operator/ (float n, const Vector2D &d) { return Vector2D(n / d.value); }
 
-FORCE_INLINE Vector2D operator-(float n, const Vector2D &d) { return Vector2D(n - d.value); }
+FORCE_INLINE Vector2D operator- (float n, const Vector2D &d) { return Vector2D(n - d.value); }
 
-FORCE_INLINE Vector2D operator*(float n, const Vector2D &d) { return d * n; }
+FORCE_INLINE Vector2D operator* (float n, const Vector2D &d) { return d * n; }
 
-FORCE_INLINE Vector2D operator+(float n, const Vector2D &d) { return d + n; }
+FORCE_INLINE Vector2D operator+ (float n, const Vector2D &d) { return d + n; }

@@ -297,7 +297,9 @@ public:
         for (uint32 i = 0; i < ARRAY_LENGTH(UNICODE_SPACES); ++i)
         {
             if (UNICODE_SPACES[i] == codepoint)
+            {
                 return true;
+            }
         }
         return false;
     }
@@ -305,7 +307,7 @@ public:
     // xAdvance is given out in glyph scaled value
     // yAdvance is scaled to fontToHeightScale value
     FORCE_INLINE bool
-        advanceSpace(uint32 codepoint, FontIndex font, const FontGlyph &spaceGlyph, float fontToHeightScale, int32 &xAdvance, int32 &yAdvance)
+    advanceSpace(uint32 codepoint, FontIndex font, const FontGlyph &spaceGlyph, float fontToHeightScale, int32 &xAdvance, int32 &yAdvance)
     {
         xAdvance = 0;
         yAdvance = 0;
@@ -523,7 +525,7 @@ FontManager::FontManager(FontManager &&otherManager)
     otherManager.context = nullptr;
 }
 
-FontManager &FontManager::operator=(FontManager &&otherManager)
+FontManager &FontManager::operator= (FontManager &&otherManager)
 {
     context = new (otherManager.context) FontManagerContext(this);
     otherManager.context = nullptr;

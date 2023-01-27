@@ -76,7 +76,7 @@ public:
         }
     }
 
-    ReferenceCountPtr &operator=(PtrType *ptr)
+    ReferenceCountPtr &operator= (PtrType *ptr)
     {
         PtrType *oldRef = refPtr;
         refPtr = ptr;
@@ -94,7 +94,7 @@ public:
 
     // Explicit copy and move assignment needed as compiler generates them without matching template
     // assignments
-    FORCE_INLINE ReferenceCountPtr &operator=(ReferenceCountPtr &&refCountPtr)
+    FORCE_INLINE ReferenceCountPtr &operator= (ReferenceCountPtr &&refCountPtr)
     {
         if (this != &refCountPtr)
         {
@@ -109,9 +109,9 @@ public:
         }
         return *this;
     }
-    FORCE_INLINE ReferenceCountPtr &operator=(const ReferenceCountPtr &refCountPtr) { return *this = refCountPtr.reference(); }
+    FORCE_INLINE ReferenceCountPtr &operator= (const ReferenceCountPtr &refCountPtr) { return *this = refCountPtr.reference(); }
     template <class InPtrType>
-    FORCE_INLINE ReferenceCountPtr &operator=(ReferenceCountPtr<InPtrType> &&refCountPtr)
+    FORCE_INLINE ReferenceCountPtr &operator= (ReferenceCountPtr<InPtrType> &&refCountPtr)
     {
         if (this != &refCountPtr)
         {
@@ -127,34 +127,34 @@ public:
         return *this;
     }
     template <class InPtrType>
-    FORCE_INLINE ReferenceCountPtr &operator=(const ReferenceCountPtr<InPtrType> &refCountPtr)
+    FORCE_INLINE ReferenceCountPtr &operator= (const ReferenceCountPtr<InPtrType> &refCountPtr)
     {
         return *this = refCountPtr.reference();
     }
 
     FORCE_INLINE PtrType *operator->() const { return refPtr; }
 
-    FORCE_INLINE bool operator!=(const ReferenceCountPtr &rhs) const { return reference() != rhs.reference(); }
+    FORCE_INLINE bool operator!= (const ReferenceCountPtr &rhs) const { return reference() != rhs.reference(); }
     template <typename RefType>
-    FORCE_INLINE bool operator!=(const ReferenceCountPtr<RefType> &rhs) const
+    FORCE_INLINE bool operator!= (const ReferenceCountPtr<RefType> &rhs) const
     {
         return reference() != rhs.reference();
     }
-    FORCE_INLINE bool operator==(const ReferenceCountPtr &rhs) const { return reference() == rhs.reference(); }
+    FORCE_INLINE bool operator== (const ReferenceCountPtr &rhs) const { return reference() == rhs.reference(); }
     template <typename RefType>
-    FORCE_INLINE bool operator==(const ReferenceCountPtr<RefType> &rhs) const
+    FORCE_INLINE bool operator== (const ReferenceCountPtr<RefType> &rhs) const
     {
         return reference() == rhs.reference();
     }
     template <typename RefType>
-    FORCE_INLINE bool operator==(RefType *rhs) const
+    FORCE_INLINE bool operator== (RefType *rhs) const
     {
         return reference() == rhs;
     }
 
-    FORCE_INLINE bool operator<(const ReferenceCountPtr &rhs) const { return this->reference() < rhs.reference(); }
+    FORCE_INLINE bool operator< (const ReferenceCountPtr &rhs) const { return this->reference() < rhs.reference(); }
     template <typename RefType>
-    FORCE_INLINE bool operator<(const ReferenceCountPtr<RefType> &rhs) const
+    FORCE_INLINE bool operator< (const ReferenceCountPtr<RefType> &rhs) const
     {
         return this->reference() < rhs.reference();
     }
@@ -171,7 +171,7 @@ public:
     FORCE_INLINE PtrType *get() const { return refPtr; }
 
     FORCE_INLINE bool isValid() const { return refPtr != nullptr; }
-    FORCE_INLINE explicit operator bool() const { return refPtr != nullptr; }
+    FORCE_INLINE explicit operator bool () const { return refPtr != nullptr; }
 
     FORCE_INLINE uint32 refCount() const
     {
@@ -198,7 +198,7 @@ public:
 };
 
 template <typename RefType, typename ReferencedType>
-FORCE_INLINE bool operator==(RefType *lhs, const ReferenceCountPtr<ReferencedType> &rhs)
+FORCE_INLINE bool operator== (RefType *lhs, const ReferenceCountPtr<ReferencedType> &rhs)
 {
     return lhs == rhs.reference();
 }
@@ -206,7 +206,7 @@ FORCE_INLINE bool operator==(RefType *lhs, const ReferenceCountPtr<ReferencedTyp
 template <typename RefType>
 struct std::hash<ReferenceCountPtr<RefType>>
 {
-    NODISCARD size_t operator()(const ReferenceCountPtr<RefType> &refCountPtr) const noexcept
+    NODISCARD size_t operator() (const ReferenceCountPtr<RefType> &refCountPtr) const noexcept
     {
         return HashUtility::hash(refCountPtr.reference());
     }

@@ -28,7 +28,7 @@ public:
 
     /* WidgetBase overrides */
     void drawWidget(QuantShortBox2D /*clipBound*/, WidgetGeomId /*thisId*/, const WidgetGeomTree &, WidgetDrawContext &) override {}
-    bool hasWidget(SharedPtr<WidgetBase> ) const override { return false; }
+    bool hasWidget(SharedPtr<WidgetBase>) const override { return false; }
     void tick(float /*timeDelta*/) override {}
 
     /* Overrides ends */

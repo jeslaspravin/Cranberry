@@ -170,7 +170,7 @@ public:
     ///////////////////////////////////////////////////////////////////////////////
 
     virtual void
-        cmdCopyBuffer(const GraphicsResource *cmdBuffer, BufferResourceRef src, BufferResourceRef dst, ArrayView<const CopyBufferInfo> copies)
+    cmdCopyBuffer(const GraphicsResource *cmdBuffer, BufferResourceRef src, BufferResourceRef dst, ArrayView<const CopyBufferInfo> copies)
         = 0;
     virtual void cmdCopyBuffer(const GraphicsResource *cmdBuffer, ArrayView<const BatchCopyBufferInfo> copies) = 0;
     virtual void cmdCopyToBuffer(const GraphicsResource *cmdBuffer, ArrayView<const BatchCopyBufferData> batchCopies) = 0;
@@ -210,7 +210,8 @@ public:
 
     virtual void cmdBindGraphicsPipeline(
         const GraphicsResource *cmdBuffer, const LocalPipelineContext &contextPipeline, const GraphicsPipelineState &state
-    ) const = 0;
+    ) const
+        = 0;
     virtual void cmdBindComputePipeline(const GraphicsResource *cmdBuffer, const LocalPipelineContext &contextPipeline) const = 0;
     void cmdPushConstants(
         const GraphicsResource *cmdBuffer, const LocalPipelineContext &contextPipeline, ArrayView<const std::pair<String, std::any>> pushData
@@ -219,7 +220,8 @@ public:
     virtual void cmdPushConstants(
         const GraphicsResource *cmdBuffer, const LocalPipelineContext &contextPipeline, uint32 stagesUsed, const uint8 *data,
         ArrayView<const CopyBufferInfo> pushConsts
-    ) const = 0;
+    ) const
+        = 0;
     void cmdBindDescriptorsSets(
         const GraphicsResource *cmdBuffer, const LocalPipelineContext &contextPipeline, ShaderParametersRef descriptorsSets
     ) const;
@@ -228,10 +230,12 @@ public:
     ) const;
     virtual void cmdBindDescriptorsSetInternal(
         const GraphicsResource *cmdBuffer, const PipelineBase *contextPipeline, const std::map<uint32, ShaderParametersRef> &descriptorsSets
-    ) const = 0;
+    ) const
+        = 0;
     virtual void cmdBindDescriptorsSetsInternal(
         const GraphicsResource *cmdBuffer, const PipelineBase *contextPipeline, ArrayView<const ShaderParametersRef> descriptorsSets
-    ) const = 0;
+    ) const
+        = 0;
     // Offset in bytes
     virtual void cmdBindVertexBuffer(const GraphicsResource *cmdBuffer, uint32 firstBinding, BufferResourceRef vertexBuffer, uint64 offset) = 0;
     virtual void cmdBindVertexBuffers(
@@ -245,10 +249,12 @@ public:
     virtual void cmdDrawIndexed(
         const GraphicsResource *cmdBuffer, uint32 firstIndex, uint32 indexCount, uint32 firstInstance = 0, uint32 instanceCount = 1,
         int32 vertexOffset = 0
-    ) const = 0;
+    ) const
+        = 0;
     virtual void cmdDrawVertices(
         const GraphicsResource *cmdBuffer, uint32 firstVertex, uint32 vertexCount, uint32 firstInstance = 0, uint32 instanceCount = 1
-    ) const = 0;
+    ) const
+        = 0;
     // bufferOffset - Offset in bytes, stride - useful when draw struct is part of some complex AoS
     virtual void cmdDrawIndexedIndirect(
         const GraphicsResource *cmdBuffer, const BufferResourceRef &drawCmdsBuffer, uint32 bufferOffset, uint32 drawCount, uint32 stride
@@ -260,21 +266,23 @@ public:
     virtual void cmdSetViewportAndScissors(
         const GraphicsResource *cmdBuffer, ArrayView<const std::pair<QuantizedBox2D, QuantizedBox2D>> viewportAndScissors,
         uint32 firstViewport = 0
-    ) const = 0;
+    ) const
+        = 0;
     virtual void cmdSetViewportAndScissor(
         const GraphicsResource *cmdBuffer, const QuantizedBox2D &viewport, const QuantizedBox2D &scissor, uint32 atViewport = 0
-    ) const = 0;
+    ) const
+        = 0;
     // Usually you do one viewport and scissor set and several scissor set after that, So having separate scissor set cmd
     virtual void cmdSetScissor(const GraphicsResource *cmdBuffer, const QuantizedBox2D &scissor, uint32 atViewport = 0) const = 0;
     virtual void cmdSetLineWidth(const GraphicsResource *cmdBuffer, float lineWidth) const = 0;
     virtual void cmdSetDepthBias(const GraphicsResource *cmdBuffer, float constantBias, float slopeFactor, float clampValue) const = 0;
 
-    virtual void cmdBeginBufferMarker(
-        const GraphicsResource *commandBuffer, const String &name, const LinearColor &color = LinearColorConst::WHITE
-    ) const = 0;
-    virtual void cmdInsertBufferMarker(
-        const GraphicsResource *commandBuffer, const String &name, const LinearColor &color = LinearColorConst::WHITE
-    ) const = 0;
+    virtual void
+    cmdBeginBufferMarker(const GraphicsResource *commandBuffer, const String &name, const LinearColor &color = LinearColorConst::WHITE) const
+        = 0;
+    virtual void
+    cmdInsertBufferMarker(const GraphicsResource *commandBuffer, const String &name, const LinearColor &color = LinearColorConst::WHITE) const
+        = 0;
     virtual void cmdEndBufferMarker(const GraphicsResource *commandBuffer) const = 0;
 
     // Reusable here mean rerecord able command buffer

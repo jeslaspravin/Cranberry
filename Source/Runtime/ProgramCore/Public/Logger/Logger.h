@@ -182,7 +182,4 @@ struct ScopedMuteLogServerity
     ~ScopedMuteLogServerity() { Logger::popMuteSeverities(); }
 };
 #define SCOPED_MUTE_LOG_SEVERITIES(SeverityFlags)                                                                                              \
-    ScopedMuteLogServerity COMBINE(__zzzz__muteSeverities_, __LINE__)                                                                          \
-    {                                                                                                                                          \
-        SeverityFlags                                                                                                                          \
-    }
+    ScopedMuteLogServerity COMBINE(__zzzz__muteSeverities_, __LINE__) { SeverityFlags }

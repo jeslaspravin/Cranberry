@@ -42,9 +42,8 @@ public:
     static DeferredDeleter *getDeferredDeleter(IGraphicsInstance *graphicsInstance);
 #endif
 
-    static VkSwapchainKHR createSwapchain(
-        IGraphicsInstance *graphicsInstance, const GenericWindowCanvas *windowCanvas, SwapchainInfo *swapchainInfo
-    );
+    static VkSwapchainKHR
+    createSwapchain(IGraphicsInstance *graphicsInstance, const GenericWindowCanvas *windowCanvas, SwapchainInfo *swapchainInfo);
     static void fillSwapchainImages(
         IGraphicsInstance *graphicsInstance, VkSwapchainKHR swapchain, std::vector<VkImage> *images, std::vector<VkImageView> *imageViews
     );
@@ -73,12 +72,10 @@ public:
         IGraphicsInstance *graphicsInstance, ESamplerFiltering::Type sampleFiltering, EPixelDataFormat::Type imageFormat
     ) const final;
 
-    static VkBuffer createBuffer(
-        IGraphicsInstance *graphicsInstance, const VkBufferCreateInfo &bufferCreateInfo, EPixelDataFormat::Type bufferDataFormat
-    );
+    static VkBuffer
+    createBuffer(IGraphicsInstance *graphicsInstance, const VkBufferCreateInfo &bufferCreateInfo, EPixelDataFormat::Type bufferDataFormat);
     static void destroyBuffer(IGraphicsInstance *graphicsInstance, VkBuffer buffer);
-    static bool
-        allocateBufferResource(IGraphicsInstance *graphicsInstance, IVulkanMemoryResources *memoryResource, bool cpuAccessible);
+    static bool allocateBufferResource(IGraphicsInstance *graphicsInstance, IVulkanMemoryResources *memoryResource, bool cpuAccessible);
     static void deallocateBufferResource(IGraphicsInstance *graphicsInstance, IVulkanMemoryResources *memoryResource);
     static VkBufferView createBufferView(IGraphicsInstance *graphicsInstance, const VkBufferViewCreateInfo &viewCreateInfo);
     static void destroyBufferView(IGraphicsInstance *graphicsInstance, VkBufferView view);
@@ -92,40 +89,33 @@ public:
 
     // Texels buffers
     BufferResourceRef
-        createReadOnlyTexels(IGraphicsInstance *graphicsInstance, EPixelDataFormat::Type texelFormat, uint32 bufferCount = 1) const final;
+    createReadOnlyTexels(IGraphicsInstance *graphicsInstance, EPixelDataFormat::Type texelFormat, uint32 bufferCount = 1) const final;
     // Cannot be used as uniform sampled
-    BufferResourceRef createWriteOnlyTexels(
-        IGraphicsInstance *graphicsInstance, EPixelDataFormat::Type texelFormat, uint32 bufferCount = 1
-    ) const final;
-    BufferResourceRef createReadWriteTexels(
-        IGraphicsInstance *graphicsInstance, EPixelDataFormat::Type texelFormat, uint32 bufferCount = 1
-    ) const final;
+    BufferResourceRef
+    createWriteOnlyTexels(IGraphicsInstance *graphicsInstance, EPixelDataFormat::Type texelFormat, uint32 bufferCount = 1) const final;
+    BufferResourceRef
+    createReadWriteTexels(IGraphicsInstance *graphicsInstance, EPixelDataFormat::Type texelFormat, uint32 bufferCount = 1) const final;
 
     // Other utility buffers
-    BufferResourceRef
-        createReadOnlyIndexBuffer(IGraphicsInstance *graphicsInstance, uint32 bufferStride, uint32 bufferCount = 1) const final;
-    BufferResourceRef
-        createReadOnlyVertexBuffer(IGraphicsInstance *graphicsInstance, uint32 bufferStride, uint32 bufferCount = 1) const final;
+    BufferResourceRef createReadOnlyIndexBuffer(IGraphicsInstance *graphicsInstance, uint32 bufferStride, uint32 bufferCount = 1) const final;
+    BufferResourceRef createReadOnlyVertexBuffer(IGraphicsInstance *graphicsInstance, uint32 bufferStride, uint32 bufferCount = 1) const final;
 
     BufferResourceRef
-        createReadOnlyIndirectBuffer(IGraphicsInstance *graphicsInstance, uint32 bufferStride, uint32 bufferCount = 1) const final;
+    createReadOnlyIndirectBuffer(IGraphicsInstance *graphicsInstance, uint32 bufferStride, uint32 bufferCount = 1) const final;
     BufferResourceRef
-        createWriteOnlyIndirectBuffer(IGraphicsInstance *graphicsInstance, uint32 bufferStride, uint32 bufferCount = 1) const final;
+    createWriteOnlyIndirectBuffer(IGraphicsInstance *graphicsInstance, uint32 bufferStride, uint32 bufferCount = 1) const final;
 
-    static VkImage
-        createImage(IGraphicsInstance *graphicsInstance, VkImageCreateInfo &createInfo, VkFormatFeatureFlags &requiredFeatures);
+    static VkImage createImage(IGraphicsInstance *graphicsInstance, VkImageCreateInfo &createInfo, VkFormatFeatureFlags &requiredFeatures);
     static void destroyImage(IGraphicsInstance *graphicsInstance, VkImage image);
-    static bool
-        allocateImageResource(IGraphicsInstance *graphicsInstance, IVulkanMemoryResources *memoryResource, bool cpuAccessible);
+    static bool allocateImageResource(IGraphicsInstance *graphicsInstance, IVulkanMemoryResources *memoryResource, bool cpuAccessible);
     static void deallocateImageResource(IGraphicsInstance *graphicsInstance, IVulkanMemoryResources *memoryResource);
     static VkImageView createImageView(IGraphicsInstance *graphicsInstance, const VkImageViewCreateInfo &viewCreateInfo);
     static void destroyImageView(IGraphicsInstance *graphicsInstance, VkImageView view);
 
     // Images
+    ImageResourceRef createImage(IGraphicsInstance *graphicsInstance, ImageResourceCreateInfo createInfo, bool bIsStaging = false) const final;
     ImageResourceRef
-        createImage(IGraphicsInstance *graphicsInstance, ImageResourceCreateInfo createInfo, bool bIsStaging = false) const final;
-    ImageResourceRef
-        createCubeImage(IGraphicsInstance *graphicsInstance, ImageResourceCreateInfo createInfo, bool bIsStaging = false) const final;
+    createCubeImage(IGraphicsInstance *graphicsInstance, ImageResourceCreateInfo createInfo, bool bIsStaging = false) const final;
     ImageResourceRef createRTImage(
         IGraphicsInstance *graphicsInstance, ImageResourceCreateInfo createInfo,
         EPixelSampleCount::Type sampleCount = EPixelSampleCount::SampleCount1
@@ -168,7 +158,7 @@ public:
     static VkFramebuffer getFramebuffer(const struct Framebuffer *appFrameBuffer);
 
     static VkDescriptorSetLayout
-        createDescriptorsSetLayout(IGraphicsInstance *graphicsInstance, const VkDescriptorSetLayoutCreateInfo &layoutCreateInfo);
+    createDescriptorsSetLayout(IGraphicsInstance *graphicsInstance, const VkDescriptorSetLayoutCreateInfo &layoutCreateInfo);
     static VkDescriptorSetLayout getEmptyDescriptorsSetLayout(IGraphicsInstance *graphicsInstance);
     static void destroyDescriptorsSetLayout(IGraphicsInstance *graphicsInstance, VkDescriptorSetLayout descriptorsSetLayout);
     static void updateDescriptorsSet(
@@ -183,11 +173,10 @@ public:
     static VkPipelineCache createPipelineCache(IGraphicsInstance *graphicsInstance);
     static void destroyPipelineCache(IGraphicsInstance *graphicsInstance, VkPipelineCache pipelineCache);
     static void
-        mergePipelineCaches(IGraphicsInstance *graphicsInstance, VkPipelineCache dstCache, const std::vector<VkPipelineCache> &srcCaches);
+    mergePipelineCaches(IGraphicsInstance *graphicsInstance, VkPipelineCache dstCache, const std::vector<VkPipelineCache> &srcCaches);
     static void getPipelineCacheData(IGraphicsInstance *graphicsInstance, VkPipelineCache pipelineCache, std::vector<uint8> &cacheData);
-    static void getMergedCacheData(
-        IGraphicsInstance *graphicsInstance, std::vector<uint8> &cacheData, const std::vector<const PipelineBase *> &pipelines
-    );
+    static void
+    getMergedCacheData(IGraphicsInstance *graphicsInstance, std::vector<uint8> &cacheData, const std::vector<const PipelineBase *> &pipelines);
 
     // Pipelines
     PipelineBase *createGraphicsPipeline(IGraphicsInstance *graphicsInstance, const PipelineBase *parent) const final;
@@ -201,12 +190,10 @@ public:
     static VkShaderStageFlags pipelineToShaderStageFlags(uint64 pipelineStageFlags);
 
     static std::vector<VkPipeline> createGraphicsPipeline(
-        IGraphicsInstance *graphicsInstance, const std::vector<VkGraphicsPipelineCreateInfo> &graphicsPipelineCI,
-        VkPipelineCache pipelineCache
+        IGraphicsInstance *graphicsInstance, const std::vector<VkGraphicsPipelineCreateInfo> &graphicsPipelineCI, VkPipelineCache pipelineCache
     );
     static std::vector<VkPipeline> createComputePipeline(
-        IGraphicsInstance *graphicsInstance, const std::vector<VkComputePipelineCreateInfo> &computePipelineCI,
-        VkPipelineCache pipelineCache
+        IGraphicsInstance *graphicsInstance, const std::vector<VkComputePipelineCreateInfo> &computePipelineCI, VkPipelineCache pipelineCache
     );
 
     static void destroyPipeline(IGraphicsInstance *graphicsInstance, VkPipeline pipeline);
@@ -220,8 +207,7 @@ public:
 
     Framebuffer *createFbInstance() const final;
     void initializeFb(IGraphicsInstance *graphicsInstance, Framebuffer *fb, const Size2D &frameSize) const final;
-    void initializeSwapchainFb(IGraphicsInstance *graphicsInstance, Framebuffer *fb, WindowCanvasRef canvas, uint32 swapchainIdx)
-        const final;
+    void initializeSwapchainFb(IGraphicsInstance *graphicsInstance, Framebuffer *fb, WindowCanvasRef canvas, uint32 swapchainIdx) const final;
 
     const GraphicsResourceType *readOnlyBufferType() const final;
     const GraphicsResourceType *writeOnlyBufferType() const final;

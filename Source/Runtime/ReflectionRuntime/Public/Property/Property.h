@@ -181,7 +181,7 @@ public:
     }
 
     FORCE_INLINE FunctionProperty *
-        addFunctionParamProperty(const StringID &paramNameID, const String &paramName, const BaseProperty *funcParamProperty)
+    addFunctionParamProperty(const StringID &paramNameID, const String &paramName, const BaseProperty *funcParamProperty)
     {
         funcParamsProp.emplace_back(decltype(funcParamsProp)::value_type{ funcParamProperty, paramName, paramNameID });
         return this;
@@ -372,7 +372,7 @@ public:
 //////////////////////////////////////////////////////////////////////////
 
 template <ArchiveTypeName ArchiveType>
-ArchiveType &operator<<(ArchiveType &archive, ClassProperty const *&value)
+ArchiveType &operator<< (ArchiveType &archive, ClassProperty const *&value)
 {
     if (archive.isLoading())
     {
@@ -393,7 +393,7 @@ ArchiveType &operator<<(ArchiveType &archive, ClassProperty const *&value)
 }
 
 template <ArchiveTypeName ArchiveType>
-ArchiveType &operator<<(ArchiveType &archive, EnumProperty const *&value)
+ArchiveType &operator<< (ArchiveType &archive, EnumProperty const *&value)
 {
     if (archive.isLoading())
     {

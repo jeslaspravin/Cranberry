@@ -46,7 +46,7 @@ public:
      *  v4------v3
      */
     APPLICATION_EXPORT void
-        drawBox(ArrayView<Size2D> verts, ArrayView<Vector2D> coords, ArrayView<Color> colors, ImageResourceRef texture, QuantShortBox2D clip);
+    drawBox(ArrayView<Size2D> verts, ArrayView<Vector2D> coords, ArrayView<Color> colors, ImageResourceRef texture, QuantShortBox2D clip);
     APPLICATION_EXPORT void drawBox(ArrayView<Size2D> verts, ArrayView<Color> colors, QuantShortBox2D clip);
     APPLICATION_EXPORT void drawBox(ArrayView<Size2D> verts, QuantShortBox2D clip);
     APPLICATION_EXPORT void drawBox(QuantShortBox2D box, ImageResourceRef texture, QuantShortBox2D clip, Color color = ColorConst::WHITE);

@@ -24,7 +24,7 @@ struct DescriptorsSetQuery;
 
 struct DescriptorPoolSizeLessThan
 {
-    bool operator()(const VkDescriptorPoolSize &lhs, const VkDescriptorPoolSize &rhs) const;
+    bool operator() (const VkDescriptorPoolSize &lhs, const VkDescriptorPoolSize &rhs) const;
 };
 
 struct DescriptorsSetQueryLessThan
@@ -34,7 +34,7 @@ struct DescriptorsSetQueryLessThan
         std::set<VkDescriptorPoolSize>::const_iterator &rhsItr, std::set<VkDescriptorPoolSize>::const_iterator &rhsEnd
     ) const;
 
-    bool operator()(const DescriptorsSetQuery &lhs, const DescriptorsSetQuery &rhs) const;
+    bool operator() (const DescriptorsSetQuery &lhs, const DescriptorsSetQuery &rhs) const;
 };
 
 struct DescriptorsSetQuery
@@ -83,14 +83,13 @@ private:
         uint32 setsCount
     ) const;
     VkDescriptorSet
-        allocateSetFromPool(VulkanDescriptorsSetAllocatorInfo &allocationPool, const VkDescriptorSetLayout &descriptorsSetLayout) const;
+    allocateSetFromPool(VulkanDescriptorsSetAllocatorInfo &allocationPool, const VkDescriptorSetLayout &descriptorsSetLayout) const;
     bool allocateSetsFromPool(
         std::vector<VkDescriptorSet> &allocatedSets, VulkanDescriptorsSetAllocatorInfo &allocationPool,
         const std::vector<VkDescriptorSetLayout> &layouts
     ) const;
-    VulkanDescriptorsSetAllocatorInfo &createNewPool(
-        const DescriptorsSetQuery &query, uint32 setsCount, std::vector<VulkanDescriptorsSetAllocatorInfo> &poolGroup
-    ) const;
+    VulkanDescriptorsSetAllocatorInfo &
+    createNewPool(const DescriptorsSetQuery &query, uint32 setsCount, std::vector<VulkanDescriptorsSetAllocatorInfo> &poolGroup) const;
     /*
      * If allocation pool is found with requested available sets then that allocation pool is returned
      * with number of requested available sets filled. If allocation pools are found with partial number
@@ -99,7 +98,7 @@ private:
      * allocated remaining amount from returned allocation pool.
      */
     VulkanDescriptorsSetAllocatorInfo &
-        findOrCreateAllocPool(std::vector<VkDescriptorSet> &availableSets, const DescriptorsSetQuery &query, uint32 setsCount);
+    findOrCreateAllocPool(std::vector<VkDescriptorSet> &availableSets, const DescriptorsSetQuery &query, uint32 setsCount);
     /*
      * Similar to above method but never uses available sets.
      * Useful in case of sets with varying layouts

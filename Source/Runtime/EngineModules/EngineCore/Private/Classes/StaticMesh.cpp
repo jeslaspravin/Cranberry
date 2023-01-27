@@ -16,17 +16,17 @@
 #include "RenderInterface/Rendering/IRenderCommandList.h"
 
 template <ArchiveTypeName ArchiveType>
-ArchiveType &operator<<(ArchiveType &archive, cbe::SMBatchView &value)
+ArchiveType &operator<< (ArchiveType &archive, cbe::SMBatchView &value)
 {
     return archive << value.startIndex << value.numOfIndices << value.name;
 }
 template <ArchiveTypeName ArchiveType>
-ArchiveType &operator<<(ArchiveType &archive, cbe::SMTbnLinePoint &value)
+ArchiveType &operator<< (ArchiveType &archive, cbe::SMTbnLinePoint &value)
 {
     return archive << value.position << value.color;
 }
 template <ArchiveTypeName ArchiveType>
-ArchiveType &operator<<(ArchiveType &archive, StaticMeshVertex &value)
+ArchiveType &operator<< (ArchiveType &archive, StaticMeshVertex &value)
 {
     return archive << value.position << value.normal << value.tangent;
 }
@@ -55,7 +55,7 @@ StaticMesh::StaticMesh(SMCreateInfo &&ci)
             copyResources(vertices, indices, cmdList, graphicsInstance, graphicsHelper);
 
             if (!tbnVerts.empty())
-            { 
+            {
                 // Copy tangent, binormal, normal vertices
                 tbnVertexBuffer = graphicsHelper->createReadOnlyVertexBuffer(graphicsInstance, sizeof(SMTbnLinePoint), uint32(tbnVerts.size()));
                 tbnVertexBuffer->setResourceName(getName() + TCHAR("_TbnVerts"));

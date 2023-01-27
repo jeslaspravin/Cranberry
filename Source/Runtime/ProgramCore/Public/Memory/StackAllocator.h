@@ -66,7 +66,7 @@ public:
         debugAssert(memoryPtr && stackSize > 0);
     }
     StackAllocatorUnaligned(StackAllocatorUnaligned &&other) { (*this) = std::forward<StackAllocatorUnaligned>(other); }
-    StackAllocatorUnaligned &operator=(StackAllocatorUnaligned &&other)
+    StackAllocatorUnaligned &operator= (StackAllocatorUnaligned &&other)
     {
         freeStack();
         memoryPtr = other.memoryPtr;
@@ -79,7 +79,7 @@ public:
         other.freeStack();
     }
     StackAllocatorUnaligned(const StackAllocatorUnaligned &other) = delete;
-    StackAllocatorUnaligned &operator=(const StackAllocatorUnaligned &other) = delete;
+    StackAllocatorUnaligned &operator= (const StackAllocatorUnaligned &other) = delete;
 
     ~StackAllocatorUnaligned() { freeStack(); }
 
@@ -398,14 +398,16 @@ public:
         : stackAllocator(&inAllocator)
     {}
     CONST_EXPR CBEStlStackAllocator(const CBEStlStackAllocator &) noexcept = default;
-    CONST_EXPR CBEStlStackAllocator &operator=(const CBEStlStackAllocator &) = default;
+    CONST_EXPR CBEStlStackAllocator &operator= (const CBEStlStackAllocator &) = default;
 
     CONST_EXPR ~CBEStlStackAllocator() = default;
 
     CONST_EXPR void deallocate(Type *const ptr, const SizeT count)
     {
         if (stackAllocator == nullptr)
+        {
             return;
+        }
 
         stackAllocator->memFree(ptr, AllocatorType::SizeType(count * sizeof(Type)), uint32(alignof(Type)));
     }
@@ -413,7 +415,9 @@ public:
     NODISCARD CONST_EXPR Type *allocate(const SizeT count)
     {
         if (stackAllocator == nullptr)
+        {
             return nullptr;
+        }
 
         return static_cast<Type *>(stackAllocator->memAlloc(AllocatorType::SizeType(count * sizeof(Type)), uint32(alignof(Type))));
     }
@@ -423,7 +427,7 @@ public:
 
 template <typename T1, typename T2, EThreadSharing SharingMode>
 FORCE_INLINE CONST_EXPR bool
-    operator==(const CBEStlStackAllocator<T1, SharingMode> &lhs, const CBEStlStackAllocator<T2, SharingMode> &rhs) noexcept
+operator== (const CBEStlStackAllocator<T1, SharingMode> &lhs, const CBEStlStackAllocator<T2, SharingMode> &rhs) noexcept
 {
     return lhs.allocator() == rhs.allocator();
 }

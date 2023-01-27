@@ -238,7 +238,9 @@ void VulkanGraphicsInstance::createVulkanDevice(const WindowCanvasRef &windowCan
     {
         VulkanDevice vulkanDevice = VulkanDevice(std::move(device));
         if (vulkanDevice.isValidDevice())
+        {
             vulkanDevices.push_back(vulkanDevice);
+        }
     }
 
     std::sort(vulkanDevices.begin(), vulkanDevices.end(), VulkanDeviceCompare{ windowCanvas });

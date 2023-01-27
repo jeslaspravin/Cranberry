@@ -131,7 +131,7 @@ struct DeepCopyFieldVisitable
 
     // Ignore const type
     template <DeepCopyUnsupportedFundamentalOrSpecial Type>
-    static void visit(const PropertyInfo &propInfo, void */*userData*/)
+    static void visit(const PropertyInfo &propInfo, void * /*userData*/)
     {
         alertAlwaysf(false, "Why?! This isn't supposed to be invoked %s", propInfo.thisProperty->nameString);
     }
@@ -139,7 +139,7 @@ struct DeepCopyFieldVisitable
     // above UnsupportedFundamentalOrSpecial takes precedence over below generic support
     template <typename Type>
     requires IsReflectedSpecial<Type> || IsReflectedFundamental<Type>
-    static void visit(const PropertyInfo &/*propInfo*/, void *userData)
+    static void visit(const PropertyInfo & /*propInfo*/, void *userData)
     {
         DeepCopyUserData *readUserData = (DeepCopyUserData *)(userData);
         (*static_cast<Type *>(readUserData->toData)) = (*static_cast<Type *>(readUserData->fromData));
@@ -307,9 +307,11 @@ struct StartDeepCopyFieldVisitable
     // Ignore const type
     template <typename Type>
     requires std::is_const_v<Type>
-    static void visit(Type *val, const PropertyInfo &propInfo, void *userData) {}
+    static void visit(Type *val, const PropertyInfo &propInfo, void *userData)
+    {}
     template <typename Type>
-    requires(!std::is_const_v<Type>) static void visit(Type *val, const PropertyInfo &propInfo, void *userData)
+    requires (!std::is_const_v<Type>)
+    static void visit(Type *val, const PropertyInfo &propInfo, void *userData)
     {
         DeepCopyUserData *copyUserData = (DeepCopyUserData *)(userData);
         // At this point both object and data must be same
@@ -509,7 +511,7 @@ struct ReplaceObjRefsVisitable
 {
     // Ignore fundamental and special types, we need none const custom types or pointers
     template <typename Type>
-    static void visit(Type */*val*/, const PropertyInfo &/*propInfo*/, void */*userData*/)
+    static void visit(Type * /*val*/, const PropertyInfo & /*propInfo*/, void * /*userData*/)
     {}
     static void visit(void *val, const PropertyInfo &propInfo, void *userData)
     {
@@ -568,7 +570,7 @@ struct ReplaceObjRefsVisitable
         }
     }
     // Ignoring const types
-    static void visit(const void */*val*/, const PropertyInfo &propInfo, void */*userData*/)
+    static void visit(const void * /*val*/, const PropertyInfo &propInfo, void * /*userData*/)
     {
         alertAlwaysf(false, "Why?! This isn't supposed to be invoked %s", propInfo.thisProperty->nameString);
     }
@@ -659,7 +661,7 @@ struct FindObjRefsVisitable
 {
     // Ignore fundamental and special types, we need none const custom types or pointers
     template <typename Type>
-    static void visit(Type */*val*/, const PropertyInfo &/*propInfo*/, void */*userData*/)
+    static void visit(Type * /*val*/, const PropertyInfo & /*propInfo*/, void * /*userData*/)
     {}
     static void visit(void *val, const PropertyInfo &propInfo, void *userData)
     {
@@ -718,7 +720,7 @@ struct FindObjRefsVisitable
         }
     }
     // Ignoring const types
-    static void visit(const void */*val*/, const PropertyInfo &propInfo, void */*userData*/)
+    static void visit(const void * /*val*/, const PropertyInfo &propInfo, void * /*userData*/)
     {
         alertAlwaysf(false, "Why?! This isn't supposed to be invoked %s", propInfo.thisProperty->nameString);
     }

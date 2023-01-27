@@ -36,82 +36,82 @@ struct SerializeGlmVec
     }
 };
 template <ArchiveTypeName ArchiveType, glm::length_t Count, typename ElementType, glm::qualifier Qualifier>
-ArchiveType &operator<<(ArchiveType &archive, glm::vec<Count, ElementType, Qualifier> &value)
+ArchiveType &operator<< (ArchiveType &archive, glm::vec<Count, ElementType, Qualifier> &value)
 {
     return SerializeGlmVec::serialize(archive, value, std::make_index_sequence<Count>{});
 }
 
 template <ArchiveTypeName ArchiveType>
-ArchiveType &operator<<(ArchiveType &archive, Vector2D &value)
+ArchiveType &operator<< (ArchiveType &archive, Vector2D &value)
 {
     return archive << value.x() << value.y();
 }
 
 template <ArchiveTypeName ArchiveType>
-ArchiveType &operator<<(ArchiveType &archive, Vector3D &value)
+ArchiveType &operator<< (ArchiveType &archive, Vector3D &value)
 {
     return archive << value.x() << value.y() << value.z();
 }
 
 template <ArchiveTypeName ArchiveType>
-ArchiveType &operator<<(ArchiveType &archive, Vector4D &value)
+ArchiveType &operator<< (ArchiveType &archive, Vector4D &value)
 {
     return archive << value.x() << value.y() << value.z() << value.w();
 }
 
 template <ArchiveTypeName ArchiveType>
-ArchiveType &operator<<(ArchiveType &archive, Matrix2 &value)
+ArchiveType &operator<< (ArchiveType &archive, Matrix2 &value)
 {
     archive << value[0] << value[1];
     return archive;
 }
 
 template <ArchiveTypeName ArchiveType>
-ArchiveType &operator<<(ArchiveType &archive, Matrix3 &value)
+ArchiveType &operator<< (ArchiveType &archive, Matrix3 &value)
 {
     archive << value[0] << value[1] << value[2];
     return archive;
 }
 
 template <ArchiveTypeName ArchiveType>
-ArchiveType &operator<<(ArchiveType &archive, Matrix4 &value)
+ArchiveType &operator<< (ArchiveType &archive, Matrix4 &value)
 {
     archive << value[0] << value[1] << value[2] << value[3];
     return archive;
 }
 
 template <ArchiveTypeName ArchiveType>
-ArchiveType &operator<<(ArchiveType &archive, Quat &value)
+ArchiveType &operator<< (ArchiveType &archive, Quat &value)
 {
     return archive << value.x << value.y << value.z << value.w;
 }
 
 template <ArchiveTypeName ArchiveType>
-ArchiveType &operator<<(ArchiveType &archive, Rotation &value)
+ArchiveType &operator<< (ArchiveType &archive, Rotation &value)
 {
     return archive << value.roll() << value.pitch() << value.yaw();
 }
 
 template <ArchiveTypeName ArchiveType>
-ArchiveType &operator<<(ArchiveType &archive, Transform3D &value)
+ArchiveType &operator<< (ArchiveType &archive, Transform3D &value)
 {
     return archive << value.transformTranslation << value.transformRotation << value.transformScale;
 }
 
 template <ArchiveTypeName ArchiveType>
-ArchiveType &operator<<(ArchiveType &archive, Color &value)
+ArchiveType &operator<< (ArchiveType &archive, Color &value)
 {
     return archive << value.getColorValue().r << value.getColorValue().g << value.getColorValue().b << value.getColorValue().a;
 }
 
 template <ArchiveTypeName ArchiveType>
-ArchiveType &operator<<(ArchiveType &archive, LinearColor &value)
+ArchiveType &operator<< (ArchiveType &archive, LinearColor &value)
 {
     return archive << value.getColorValue().r << value.getColorValue().g << value.getColorValue().b << value.getColorValue().a;
 }
 
 template <ArchiveTypeName ArchiveType>
-ArchiveType &operator<<(ArchiveType &archive, StringID &value)
+ArchiveType &operator<< (ArchiveType &archive, StringID &value)
 {
     archive << value.id;
 #if DEV_BUILD
@@ -125,7 +125,7 @@ ArchiveType &operator<<(ArchiveType &archive, StringID &value)
 }
 
 template <ArchiveTypeName ArchiveType>
-ArchiveType &operator<<(ArchiveType &archive, NameString &value)
+ArchiveType &operator<< (ArchiveType &archive, NameString &value)
 {
     archive << value.nameStr;
     if (archive.isLoading())
@@ -137,7 +137,7 @@ ArchiveType &operator<<(ArchiveType &archive, NameString &value)
 
 // Box type
 template <ArchiveTypeName ArchiveType, typename ElementType, uint32 ElementCount>
-ArchiveType &operator<<(ArchiveType &archive, Box<ElementType, ElementCount> &value)
+ArchiveType &operator<< (ArchiveType &archive, Box<ElementType, ElementCount> &value)
 {
     return archive << value.minBound << value.maxBound;
 }

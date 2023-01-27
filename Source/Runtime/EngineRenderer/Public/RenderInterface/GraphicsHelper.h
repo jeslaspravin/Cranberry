@@ -54,16 +54,17 @@ public:
     virtual TimelineSemaphoreRef createTimelineSemaphore(IGraphicsInstance *graphicsInstance, const TChar *semaphoreName) const = 0;
     virtual void waitTimelineSemaphores(
         IGraphicsInstance *graphicsInstance, std::vector<TimelineSemaphoreRef> *semaphores, std::vector<uint64> *waitForValues
-    ) const = 0;
+    ) const
+        = 0;
 
     virtual FenceRef createFence(IGraphicsInstance *graphicsInstance, const TChar *fenceName, bool bIsSignaled = false) const = 0;
     virtual void waitFences(IGraphicsInstance *graphicsInstance, std::vector<FenceRef> *fences, bool waitAll) const = 0;
 
     virtual SamplerRef createSampler(IGraphicsInstance *graphicsInstance, SamplerCreateInfo createInfo) const = 0;
 
-    virtual ESamplerFiltering::Type clampFiltering(
-        IGraphicsInstance *graphicsInstance, ESamplerFiltering::Type sampleFiltering, EPixelDataFormat::Type imageFormat
-    ) const = 0;
+    virtual ESamplerFiltering::Type
+    clampFiltering(IGraphicsInstance *graphicsInstance, ESamplerFiltering::Type sampleFiltering, EPixelDataFormat::Type imageFormat) const
+        = 0;
 
     virtual WindowCanvasRef createWindowCanvas(IGraphicsInstance *graphicsInstance, GenericAppWindow *fromWindow) const = 0;
     virtual void cacheSurfaceProperties(IGraphicsInstance *graphicsInstance, const WindowCanvasRef &windowCanvas) const = 0;
@@ -77,38 +78,46 @@ public:
 
     // Texels buffers
     virtual BufferResourceRef
-        createReadOnlyTexels(IGraphicsInstance *graphicsInstance, EPixelDataFormat::Type texelFormat, uint32 bufferCount = 1) const = 0;
+    createReadOnlyTexels(IGraphicsInstance *graphicsInstance, EPixelDataFormat::Type texelFormat, uint32 bufferCount = 1) const
+        = 0;
     // Cannot be used as uniform sampled
     virtual BufferResourceRef
-        createWriteOnlyTexels(IGraphicsInstance *graphicsInstance, EPixelDataFormat::Type texelFormat, uint32 bufferCount = 1) const = 0;
+    createWriteOnlyTexels(IGraphicsInstance *graphicsInstance, EPixelDataFormat::Type texelFormat, uint32 bufferCount = 1) const
+        = 0;
     virtual BufferResourceRef
-        createReadWriteTexels(IGraphicsInstance *graphicsInstance, EPixelDataFormat::Type texelFormat, uint32 bufferCount = 1) const = 0;
+    createReadWriteTexels(IGraphicsInstance *graphicsInstance, EPixelDataFormat::Type texelFormat, uint32 bufferCount = 1) const
+        = 0;
 
     // Other utility buffers
-    virtual BufferResourceRef
-        createReadOnlyIndexBuffer(IGraphicsInstance *graphicsInstance, uint32 bufferStride, uint32 bufferCount = 1) const = 0;
-    virtual BufferResourceRef
-        createReadOnlyVertexBuffer(IGraphicsInstance *graphicsInstance, uint32 bufferStride, uint32 bufferCount = 1) const = 0;
+    virtual BufferResourceRef createReadOnlyIndexBuffer(IGraphicsInstance *graphicsInstance, uint32 bufferStride, uint32 bufferCount = 1) const
+        = 0;
+    virtual BufferResourceRef createReadOnlyVertexBuffer(IGraphicsInstance *graphicsInstance, uint32 bufferStride, uint32 bufferCount = 1) const
+        = 0;
 
     virtual BufferResourceRef
-        createReadOnlyIndirectBuffer(IGraphicsInstance *graphicsInstance, uint32 bufferStride, uint32 bufferCount = 1) const = 0;
+    createReadOnlyIndirectBuffer(IGraphicsInstance *graphicsInstance, uint32 bufferStride, uint32 bufferCount = 1) const
+        = 0;
     virtual BufferResourceRef
-        createWriteOnlyIndirectBuffer(IGraphicsInstance *graphicsInstance, uint32 bufferStride, uint32 bufferCount = 1) const = 0;
+    createWriteOnlyIndirectBuffer(IGraphicsInstance *graphicsInstance, uint32 bufferStride, uint32 bufferCount = 1) const
+        = 0;
 
     // Images, Images are created with staging as we are not going to use image and staging and this is
     // for advanced use only
+    virtual ImageResourceRef createImage(IGraphicsInstance *graphicsInstance, ImageResourceCreateInfo createInfo, bool bIsStaging = false) const
+        = 0;
     virtual ImageResourceRef
-        createImage(IGraphicsInstance *graphicsInstance, ImageResourceCreateInfo createInfo, bool bIsStaging = false) const = 0;
-    virtual ImageResourceRef
-        createCubeImage(IGraphicsInstance *graphicsInstance, ImageResourceCreateInfo createInfo, bool bIsStaging = false) const = 0;
+    createCubeImage(IGraphicsInstance *graphicsInstance, ImageResourceCreateInfo createInfo, bool bIsStaging = false) const
+        = 0;
     virtual ImageResourceRef createRTImage(
         IGraphicsInstance *graphicsInstance, ImageResourceCreateInfo createInfo,
         EPixelSampleCount::Type sampleCount = EPixelSampleCount::SampleCount1
-    ) const = 0;
+    ) const
+        = 0;
     virtual ImageResourceRef createCubeRTImage(
         IGraphicsInstance *graphicsInstance, ImageResourceCreateInfo createInfo,
         EPixelSampleCount::Type sampleCount = EPixelSampleCount::SampleCount1
-    ) const = 0;
+    ) const
+        = 0;
 
     virtual void mapResource(IGraphicsInstance *graphicsInstance, BufferResourceRef &buffer) const = 0;
     virtual void unmapResource(IGraphicsInstance *graphicsInstance, BufferResourceRef &buffer) const = 0;
@@ -126,10 +135,12 @@ public:
     // based on the strategy
     virtual void markForDeletion(
         IGraphicsInstance *graphicsInstance, GraphicsResource *resource, EDeferredDelStrategy deleteStrategy, TickRep duration = 1
-    ) const = 0;
+    ) const
+        = 0;
     virtual void markForDeletion(
         IGraphicsInstance *graphicsInstance, SimpleSingleCastDelegate deleter, EDeferredDelStrategy deleteStrategy, TickRep duration = 1
-    ) const = 0;
+    ) const
+        = 0;
 
     // Pipelines
     virtual PipelineBase *createGraphicsPipeline(IGraphicsInstance *graphicsInstance, const PipelineBase *parent) const = 0;
@@ -143,12 +154,13 @@ public:
     virtual ShaderResource *createShaderResource(const ShaderConfigCollector *inConfig) const = 0;
     virtual ShaderParametersRef createShaderParameters(
         IGraphicsInstance *graphicsInstance, const GraphicsResource *paramLayout, const std::set<uint32> &ignoredSetIds = {}
-    ) const = 0;
+    ) const
+        = 0;
 
     virtual Framebuffer *createFbInstance() const = 0;
     virtual void initializeFb(IGraphicsInstance *graphicsInstance, Framebuffer *fb, const Size2D &frameSize) const = 0;
-    virtual void
-        initializeSwapchainFb(IGraphicsInstance *graphicsInstance, Framebuffer *fb, WindowCanvasRef canvas, uint32 swapchainIdx) const = 0;
+    virtual void initializeSwapchainFb(IGraphicsInstance *graphicsInstance, Framebuffer *fb, WindowCanvasRef canvas, uint32 swapchainIdx) const
+        = 0;
 
     // All write buffers are storage buffers, Read buffers means that can be used as Uniform
     virtual const GraphicsResourceType *readOnlyBufferType() const = 0;

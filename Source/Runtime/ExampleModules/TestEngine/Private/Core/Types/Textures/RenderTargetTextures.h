@@ -73,7 +73,7 @@ public:
 
     /* IRenderTargetTexture overrides */
     ReferenceCountPtr<MemoryResource> renderResource() const override { return textureResource; }
-    ReferenceCountPtr<MemoryResource> renderTargetResource() const override { return rtResource; };
+    ReferenceCountPtr<MemoryResource> renderTargetResource() const override { return rtResource; }
     /* Overrides end */
 };
 

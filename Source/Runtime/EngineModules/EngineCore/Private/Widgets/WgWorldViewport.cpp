@@ -44,7 +44,7 @@ EInputHandleState WgWorldViewport::inputKey(Keys::StateKeyType /*key*/, Keys::St
 }
 
 EInputHandleState
-    WgWorldViewport::analogKey(AnalogStates::StateKeyType /*key*/, AnalogStates::StateInfoType /*state*/, const InputSystem * /*inputSystem*/)
+WgWorldViewport::analogKey(AnalogStates::StateKeyType /*key*/, AnalogStates::StateInfoType /*state*/, const InputSystem * /*inputSystem*/)
 {
     return EInputHandleState::NotHandled;
 }

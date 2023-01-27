@@ -142,11 +142,11 @@ struct PROGRAMCORE_EXPORT FormatArg
 
     FormatArg(const FormatArg &arg);
     FormatArg(FormatArg &&arg);
-    FormatArg &operator=(const FormatArg &arg);
-    FormatArg &operator=(FormatArg &&arg);
+    FormatArg &operator= (const FormatArg &arg);
+    FormatArg &operator= (FormatArg &&arg);
 
     String toString() const;
-    operator bool() const;
+    operator bool () const;
 };
 using FormatArgsMap = std::unordered_map<String, FormatArg>;
 
@@ -219,13 +219,13 @@ public:
     {
         parseFmtStr();
     }
-    FORCE_INLINE MustacheStringFormatter &operator=(const MustacheStringFormatter &other)
+    FORCE_INLINE MustacheStringFormatter &operator= (const MustacheStringFormatter &other)
     {
         fmtStr = other.fmtStr;
         parseFmtStr();
         return *this;
     }
-    FORCE_INLINE MustacheStringFormatter &operator=(MustacheStringFormatter &&other)
+    FORCE_INLINE MustacheStringFormatter &operator= (MustacheStringFormatter &&other)
     {
         fmtStr = std::move(other.fmtStr);
         parseFmtStr();
@@ -243,7 +243,7 @@ public:
     // around a branch with lambda condition check
     String render(const MustacheContext &context, const std::unordered_map<String, MustacheStringFormatter> &partials) const;
 
-    static String formatMustache(const String &fmt, const FormatArgsMap &formatArgs) 
+    static String formatMustache(const String &fmt, const FormatArgsMap &formatArgs)
     {
         MustacheStringFormatter formatter(fmt);
         return formatter.formatBasic(formatArgs);

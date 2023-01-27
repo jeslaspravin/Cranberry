@@ -55,12 +55,12 @@ public:
     NODISCARD FORCE_INLINE bool empty() const { return nodes.empty(); }
     NODISCARD FORCE_INLINE bool isValid(NodeIdx index) const { return index != InvalidIdx && nodes.isValid(index); }
 
-    FORCE_INLINE reference operator[](NodeIdx index) noexcept
+    FORCE_INLINE reference operator[] (NodeIdx index) noexcept
     {
         fatalAssertf(isValid(index), "Index %llu is invalid", index);
         return treeData[index];
     }
-    FORCE_INLINE const_reference operator[](NodeIdx index) const noexcept
+    FORCE_INLINE const_reference operator[] (NodeIdx index) const noexcept
     {
         fatalAssertf(isValid(index), "Index %llu is invalid", index);
         return treeData[index];
@@ -192,7 +192,9 @@ public:
     void remove(NodeIdx nodeIdx)
     {
         if (!isValid(nodeIdx))
+        {
             return;
+        }
 
         Node &node = nodes[nodeIdx];
         if (isValid(node.parent))
@@ -218,7 +220,9 @@ public:
     void relinkTo(NodeIdx nodeIdx, NodeIdx newParent = InvalidIdx)
     {
         if (!isValid(nodeIdx) || nodes[nodeIdx].parent == newParent)
+        {
             return;
+        }
 
         Node &node = nodes[nodeIdx];
         if (isValid(node.parent))
@@ -232,7 +236,7 @@ public:
         }
     }
 
-    friend FORCE_INLINE OutputStream &operator<<(OutputStream &stream, const FlatTree &tree)
+    friend FORCE_INLINE OutputStream &operator<< (OutputStream &stream, const FlatTree &tree)
     {
         stream << '\n';
 
@@ -249,7 +253,9 @@ private:
     FORCE_INLINE void resizeDataToIndex(NodeIdx idx)
     {
         if (idx >= treeData.size())
+        {
             treeData.resize(idx + 1);
+        }
     }
 
     // Removes child from parent's child list, Assumes both parent and child idx are valid
@@ -258,7 +264,9 @@ private:
         Node *currNode = &nodes[parentIdx];
         // If parent has no child leave
         if (currNode->firstChild == InvalidIdx)
+        {
             return;
+        }
         // If first child is the child we are looking for?
         if (currNode->firstChild == childIdx)
         {

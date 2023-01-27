@@ -79,7 +79,7 @@ public:
     FORCE_INLINE void setA(uint8 a) { colorValue.w = a; }
     constexpr Byte3D rgb() const { return Byte3D(colorValue.x, colorValue.y, colorValue.z); }
 
-    constexpr uint8 operator[](uint32 idx) const { return colorValue[idx]; }
+    constexpr uint8 operator[] (uint32 idx) const { return colorValue[idx]; }
 
     // As RGBA packed, MSB <- 0xAAGGBBRR -> LSB
     constexpr uint32 rgba() const
@@ -96,7 +96,7 @@ public:
     // As BGRA packed, MSB <- 0xAARRBBBB -> LSB
     constexpr uint32 bgra() const { return (uint32(a()) << 24) | (uint32(r()) << 16) | (uint32(g()) << 8) | b(); }
     // As RGBA packed
-    constexpr operator uint32() const { return rgba(); }
+    constexpr operator uint32 () const { return rgba(); }
 
     FORCE_INLINE static Color fromHsl(const Vector3D &hsl, uint8 alpha = 255);
     FORCE_INLINE static LinearColor fromHsv(const Vector3D &hsv, uint8 alpha = 255);
@@ -123,7 +123,7 @@ public:
 
     const glm::vec4 &getColorValue() const { return colorValue; }
     glm::vec4 &getColorValue() { return colorValue; }
-    operator Vector4D() const { return Vector4D(colorValue); }
+    operator Vector4D () const { return Vector4D(colorValue); }
     float r() const { return colorValue.r; }
     void setR(float r) { colorValue.r = r; }
     float g() const { return colorValue.g; }
@@ -134,7 +134,7 @@ public:
     void setA(float a) { colorValue.a = a; }
     glm::vec3 rgb() const { return glm::vec3(colorValue.r, colorValue.g, colorValue.b); }
 
-    float operator[](uint32 idx) const;
+    float operator[] (uint32 idx) const;
     static LinearColor fromHsl(const Vector3D &hsl, float alpha = 1.0f);
     static LinearColor fromHsv(const Vector3D &hsv, float alpha = 1.0f);
 };

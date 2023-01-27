@@ -37,7 +37,7 @@ public:
 
     const VarType &get() const { return variable; }
 
-    operator VarType() const { return variable; }
+    operator VarType () const { return variable; }
 };
 
 template <typename Type>
@@ -71,7 +71,7 @@ public:
         }
     }
 
-    void operator=(const VarType &newValue) { set(newValue); }
+    void operator= (const VarType &newValue) { set(newValue); }
 
     VariableChanged &onConfigChanged() { return onValueChanged; }
 };
@@ -104,7 +104,7 @@ private:
         }
     }
 
-    void operator=(const VarType &newValue) { set(newValue); }
+    void operator= (const VarType &newValue) { set(newValue); }
 
 public:
     ProgramOwnedVar() = default;

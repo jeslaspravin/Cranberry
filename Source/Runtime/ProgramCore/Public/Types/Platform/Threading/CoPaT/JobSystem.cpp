@@ -34,7 +34,9 @@ JobSystem *JobSystem::singletonInstance = nullptr;
 void JobSystem::initialize(MainThreadTickFunc &&mainTick, void *inUserData)
 {
     if (!singletonInstance)
+    {
         singletonInstance = this;
+    }
 
     if (!PlatformThreadingFuncs::createTlsSlot(tlsSlot))
     {

@@ -74,14 +74,14 @@ public:
         , maxBound(std::move(other.maxBound))
     {}
 
-    Box<T, d> &operator=(const Box<T, d> &other)
+    Box<T, d> &operator= (const Box<T, d> &other)
     {
         minBound = other.minBound;
         maxBound = other.maxBound;
         return *this;
     }
 
-    Box<T, d> operator+(const Box<T, d> &other)
+    Box<T, d> operator+ (const Box<T, d> &other)
     {
         Box<T, d> newBox;
         for (uint32 i = 0; i < d; i++)
@@ -92,7 +92,7 @@ public:
         return newBox;
     }
 
-    Box<T, d> operator+(const T &offset)
+    Box<T, d> operator+ (const T &offset)
     {
         Box<T, d> newBox;
         for (uint32 i = 0; i < d; i++)
@@ -103,11 +103,11 @@ public:
         return newBox;
     }
 
-    void operator+=(const Box<T, d> &other) { grow(other); }
+    void operator+= (const Box<T, d> &other) { grow(other); }
 
-    void operator+=(const T &dx) { offset(dx); }
+    void operator+= (const T &dx) { offset(dx); }
 
-    Box<T, d> &operator=(Box<T, d> &&other)
+    Box<T, d> &operator= (Box<T, d> &&other)
     {
         minBound = std::move(other.minBound);
         maxBound = std::move(other.maxBound);
@@ -153,7 +153,9 @@ public:
             // If min point of one is larger than max point of another or vice versa then box never
             // intersects
             if (other.maxBound[i] < minBound[i] || other.minBound[i] > maxBound[i])
+            {
                 return false;
+            }
         }
         return true;
     }
@@ -371,11 +373,15 @@ public:
             exitTime = Math::min(t2, exitTime);
 
             if (exitTime < enteringTime)
+            {
                 return false;
+            }
         }
 
         if (enteringTime > length || exitTime < 0)
+        {
             return false;
+        }
 
         outEnterLength = enteringTime * invLength;
         outEnterPoint = startPoint + dir * enteringTime;
@@ -425,14 +431,14 @@ public:
         maxBound = std::move(other.maxBound);
     }
 
-    Box<T, 1> &operator=(const Box<T, 1> &other)
+    Box<T, 1> &operator= (const Box<T, 1> &other)
     {
         minBound = other.minBound;
         maxBound = other.maxBound;
         return *this;
     }
 
-    Box<T, 1> operator+(const Box<T, 1> &other)
+    Box<T, 1> operator+ (const Box<T, 1> &other)
     {
         Box<T, 1> newBox;
         newBox.minBound = minBound > other.minBound ? other.minBound : minBound;
@@ -440,7 +446,7 @@ public:
         return newBox;
     }
 
-    Box<T, 1> operator+(const T &offset)
+    Box<T, 1> operator+ (const T &offset)
     {
         Box<T, 1> newBox;
         newBox.minBound = minBound + offset;
@@ -448,11 +454,11 @@ public:
         return newBox;
     }
 
-    void operator+=(const Box<T, 1> &other) { grow(other); }
+    void operator+= (const Box<T, 1> &other) { grow(other); }
 
-    void operator+=(const T &dx) { offset(dx); }
+    void operator+= (const T &dx) { offset(dx); }
 
-    Box<T, 1> &operator=(Box<T, 1> &&other)
+    Box<T, 1> &operator= (Box<T, 1> &&other)
     {
         minBound = std::move(other.minBound);
         maxBound = std::move(other.maxBound);
@@ -513,14 +519,18 @@ public:
     uint8 encloses(const T &point) const
     {
         if (point < minBound || point > maxBound)
+        {
             return 0;
+        }
 
         return (Math::isEqual(point, minBound) || Math::isEqual(point, maxBound)) ? 2u : 1u;
     }
     uint8 encloses(const Box<T, 1> &other) const
     {
         if (other.minBound < minBound || other.maxBound > maxBound)
+        {
             return 0;
+        }
         return (Math::isEqual(other.minBound, minBound) && Math::isEqual(other.maxBound, maxBound)) ? 2u : 1u;
     }
 

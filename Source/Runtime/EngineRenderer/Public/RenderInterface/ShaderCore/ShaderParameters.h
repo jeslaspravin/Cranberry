@@ -61,9 +61,7 @@ struct ShaderVertexMemberField : public ShaderVertexField
         , memberPtr(fieldPtr)
     {}
 
-    ShaderVertexMemberField(
-        const TChar *pName, const FieldPtr &fieldPtr, uint32 offsetVal, EShaderInputAttribFormat::Type overrideFormat
-    )
+    ShaderVertexMemberField(const TChar *pName, const FieldPtr &fieldPtr, uint32 offsetVal, EShaderInputAttribFormat::Type overrideFormat)
         : ShaderVertexField(pName, offsetVal, overrideFormat)
         , memberPtr(fieldPtr)
     {}
@@ -388,16 +386,16 @@ public:
             return node ? node->field : nullptr;
         }
 
-        const FieldType operator*() const { return node ? node->field : nullptr; }
+        const FieldType operator* () const { return node ? node->field : nullptr; }
 
-        bool operator!=(const ConstIterator &other) const
+        bool operator!= (const ConstIterator &other) const
         {
             const bool thisValid = node != nullptr && node->isValid();
             const bool otherValid = other.node != nullptr && other.node->isValid();
             return thisValid != otherValid || **this != *other;
         }
 
-        ConstIterator &operator++()
+        ConstIterator &operator++ ()
         {
             if (node)
             {
@@ -406,10 +404,10 @@ public:
             return *this;
         }
 
-        ConstIterator operator++(int)
+        ConstIterator operator++ (int)
         {
             ConstIterator retVal(*this);
-            this->operator++();
+            this->operator++ ();
             return retVal;
         }
     };
@@ -439,16 +437,16 @@ public:
             return node ? node->field : nullptr;
         }
 
-        FieldType operator*() const { return node ? node->field : nullptr; }
+        FieldType operator* () const { return node ? node->field : nullptr; }
 
-        bool operator!=(const Iterator &other) const
+        bool operator!= (const Iterator &other) const
         {
             const bool thisValid = node != nullptr && node->isValid();
             const bool otherValid = other.node != nullptr && other.node->isValid();
             return thisValid != otherValid || **this != *other;
         }
 
-        Iterator &operator++()
+        Iterator &operator++ ()
         {
             if (node)
             {
@@ -457,10 +455,10 @@ public:
             return *this;
         }
 
-        Iterator operator++(int)
+        Iterator operator++ (int)
         {
             Iterator retVal(*this);
-            this->operator++();
+            this->operator++ ();
             return retVal;
         }
     };
@@ -511,7 +509,7 @@ public:
         const EShaderInputFrequency::Type vertexInputFreq = InputFrequency;                                                                    \
         uint32 paramStride() const final { return sizeof(VertexDataType); }                                                                    \
         uint32 paramNativeStride() const final { return sizeof(VertexDataType); }                                                              \
-        void setStride(uint32) final {}                                                                                              \
+        void setStride(uint32) final {}                                                                                                        \
         EShaderInputFrequency::Type inputFrequency() const final { return vertexInputFreq; }
 
 #define ADD_VERTEX_FIELD(FieldName)                                                                                                            \

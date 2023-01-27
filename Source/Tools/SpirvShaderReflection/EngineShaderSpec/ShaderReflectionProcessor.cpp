@@ -1425,7 +1425,7 @@ void PipelineShaderStageProcessor::processDescriptorsSets(const std::vector<std:
         // Input attachments
         for (const Resource &resource : resources.subpass_inputs)
         {
-            //const SPIRType &type = shaderStage->compiledData->get_type(resource.type_id);
+            // const SPIRType &type = shaderStage->compiledData->get_type(resource.type_id);
             const uint32_t set = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationDescriptorSet);
             const uint32_t binding = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationBinding);
             descriptorSetsBinding[set].insert(binding);

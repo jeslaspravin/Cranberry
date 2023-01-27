@@ -211,7 +211,7 @@ private:
     {
         using Filter = Function<bool, const ObjectsDBQuery &, const ObjectData &>;
 
-        FORCE_INLINE static bool ignore(const ObjectsDBQuery &/*query*/, const ObjectData &/*objectData*/) { return true; }
+        FORCE_INLINE static bool ignore(const ObjectsDBQuery & /*query*/, const ObjectData & /*objectData*/) { return true; }
         FORCE_INLINE static bool derived(const ObjectsDBQuery &query, const ObjectData &objectData)
         {
             return PropertyHelper::isChildOf(objectData.clazz, query.clazz);

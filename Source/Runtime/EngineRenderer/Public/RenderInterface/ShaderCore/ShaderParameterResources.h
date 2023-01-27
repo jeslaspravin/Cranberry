@@ -200,13 +200,13 @@ protected:
         StringID paramName;
         uint32 index = 0;
 
-        bool operator==(const BufferParameterUpdate &other) const
+        bool operator== (const BufferParameterUpdate &other) const
         {
             return bufferName == other.bufferName && paramName == other.paramName && index == other.index;
         }
         struct Hasher
         {
-            _NODISCARD size_t operator()(const BufferParameterUpdate &keyVal) const noexcept;
+            _NODISCARD size_t operator() (const BufferParameterUpdate &keyVal) const noexcept;
         };
     };
 
@@ -388,7 +388,7 @@ private:
         const std::vector<std::vector<SpecializationConstantEntry>> &specializationConsts
     );
     std::pair<const BufferParametersData *, const BufferParametersData::BufferParameter *>
-        findBufferParam(StringID &bufferName, StringID paramName) const;
+    findBufferParam(StringID &bufferName, StringID paramName) const;
     void *getOuterPtrForPath(
         std::vector<const BufferParametersData::BufferParameter *> &outInnerBufferParams, ArrayView<const StringID> pathNames,
         ArrayView<const uint32> indices

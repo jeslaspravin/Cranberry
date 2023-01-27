@@ -82,9 +82,14 @@ T *memNew(Args &&...args)
 }
 
 template <typename T>
-requires(std::is_fundamental_v<T> || std::is_trivially_destructible_v<T>) void memDelete(T *ptr) { CoPaTMemAlloc::memFree(ptr); }
+requires (std::is_fundamental_v<T> || std::is_trivially_destructible_v<T>)
+void memDelete(T *ptr)
+{
+    CoPaTMemAlloc::memFree(ptr);
+}
 template <typename T>
-requires(!std::is_trivially_destructible_v<T>) void memDelete(T *ptr)
+requires (!std::is_trivially_destructible_v<T>)
+void memDelete(T *ptr)
 {
     ptr->~T();
     CoPaTMemAlloc::memFree(ptr);

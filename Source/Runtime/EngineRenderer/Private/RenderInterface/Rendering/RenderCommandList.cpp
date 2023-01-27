@@ -827,7 +827,7 @@ struct PushConstCopier
         : d(inData)
     {}
 
-    void operator()(CopyBufferInfo &copyInfo, const std::any &data, const ReflectBufferEntry *field)
+    void operator() (CopyBufferInfo &copyInfo, const std::any &data, const ReflectBufferEntry *field)
     {
         const T *value = std::any_cast<T>(&data);
         if (value)

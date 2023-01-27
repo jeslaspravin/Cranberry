@@ -323,7 +323,7 @@ uint32 ShaderParametersLayout::getSetID(StringID paramName) const
 
 DEFINE_GRAPHICS_RESOURCE(ShaderParameters)
 
-size_t ShaderParameters::BufferParameterUpdate::Hasher::operator()(const BufferParameterUpdate &keyVal) const noexcept
+size_t ShaderParameters::BufferParameterUpdate::Hasher::operator() (const BufferParameterUpdate &keyVal) const noexcept
 {
     size_t seed = HashUtility::hash(keyVal.bufferName);
     HashUtility::hashCombine(seed, keyVal.paramName);
@@ -582,7 +582,9 @@ std::vector<std::pair<ImageResourceRef, const ShaderTextureDescriptorType *>> Sh
         for (const auto &img : textuteParam.second.textures)
         {
             if (!img.texture.isValid() || !uniqueness.emplace(img.texture).second)
+            {
                 continue;
+            }
 
             if (img.texture->isShaderRead()
                 && (!img.texture->isShaderWrite()
@@ -622,7 +624,9 @@ std::vector<std::pair<BufferResourceRef, const ShaderBufferDescriptorType *>> Sh
         for (BufferResourceRef texels : bufferParam.second.gpuBuffers)
         {
             if (!texels.isValid() || !uniqueness.emplace(texels).second)
+            {
                 continue;
+            }
 
             if (!bufferParam.second.descriptorInfo->bIsStorage
                 || BIT_NOT_SET(bufferParam.second.descriptorInfo->texelBufferEntryPtr->data.readWriteState, EDescriptorEntryState::WriteOnly))
@@ -646,7 +650,9 @@ std::vector<std::pair<ImageResourceRef, const ShaderTextureDescriptorType *>> Sh
         for (const auto &img : textuteParam.second.textures)
         {
             if (!img.texture.isValid() || !uniqueness.emplace(img.texture).second)
+            {
                 continue;
+            }
 
             if (img.texture->isShaderWrite()
                 && BIT_SET(textuteParam.second.descriptorInfo->textureEntryPtr->data.readWriteState, EDescriptorEntryState::WriteOnly))
@@ -689,7 +695,9 @@ std::vector<std::pair<BufferResourceRef, const ShaderBufferDescriptorType *>> Sh
         for (BufferResourceRef texels : bufferParam.second.gpuBuffers)
         {
             if (!texels.isValid() || !uniqueness.emplace(texels).second)
+            {
                 continue;
+            }
 
             if ((bufferParam.second.descriptorInfo->bIsStorage
                  || texels->getType()->isChildOf(IRenderInterfaceModule::get()->currentGraphicsHelper()->writeOnlyTexelsType())
@@ -768,7 +776,7 @@ void ShaderParameters::pullBufferParamUpdates(
 }
 
 std::pair<const ShaderParameters::BufferParametersData *, const ShaderParameters::BufferParametersData::BufferParameter *>
-    ShaderParameters::findBufferParam(StringID &bufferName, StringID paramName) const
+ShaderParameters::findBufferParam(StringID &bufferName, StringID paramName) const
 {
     std::pair<const BufferParametersData *, const BufferParametersData::BufferParameter *> retVal{ nullptr, nullptr };
 

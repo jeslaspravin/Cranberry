@@ -387,7 +387,8 @@ public:
 };
 // StringConv specialization for conversion between any encoded char type and UTF-8
 template <typename FromCharType>
-requires(!std::same_as<FromCharType, AChar>) struct StringConv<FromCharType, AChar>
+requires (!std::same_as<FromCharType, AChar>)
+struct StringConv<FromCharType, AChar>
     : public std::conditional_t<
           std::is_same_v<FromCharType, WCharEncodedType> // ?
           ,
@@ -396,7 +397,8 @@ requires(!std::same_as<FromCharType, AChar>) struct StringConv<FromCharType, ACh
           StlStringConv<FromCharType, AChar>>
 {};
 template <typename ToCharType>
-requires(!std::same_as<ToCharType, AChar>) struct StringConv<AChar, ToCharType>
+requires (!std::same_as<ToCharType, AChar>)
+struct StringConv<AChar, ToCharType>
     : public std::conditional_t<
           std::is_same_v<ToCharType, WCharEncodedType> // ?
           ,
@@ -459,14 +461,14 @@ public:
 
     const_pointer operator->() const { return &codePoint; }
 
-    const value_type &operator*() const { return codePoint; }
+    const value_type &operator* () const { return codePoint; }
 
-    bool operator!=(const StringCodePointsIterator &other) const
+    bool operator!= (const StringCodePointsIterator &other) const
     {
         return !(codePoint == other.codePoint && charStart == other.charStart && charEnd == other.charEnd);
     }
 
-    StringCodePointsIterator &operator++()
+    StringCodePointsIterator &operator++ ()
     {
         // if we arrived at end just setup few things manually, calling nextCodePoint must give same
         // result with same input
@@ -483,14 +485,14 @@ public:
         return *this;
     }
 
-    StringCodePointsIterator operator++(int)
+    StringCodePointsIterator operator++ (int)
     {
         StringCodePointsIterator retVal(*this);
-        this->operator++();
+        this->operator++ ();
         return retVal;
     }
 
-    StringCodePointsIterator &operator--()
+    StringCodePointsIterator &operator-- ()
     {
         if (charStart != beginPtr)
         {
@@ -499,10 +501,10 @@ public:
         return *this;
     }
 
-    StringCodePointsIterator operator--(int)
+    StringCodePointsIterator operator-- (int)
     {
         StringCodePointsIterator retVal(*this);
-        this->operator--();
+        this->operator-- ();
         return retVal;
     }
 };
@@ -518,14 +520,18 @@ struct StringCodePoints
     StringCodePointsIterator begin() const
     {
         if (!str)
+        {
             return StringCodePointsIterator();
+        }
         return StringCodePointsIterator(*str);
     }
 
     StringCodePointsIterator end() const
     {
         if (!str)
+        {
             return StringCodePointsIterator();
+        }
         return StringCodePointsIterator::end(*str);
     }
 };

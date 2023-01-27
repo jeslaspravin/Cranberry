@@ -97,14 +97,18 @@ public:
     FORCE_INLINE static float elasticIn(float t)
     {
         if (t == 0.0f || Math::isEqual(t, 1.0f))
+        {
             return Math::ceil(t);
+        }
         return -Math::pow(2.0f, 10.0f * (t - 1)) * Math::sin((t - 1.1f) * PI / 0.2f);
     }
     // Index : 17
     FORCE_INLINE static float elasticOut(float t)
     {
         if (t == 0.0f || Math::isEqual(t, 1.0f))
+        {
             return Math::ceil(t);
+        }
         return 1.0f + Math::pow(2.0f, -10.0f * t) * Math::sin((t - 0.1f) * PI / 0.2f);
     }
 

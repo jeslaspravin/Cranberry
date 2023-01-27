@@ -24,7 +24,7 @@ public:
     static void getModuleInfo(PlatformHandle processHandle, LibHandle libraryHandle, LibraryData &moduleData);
 
     static PlatformHandle
-        createProcess(const String &applicationPath, const String &cmdLine, const String &environment, const String &workingDirectory);
+    createProcess(const String &applicationPath, const String &cmdLine, const String &environment, const String &workingDirectory);
     static PlatformHandle getCurrentProcessHandle();
     static void closeProcessHandle(PlatformHandle handle);
 

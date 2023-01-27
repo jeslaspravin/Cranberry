@@ -112,7 +112,7 @@ public:
     void setNewSwapchain(WindowCanvasRef swapchainCanvas, ConstructParamTypes... constructParams);
     const std::vector<ResourceType *> &getResources() const { return resources; }
     ResourceType *operator->() const;
-    ResourceType *operator*() const;
+    ResourceType *operator* () const;
     // resets and deletes all resources
     void reset();
     bool isValid() const;
@@ -139,7 +139,7 @@ public:
     void setNewSwapchain(WindowCanvasRef swapchainCanvas);
     const std::vector<RefCountType<ResourceType>> &getResources() const { return resources; }
     ResourceType *operator->() const;
-    ResourceType *operator*() const;
+    ResourceType *operator* () const;
     void set(const RefCountType<ResourceType> &resource, uint32 atIdx);
     // resets and deletes all resources
     void reset();
@@ -206,7 +206,7 @@ ResourceType *SwapchainBufferedResource<RefCountType<ResourceType>>::operator->(
 }
 
 template <template <typename> typename RefCountType, typename ResourceType>
-ResourceType *SwapchainBufferedResource<RefCountType<ResourceType>>::operator*() const
+ResourceType *SwapchainBufferedResource<RefCountType<ResourceType>>::operator* () const
 {
     debugAssert(resources.size() == basedOnSwapchain->imagesCount());
     return resources[basedOnSwapchain->currentImgIdx()].get();
@@ -304,7 +304,7 @@ ResourceType *SwapchainBufferedResource<ResourceType>::operator->() const
 }
 
 template <typename ResourceType>
-ResourceType *SwapchainBufferedResource<ResourceType>::operator*() const
+ResourceType *SwapchainBufferedResource<ResourceType>::operator* () const
 {
     debugAssert(resources.size() == basedOnSwapchain->imagesCount());
     return resources[basedOnSwapchain->currentImgIdx()];
@@ -331,7 +331,9 @@ void SwapchainBufferedResource<ResourceType>::swapchainChanged(ConstructParamTyp
     {
         resources[i]->release();
         if (imagesCount <= i)
+        {
             delete resources[i];
+        }
     }
     int32 currentResCount = int32(resources.size());
     resources.resize(imagesCount);

@@ -55,7 +55,7 @@ public:
     ImageResourceRef resolvedTexture;
 
     ReferenceCountPtr<MemoryResource> renderResource() const override { return resolvedTexture; }
-    ReferenceCountPtr<MemoryResource> renderTargetResource() const override { return rtTexture; };
+    ReferenceCountPtr<MemoryResource> renderTargetResource() const override { return rtTexture; }
 };
 
 struct TexturePoolListKey
@@ -64,13 +64,13 @@ struct TexturePoolListKey
     // Sample count is not needed as it will most likely will be wait clearing everything on change
     // Layer count is not needed as that will probably same per type of textures in pool
 
-    bool operator==(const TexturePoolListKey &rhs) const { return textureSize == rhs.textureSize; }
+    bool operator== (const TexturePoolListKey &rhs) const { return textureSize == rhs.textureSize; }
 };
 
 template <>
 struct std::hash<TexturePoolListKey>
 {
-    NODISCARD size_t operator()(const TexturePoolListKey &val) const noexcept
+    NODISCARD size_t operator() (const TexturePoolListKey &val) const noexcept
     {
         return HashUtility::hashAllReturn(val.textureSize.x, val.textureSize.y, val.textureSize.z);
     }
@@ -105,9 +105,9 @@ public:
 
     // Call getTexture after finishing any command that previously used the texture
     const RendererIntermTexture &
-        getTexture(IRenderCommandList *cmdList, ERendererIntermTexture::Type rtType, Size3D size, PoolTextureDesc textureDesc);
+    getTexture(IRenderCommandList *cmdList, ERendererIntermTexture::Type rtType, Size3D size, PoolTextureDesc textureDesc);
     const RendererIntermTexture &
-        getTexture(IRenderCommandList *cmdList, ERendererIntermTexture::Type rtType, Size2D size, PoolTextureDesc textureDesc);
+    getTexture(IRenderCommandList *cmdList, ERendererIntermTexture::Type rtType, Size2D size, PoolTextureDesc textureDesc);
     // Below function will query existing and return null if nothing found that is use able
     const RendererIntermTexture *getTexture(IRenderCommandList *cmdList, ERendererIntermTexture::Type rtType, Size3D size);
     const RendererIntermTexture *getTexture(IRenderCommandList *cmdList, ERendererIntermTexture::Type rtType, Size2D size);
@@ -298,8 +298,7 @@ private:
     FORCE_INLINE SizeT materialIdxToVectorIdx(SizeT materialIdx) const { return materialIdx - 1; }
     FORCE_INLINE SizeT vectorIdxToMaterialIdx(SizeT idx) const { return idx + 1; }
     FORCE_INLINE void createMaterialCopies(
-        MaterialShaderParams &shaderMats, SizeT materialIdx, IRenderCommandList *cmdList,
-        IGraphicsInstance *graphicsInstance
+        MaterialShaderParams &shaderMats, SizeT materialIdx, IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance
     ) const;
     FORCE_INLINE void addCompMaterialData(SizeT compRenderInfoIdx);
     // Why material vector index here alone? Because in materialIDToIdx each material ID directly maps to actual vector idx
@@ -312,9 +311,8 @@ private:
     void addRenderComponents(const std::vector<cbe::RenderableComponent *> &renderComps);
     void removeRenderComponents(const std::vector<String> &renderComps);
     void recreateRenderComponents(const std::vector<cbe::RenderableComponent *> &renderComps);
-    void updateTfComponents(
-        const std::vector<cbe::TransformComponent *> &comps, IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance
-    );
+    void
+    updateTfComponents(const std::vector<cbe::TransformComponent *> &comps, IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance);
 
     void createRenderInfo(cbe::RenderableComponent *comp, SizeT compRenderInfoIdx);
     void destroyRenderInfo(const cbe::RenderableComponent *comp, SizeT compRenderInfoIdx);
@@ -325,11 +323,11 @@ private:
     );
     // Adds new mesh's vertex and index buffer, resizes the corresponding scene buffers to upload them
     copat::NormalFuncAwaiter
-        recreateSceneVertexBuffers(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
+    recreateSceneVertexBuffers(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
     copat::NormalFuncAwaiter
-        recreateMaterialBuffers(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
+    recreateMaterialBuffers(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
     copat::NormalFuncAwaiter
-        recreateInstanceBuffers(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
+    recreateInstanceBuffers(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
     void createNextDrawList(
         const RenderSceneViewParams &viewParams, IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
         const GraphicsHelperAPI *graphicsHelper

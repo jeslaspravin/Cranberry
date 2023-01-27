@@ -43,7 +43,9 @@ DEFINE_GRAPHICS_RESOURCE(GraphicsTimelineSemaphore)
 void GraphicsTimelineSemaphore::waitForSignal() const
 {
     if (currentValue() > 0)
+    {
         return;
+    }
 
     waitForSignal(1);
 }

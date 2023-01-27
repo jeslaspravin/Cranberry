@@ -37,10 +37,10 @@ private:
 
 public:
     static cbe::StaticMesh *
-        createStaticMesh(const String &packageName, const String &packagePath, const String &meshName, cbe::SMCreateInfo &&createInfo);
+    createStaticMesh(const String &packageName, const String &packagePath, const String &meshName, cbe::SMCreateInfo &&createInfo);
     // Returns the root actor to which all this static mesh actors are attached to
     static cbe::Actor *
-        addStaticMeshesToWorld(const std::vector<cbe::StaticMesh *> &staticMeshes, cbe::World *world, const String &rootActorName);
+    addStaticMeshesToWorld(const std::vector<cbe::StaticMesh *> &staticMeshes, cbe::World *world, const String &rootActorName);
 
     static cbe::Actor *addActorToWorld(cbe::World *world, CBEClass actorClass, const String &actorName, EObjectFlags flags);
     static cbe::Actor *addActorToWorld(cbe::World *world, cbe::ActorPrefab *inPrefab, const String &name, EObjectFlags flags);

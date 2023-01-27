@@ -15,7 +15,7 @@
 namespace cbe
 {
 
-ObjectPath &ObjectPath::operator=(const TChar *fullPath)
+ObjectPath &ObjectPath::operator= (const TChar *fullPath)
 {
     allocIdx = 0;
 
@@ -27,7 +27,7 @@ ObjectPath &ObjectPath::operator=(const TChar *fullPath)
     }
     return *this;
 }
-ObjectPath &ObjectPath::operator=(Object *obj)
+ObjectPath &ObjectPath::operator= (Object *obj)
 {
     if (!cbe::isValidFast(obj))
     {

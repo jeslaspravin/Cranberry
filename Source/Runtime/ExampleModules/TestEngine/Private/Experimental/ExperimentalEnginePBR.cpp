@@ -209,9 +209,9 @@ struct GridEntity
     AABB getBounds() const;
 };
 
-FORCE_INLINE bool operator==(const GridEntity &lhs, const GridEntity &rhs) { return lhs.type == rhs.type && lhs.idx == rhs.idx; }
+FORCE_INLINE bool operator== (const GridEntity &lhs, const GridEntity &rhs) { return lhs.type == rhs.type && lhs.idx == rhs.idx; }
 
-FORCE_INLINE bool operator<(const GridEntity &lhs, const GridEntity &rhs)
+FORCE_INLINE bool operator< (const GridEntity &lhs, const GridEntity &rhs)
 {
     return lhs.type < rhs.type || (lhs.type == rhs.type && lhs.idx < rhs.idx);
 }
@@ -219,7 +219,7 @@ FORCE_INLINE bool operator<(const GridEntity &lhs, const GridEntity &rhs)
 template <>
 struct std::hash<GridEntity>
 {
-    NODISCARD size_t operator()(const GridEntity &keyval) const noexcept
+    NODISCARD size_t operator() (const GridEntity &keyval) const noexcept
     {
         size_t outHash = HashUtility::hash(keyval.type);
         HashUtility::hashCombine(outHash, keyval.idx);
@@ -3398,7 +3398,9 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface *drawInterface)
             {
                 ImGui::TreePush("SelectionNode");
                 if (selection.type != GridEntity::Invalid)
+                {
                     drawSelectionWidget(drawInterface);
+                }
                 ImGui::TreePop();
 
                 ImGui::Separator();

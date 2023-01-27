@@ -126,7 +126,7 @@ struct HazardPointerDeleter<FAAArrayQueueNode<T>>
 {
     using NodeType = FAAArrayQueueNode<T>;
 
-    void operator()(NodeType *ptr)
+    void operator() (NodeType *ptr)
     {
         QueueNodeAllocTracker::onDelete();
         memDelete(ptr);
@@ -234,7 +234,9 @@ public:
     void enqueue(T *item, HazardToken &hazardRecord)
     {
         if (item == nullptr)
+        {
             return;
+        }
         while (true)
         {
             Node *ltail = hazardRecord.record->setHazardPtr(tail);
@@ -242,7 +244,9 @@ public:
             if (idx > QUEUE_NODE_BUFFER_SIZE - 1) // This node is full
             {
                 if (ltail != tail.load(std::memory_order::acquire))
+                {
                     continue;
+                }
                 // It is okay CAS ensures we are fine
                 Node *lnext = ltail->next.load(std::memory_order::relaxed);
                 if (lnext == nullptr)
@@ -393,7 +397,9 @@ public:
     void enqueue(T *item, HazardToken &hazardRecord)
     {
         if (item == nullptr)
+        {
             return;
+        }
         while (true)
         {
             Node *ltail = hazardRecord.record->setHazardPtr(tail);
@@ -401,7 +407,9 @@ public:
             if (idx > QUEUE_NODE_BUFFER_SIZE - 1) // This node is full
             {
                 if (ltail != tail.load(std::memory_order::acquire))
+                {
                     continue;
+                }
                 // It is okay CAS ensures we are fine
                 Node *lnext = ltail->next.load(std::memory_order::relaxed);
                 if (lnext == nullptr)

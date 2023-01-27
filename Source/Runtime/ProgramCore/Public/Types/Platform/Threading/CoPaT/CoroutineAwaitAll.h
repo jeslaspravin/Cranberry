@@ -35,8 +35,8 @@ public:
     {}
     AwaitAllTasksCounter(AwaitAllTasksCounter &&) = default;
     AwaitAllTasksCounter(const AwaitAllTasksCounter &) = default;
-    AwaitAllTasksCounter &operator=(AwaitAllTasksCounter &&) = default;
-    AwaitAllTasksCounter &operator=(const AwaitAllTasksCounter &) = default;
+    AwaitAllTasksCounter &operator= (AwaitAllTasksCounter &&) = default;
+    AwaitAllTasksCounter &operator= (const AwaitAllTasksCounter &) = default;
 
     void reset(u32 newCount) { counter.store(newCount, std::memory_order::release); }
     void setAwaitingCoroutine(std::coroutine_handle<> awaitingCoro)
@@ -73,8 +73,8 @@ public:
     {}
     AwaitOneTask(AwaitOneTask &&) = default;
     AwaitOneTask(const AwaitOneTask &) = default;
-    AwaitOneTask &operator=(AwaitOneTask &&) = default;
-    AwaitOneTask &operator=(const AwaitOneTask &) = default;
+    AwaitOneTask &operator= (AwaitOneTask &&) = default;
+    AwaitOneTask &operator= (const AwaitOneTask &) = default;
 
     struct PromiseType
     {
@@ -171,7 +171,7 @@ public:
         : allAwaits(std::move(other.allAwaits))
         , counter(std::move(other.counter))
     {}
-    AwaitAllTasks &operator=(AwaitAllTasks &&other)
+    AwaitAllTasks &operator= (AwaitAllTasks &&other)
     {
         allAwaits = std::move(other.allAwaits);
         counter = std::move(other.counter);
@@ -182,7 +182,7 @@ public:
 
     // Delete copy
     AwaitAllTasks(const AwaitAllTasks &) = delete;
-    AwaitAllTasks &operator=(const AwaitAllTasks &) = delete;
+    AwaitAllTasks &operator= (const AwaitAllTasks &) = delete;
 
     // Should we refactor this into co_await binary operator as this type does not seems to be an awaitable?
     constexpr bool await_ready() const noexcept { return AWAITABLES_COUNT == 0; }
@@ -250,7 +250,7 @@ public:
         : allAwaits(std::move(other.allAwaits))
         , counter(std::move(other.counter))
     {}
-    AwaitAllTasks &operator=(AwaitAllTasks &&other)
+    AwaitAllTasks &operator= (AwaitAllTasks &&other)
     {
         allAwaits = std::move(other.allAwaits);
         counter = std::move(other.counter);
@@ -267,7 +267,7 @@ public:
 
     // Delete copy
     AwaitAllTasks(const AwaitAllTasks &) = delete;
-    AwaitAllTasks &operator=(const AwaitAllTasks &) = delete;
+    AwaitAllTasks &operator= (const AwaitAllTasks &) = delete;
 
     // Should we refactor this into co_await binary operator as this type does not seems to be an awaitable?
     constexpr bool await_ready() const noexcept { return allAwaits.size() == 0; }
@@ -288,7 +288,8 @@ namespace impl
 {
 
 template <AwaitableTypeConcept Awaitable, typename RetType = AwaiterReturnType<GetAwaiterType_t<Awaitable>>>
-requires(!std::is_void_v<RetType>) AwaitOneTask<RetType> makeOneTaskAwaitable(Awaitable &&awaitable)
+requires (!std::is_void_v<RetType>)
+AwaitOneTask<RetType> makeOneTaskAwaitable(Awaitable &&awaitable)
 {
     if constexpr (std::is_lvalue_reference_v<Awaitable>)
     {
@@ -306,7 +307,8 @@ requires(!std::is_void_v<RetType>) AwaitOneTask<RetType> makeOneTaskAwaitable(Aw
     }
 }
 template <AwaitableTypeConcept Awaitable, typename RetType = AwaiterReturnType<GetAwaiterType_t<Awaitable>>>
-requires std::is_void_v<RetType> AwaitOneTask<void> makeOneTaskAwaitable(Awaitable &&awaitable)
+requires std::is_void_v<RetType>
+AwaitOneTask<void> makeOneTaskAwaitable(Awaitable &&awaitable)
 {
     if constexpr (std::is_lvalue_reference_v<Awaitable>)
     {

@@ -21,10 +21,7 @@
 #include <unordered_map>
 
 #define MODULE_CREATE_FUNCTION_CPP(ModuleName, ModuleClass)                                                                                    \
-    IModuleBase *createModule_##ModuleName()                                                                                                   \
-    {                                                                                                                                          \
-        return new ModuleClass();                                                                                                              \
-    }
+    IModuleBase *createModule_##ModuleName() { return new ModuleClass(); }
 
 #define DECLARE_STATIC_LINKED_MODULE(ModuleName, ModuleClass)                                                                                  \
     MODULE_CREATE_FUNCTION_CPP(ModuleName, ModuleClass)                                                                                        \

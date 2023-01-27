@@ -143,7 +143,7 @@ WindowsFile::WindowsFile(const WindowsFile &otherFile)
     directoryPath = otherFile.directoryPath;
 }
 
-void WindowsFile::operator=(const WindowsFile &otherFile)
+void WindowsFile::operator= (const WindowsFile &otherFile)
 {
     fileFlags = otherFile.fileFlags;
     sharingMode = otherFile.sharingMode;
@@ -154,7 +154,7 @@ void WindowsFile::operator=(const WindowsFile &otherFile)
     directoryPath = otherFile.directoryPath;
 }
 
-void WindowsFile::operator=(WindowsFile &&otherFile)
+void WindowsFile::operator= (WindowsFile &&otherFile)
 {
     fileHandle = otherFile.fileHandle;
     otherFile.fileHandle = nullptr;

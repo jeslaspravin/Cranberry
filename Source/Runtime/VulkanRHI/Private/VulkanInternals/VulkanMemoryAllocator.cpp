@@ -101,7 +101,9 @@ private:
     {
         // OoM
         if (!isValidBlock(freeBlockHead))
+        {
             return nullptr;
+        }
 
         if (!Math::isPowOf2(offsetAlignment))
         {

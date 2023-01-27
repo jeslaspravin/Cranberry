@@ -29,7 +29,7 @@ void MemoryResource::removeRef()
     {
         ENQUEUE_COMMAND(DeleteMemoryResource)
         (
-            [this](class IRenderCommandList */*cmdList*/, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+            [this](class IRenderCommandList * /*cmdList*/, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
             {
                 graphicsHelper->markForDeletion(
                     graphicsInstance, this, bDeferDelete ? EDeferredDelStrategy::SwapchainCount : EDeferredDelStrategy::Immediate

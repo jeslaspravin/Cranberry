@@ -49,13 +49,13 @@ Vector2D::Vector2D(const Vector3D &other)
     : value(other.x(), other.y())
 {}
 
-Vector2D &Vector2D::operator=(const Vector2D &other)
+Vector2D &Vector2D::operator= (const Vector2D &other)
 {
     value = other.value;
     return *this;
 }
 
-Vector2D &Vector2D::operator=(Vector2D &&other)
+Vector2D &Vector2D::operator= (Vector2D &&other)
 {
     value = std::move(other.value);
     return *this;
@@ -69,85 +69,85 @@ float &Vector2D::y() { return value.y; }
 
 float Vector2D::y() const { return value.y; }
 
-float Vector2D::operator[](uint32 index) const
+float Vector2D::operator[] (uint32 index) const
 {
     debugAssert(index < 2);
     return value[index];
 }
 
-float &Vector2D::operator[](uint32 index)
+float &Vector2D::operator[] (uint32 index)
 {
     debugAssert(index < 2);
     return value[index];
 }
 
-bool Vector2D::operator==(const Vector2D &b) const { return isSame(b); }
+bool Vector2D::operator== (const Vector2D &b) const { return isSame(b); }
 
-float Vector2D::operator|(const Vector2D &b) const { return glm::dot(value, b.value); }
+float Vector2D::operator| (const Vector2D &b) const { return glm::dot(value, b.value); }
 
-float Vector2D::operator^(const Vector2D &b) const { return glm::cross(glm::vec3(value, 0), glm::vec3(b.value, 0)).z; }
+float Vector2D::operator^ (const Vector2D &b) const { return glm::cross(glm::vec3(value, 0), glm::vec3(b.value, 0)).z; }
 
-Vector2D Vector2D::operator*(const Vector2D &b) const { return Vector2D(value * b.value); }
+Vector2D Vector2D::operator* (const Vector2D &b) const { return Vector2D(value * b.value); }
 
-Vector2D &Vector2D::operator*=(const Vector2D &b)
+Vector2D &Vector2D::operator*= (const Vector2D &b)
 {
     value *= b.value;
     return *this;
 }
 
-Vector2D Vector2D::operator*(float scalar) const { return Vector2D(value * scalar); }
+Vector2D Vector2D::operator* (float scalar) const { return Vector2D(value * scalar); }
 
-Vector2D &Vector2D::operator*=(float scalar)
+Vector2D &Vector2D::operator*= (float scalar)
 {
     value *= scalar;
     return *this;
 }
 
-Vector2D Vector2D::operator/(const Vector2D &b) const { return Vector2D(value / b.value); }
+Vector2D Vector2D::operator/ (const Vector2D &b) const { return Vector2D(value / b.value); }
 
-Vector2D &Vector2D::operator/=(const Vector2D &b)
+Vector2D &Vector2D::operator/= (const Vector2D &b)
 {
     value /= b.value;
     return *this;
 }
 
-Vector2D Vector2D::operator/(float scalar) const { return Vector2D(value / scalar); }
+Vector2D Vector2D::operator/ (float scalar) const { return Vector2D(value / scalar); }
 
-Vector2D &Vector2D::operator/=(float scalar)
+Vector2D &Vector2D::operator/= (float scalar)
 {
     value /= scalar;
     return *this;
 }
 
-Vector2D Vector2D::operator-(const Vector2D &b) const { return Vector2D(value - b.value); }
+Vector2D Vector2D::operator- (const Vector2D &b) const { return Vector2D(value - b.value); }
 
-Vector2D &Vector2D::operator-=(const Vector2D &b)
+Vector2D &Vector2D::operator-= (const Vector2D &b)
 {
     value -= b.value;
     return *this;
 }
 
-Vector2D Vector2D::operator-(float scalar) const { return Vector2D(value - scalar); }
+Vector2D Vector2D::operator- (float scalar) const { return Vector2D(value - scalar); }
 
-Vector2D &Vector2D::operator-=(float scalar)
+Vector2D &Vector2D::operator-= (float scalar)
 {
     value -= scalar;
     return *this;
 }
 
-Vector2D Vector2D::operator-() const { return Vector2D(-value); }
+Vector2D Vector2D::operator- () const { return Vector2D(-value); }
 
-Vector2D Vector2D::operator+(const Vector2D &b) const { return Vector2D(value + b.value); }
+Vector2D Vector2D::operator+ (const Vector2D &b) const { return Vector2D(value + b.value); }
 
-Vector2D &Vector2D::operator+=(const Vector2D &b)
+Vector2D &Vector2D::operator+= (const Vector2D &b)
 {
     value += b.value;
     return *this;
 }
 
-Vector2D Vector2D::operator+(float scalar) const { return Vector2D(value + scalar); }
+Vector2D Vector2D::operator+ (float scalar) const { return Vector2D(value + scalar); }
 
-Vector2D &Vector2D::operator+=(float scalar)
+Vector2D &Vector2D::operator+= (float scalar)
 {
     value += scalar;
     return *this;

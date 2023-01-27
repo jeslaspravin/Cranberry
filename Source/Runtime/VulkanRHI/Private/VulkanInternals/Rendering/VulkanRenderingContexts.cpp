@@ -198,7 +198,7 @@ void VulkanGlobalRenderingContext::initializeGenericGraphicsPipeline(PipelineBas
 }
 
 VkRenderPass
-    VulkanGlobalRenderingContext::getRenderPass(ERenderPassFormat::Type renderpassFormat, const RenderPassAdditionalProps &additionalProps)
+VulkanGlobalRenderingContext::getRenderPass(ERenderPassFormat::Type renderpassFormat, const RenderPassAdditionalProps &additionalProps)
 {
     auto renderpassItr = gbufferRenderPasses.find(renderpassFormat);
     if (renderpassItr != gbufferRenderPasses.end())

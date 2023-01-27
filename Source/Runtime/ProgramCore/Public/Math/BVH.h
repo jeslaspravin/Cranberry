@@ -71,7 +71,7 @@ public:
 
         struct ObjectIdxHashBypass
         {
-            NODISCARD FORCE_INLINE SizeT operator()(ObjectIdxType idx) const noexcept { return idx; }
+            NODISCARD FORCE_INLINE SizeT operator() (ObjectIdxType idx) const noexcept { return idx; }
         };
         BitArray<uint64> resultIdxAdded(allObjects.totalCount());
         std::vector<ObjectIdxType> resultIdxs;
@@ -271,7 +271,9 @@ template <typename StorageType>
 void BoundingVolume<StorageType>::reinitialize(const Vector3D &cellSize)
 {
     if (allObjects.size() <= 0)
+    {
         return;
+    }
 
     AABB globalBound;
 
@@ -527,7 +529,9 @@ bool BoundingVolume<StorageType>::raycast(
                     }
                 }
                 else
+                {
                     timesPerAxis[axis] = FLT_MAX;
+                }
             }
 
             if (bReachedEnd)
@@ -538,7 +542,9 @@ bool BoundingVolume<StorageType>::raycast(
             for (uint32 axis = 0; axis < 3; axis++)
             {
                 if (parallel[axis])
+                {
                     continue;
+                }
                 nextCellIdx.idx[axis] += (timesPerAxis[axis] <= bestTime + SMALL_EPSILON) ? (dir[axis] > 0) ? 1 : -1 : 0;
                 if (nextCellIdx[axis] >= volumeGrid.cellCount()[axis] || nextCellIdx[axis] < 0)
                 {

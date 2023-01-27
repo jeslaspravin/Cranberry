@@ -260,7 +260,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     {
         WindowsAppWindow *const windowPtr = reinterpret_cast<WindowsAppWindow *>(GetWindowLongPtrA(hwnd, GWLP_USERDATA));
         if (!windowPtr)
+        {
             break;
+        }
 
         if ((wParam == SIZE_MAXIMIZED || wParam == SIZE_RESTORED) && LOWORD(lParam) > 0 && HIWORD(lParam) > 0)
         {
@@ -303,12 +305,16 @@ WindowHandle WindowsAppWindow::getWindowUnderPoint(Short2D point)
     pt.y = point.y;
     HWND wnd = ::WindowFromPoint(pt);
     if (wnd == NULL)
+    {
         return wnd;
+    }
 
     while (HWND childWnd = ::ChildWindowFromPoint(wnd, pt))
     {
         if (wnd == childWnd)
+        {
             break;
+        }
         wnd = childWnd;
     }
     return wnd;

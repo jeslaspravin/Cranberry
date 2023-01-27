@@ -80,7 +80,7 @@ LinearColor::LinearColor(const Vector4D &value)
     : colorValue(value.x(), value.y(), value.z(), value.w())
 {}
 
-float LinearColor::operator[](uint32 idx) const { return colorValue[idx]; }
+float LinearColor::operator[] (uint32 idx) const { return colorValue[idx]; }
 
 // http://en.wikipedia.org/wiki/HSL_color_space
 Vector3D LinearColor::toHsl() const

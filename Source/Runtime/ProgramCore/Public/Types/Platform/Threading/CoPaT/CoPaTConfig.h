@@ -22,8 +22,8 @@
 /**
  * Thread types that are added by user
  */
-//#define USER_DEFINED_THREADS() Thread1 = 1, Thread2, ... , ThreadN = WorkerThreads - 1
-//#define USER_DEFINED_THREADS() RenderThread,
+// #define USER_DEFINED_THREADS() Thread1 = 1, Thread2, ... , ThreadN = WorkerThreads - 1
+// #define USER_DEFINED_THREADS() RenderThread,
 #define USER_DEFINED_THREADS() RenderThread,
 
 /**
@@ -34,7 +34,7 @@
 /**
  * Override memory allocator type
  */
-//#define OVERRIDE_MEMORY_ALLOCATOR AllocatorType
+// #define OVERRIDE_MEMORY_ALLOCATOR AllocatorType
 #define OVERRIDE_MEMORY_ALLOCATOR CBEMemory
 
 /**
@@ -51,12 +51,12 @@
 /**
  * Define if we do not want to have everything inside namespace
  */
-//#define WRAP_INSIDE_NS 0
+// #define WRAP_INSIDE_NS 0
 
 /**
  * Override for assert macro.
  */
-//#define OVERRIDE_ASSERT(expr) assert((expr))
+// #define OVERRIDE_ASSERT(expr) assert((expr))
 #define OVERRIDE_ASSERT(expr) debugAssert((expr))
 
 /**
@@ -68,26 +68,26 @@
 /**
  * Override char specifier macro and to string macro.
  */
-//#define OVERRIDE_TCHAR(expr) L##expr
-//#define OVERRIDE_TOSTRING(expr) std::to_wstring(expr)
+// #define OVERRIDE_TCHAR(expr) L##expr
+// #define OVERRIDE_TOSTRING(expr) std::to_wstring(expr)
 #define OVERRIDE_TCHAR(expr) TCHAR(expr)
 #define OVERRIDE_TOSTRING(expr) String::toString(expr)
 
 /**
  * Override PlatformThreadingFunctions.
  */
-//#define OVERRIDE_PLATFORMTHREADINGFUNCTIONS YourPlatformFunctions
+// #define OVERRIDE_PLATFORMTHREADINGFUNCTIONS YourPlatformFunctions
 #define OVERRIDE_PLATFORMTHREADINGFUNCTIONS PlatformThreadingFunctions
 
 // If enable FAAArrayQueue node allocations tracking
-//#define COPAT_ENABLE_QUEUE_ALLOC_TRACKING 1
+// #define COPAT_ENABLE_QUEUE_ALLOC_TRACKING 1
 #define COPAT_ENABLE_QUEUE_ALLOC_TRACKING 1
 
 /**
  * Override uint32_t and uint64_t?
  */
-//#define OVERRIDE_UINT32 uint32
-//#define OVERRIDE_UINT64 uint64
+// #define OVERRIDE_UINT32 uint32
+// #define OVERRIDE_UINT64 uint64
 #define OVERRIDE_UINT32 uint32
 #define OVERRIDE_UINT64 uint64
 

@@ -33,7 +33,7 @@ struct PackageDependencyData
 };
 
 template <ArchiveTypeName ArchiveType>
-ArchiveType &operator<<(ArchiveType &archive, PackageDependencyData &value)
+ArchiveType &operator<< (ArchiveType &archive, PackageDependencyData &value)
 {
     archive << value.objectFullPath;
     archive << value.clazz;
@@ -57,7 +57,7 @@ struct PackageContainedData
 };
 
 template <ArchiveTypeName ArchiveType>
-ArchiveType &operator<<(ArchiveType &archive, PackageContainedData &value)
+ArchiveType &operator<< (ArchiveType &archive, PackageContainedData &value)
 {
     archive << value.objectPath;
     archive << value.classVersion;

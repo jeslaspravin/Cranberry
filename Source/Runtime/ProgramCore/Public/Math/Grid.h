@@ -50,7 +50,7 @@ struct CellIndex
         }
     }
 
-    FORCE_INLINE void operator=(const CellIndex &other)
+    FORCE_INLINE void operator= (const CellIndex &other)
     {
         for (uint32 i = 0; i < d; i++)
         {
@@ -59,7 +59,7 @@ struct CellIndex
     }
 
     template <class T>
-    FORCE_INLINE T operator*(const T &other) const
+    FORCE_INLINE T operator* (const T &other) const
     {
         T newVal;
         for (uint32 i = 0; i < d; i++)
@@ -69,7 +69,7 @@ struct CellIndex
         return newVal;
     }
 
-    FORCE_INLINE CellIndex operator+(const CellIndex &other) const
+    FORCE_INLINE CellIndex operator+ (const CellIndex &other) const
     {
         CellIndex c;
         for (uint32 i = 0; i < d; i++)
@@ -80,7 +80,7 @@ struct CellIndex
         return c;
     }
 
-    FORCE_INLINE CellIndex operator-(const CellIndex &other) const
+    FORCE_INLINE CellIndex operator- (const CellIndex &other) const
     {
         CellIndex c;
         for (uint32 i = 0; i < d; i++)
@@ -91,7 +91,7 @@ struct CellIndex
         return c;
     }
 
-    FORCE_INLINE void operator+=(const CellIndex &other)
+    FORCE_INLINE void operator+= (const CellIndex &other)
     {
         for (uint32 i = 0; i < d; i++)
         {
@@ -99,7 +99,7 @@ struct CellIndex
         }
     }
 
-    FORCE_INLINE void operator-=(const CellIndex &other)
+    FORCE_INLINE void operator-= (const CellIndex &other)
     {
         for (uint32 i = 0; i < d; i++)
         {
@@ -107,10 +107,10 @@ struct CellIndex
         }
     }
 
-    FORCE_INLINE uint32 operator[](uint32 axis) const { return idx[axis]; }
-    FORCE_INLINE uint32 &operator[](uint32 axis) { return idx[axis]; }
+    FORCE_INLINE uint32 operator[] (uint32 axis) const { return idx[axis]; }
+    FORCE_INLINE uint32 &operator[] (uint32 axis) { return idx[axis]; }
 
-    FORCE_INLINE bool operator==(const CellIndex &other) const
+    FORCE_INLINE bool operator== (const CellIndex &other) const
     {
         bool bIsSame = true;
         for (uint32 i = 0; i < d; i++)
@@ -120,7 +120,7 @@ struct CellIndex
         return bIsSame;
     }
 
-    FORCE_INLINE bool operator!=(const CellIndex &other) const
+    FORCE_INLINE bool operator!= (const CellIndex &other) const
     {
         bool bIsNotSame = false;
         for (uint32 i = 0; i < d; i++)
@@ -147,7 +147,7 @@ struct CellIndexHash
     using TYPE = CellIndex<d>;
     using RESULT = std::size_t;
 
-    RESULT operator()(const TYPE &cellIndex) const
+    RESULT operator() (const TYPE &cellIndex) const
     {
         RESULT hashVal = 0;
         for (uint32 i = 0; i < d; i++)
@@ -197,11 +197,11 @@ public:
 
     FORCE_INLINE const CellIndex<d> &operator->() const { return currentIdx; }
 
-    FORCE_INLINE const CellIndex<d> &operator*() const { return currentIdx; }
+    FORCE_INLINE const CellIndex<d> &operator* () const { return currentIdx; }
 
-    FORCE_INLINE bool operator!=(const CellIndexRangeIterator &other) const { return currentIdx != other.currentIdx; }
+    FORCE_INLINE bool operator!= (const CellIndexRangeIterator &other) const { return currentIdx != other.currentIdx; }
 
-    FORCE_INLINE CellIndexRangeIterator &operator++()
+    FORCE_INLINE CellIndexRangeIterator &operator++ ()
     {
         ++currentIdx[0];
         for (uint32 dim = 1; dim < d; ++dim)
@@ -212,10 +212,10 @@ public:
         return *this;
     }
 
-    FORCE_INLINE CellIndexRangeIterator operator++(int)
+    FORCE_INLINE CellIndexRangeIterator operator++ (int)
     {
         CellIndexRangeIterator retVal(*this);
-        this->operator++();
+        this->operator++ ();
         return retVal;
     }
 

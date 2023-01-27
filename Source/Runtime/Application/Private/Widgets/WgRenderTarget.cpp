@@ -22,7 +22,7 @@ void WgRenderTarget::init(WgRenderTargetCI createInfo)
     }
     ENQUEUE_RENDER_COMMAND(WgRenderTargetInit)
     (
-        [createInfo, this](class IRenderCommandList */*cmdList*/, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        [createInfo, this](class IRenderCommandList * /*cmdList*/, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
             bool bInitialize = !rtTexture.isValid() || !rtTexture->isValid() || rtTexture->sampleCount() != createInfo.sampleCount
                                || rtTexture->getImageSize().x != uint32(createInfo.textureSize.x)

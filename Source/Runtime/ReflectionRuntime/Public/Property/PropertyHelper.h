@@ -19,32 +19,29 @@
 class ClassProperty;
 
 template <typename Type>
-concept ReflectClassOrStructType = requires
-{
+concept ReflectClassOrStructType = requires {
     {
         Type::staticType()
-        } -> std::same_as<const ClassProperty *>;
+    } -> std::same_as<const ClassProperty *>;
 };
 template <typename Type>
-concept ReflectClassType = requires(Type *object)
-{
+concept ReflectClassType = requires(Type *object) {
     {
         Type::staticType()
-        } -> std::same_as<const ClassProperty *>;
+    } -> std::same_as<const ClassProperty *>;
     {
         object->getType()
-        } -> std::same_as<const ClassProperty *>;
+    } -> std::same_as<const ClassProperty *>;
 };
 
 // Has to negate ReflectedClassType possibility as class inheriting interface will inherit same interface structure
 template <typename Type>
 concept InterfaceType
-    = std::same_as<typename Type::GENERATED_INTERFACE_CODES_ALIAS, uint32> && !ReflectClassType<Type> && requires(Type * interfaceObj)
-{
-    {
-        interfaceObj->getType()
-        } -> std::same_as<const ClassProperty *>;
-};
+    = std::same_as<typename Type::GENERATED_INTERFACE_CODES_ALIAS, uint32> && !ReflectClassType<Type> && requires(Type *interfaceObj) {
+          {
+              interfaceObj->getType()
+          } -> std::same_as<const ClassProperty *>;
+      };
 
 template <typename Type>
 concept ReflectClassOrStructOrInterfaceType = ReflectClassOrStructType<Type> || InterfaceType<Type>;
@@ -296,10 +293,15 @@ public:
 
     // Object to Interface
     template <InterfaceType AsType, ReflectClassOrStructType FromType>
-    requires StaticCastable<FromType *, AsType *> FORCE_INLINE static AsType *cast(FromType *obj) { return static_cast<AsType *>(obj); }
+    requires StaticCastable<FromType *, AsType *>
+    FORCE_INLINE static AsType *cast(FromType *obj)
+    {
+        return static_cast<AsType *>(obj);
+    }
 
     template <InterfaceType AsType, ReflectClassOrStructType FromType>
-    requires(!StaticCastable<FromType *, AsType *>) FORCE_INLINE static AsType *cast(FromType *obj)
+    requires (!StaticCastable<FromType *, AsType *>)
+    FORCE_INLINE static AsType *cast(FromType *obj)
     {
         using UPtrIntType = std::conditional_t<std::is_const_v<FromType>, const UPtrInt, UPtrInt>;
 
@@ -316,13 +318,15 @@ public:
 
     // Interface to Object
     template <ReflectClassOrStructType AsType, InterfaceType FromType>
-    requires StaticCastable<FromType *, AsType *> FORCE_INLINE static AsType *cast(FromType *obj)
+    requires StaticCastable<FromType *, AsType *>
+    FORCE_INLINE static AsType *cast(FromType *obj)
     {
         return isChildOf(obj->getType(), AsType::staticType()) ? static_cast<AsType *>(obj) : nullptr;
     }
 
     template <ReflectClassOrStructType AsType, InterfaceType FromType>
-    requires(!StaticCastable<FromType *, AsType *>) FORCE_INLINE static AsType *cast(FromType *obj)
+    requires (!StaticCastable<FromType *, AsType *>)
+    FORCE_INLINE static AsType *cast(FromType *obj)
     {
         using UPtrIntType = std::conditional_t<std::is_const_v<FromType>, const UPtrInt, UPtrInt>;
 
@@ -339,10 +343,15 @@ public:
 
     // Interface to Interface
     template <InterfaceType AsType, InterfaceType FromType>
-    requires StaticCastable<FromType *, AsType *> FORCE_INLINE static AsType *cast(FromType *obj) { return static_cast<AsType *>(obj); }
+    requires StaticCastable<FromType *, AsType *>
+    FORCE_INLINE static AsType *cast(FromType *obj)
+    {
+        return static_cast<AsType *>(obj);
+    }
 
     template <InterfaceType AsType, InterfaceType FromType>
-    requires(!StaticCastable<FromType *, AsType *>) FORCE_INLINE static AsType *cast(FromType *obj)
+    requires (!StaticCastable<FromType *, AsType *>)
+    FORCE_INLINE static AsType *cast(FromType *obj)
     {
         using UPtrIntType = std::conditional_t<std::is_const_v<FromType>, const UPtrInt, UPtrInt>;
 
@@ -361,9 +370,10 @@ public:
 
     // None of the above casts
     template <typename AsType, typename FromType>
-    requires(
+    requires (
         StaticCastable<FromType *, AsType *> && !(ReflectClassOrStructOrInterfaceType<AsType> || ReflectClassOrStructOrInterfaceType<FromType>)
-    ) FORCE_INLINE static AsType *cast(FromType *obj)
+    )
+    FORCE_INLINE static AsType *cast(FromType *obj)
     {
         return static_cast<AsType *>(obj);
     }

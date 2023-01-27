@@ -70,7 +70,7 @@ public:
 
     ~WeakObjPtr() { reset(); }
 
-    WeakObjPtr &operator=(PtrType *ptr)
+    WeakObjPtr &operator= (PtrType *ptr)
     {
         if (cbe::isValid(ptr))
         {
@@ -86,7 +86,7 @@ public:
 
     // Explicit copy and move assignment needed as compiler generates them without matching template
     // assignments
-    FORCE_INLINE WeakObjPtr &operator=(WeakObjPtr &&weakPtr)
+    FORCE_INLINE WeakObjPtr &operator= (WeakObjPtr &&weakPtr)
     {
         if (this != &weakPtr)
         {
@@ -96,14 +96,14 @@ public:
         }
         return *this;
     }
-    FORCE_INLINE WeakObjPtr &operator=(const WeakObjPtr &weakPtr)
+    FORCE_INLINE WeakObjPtr &operator= (const WeakObjPtr &weakPtr)
     {
         allocIdx = weakPtr.allocIdx;
         objectPath = weakPtr.objectPath;
         return *this;
     }
     template <class InPtrType>
-    FORCE_INLINE WeakObjPtr &operator=(WeakObjPtr<InPtrType> &&weakPtr)
+    FORCE_INLINE WeakObjPtr &operator= (WeakObjPtr<InPtrType> &&weakPtr)
     {
         if (this != &weakPtr)
         {
@@ -116,7 +116,7 @@ public:
         return *this;
     }
     template <class InPtrType>
-    FORCE_INLINE WeakObjPtr &operator=(const WeakObjPtr<InPtrType> &weakPtr)
+    FORCE_INLINE WeakObjPtr &operator= (const WeakObjPtr<InPtrType> &weakPtr)
     {
         if (PtrType *ptr = weakPtr.getAs<PtrType>())
         {
@@ -127,33 +127,33 @@ public:
 
     FORCE_INLINE PtrType *operator->() const { return get(); }
 
-    FORCE_INLINE bool operator!=(const WeakObjPtr &rhs) const { return !(*this == rhs); }
+    FORCE_INLINE bool operator!= (const WeakObjPtr &rhs) const { return !(*this == rhs); }
     template <typename Type>
-    FORCE_INLINE bool operator!=(const WeakObjPtr<Type> &rhs) const
+    FORCE_INLINE bool operator!= (const WeakObjPtr<Type> &rhs) const
     {
         return !(*this == rhs);
     }
-    FORCE_INLINE bool operator==(const WeakObjPtr &rhs) const
+    FORCE_INLINE bool operator== (const WeakObjPtr &rhs) const
     {
         return allocIdx == rhs.allocIdx && objectPath == rhs.objectPath && objectPath.toString().isEqual(rhs.objectPath.toString());
     }
     template <typename Type>
-    FORCE_INLINE bool operator==(const WeakObjPtr<Type> &rhs) const
+    FORCE_INLINE bool operator== (const WeakObjPtr<Type> &rhs) const
     {
         return allocIdx == rhs.allocIdx && objectPath == rhs.objectPath && objectPath.toString().isEqual(rhs.objectPath.toString());
     }
     template <typename Type>
-    FORCE_INLINE bool operator==(Type *rhs) const
+    FORCE_INLINE bool operator== (Type *rhs) const
     {
         return get() == rhs;
     }
 
-    FORCE_INLINE bool operator<(const WeakObjPtr &rhs) const
+    FORCE_INLINE bool operator< (const WeakObjPtr &rhs) const
     {
         return objectPath == rhs.objectPath ? allocIdx < rhs.allocIdx : objectPath < rhs.objectPath;
     }
     template <typename Type>
-    FORCE_INLINE bool operator<(const WeakObjPtr<Type> &rhs) const
+    FORCE_INLINE bool operator< (const WeakObjPtr<Type> &rhs) const
     {
         return objectPath == rhs.objectPath ? allocIdx < rhs.allocIdx : objectPath < rhs.objectPath;
     }
@@ -186,7 +186,7 @@ public:
         }
         return false;
     }
-    FORCE_INLINE explicit operator bool() const { return isValid(); }
+    FORCE_INLINE explicit operator bool () const { return isValid(); }
 
     // Check if this WeakPtr is set
     FORCE_INLINE bool isSet() const { return objectPath.isValid(); }
@@ -220,24 +220,24 @@ public:
     ObjectPath() = default;
     ObjectPath(const ObjectPath &) = default;
     ObjectPath(ObjectPath &&) = default;
-    ObjectPath &operator=(const ObjectPath &) = default;
-    ObjectPath &operator=(ObjectPath &&) = default;
+    ObjectPath &operator= (const ObjectPath &) = default;
+    ObjectPath &operator= (ObjectPath &&) = default;
 
     explicit ObjectPath(const TChar *fullPath) { (*this) = fullPath; }
     explicit ObjectPath(Object *obj) { (*this) = obj; }
-    ObjectPath &operator=(const TChar *fullPath);
-    ObjectPath &operator=(Object *obj);
+    ObjectPath &operator= (const TChar *fullPath);
+    ObjectPath &operator= (Object *obj);
 
     ObjectPath(Object *outerObj, const TChar *objectName);
 
-    FORCE_INLINE bool operator!=(const ObjectPath &rhs) const { return !(*this == rhs); }
-    FORCE_INLINE bool operator==(const ObjectPath &rhs) const { return allocIdx == rhs.allocIdx && getFullPath() == rhs.getFullPath(); }
+    FORCE_INLINE bool operator!= (const ObjectPath &rhs) const { return !(*this == rhs); }
+    FORCE_INLINE bool operator== (const ObjectPath &rhs) const { return allocIdx == rhs.allocIdx && getFullPath() == rhs.getFullPath(); }
     template <typename Type>
-    FORCE_INLINE bool operator==(Type *rhs) const
+    FORCE_INLINE bool operator== (Type *rhs) const
     {
         return getObject() == rhs;
     }
-    FORCE_INLINE bool operator<(const ObjectPath &rhs) const
+    FORCE_INLINE bool operator< (const ObjectPath &rhs) const
     {
         return allocIdx == rhs.allocIdx ? getFullPath() < rhs.getFullPath() : allocIdx < rhs.allocIdx;
     }
@@ -265,7 +265,7 @@ public:
         }
         return false;
     }
-    FORCE_INLINE explicit operator bool() const { return isValid(); }
+    FORCE_INLINE explicit operator bool () const { return isValid(); }
     FORCE_INLINE void reset()
     {
         allocIdx = 0;
@@ -278,7 +278,7 @@ public:
 template <typename Type>
 struct std::hash<cbe::WeakObjPtr<Type>>
 {
-    NODISCARD size_t operator()(const cbe::WeakObjPtr<Type> &ptr) const noexcept
+    NODISCARD size_t operator() (const cbe::WeakObjPtr<Type> &ptr) const noexcept
     {
         return HashUtility::hashAllReturn(ptr.objectId, ptr.allocIdx);
     }
@@ -287,7 +287,7 @@ struct std::hash<cbe::WeakObjPtr<Type>>
 template <>
 struct std::hash<cbe::ObjectPath>
 {
-    NODISCARD size_t operator()(const cbe::ObjectPath &ptr) const noexcept
+    NODISCARD size_t operator() (const cbe::ObjectPath &ptr) const noexcept
     {
         return HashUtility::hashAllReturn(ptr.allocIdx, ptr.getFullPath());
     }

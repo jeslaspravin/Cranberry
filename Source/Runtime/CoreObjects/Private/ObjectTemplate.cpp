@@ -21,7 +21,7 @@ inline constexpr static const uint32 OBJECT_TEMPLATE_SERIALIZER_CUTOFF_VERSION =
 inline STRINGID_CONSTEXPR static const StringID OBJECT_TEMPLATE_CUSTOM_VERSION_ID = STRID("ObjectTemplate");
 
 template <ArchiveTypeName ArchiveType>
-ArchiveType &operator<<(ArchiveType &archive, ObjectTemplate::TemplateObjectEntry &value)
+ArchiveType &operator<< (ArchiveType &archive, ObjectTemplate::TemplateObjectEntry &value)
 {
     return archive << value.modifiedFields << value.cursorStart;
 }

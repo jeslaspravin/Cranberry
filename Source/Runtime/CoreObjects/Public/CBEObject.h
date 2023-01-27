@@ -32,7 +32,7 @@ public:
     template <typename Type>
     static void *allocate();
     template <typename Type>
-    static bool canDeallocate(void */*ptr*/)
+    static bool canDeallocate(void * /*ptr*/)
     {
         return true;
     }
@@ -178,7 +178,7 @@ public:
     virtual void destroy() {}
     virtual void onConstructed() {}
     virtual void onPostLoad() {}
-    virtual void onPostSerialize(const ObjectArchive &/*ar*/) {}
+    virtual void onPostSerialize(const ObjectArchive & /*ar*/) {}
     virtual ObjectArchive &serialize(ObjectArchive &ar) { return ar; }
 } META_ANNOTATE(BaseType; NoExport);
 } // namespace cbe

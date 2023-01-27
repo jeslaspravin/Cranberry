@@ -50,7 +50,8 @@ template <typename Type, typename Enable = void>
 class MathHelper;
 
 template <typename Type>
-requires(!CustomMathTypes<Type>) class MathHelper<Type>
+requires (!CustomMathTypes<Type>)
+class MathHelper<Type>
 {
     friend class Math;
 
@@ -386,8 +387,8 @@ private:
     static std::random_device rDevice;
 
     template <typename ClampType, typename ClampType1, typename ClampType2>
-    requires TypeConvertibleTo<ClampType, ClampType1, ClampType2> FORCE_INLINE static ClampType
-        clampInternal(const ClampType &value, const ClampType1 &min, const ClampType2 &max)
+    requires TypeConvertibleTo<ClampType, ClampType1, ClampType2>
+    FORCE_INLINE static ClampType clampInternal(const ClampType &value, const ClampType1 &min, const ClampType2 &max)
     {
         return MathHelper<ClampType>::clamp(value, ClampType(min), ClampType(max));
     }

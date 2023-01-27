@@ -95,7 +95,8 @@ template <typename AwaitableType, typename = void>
 struct HasAwaitTransformInPromise : std::false_type
 {};
 template <typename AwaitableType>
-requires HasPromiseType<AwaitableType>::value struct HasAwaitTransformInPromise<
+requires HasPromiseType<AwaitableType>::value
+struct HasAwaitTransformInPromise<
     AwaitableType, std::void_t<decltype(std::declval<typename std::remove_cvref_t<AwaitableType>::promise_type>()
                                             .await_transform(std::declval<std::remove_cvref_t<AwaitableType> &>()))>> : std::true_type
 {};
@@ -115,7 +116,8 @@ struct GetAwaiterTypeFromCoawait
     using type = AwaitableType;
 };
 template <typename AwaitableType>
-requires HasCoAwait<AwaitableType>::value struct GetAwaiterTypeFromCoawait<AwaitableType>
+requires HasCoAwait<AwaitableType>::value
+struct GetAwaiterTypeFromCoawait<AwaitableType>
 {
     using type = decltype(std::declval<AwaitableType>().operator co_await());
 };
@@ -126,7 +128,8 @@ struct GetAwaiterType
     using type = std::remove_cvref_t<typename GetAwaiterTypeFromCoawait<AwaitableType>::type>;
 };
 template <typename AwaitableType>
-requires HasAwaitTransformInPromise<AwaitableType>::value struct GetAwaiterType<AwaitableType>
+requires HasAwaitTransformInPromise<AwaitableType>::value
+struct GetAwaiterType<AwaitableType>
 {
     using AwaitableTypeName = std::remove_cvref_t<AwaitableType>;
     using type = std::remove_cvref_t<typename GetAwaiterTypeFromCoawait<
@@ -174,8 +177,8 @@ public:
     CoroutineReturnStorage() = default;
     CoroutineReturnStorage(CoroutineReturnStorage &&) = default;
     CoroutineReturnStorage(const CoroutineReturnStorage &) = default;
-    CoroutineReturnStorage &operator=(CoroutineReturnStorage &&) = default;
-    CoroutineReturnStorage &operator=(const CoroutineReturnStorage &) = default;
+    CoroutineReturnStorage &operator= (CoroutineReturnStorage &&) = default;
+    CoroutineReturnStorage &operator= (const CoroutineReturnStorage &) = default;
 
     template <typename AnyType>
     CoroutineReturnStorage(AnyType &&value)
@@ -183,13 +186,13 @@ public:
     {}
 
     template <std::assignable_from<Type> AnyType>
-    CoroutineReturnStorage &operator=(AnyType &&value)
+    CoroutineReturnStorage &operator= (AnyType &&value)
     {
         returnValue = value;
         return *this;
     }
 
-    constexpr operator Type() const noexcept { return returnValue; }
+    constexpr operator Type () const noexcept { return returnValue; }
 
     [[nodiscard]] constexpr RefType get() noexcept { return returnValue; }
 
@@ -214,20 +217,20 @@ public:
     CoroutineReturnStorage() = default;
     CoroutineReturnStorage(CoroutineReturnStorage &&) = default;
     CoroutineReturnStorage(const CoroutineReturnStorage &) = default;
-    CoroutineReturnStorage &operator=(CoroutineReturnStorage &&) = default;
-    CoroutineReturnStorage &operator=(const CoroutineReturnStorage &) = default;
+    CoroutineReturnStorage &operator= (CoroutineReturnStorage &&) = default;
+    CoroutineReturnStorage &operator= (const CoroutineReturnStorage &) = default;
 
     CoroutineReturnStorage(ReturnType value)
         : returnValue(&value)
     {}
 
-    CoroutineReturnStorage &operator=(ReturnType value)
+    CoroutineReturnStorage &operator= (ReturnType value)
     {
         returnValue = &value;
         return *this;
     }
 
-    constexpr operator ReturnType() const noexcept { return *returnValue; }
+    constexpr operator ReturnType () const noexcept { return *returnValue; }
 
     [[nodiscard]] constexpr RefType get() const noexcept
     {
@@ -255,19 +258,19 @@ public:
     CoroutineReturnStorage() = default;
     CoroutineReturnStorage(CoroutineReturnStorage &&) = default;
     CoroutineReturnStorage(const CoroutineReturnStorage &) = default;
-    CoroutineReturnStorage &operator=(CoroutineReturnStorage &&) = default;
-    CoroutineReturnStorage &operator=(const CoroutineReturnStorage &) = default;
+    CoroutineReturnStorage &operator= (CoroutineReturnStorage &&) = default;
+    CoroutineReturnStorage &operator= (const CoroutineReturnStorage &) = default;
 
     template <typename AnyType>
     CoroutineReturnStorage(AnyType &&value)
     {}
     template <typename AnyType>
-    CoroutineReturnStorage &operator=(AnyType &&value)
+    CoroutineReturnStorage &operator= (AnyType &&value)
     {
         return *this;
     }
 
-    constexpr operator void() const noexcept {}
+    constexpr operator void () const noexcept {}
 
     constexpr RefType get() noexcept { return {}; }
 };
@@ -277,7 +280,7 @@ public:
  */
 struct CoroutineDestroyer
 {
-    void operator()(void *ptr) const noexcept { std::coroutine_handle<>::from_address(ptr).destroy(); }
+    void operator() (void *ptr) const noexcept { std::coroutine_handle<>::from_address(ptr).destroy(); }
 };
 
 } // namespace copat

@@ -383,7 +383,9 @@ std::vector<std::pair<LibHandle, LibraryData>> ModuleManager::getAllModuleData()
         data.name = PathFunctions::stripExtension(data.name);
 
         if (loadedLibraries.find(data.name) != loadedLibraries.end())
+        {
             continue;
+        }
 
         LOG_DEBUG(
             "ModuleManager", "System loaded module name : %s, Image : %s, Module size : %d", data.name.getChar(), data.imgPath.getChar(),

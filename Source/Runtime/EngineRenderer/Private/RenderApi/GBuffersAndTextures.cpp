@@ -54,7 +54,7 @@ SamplerRef GlobalBuffers::shadowFiltering = nullptr;
 std::pair<BufferResourceRef, BufferResourceRef> GlobalBuffers::quadRectVertsInds{ nullptr, nullptr };
 std::pair<BufferResourceRef, BufferResourceRef> GlobalBuffers::lineGizmoVertsInds{ nullptr, nullptr };
 
-bool FramebufferFormat::operator==(const FramebufferFormat &otherFormat) const
+bool FramebufferFormat::operator== (const FramebufferFormat &otherFormat) const
 {
     bool isEqual = rpFormat == otherFormat.rpFormat;
 
@@ -77,7 +77,7 @@ bool FramebufferFormat::operator==(const FramebufferFormat &otherFormat) const
     return isEqual;
 }
 
-bool FramebufferFormat::operator<(const FramebufferFormat &otherFormat) const
+bool FramebufferFormat::operator< (const FramebufferFormat &otherFormat) const
 {
     if (rpFormat == otherFormat.rpFormat && rpFormat == ERenderPassFormat::Generic)
     {

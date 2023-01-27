@@ -12,7 +12,7 @@
 #include "Widgets/WgWorldImGuiLayer.h"
 #include "Widgets/ImGui/ImGuiLib/imgui.h"
 
-void WgWorldImGuiLayer::draw(ImGuiDrawInterface */*drawInterface*/)
+void WgWorldImGuiLayer::draw(ImGuiDrawInterface * /*drawInterface*/)
 {
     if (ImGui::Begin("World"))
     {}

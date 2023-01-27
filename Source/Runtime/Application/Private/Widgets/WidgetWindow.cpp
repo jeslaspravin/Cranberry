@@ -190,7 +190,7 @@ EInputHandleState WgWindow::analogKey(AnalogStates::StateKeyType key, AnalogStat
     return EInputHandleState::NotHandled;
 }
 
-void WgWindow::mouseEnter(Short2D /*absPos*/, Short2D /*widgetRelPos*/, const InputSystem */*inputSystem*/) {}
+void WgWindow::mouseEnter(Short2D /*absPos*/, Short2D /*widgetRelPos*/, const InputSystem * /*inputSystem*/) {}
 
 void WgWindow::mouseMoved(Short2D absPos, Short2D /*widgetRelPos*/, const InputSystem *inputSystem)
 {

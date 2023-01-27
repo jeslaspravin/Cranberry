@@ -79,14 +79,14 @@
 #define MAKE_TYPE_NONCOPY_NONMOVE(TypeName)                                                                                                    \
     TypeName(TypeName &&) = delete;                                                                                                            \
     TypeName(const TypeName &) = delete;                                                                                                       \
-    TypeName &operator=(TypeName &&) = delete;                                                                                                 \
-    TypeName &operator=(const TypeName &) = delete;
+    TypeName &operator= (TypeName &&) = delete;                                                                                                \
+    TypeName &operator= (const TypeName &) = delete;
 
 #define MAKE_TYPE_DEFAULT_COPY_MOVE(TypeName)                                                                                                  \
     TypeName(TypeName &&) = default;                                                                                                           \
     TypeName(const TypeName &) = default;                                                                                                      \
-    TypeName &operator=(TypeName &&) = default;                                                                                                \
-    TypeName &operator=(const TypeName &) = default;
+    TypeName &operator= (TypeName &&) = default;                                                                                               \
+    TypeName &operator= (const TypeName &) = default;
 
 // If only one bit set in this unsigned integer
 #define ONE_BIT_SET(FlagStatement) ((FlagStatement) && !((FlagStatement) & ((FlagStatement)-1)))

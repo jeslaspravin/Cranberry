@@ -72,7 +72,7 @@ void AssetManager::loadUnderPathAsync(const String &scanPath)
 }
 
 copat::JobSystemReturnableTask<std::vector<AssetBase *>, true, copat::EJobThreadType::WorkerThreads>
-    AssetManager::loadAssetAsync(AssetHeader header)
+AssetManager::loadAssetAsync(AssetHeader header)
 {
     StopWatch loadTime;
     std::vector<AssetBase *> assets = loadAsset(header);

@@ -26,8 +26,8 @@ public:
     WindowsFile(WindowsFile &&otherFile);
     WindowsFile(const WindowsFile &otherFile);
     ~WindowsFile();
-    void operator=(const WindowsFile &otherFile);
-    void operator=(WindowsFile &&otherFile);
+    void operator= (const WindowsFile &otherFile);
+    void operator= (WindowsFile &&otherFile);
 
     void flush() const override;
 

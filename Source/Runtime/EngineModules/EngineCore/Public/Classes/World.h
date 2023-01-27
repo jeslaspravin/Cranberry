@@ -137,8 +137,8 @@ public:
     bool mergeWorld(World *otherWorld, bool bMoveActors);
 
     // Calling in editor worlds is not efficient
-    void getComponentsAttachedTo(std::vector<TransformComponent *> &outAttaches, const TransformComponent *component, bool bRecurse = false)
-        const;
+    void
+    getComponentsAttachedTo(std::vector<TransformComponent *> &outAttaches, const TransformComponent *component, bool bRecurse = false) const;
 
     bool hasWorldTf(const TransformComponent *component) const;
     const Transform3D &getWorldTf(const TransformComponent *component) const;

@@ -65,7 +65,7 @@ struct StoreTypeOffsets
 {
     using T = ParamTypeToStackType<Type>;
 
-    FORCE_INLINE void operator()(UserType *data) const
+    FORCE_INLINE void operator() (UserType *data) const
     {
         SizeT offset = Math::alignByUnsafe(data->size, alignof(T));
         data->offsetsPtr[data->idx] = offset;
@@ -182,7 +182,7 @@ public:
 
     template <bool bIsConst, typename ClassType, typename ObjectType, typename RetType, typename... Args, SizeT... Indices>
     static RetType
-        invoke(const ClassFunction<bIsConst, ClassType, RetType, Args...> &func, ObjectType &&object, uint8 *data, SizeT /*size*/, std::index_sequence<Indices...>)
+    invoke(const ClassFunction<bIsConst, ClassType, RetType, Args...> &func, ObjectType &&object, uint8 *data, SizeT /*size*/, std::index_sequence<Indices...>)
     {
         return func(object, popAnArg<Indices>(data)...);
     }
@@ -211,7 +211,7 @@ RetType invoke(const FuncType<RetType, Args...> &func, uint8 *data, SizeT byteSi
     );
 }
 template <template <typename RetType, typename... Params> typename FuncType, typename RetType>
-RetType invoke(const FuncType<RetType> &func, uint8 */*data*/, SizeT /*byteSize*/)
+RetType invoke(const FuncType<RetType> &func, uint8 * /*data*/, SizeT /*byteSize*/)
 {
     return func();
 }

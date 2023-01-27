@@ -104,7 +104,9 @@ constexpr uint32 ShaderParameterUtility::getArrayElementCount(
 )
 {
     if (arraySize.empty())
+    {
         return 0;
+    }
 
     uint32 linearCount = 1;
     for (uint32 i = 0; i < MaxDimension && i < arraySize.size(); ++i)

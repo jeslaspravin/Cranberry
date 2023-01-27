@@ -38,9 +38,9 @@ public:
         , bitMask(mask)
     {}
 
-    CONST_EXPR operator bool() const noexcept { return bitElement ? BIT_SET(*bitElement, bitMask) : false; }
+    CONST_EXPR operator bool () const noexcept { return bitElement ? BIT_SET(*bitElement, bitMask) : false; }
 
-    CONST_EXPR BitReference &operator=(bool bValue) noexcept
+    CONST_EXPR BitReference &operator= (bool bValue) noexcept
     {
         if (bitElement)
         {
@@ -49,7 +49,7 @@ public:
         return *this;
     }
 
-    CONST_EXPR bool operator!=(const BitReference &other) const noexcept
+    CONST_EXPR bool operator!= (const BitReference &other) const noexcept
     {
         return bitElement != other->bitElement || bitMask != other->bitMask;
     }
@@ -108,8 +108,8 @@ public:
     BitArray() = default;
     BitArray(const BitArray &) = default;
     BitArray(BitArray &&) = default;
-    BitArray &operator=(const BitArray &) = default;
-    BitArray &operator=(BitArray &&) = default;
+    BitArray &operator= (const BitArray &) = default;
+    BitArray &operator= (BitArray &&) = default;
 
     CONST_EXPR BitArray(SizeT initialSize) noexcept
         : bitsCount(initialSize)
@@ -119,14 +119,14 @@ public:
         : bitsCount(initList.size() * BITS_PER_ELEMENT)
         , bits(initList)
     {}
-    CONST_EXPR BitArray(std::initializer_list<bool> initList) noexcept { this->operator=(initList); }
-    CONST_EXPR BitArray &operator=(std::initializer_list<value_type> initList) noexcept
+    CONST_EXPR BitArray(std::initializer_list<bool> initList) noexcept { this->operator= (initList); }
+    CONST_EXPR BitArray &operator= (std::initializer_list<value_type> initList) noexcept
     {
         bitsCount = initList.size() * BITS_PER_ELEMENT;
         bits = initList;
         return (*this);
     }
-    CONST_EXPR BitArray &operator=(std::initializer_list<bool> initList) noexcept
+    CONST_EXPR BitArray &operator= (std::initializer_list<bool> initList) noexcept
     {
         bitsCount = initList.size();
         bits.resize(arraySizeForBits(initList.size()), 0);
@@ -156,7 +156,7 @@ public:
     }
 
     // Element access
-    CONST_EXPR const_reference operator[](SizeT bitIdx) const noexcept
+    CONST_EXPR const_reference operator[] (SizeT bitIdx) const noexcept
     {
         debugAssert(bitIdx < bitsCount);
 
@@ -164,7 +164,7 @@ public:
         ArraySizeType arrayIdx = bitIdxToArrayIdx(bitOffset, bitIdx);
         return BIT_SET(bits[arrayIdx], INDEX_TO_FLAG_MASK(bitOffset));
     }
-    CONST_EXPR reference operator[](SizeT bitIdx) noexcept
+    CONST_EXPR reference operator[] (SizeT bitIdx) noexcept
     {
         debugAssert(bitIdx < bitsCount);
 
@@ -175,35 +175,43 @@ public:
     CONST_EXPR const_reference at(SizeT bitIdx) const noexcept
     {
         fatalAssertf(bitIdx < bitsCount, "Accessing out of index %llu", bitIdx);
-        return this->operator[](bitIdx);
+        return this->operator[] (bitIdx);
     }
     CONST_EXPR const_reference front() const noexcept
     {
         if (empty())
+        {
             return false;
+        }
 
         return BIT_SET(bits[0], INDEX_TO_FLAG_MASK(0));
     }
     CONST_EXPR reference front(SizeT bitIdx) noexcept
     {
         if (empty())
+        {
             return reference();
+        }
 
         return reference(&bits[0], INDEX_TO_FLAG_MASK(0));
     }
     CONST_EXPR const_reference back() const noexcept
     {
         if (size() == 0)
+        {
             return false;
+        }
 
-        return this->operator[](bitsCount - 1);
+        return this->operator[] (bitsCount - 1);
     }
     CONST_EXPR reference back(SizeT bitIdx) noexcept
     {
         if (empty())
+        {
             return reference();
+        }
 
-        return this->operator[](bitsCount - 1);
+        return this->operator[] (bitsCount - 1);
     }
     CONST_EXPR pointer data() noexcept { return bits.data(); }
     CONST_EXPR const_pointer data() const noexcept { return bits.data(); }
@@ -275,7 +283,9 @@ public:
     CONST_EXPR void pop_back() noexcept
     {
         if (bitsCount == 0)
+        {
             return;
+        }
 
         --bitsCount;
 
@@ -303,7 +313,9 @@ public:
     CONST_EXPR void append(std::initializer_list<value_type> initList)
     {
         if (initList.size() == 0)
+        {
             return;
+        }
 
         BitIdxType bitStartIdx;
         ArraySizeType arrayIdx = bitIdxToArrayIdx(bitStartIdx, bitsCount);
@@ -327,7 +339,9 @@ public:
     CONST_EXPR void append(std::initializer_list<bool> initList)
     {
         if (initList.size() == 0)
+        {
             return;
+        }
 
         SizeT oldBitsCount = bitsCount;
         resize(oldBitsCount + initList.size());
@@ -649,37 +663,37 @@ public:
     CONST_EXPR BitArrayIterator() = delete;
     CONST_EXPR BitArrayIterator(const BitArrayIterator &) = default;
     CONST_EXPR BitArrayIterator(BitArrayIterator &&) = default;
-    CONST_EXPR BitArrayIterator &operator=(const BitArrayIterator &) = default;
-    CONST_EXPR BitArrayIterator &operator=(BitArrayIterator &&) = default;
+    CONST_EXPR BitArrayIterator &operator= (const BitArrayIterator &) = default;
+    CONST_EXPR BitArrayIterator &operator= (BitArrayIterator &&) = default;
     CONST_EXPR BitArrayIterator(BitVectorItr itr, BitIdxType bitIdx)
         : bitElemItr(itr)
         , bitRefIdx(bitIdx)
     {}
 
     CONST_EXPR pointer operator->() noexcept { return Traits::getValue(bitElemItr, bitRefIdx); }
-    NODISCARD CONST_EXPR reference operator*() noexcept { return Traits::getValue(bitElemItr, bitRefIdx); }
+    NODISCARD CONST_EXPR reference operator* () noexcept { return Traits::getValue(bitElemItr, bitRefIdx); }
     CONST_EXPR const_pointer operator->() const noexcept { return Traits::getValue(bitElemItr, bitRefIdx); }
-    NODISCARD CONST_EXPR const_reference operator*() const noexcept { return Traits::getValue(bitElemItr, bitRefIdx); }
+    NODISCARD CONST_EXPR const_reference operator* () const noexcept { return Traits::getValue(bitElemItr, bitRefIdx); }
 
-    CONST_EXPR bool operator!=(const BitArrayIterator &other) const noexcept
+    CONST_EXPR bool operator!= (const BitArrayIterator &other) const noexcept
     {
         return bitElemItr != other.bitElemItr || bitRefIdx != other.bitRefIdx;
     }
 
-    CONST_EXPR BitArrayIterator &operator++() noexcept
+    CONST_EXPR BitArrayIterator &operator++ () noexcept
     {
         addOffset(1);
         return *this;
     }
 
-    NODISCARD CONST_EXPR BitArrayIterator operator++(int) noexcept
+    NODISCARD CONST_EXPR BitArrayIterator operator++ (int) noexcept
     {
         BitArrayIterator retVal(*this);
-        this->operator++();
+        this->operator++ ();
         return retVal;
     }
 
-    CONST_EXPR BitArrayIterator &operator--() noexcept
+    CONST_EXPR BitArrayIterator &operator-- () noexcept
     {
         if (bitRefIdx == 0)
         {
@@ -693,14 +707,14 @@ public:
         return *this;
     }
 
-    NODISCARD CONST_EXPR BitArrayIterator operator--(int) noexcept
+    NODISCARD CONST_EXPR BitArrayIterator operator-- (int) noexcept
     {
         BitArrayIterator retVal(*this);
-        this->operator--();
+        this->operator-- ();
         return retVal;
     }
 
-    CONST_EXPR BitArrayIterator &operator+=(const difference_type off) noexcept
+    CONST_EXPR BitArrayIterator &operator+= (const difference_type off) noexcept
     {
         if (off < 0)
         {
@@ -713,28 +727,28 @@ public:
         return *this;
     }
 
-    NODISCARD CONST_EXPR BitArrayIterator operator+(const difference_type off) const noexcept
+    NODISCARD CONST_EXPR BitArrayIterator operator+ (const difference_type off) const noexcept
     {
         BitArrayIterator retVal(*this);
         retVal += off;
         return retVal;
     }
 
-    CONST_EXPR BitArrayIterator &operator-=(const difference_type off) noexcept
+    CONST_EXPR BitArrayIterator &operator-= (const difference_type off) noexcept
     {
         (*this) += (-off);
         return *this;
     }
 
-    NODISCARD CONST_EXPR BitArrayIterator operator-(const difference_type off) const noexcept
+    NODISCARD CONST_EXPR BitArrayIterator operator- (const difference_type off) const noexcept
     {
         BitArrayIterator retVal(*this);
         retVal -= off;
         return retVal;
     }
-    NODISCARD CONST_EXPR difference_type operator-(const BitArrayIterator &other) const noexcept;
+    NODISCARD CONST_EXPR difference_type operator- (const BitArrayIterator &other) const noexcept;
 
-    NODISCARD CONST_EXPR value_type operator[](const difference_type off) const noexcept
+    NODISCARD CONST_EXPR value_type operator[] (const difference_type off) const noexcept
     {
         BitArrayIterator retVal(*this);
         retVal += off;
@@ -772,7 +786,7 @@ NODISCARD CONST_EXPR typename BitArray<ElementType>::const_iterator BitArray<Ele
 
 template <typename BitArrayType, bool bIsConst>
 NODISCARD CONST_EXPR typename BitArrayIterator<BitArrayType, bIsConst>::difference_type
-    BitArrayIterator<BitArrayType, bIsConst>::operator-(const BitArrayIterator &other) const noexcept
+BitArrayIterator<BitArrayType, bIsConst>::operator- (const BitArrayIterator &other) const noexcept
 {
     ArrayDiffType arrayIdxDiff = bitElemItr - other.bitElemItr;
     BitIdxDiffType bitDiff = bitRefIdx - other.bitRefIdx;

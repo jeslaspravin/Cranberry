@@ -57,13 +57,13 @@ Vector3D::Vector3D(const Vector2D &xy, float z)
     : value(xy.x(), xy.y(), z)
 {}
 
-Vector3D &Vector3D::operator=(const Vector3D &other)
+Vector3D &Vector3D::operator= (const Vector3D &other)
 {
     value = other.value;
     return *this;
 }
 
-Vector3D &Vector3D::operator=(Vector3D &&other)
+Vector3D &Vector3D::operator= (Vector3D &&other)
 {
     value = std::move(other.value);
     return *this;
@@ -81,85 +81,85 @@ float &Vector3D::z() { return value.z; }
 
 float Vector3D::z() const { return value.z; }
 
-float Vector3D::operator[](uint32 index) const
+float Vector3D::operator[] (uint32 index) const
 {
     debugAssert(index < 3);
     return value[index];
 }
 
-float &Vector3D::operator[](uint32 index)
+float &Vector3D::operator[] (uint32 index)
 {
     debugAssert(index < 3);
     return value[index];
 }
 
-bool Vector3D::operator==(const Vector3D &b) const { return isSame(b); }
+bool Vector3D::operator== (const Vector3D &b) const { return isSame(b); }
 
-float Vector3D::operator|(const Vector3D &b) const { return glm::dot(value, b.value); }
+float Vector3D::operator| (const Vector3D &b) const { return glm::dot(value, b.value); }
 
-Vector3D Vector3D::operator^(const Vector3D &b) const { return Vector3D(glm::cross(value, b.value)); }
+Vector3D Vector3D::operator^ (const Vector3D &b) const { return Vector3D(glm::cross(value, b.value)); }
 
-Vector3D Vector3D::operator*(const Vector3D &b) const { return Vector3D(value * b.value); }
+Vector3D Vector3D::operator* (const Vector3D &b) const { return Vector3D(value * b.value); }
 
-Vector3D &Vector3D::operator*=(const Vector3D &b)
+Vector3D &Vector3D::operator*= (const Vector3D &b)
 {
     value *= b.value;
     return *this;
 }
 
-Vector3D Vector3D::operator*(float scalar) const { return Vector3D(value * scalar); }
+Vector3D Vector3D::operator* (float scalar) const { return Vector3D(value * scalar); }
 
-Vector3D &Vector3D::operator*=(float scalar)
+Vector3D &Vector3D::operator*= (float scalar)
 {
     value *= scalar;
     return *this;
 }
 
-Vector3D Vector3D::operator/(const Vector3D &b) const { return Vector3D(value / b.value); }
+Vector3D Vector3D::operator/ (const Vector3D &b) const { return Vector3D(value / b.value); }
 
-Vector3D &Vector3D::operator/=(const Vector3D &b)
+Vector3D &Vector3D::operator/= (const Vector3D &b)
 {
     value /= b.value;
     return *this;
 }
 
-Vector3D Vector3D::operator/(float scalar) const { return Vector3D(value / scalar); }
+Vector3D Vector3D::operator/ (float scalar) const { return Vector3D(value / scalar); }
 
-Vector3D &Vector3D::operator/=(float scalar)
+Vector3D &Vector3D::operator/= (float scalar)
 {
     value /= scalar;
     return *this;
 }
 
-Vector3D Vector3D::operator-(const Vector3D &b) const { return Vector3D(value - b.value); }
+Vector3D Vector3D::operator- (const Vector3D &b) const { return Vector3D(value - b.value); }
 
-Vector3D &Vector3D::operator-=(const Vector3D &b)
+Vector3D &Vector3D::operator-= (const Vector3D &b)
 {
     value -= b.value;
     return *this;
 }
 
-Vector3D Vector3D::operator-(float scalar) const { return Vector3D(value - scalar); }
+Vector3D Vector3D::operator- (float scalar) const { return Vector3D(value - scalar); }
 
-Vector3D &Vector3D::operator-=(float scalar)
+Vector3D &Vector3D::operator-= (float scalar)
 {
     value -= scalar;
     return *this;
 }
 
-Vector3D Vector3D::operator-() const { return Vector3D(-value); }
+Vector3D Vector3D::operator- () const { return Vector3D(-value); }
 
-Vector3D Vector3D::operator+(const Vector3D &b) const { return Vector3D(value + b.value); }
+Vector3D Vector3D::operator+ (const Vector3D &b) const { return Vector3D(value + b.value); }
 
-Vector3D &Vector3D::operator+=(const Vector3D &b)
+Vector3D &Vector3D::operator+= (const Vector3D &b)
 {
     value += b.value;
     return *this;
 }
 
-Vector3D Vector3D::operator+(float scalar) const { return Vector3D(value + scalar); }
+Vector3D Vector3D::operator+ (float scalar) const { return Vector3D(value + scalar); }
 
-Vector3D &Vector3D::operator+=(float scalar)
+Vector3D &Vector3D::operator+= (float scalar)
 {
     value += scalar;
     return *this;

@@ -33,7 +33,7 @@ public:
         SlotGenerationIdxType genIdx;
         SlotAllocIdxType allocIdx;
 
-        FORCE_INLINE bool operator==(const AllocHandle &rhs) const { return genIdx == rhs.genIdx && allocIdx == rhs.allocIdx; }
+        FORCE_INLINE bool operator== (const AllocHandle &rhs) const { return genIdx == rhs.genIdx && allocIdx == rhs.allocIdx; }
     };
 
 private:
@@ -114,7 +114,9 @@ public:
         // Double freeing?
         debugAssert(allocValidity[allocIdx]);
         if (ptr != getAllocAt(allocIdx))
+        {
             return;
+        }
 
         SlotIdxType slotIdx;
         SizeT poolIdx = allocIdxToSlotIdx(slotIdx, allocIdx);

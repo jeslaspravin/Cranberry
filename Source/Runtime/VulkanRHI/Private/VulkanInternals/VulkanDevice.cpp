@@ -225,7 +225,7 @@ bool VulkanDevice::collectDeviceExtensions(std::vector<const char *> &extensions
 }
 
 #if DEV_BUILD
-void VulkanDevice::collectDeviceLayers(std::vector<const char *> &/*layers*/) const {}
+void VulkanDevice::collectDeviceLayers(std::vector<const char *> & /*layers*/) const {}
 #endif
 
 void VulkanDevice::loadDeviceFunctions()
@@ -578,7 +578,7 @@ VulkanDevice::VulkanDevice(VkPhysicalDevice &&device)
 
 VulkanDevice::VulkanDevice(VulkanDevice &&rVulkanDevice) { MOVE_IMPL(); }
 
-void VulkanDevice::operator=(VulkanDevice &&rVulkanDevice) { MOVE_IMPL(); }
+void VulkanDevice::operator= (VulkanDevice &&rVulkanDevice) { MOVE_IMPL(); }
 #undef MOVE_IMPL
 
 #define COPY_IMPL()                                                                                                                            \
@@ -607,7 +607,7 @@ void VulkanDevice::operator=(VulkanDevice &&rVulkanDevice) { MOVE_IMPL(); }
 
 VulkanDevice::VulkanDevice(const VulkanDevice &otherDevice) { COPY_IMPL(); }
 
-void VulkanDevice::operator=(const VulkanDevice &otherDevice) { COPY_IMPL(); }
+void VulkanDevice::operator= (const VulkanDevice &otherDevice) { COPY_IMPL(); }
 #undef COPY_IMPL
 
 VulkanDevice::~VulkanDevice()
@@ -622,7 +622,7 @@ VulkanDevice::~VulkanDevice()
 template <typename QueueResType>
 struct GetQueueCreateInfo
 {
-    VkDeviceQueueCreateInfo operator()(const QueueResType *queueRes)
+    VkDeviceQueueCreateInfo operator() (const QueueResType *queueRes)
     {
         CREATE_QUEUE_INFO(queueCreateInfo);
         queueRes->getQueueCreateInfo(queueCreateInfo);
@@ -633,7 +633,7 @@ struct GetQueueCreateInfo
 template <typename QueueResType>
 struct CacheQueues
 {
-    void operator()(QueueResType *queueRes, VkDevice logicalDevice, PFN_vkGetDeviceQueue funcPtr)
+    void operator() (QueueResType *queueRes, VkDevice logicalDevice, PFN_vkGetDeviceQueue funcPtr)
     {
         queueRes->cacheQueues(logicalDevice, funcPtr);
     }

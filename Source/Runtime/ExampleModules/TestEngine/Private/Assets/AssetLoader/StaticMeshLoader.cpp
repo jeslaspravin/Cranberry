@@ -44,7 +44,7 @@ template <>
 struct std::hash<tinyobj::index_t>
 {
 
-    size_t operator()(const tinyobj::index_t keyval) const noexcept
+    size_t operator() (const tinyobj::index_t keyval) const noexcept
     {
         size_t hashVal = std::hash<int32>{}(keyval.vertex_index);
         HashUtility::hashCombine(hashVal, keyval.normal_index);
@@ -55,7 +55,7 @@ struct std::hash<tinyobj::index_t>
 template <>
 struct std::equal_to<tinyobj::index_t>
 {
-    constexpr bool operator()(const tinyobj::index_t &lhs, const tinyobj::index_t &rhs) const
+    constexpr bool operator() (const tinyobj::index_t &lhs, const tinyobj::index_t &rhs) const
     {
         return lhs.vertex_index == rhs.vertex_index && lhs.normal_index == rhs.normal_index && lhs.texcoord_index == rhs.texcoord_index;
     }
@@ -182,9 +182,7 @@ void fillVertexInfo(StaticMeshVertex &vertexData, const tinyobj::attrib_t &attri
     //     , attrib.colors[index.vertex_index * 3 + 2], 1.0f);
 }
 
-Vector3D StaticMeshLoader::getFaceNormal(
-    uint32 index0, uint32 index1, uint32 index2, const std::vector<StaticMeshVertex> &verticesData
-) const
+Vector3D StaticMeshLoader::getFaceNormal(uint32 index0, uint32 index1, uint32 index2, const std::vector<StaticMeshVertex> &verticesData) const
 {
     Vector4D temp1 = verticesData[index1].position - verticesData[index0].position;
     Vector4D temp2 = verticesData[index2].position - verticesData[index0].position;

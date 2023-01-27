@@ -177,19 +177,19 @@ private:
 #undef SERIALIZE_VIRTUAL
 
 template <ArchiveTypeName ArchiveType, typename ValueType>
-ArchiveType &operator<<(ArchiveType &archive, ValueType &value)
+ArchiveType &operator<< (ArchiveType &archive, ValueType &value)
 {
     return static_cast<ArchiveType &>(archive.serialize(value));
 }
 
 template <ArchiveTypeName ArchiveType, typename KeyType, typename ValueType>
-ArchiveType &operator<<(ArchiveType &archive, std::pair<KeyType, ValueType> &value)
+ArchiveType &operator<< (ArchiveType &archive, std::pair<KeyType, ValueType> &value)
 {
     return archive << value.first << value.second;
 }
 
 template <ArchiveTypeName ArchiveType, typename ValueType, typename AllocType>
-ArchiveType &operator<<(ArchiveType &archive, std::vector<ValueType, AllocType> &value)
+ArchiveType &operator<< (ArchiveType &archive, std::vector<ValueType, AllocType> &value)
 {
     SizeT len = value.size();
     archive << len;
@@ -206,7 +206,7 @@ ArchiveType &operator<<(ArchiveType &archive, std::vector<ValueType, AllocType> 
 }
 
 template <ArchiveTypeName ArchiveType, typename KeyType, typename... Types>
-ArchiveType &operator<<(ArchiveType &archive, std::set<KeyType, Types...> &value)
+ArchiveType &operator<< (ArchiveType &archive, std::set<KeyType, Types...> &value)
 {
     SizeT len = value.size();
     archive << len;
@@ -231,7 +231,7 @@ ArchiveType &operator<<(ArchiveType &archive, std::set<KeyType, Types...> &value
     return archive;
 }
 template <ArchiveTypeName ArchiveType, typename KeyType, typename... Types>
-ArchiveType &operator<<(ArchiveType &archive, std::unordered_set<KeyType, Types...> &value)
+ArchiveType &operator<< (ArchiveType &archive, std::unordered_set<KeyType, Types...> &value)
 {
     SizeT len = value.size();
     archive << len;
@@ -258,7 +258,7 @@ ArchiveType &operator<<(ArchiveType &archive, std::unordered_set<KeyType, Types.
 }
 
 template <ArchiveTypeName ArchiveType, typename KeyType, typename ValueType, typename... Types>
-ArchiveType &operator<<(ArchiveType &archive, std::map<KeyType, ValueType, Types...> &value)
+ArchiveType &operator<< (ArchiveType &archive, std::map<KeyType, ValueType, Types...> &value)
 {
     SizeT len = value.size();
     archive << len;
@@ -284,7 +284,7 @@ ArchiveType &operator<<(ArchiveType &archive, std::map<KeyType, ValueType, Types
     return archive;
 }
 template <ArchiveTypeName ArchiveType, typename KeyType, typename ValueType, typename... Types>
-ArchiveType &operator<<(ArchiveType &archive, std::unordered_map<KeyType, ValueType, Types...> &value)
+ArchiveType &operator<< (ArchiveType &archive, std::unordered_map<KeyType, ValueType, Types...> &value)
 {
     SizeT len = value.size();
     archive << len;

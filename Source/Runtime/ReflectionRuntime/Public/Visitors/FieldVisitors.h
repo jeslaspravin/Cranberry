@@ -137,7 +137,9 @@ private:
     {
         using IgnoredProps = TL::CreateFromUInts<(uint64)(IgnoredTypes)...>::type;
         if (propInfo.thisProperty == nullptr)
+        {
             propInfo.thisProperty = static_cast<const TypedProperty *>(propInfo.fieldProperty->field);
+        }
 
         switch (propInfo.thisProperty->type)
         {

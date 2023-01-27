@@ -12,7 +12,7 @@
 #include "Widgets/WgConsoleImGuiLayer.h"
 #include "Widgets/ImGui/ImGuiLib/imgui.h"
 
-void WgConsoleImGuiLayer::draw(ImGuiDrawInterface */*drawInterface*/)
+void WgConsoleImGuiLayer::draw(ImGuiDrawInterface * /*drawInterface*/)
 {
     if (ImGui::Begin("Console"))
     {}

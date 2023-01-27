@@ -101,32 +101,32 @@ public:
     {
         markAllOccupied();
     }
-    SparseVector &operator=(const std::vector<ValueType> &values) noexcept
+    SparseVector &operator= (const std::vector<ValueType> &values) noexcept
     {
         elements = values;
         markAllOccupied();
         return (*this);
     }
-    SparseVector &operator=(std::vector<ValueType> &&values) noexcept
+    SparseVector &operator= (std::vector<ValueType> &&values) noexcept
     {
         elements = std::move(values);
         markAllOccupied();
         return (*this);
     }
-    SparseVector &operator=(std::initializer_list<ValueType> values) noexcept
+    SparseVector &operator= (std::initializer_list<ValueType> values) noexcept
     {
         elements = values;
         markAllOccupied();
         return (*this);
     }
 
-    reference operator[](SizeType index) noexcept
+    reference operator[] (SizeType index) noexcept
     {
         fatalAssertf(isValid(index), "Index %llu is invalid", index);
         return elements[index];
     }
 
-    const_reference operator[](SizeType index) const noexcept
+    const_reference operator[] (SizeType index) const noexcept
     {
         fatalAssertf(isValid(index), "Index %llu is invalid", index);
         return elements[index];
@@ -222,8 +222,8 @@ public:
     CONST_EXPR SparseVectorIterator() = delete;
     CONST_EXPR SparseVectorIterator(const SparseVectorIterator &) = default;
     CONST_EXPR SparseVectorIterator(SparseVectorIterator &&) = default;
-    CONST_EXPR SparseVectorIterator &operator=(const SparseVectorIterator &) = default;
-    CONST_EXPR SparseVectorIterator &operator=(SparseVectorIterator &&) = default;
+    CONST_EXPR SparseVectorIterator &operator= (const SparseVectorIterator &) = default;
+    CONST_EXPR SparseVectorIterator &operator= (SparseVectorIterator &&) = default;
     CONST_EXPR SparseVectorIterator(SizeType startIdx, SparseVectorType &sparseVector)
         : idx(startIdx)
         , iteratingVector(&sparseVector)
@@ -241,18 +241,18 @@ public:
         validateItr();
         return &(*iteratingVector)[idx];
     }
-    NODISCARD CONST_EXPR reference operator*() const noexcept
+    NODISCARD CONST_EXPR reference operator* () const noexcept
     {
         validateItr();
         return (*iteratingVector)[idx];
     }
 
-    CONST_EXPR bool operator!=(const SparseVectorIterator &other) const noexcept
+    CONST_EXPR bool operator!= (const SparseVectorIterator &other) const noexcept
     {
         return iteratingVector != other.iteratingVector || idx != other.idx;
     }
 
-    CONST_EXPR SparseVectorIterator &operator++() noexcept
+    CONST_EXPR SparseVectorIterator &operator++ () noexcept
     {
         validateItr();
         while (!iteratingVector->isValid(++idx) && idx < iteratingVector->totalCount())
@@ -261,14 +261,14 @@ public:
         return *this;
     }
 
-    NODISCARD CONST_EXPR SparseVectorIterator operator++(int) noexcept
+    NODISCARD CONST_EXPR SparseVectorIterator operator++ (int) noexcept
     {
         SparseVectorIterator retVal(*this);
-        this->operator++();
+        this->operator++ ();
         return retVal;
     }
 
-    CONST_EXPR SparseVectorIterator &operator--() noexcept
+    CONST_EXPR SparseVectorIterator &operator-- () noexcept
     {
         validateItr();
         while (!iteratingVector->isValid(--idx) && idx > 0)
@@ -277,20 +277,20 @@ public:
         return *this;
     }
 
-    NODISCARD CONST_EXPR SparseVectorIterator operator--(int) noexcept
+    NODISCARD CONST_EXPR SparseVectorIterator operator-- (int) noexcept
     {
         SparseVectorIterator retVal(*this);
-        this->operator--();
+        this->operator-- ();
         return retVal;
     }
 
-    CONST_EXPR SparseVectorIterator &operator+=(const difference_type off) noexcept
+    CONST_EXPR SparseVectorIterator &operator+= (const difference_type off) noexcept
     {
         if (off >= 0)
         {
             while (off != 0)
             {
-                this->operator++();
+                this->operator++ ();
                 off--;
             }
         }
@@ -298,33 +298,33 @@ public:
         {
             while (off != 0)
             {
-                this->operator--();
+                this->operator-- ();
                 off++;
             }
         }
         return *this;
     }
 
-    NODISCARD CONST_EXPR SparseVectorIterator operator+(const difference_type off) const noexcept
+    NODISCARD CONST_EXPR SparseVectorIterator operator+ (const difference_type off) const noexcept
     {
         SparseVectorIterator retVal(*this);
         retVal += off;
         return retVal;
     }
 
-    CONST_EXPR SparseVectorIterator &operator-=(const difference_type off) noexcept
+    CONST_EXPR SparseVectorIterator &operator-= (const difference_type off) noexcept
     {
         (*this) += (-off);
         return *this;
     }
 
-    NODISCARD CONST_EXPR SparseVectorIterator operator-(const difference_type off) const noexcept
+    NODISCARD CONST_EXPR SparseVectorIterator operator- (const difference_type off) const noexcept
     {
         SparseVectorIterator retVal(*this);
         retVal -= off;
         return retVal;
     }
-    NODISCARD CONST_EXPR difference_type operator-(const SparseVectorIterator &other) const noexcept
+    NODISCARD CONST_EXPR difference_type operator- (const SparseVectorIterator &other) const noexcept
     {
         if (other->idx > idx)
         {
@@ -345,7 +345,7 @@ public:
         return diff;
     }
 
-    NODISCARD CONST_EXPR value_type operator[](const difference_type off) const noexcept
+    NODISCARD CONST_EXPR value_type operator[] (const difference_type off) const noexcept
     {
         SparseVectorIterator retVal(*this);
         retVal += off;
@@ -355,28 +355,28 @@ public:
 
 template <typename ElementType, typename SparsityPolicyType>
 NODISCARD CONST_EXPR typename SparseVector<ElementType, SparsityPolicyType>::iterator
-    SparseVector<ElementType, SparsityPolicyType>::begin() noexcept
+SparseVector<ElementType, SparsityPolicyType>::begin() noexcept
 {
     return iterator(0, *this);
 }
 
 template <typename ElementType, typename SparsityPolicyType>
 NODISCARD CONST_EXPR typename SparseVector<ElementType, SparsityPolicyType>::const_iterator
-    SparseVector<ElementType, SparsityPolicyType>::begin() const noexcept
+SparseVector<ElementType, SparsityPolicyType>::begin() const noexcept
 {
     return const_iterator(0, *this);
 }
 
 template <typename ElementType, typename SparsityPolicyType>
 NODISCARD CONST_EXPR typename SparseVector<ElementType, SparsityPolicyType>::const_iterator
-    SparseVector<ElementType, SparsityPolicyType>::end() const noexcept
+SparseVector<ElementType, SparsityPolicyType>::end() const noexcept
 {
     return const_iterator(totalCount(), *this);
 }
 
 template <typename ElementType, typename SparsityPolicyType>
 NODISCARD CONST_EXPR typename SparseVector<ElementType, SparsityPolicyType>::iterator
-    SparseVector<ElementType, SparsityPolicyType>::end() noexcept
+SparseVector<ElementType, SparsityPolicyType>::end() noexcept
 {
     return iterator(totalCount(), *this);
 }

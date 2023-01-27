@@ -33,7 +33,7 @@ PROGRAMCORE_EXPORT TickRep addHours(TickRep tickValue, TimeConvType hours);
 PROGRAMCORE_EXPORT TickRep addDays(TickRep tickValue, TimeConvType days);
 
 PROGRAMCORE_EXPORT TickRep fromMilliSeconds(TickRep milliSeconds);
-FORCE_INLINE CONST_EXPR TickRep fromMicroSeconds(TickRep microSeconds) { return microSeconds; };
+FORCE_INLINE CONST_EXPR TickRep fromMicroSeconds(TickRep microSeconds) { return microSeconds; }
 PROGRAMCORE_EXPORT TickRep fromNanoSeconds(TickRep nanoSeconds);
 
 PROGRAMCORE_EXPORT TickRep fromSeconds(TimeConvType seconds);

@@ -66,7 +66,7 @@ union FieldValuePtr
         : ptr(nullptr)
     {}
 
-    operator bool() const { return (ptr != nullptr); }
+    operator bool () const { return (ptr != nullptr); }
 };
 
 class MemberFieldWrapper : public BaseFieldWrapper

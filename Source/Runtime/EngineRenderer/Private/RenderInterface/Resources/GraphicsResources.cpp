@@ -15,7 +15,7 @@
 #include "Types/Platform/PlatformAssertionErrors.h"
 
 ResourceTypesGraph::TypeNode
-    recursivelyInsert(const GraphicsResourceType *type, const GraphicsResourceType *upUntil, ResourceTypesGraph::TypeNode *childNode = nullptr)
+recursivelyInsert(const GraphicsResourceType *type, const GraphicsResourceType *upUntil, ResourceTypesGraph::TypeNode *childNode = nullptr)
 {
     ResourceTypesGraph::TypeNode newNode;
     newNode.type = type;

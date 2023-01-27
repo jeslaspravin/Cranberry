@@ -236,7 +236,7 @@ public:
     {
         other.ownerCoroutine = nullptr;
     }
-    JobSystemTaskType &operator=(JobSystemTaskType &&other)
+    JobSystemTaskType &operator= (JobSystemTaskType &&other)
     {
         ownerCoroutine = other.ownerCoroutine;
         other.ownerCoroutine = nullptr;
@@ -255,7 +255,7 @@ public:
     // Delete copy and default initializations
     JobSystemTaskType() = delete;
     JobSystemTaskType(const JobSystemTaskType &) = delete;
-    JobSystemTaskType &operator=(const JobSystemTaskType &) = delete;
+    JobSystemTaskType &operator= (const JobSystemTaskType &) = delete;
 
     class PromiseType : public BasePromiseType
     {
@@ -334,7 +334,7 @@ public:
     {
         other.ownerCoroutine = nullptr;
     }
-    JobSystemTaskType &operator=(JobSystemTaskType &&other)
+    JobSystemTaskType &operator= (JobSystemTaskType &&other)
     {
         ownerCoroutine = other.ownerCoroutine;
         other.ownerCoroutine = nullptr;
@@ -353,7 +353,7 @@ public:
     // Delete copy and default initializations
     JobSystemTaskType() = delete;
     JobSystemTaskType(const JobSystemTaskType &) = delete;
-    JobSystemTaskType &operator=(const JobSystemTaskType &) = delete;
+    JobSystemTaskType &operator= (const JobSystemTaskType &) = delete;
 
     class PromiseType : public BasePromiseType
     {
@@ -430,7 +430,7 @@ public:
     JobSystemShareableTaskType(JobSystemShareableTaskType &&other)
         : ownerCoroutinePtr(std::move(other.ownerCoroutinePtr))
     {}
-    JobSystemShareableTaskType &operator=(JobSystemShareableTaskType &&other)
+    JobSystemShareableTaskType &operator= (JobSystemShareableTaskType &&other)
     {
         ownerCoroutinePtr = std::move(other.ownerCoroutinePtr);
         return *this;
@@ -438,7 +438,7 @@ public:
     JobSystemShareableTaskType(const JobSystemShareableTaskType &other)
         : ownerCoroutinePtr(other.ownerCoroutinePtr)
     {}
-    JobSystemShareableTaskType &operator=(const JobSystemShareableTaskType &other)
+    JobSystemShareableTaskType &operator= (const JobSystemShareableTaskType &other)
     {
         ownerCoroutinePtr = other.ownerCoroutinePtr;
         return *this;
@@ -527,7 +527,7 @@ public:
     JobSystemShareableTaskType(JobSystemShareableTaskType &&other)
         : ownerCoroutinePtr(std::move(other.ownerCoroutinePtr))
     {}
-    JobSystemShareableTaskType &operator=(JobSystemShareableTaskType &&other)
+    JobSystemShareableTaskType &operator= (JobSystemShareableTaskType &&other)
     {
         ownerCoroutinePtr = std::move(other.ownerCoroutinePtr);
         return *this;
@@ -535,7 +535,7 @@ public:
     JobSystemShareableTaskType(const JobSystemShareableTaskType &other)
         : ownerCoroutinePtr(other.ownerCoroutinePtr)
     {}
-    JobSystemShareableTaskType &operator=(const JobSystemShareableTaskType &other)
+    JobSystemShareableTaskType &operator= (const JobSystemShareableTaskType &other)
     {
         ownerCoroutinePtr = other.ownerCoroutinePtr;
         return *this;

@@ -54,7 +54,9 @@ bool FileChangesTracker::isTargetOutdated(const String &absPath, const std::vect
 {
     PlatformFile srcFile(absPath);
     if (!srcFile.exists())
+    {
         return false;
+    }
 
     TickRep ts = srcFile.lastWriteTimeStamp();
     String relPath = PathFunctions::toRelativePath(absPath, folderPath);

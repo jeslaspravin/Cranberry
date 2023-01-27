@@ -51,8 +51,8 @@ public:
         Iterator() = delete;
         Iterator(const Iterator &) = default;
         Iterator(Iterator &&) = default;
-        Iterator &operator=(const Iterator &) = default;
-        Iterator &operator=(Iterator &&) = default;
+        Iterator &operator= (const Iterator &) = default;
+        Iterator &operator= (Iterator &&) = default;
         Iterator(const ArrayView &view, SizeT itrIdx)
             : arrayView(&view)
             , idx(itrIdx)
@@ -66,59 +66,59 @@ public:
             return arrayView->dataPtr + arrayView->offset + idx;
         }
 
-        NODISCARD reference operator*() const noexcept
+        NODISCARD reference operator* () const noexcept
         {
             debugAssert(arrayView && idx >= 0 && arrayView->length > idx);
             return *(arrayView->dataPtr + arrayView->offset + idx);
         }
 
-        bool operator!=(const Iterator &other) const noexcept { return arrayView != other.arrayView || idx != other.idx; }
+        bool operator!= (const Iterator &other) const noexcept { return arrayView != other.arrayView || idx != other.idx; }
 
-        Iterator &operator++() noexcept
+        Iterator &operator++ () noexcept
         {
             ++idx;
             return *this;
         }
 
-        NODISCARD Iterator operator++(int) noexcept
+        NODISCARD Iterator operator++ (int) noexcept
         {
             Iterator retVal(*arrayView, idx);
             ++idx;
             return retVal;
         }
 
-        Iterator &operator--() noexcept
+        Iterator &operator-- () noexcept
         {
             --idx;
             return *this;
         }
 
-        NODISCARD Iterator operator--(int) noexcept
+        NODISCARD Iterator operator-- (int) noexcept
         {
             Iterator retVal(*arrayView, idx);
             --idx;
             return retVal;
         }
 
-        Iterator &operator+=(const difference_type off) noexcept
+        Iterator &operator+= (const difference_type off) noexcept
         {
             idx += off;
             return *this;
         }
 
-        NODISCARD Iterator operator+(const difference_type off) const noexcept { return Iterator(*arrayView, idx + off); }
+        NODISCARD Iterator operator+ (const difference_type off) const noexcept { return Iterator(*arrayView, idx + off); }
 
-        Iterator &operator-=(const difference_type off) noexcept
+        Iterator &operator-= (const difference_type off) noexcept
         {
             idx -= off;
             return *this;
         }
 
-        NODISCARD Iterator operator-(const difference_type off) const noexcept { return Iterator(*arrayView, idx - off); }
+        NODISCARD Iterator operator- (const difference_type off) const noexcept { return Iterator(*arrayView, idx - off); }
 
-        NODISCARD difference_type operator-(const Iterator &other) const noexcept { return idx - other.idx; }
+        NODISCARD difference_type operator- (const Iterator &other) const noexcept { return idx - other.idx; }
 
-        NODISCARD reference operator[](const difference_type off) const noexcept
+        NODISCARD reference operator[] (const difference_type off) const noexcept
         {
             debugAssert(arrayView && (idx + off) >= 0 && arrayView->length > (idx + off));
             return *(arrayView->dataPtr + arrayView->offset + (idx + off));
@@ -152,7 +152,7 @@ public:
         , length(Math::min(inLength, SizeT(parent.size() - offset)))
     {}
     template <ArrayViewVectorQualifier T>
-    ArrayView &operator=(T &&parent)
+    ArrayView &operator= (T &&parent)
     {
         dataPtr = parent.data();
         offset = 0;
@@ -173,7 +173,7 @@ public:
         , length(N)
     {}
     template <typename T, SizeT N>
-    CONST_EXPR ArrayView &operator=(T (&parentData)[N])
+    CONST_EXPR ArrayView &operator= (T (&parentData)[N])
     {
         dataPtr = parentData;
         offset = 0;
@@ -196,7 +196,7 @@ public:
         dataPtr = nullptr;
     }
 
-    reference operator[](SizeT idx) const
+    reference operator[] (SizeT idx) const
     {
         fatalAssertf(idx < length, "Invalid index %d", idx);
         return dataPtr[offset + idx];

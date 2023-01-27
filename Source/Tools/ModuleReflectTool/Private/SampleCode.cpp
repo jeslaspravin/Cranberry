@@ -825,7 +825,7 @@ void visitNameSpace(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
     LOG("CppReflectionParser", "Namespace %s ends", namespaceName);
 }
 
-void visitMacroDefinition(CXCursor cursor, SourceParsedInfo &/*srcParsedInfo*/)
+void visitMacroDefinition(CXCursor cursor, SourceParsedInfo & /*srcParsedInfo*/)
 {
     // Get cursor location and TU to get token at this location
     CXSourceLocation cursorSrcLoc = clang_getCursorLocation(cursor);
@@ -840,7 +840,7 @@ void visitMacroDefinition(CXCursor cursor, SourceParsedInfo &/*srcParsedInfo*/)
     clang_disposeTokens(tu, token, 1);
 }
 
-void visitMacroExpansion(CXCursor cursor, SourceParsedInfo &/*srcParsedInfo*/)
+void visitMacroExpansion(CXCursor cursor, SourceParsedInfo & /*srcParsedInfo*/)
 {
     // Get cursor location and TU to get token at this location
     CXSourceLocation cursorSrcLoc = clang_getCursorLocation(cursor);
@@ -1799,10 +1799,10 @@ void testRegex()
     };
     TestDynamicFormatData dynDataTest{ &peps, &args, &args2 };
     MustacheContext context2{
-        .args = {       { TCHAR("CanRecurse"), FormatArg::ArgGetter::createObject(&dynDataTest, &TestDynamicFormatData::canRecurse) },
+        .args = { { TCHAR("CanRecurse"), FormatArg::ArgGetter::createObject(&dynDataTest, &TestDynamicFormatData::canRecurse) },
                  { TCHAR("Count"), FormatArg::ArgGetter::createObject(&dynDataTest, &TestDynamicFormatData::getCount) } },
                   .sectionFormatters
-                  = {{ TCHAR("MSectFormat"), MustacheSectionFormatter::createObject(&dynDataTest, &TestDynamicFormatData::customFormat) } }
+                  = { { TCHAR("MSectFormat"), MustacheSectionFormatter::createObject(&dynDataTest, &TestDynamicFormatData::customFormat) } }
     };
     LOG("Test", "Mustache render dynamically modified recursive loop \n%s",
         sectFormatter.render(

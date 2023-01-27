@@ -243,7 +243,9 @@ void VulkanGraphicsHelper::presentImage(
 )
 {
     if (canvases.empty() || imageIndex.empty() || canvases.size() != imageIndex.size())
+    {
         return;
+    }
 
     const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
     const VulkanDevice *device = &gInstance->selectedDevice;
@@ -519,21 +521,21 @@ BufferResourceRef VulkanGraphicsHelper::createReadWriteBuffer(IGraphicsInstance 
 }
 
 BufferResourceRef
-    VulkanGraphicsHelper::createReadOnlyTexels(IGraphicsInstance *, EPixelDataFormat::Type texelFormat, uint32 bufferCount /*= 1*/) const
+VulkanGraphicsHelper::createReadOnlyTexels(IGraphicsInstance *, EPixelDataFormat::Type texelFormat, uint32 bufferCount /*= 1*/) const
 {
     auto rTexels = new VulkanRTexelBuffer(texelFormat, bufferCount);
     return BufferResourceRef(rTexels);
 }
 
 BufferResourceRef
-    VulkanGraphicsHelper::createWriteOnlyTexels(IGraphicsInstance *, EPixelDataFormat::Type texelFormat, uint32 bufferCount /*= 1*/) const
+VulkanGraphicsHelper::createWriteOnlyTexels(IGraphicsInstance *, EPixelDataFormat::Type texelFormat, uint32 bufferCount /*= 1*/) const
 {
     auto wTexels = new VulkanWTexelBuffer(texelFormat, bufferCount);
     return BufferResourceRef(wTexels);
 }
 
 BufferResourceRef
-    VulkanGraphicsHelper::createReadWriteTexels(IGraphicsInstance *, EPixelDataFormat::Type texelFormat, uint32 bufferCount /*= 1*/) const
+VulkanGraphicsHelper::createReadWriteTexels(IGraphicsInstance *, EPixelDataFormat::Type texelFormat, uint32 bufferCount /*= 1*/) const
 {
     auto rwTexels = new VulkanRWTexelBuffer(texelFormat, bufferCount);
     return BufferResourceRef(rwTexels);
@@ -558,15 +560,14 @@ BufferResourceRef VulkanGraphicsHelper::createReadOnlyIndirectBuffer(IGraphicsIn
 }
 
 BufferResourceRef
-    VulkanGraphicsHelper::createWriteOnlyIndirectBuffer(IGraphicsInstance *, uint32 bufferStride, uint32 bufferCount /*= 1*/) const
+VulkanGraphicsHelper::createWriteOnlyIndirectBuffer(IGraphicsInstance *, uint32 bufferStride, uint32 bufferCount /*= 1*/) const
 {
     auto wIndirectBuffer = new VulkanWIndirectBuffer(bufferStride, bufferCount);
     return BufferResourceRef(wIndirectBuffer);
 }
 
-VkImage VulkanGraphicsHelper::createImage(
-    IGraphicsInstance *graphicsInstance, VkImageCreateInfo &createInfo, VkFormatFeatureFlags &requiredFeatures
-)
+VkImage
+VulkanGraphicsHelper::createImage(IGraphicsInstance *graphicsInstance, VkImageCreateInfo &createInfo, VkFormatFeatureFlags &requiredFeatures)
 {
     VkImage image = nullptr;
 
@@ -701,7 +702,7 @@ ImageResourceRef VulkanGraphicsHelper::createImage(IGraphicsInstance *, ImageRes
 }
 
 ImageResourceRef
-    VulkanGraphicsHelper::createCubeImage(IGraphicsInstance *, ImageResourceCreateInfo createInfo, bool bIsStaging /*= false*/) const
+VulkanGraphicsHelper::createCubeImage(IGraphicsInstance *, ImageResourceCreateInfo createInfo, bool bIsStaging /*= false*/) const
 {
     return ImageResourceRef(new VulkanCubeImageResource(createInfo, bIsStaging));
 }
@@ -995,9 +996,8 @@ void VulkanGraphicsHelper::destroyFramebuffer(IGraphicsInstance *graphicsInstanc
     device->vkDestroyFramebuffer(device->logicalDevice, framebuffer, nullptr);
 }
 
-VkDescriptorSetLayout VulkanGraphicsHelper::createDescriptorsSetLayout(
-    IGraphicsInstance *graphicsInstance, const VkDescriptorSetLayoutCreateInfo &layoutCreateInfo
-)
+VkDescriptorSetLayout
+VulkanGraphicsHelper::createDescriptorsSetLayout(IGraphicsInstance *graphicsInstance, const VkDescriptorSetLayoutCreateInfo &layoutCreateInfo)
 {
     const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
     const VulkanDevice *device = &gInstance->selectedDevice;
@@ -1145,7 +1145,9 @@ VkPipelineStageFlags2 VulkanGraphicsHelper::shaderToPipelineStageFlags(uint32 sh
                                                     VkShaderStageFlagBits::VK_SHADER_STAGE_MESH_BIT_NV };
 
     if (shaderStageFlags == 0)
+    {
         return 0;
+    }
     uint32 temp = shaderStageFlags;
 
     VkPipelineStageFlags2 pipelineStageFlags = 0;
@@ -1197,7 +1199,9 @@ VkPipelineStageFlags2 VulkanGraphicsHelper::shaderToPipelineStageFlags(uint32 sh
 
             temp &= ~shaderStage;
             if (temp == 0)
+            {
                 break;
+            }
         }
     }
     return pipelineStageFlags;
@@ -1217,7 +1221,9 @@ VkShaderStageFlags VulkanGraphicsHelper::pipelineToShaderStageFlags(uint64 pipel
                                                  VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TASK_SHADER_BIT_NV,
                                                  VkPipelineStageFlagBits::VK_PIPELINE_STAGE_MESH_SHADER_BIT_NV };
     if (pipelineStageFlags == 0)
+    {
         return 0;
+    }
 
     uint64 temp = pipelineStageFlags;
 
@@ -1269,7 +1275,9 @@ VkShaderStageFlags VulkanGraphicsHelper::pipelineToShaderStageFlags(uint64 pipel
 
             temp &= ~pipelineStage;
             if (temp == 0)
+            {
                 break;
+            }
         }
     }
     return shaderStageFlags;

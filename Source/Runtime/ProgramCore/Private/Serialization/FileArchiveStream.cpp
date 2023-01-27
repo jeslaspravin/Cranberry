@@ -52,7 +52,9 @@ void FileArchiveStream::read(void *toPtr, SizeT byteLen)
 void FileArchiveStream::write(const void *ptr, SizeT byteLen)
 {
     if (bIsReadOnly)
+    {
         return;
+    }
 
     file->write({ reinterpret_cast<const uint8 *>(ptr), byteLen });
     fileCursor += byteLen;
@@ -61,13 +63,17 @@ void FileArchiveStream::write(const void *ptr, SizeT byteLen)
 void FileArchiveStream::moveForward(SizeT byteCount)
 {
     if (byteCount == 0)
+    {
         return;
+    }
 
     fileCursor += byteCount;
     if (file->fileSize() <= fileCursor)
     {
         if (!bIsReadOnly)
+        {
             file->setFileSize(fileCursor);
+        }
         file->seekEnd();
         fileCursor = file->fileSize();
     }
@@ -80,7 +86,9 @@ void FileArchiveStream::moveForward(SizeT byteCount)
 void FileArchiveStream::moveBackward(SizeT byteCount)
 {
     if (byteCount == 0)
+    {
         return;
+    }
 
     fileCursor = (SizeT)Math::max(0, (int64)(fileCursor) - (int64)(byteCount));
     file->seek(fileCursor);
@@ -89,7 +97,9 @@ void FileArchiveStream::moveBackward(SizeT byteCount)
 bool FileArchiveStream::allocate(SizeT byteCount)
 {
     if (bIsReadOnly)
+    {
         return false;
+    }
 
     return file->setFileSize(file->fileSize() + byteCount);
 }
@@ -97,7 +107,9 @@ bool FileArchiveStream::allocate(SizeT byteCount)
 uint8 FileArchiveStream::readForwardAt(SizeT idx) const
 {
     if (file->fileSize() <= fileCursor + idx)
+    {
         return 0;
+    }
 
     file->offsetCursor((int64)idx);
     uint8 outVal;
@@ -109,7 +121,9 @@ uint8 FileArchiveStream::readForwardAt(SizeT idx) const
 uint8 FileArchiveStream::readBackwardAt(SizeT idx) const
 {
     if (fileCursor < idx)
+    {
         return 0;
+    }
 
     file->offsetCursor(-(int64)idx);
     uint8 outVal;

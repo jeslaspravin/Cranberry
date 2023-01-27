@@ -40,7 +40,7 @@ public:
 
     // Must be closed with closeProcessHandle()
     FORCE_INLINE static PlatformHandle
-        createProcess(const String &applicationPath, const String &cmdLine, const String &environment, const String &workingDirectory)
+    createProcess(const String &applicationPath, const String &cmdLine, const String &environment, const String &workingDirectory)
     {
         return PlatformClass::createProcess(applicationPath, cmdLine, environment, workingDirectory);
     }
@@ -88,7 +88,8 @@ public:
      * We need to remove ref and const here as we use perfect forwarding and type will be either const appended l/r value reference
      */
     template <typename UnsignedType>
-    requires std::unsigned_integral<std::remove_cvref_t<UnsignedType>> FORCE_INLINE static uint32 getSetBitCount(UnsignedType &&value)
+    requires std::unsigned_integral<std::remove_cvref_t<UnsignedType>>
+    FORCE_INLINE static uint32 getSetBitCount(UnsignedType &&value)
     {
         // Switch statement is not working as const_expr
         if CONST_EXPR (sizeof(value) == 1)

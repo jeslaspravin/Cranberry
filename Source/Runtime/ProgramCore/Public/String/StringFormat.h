@@ -21,57 +21,51 @@
 class StringFormat;
 
 template <typename T>
-concept HasValidCStrMethod = requires(T &&val)
-{
+concept HasValidCStrMethod = requires(T &&val) {
     {
         val.c_str()
-        } -> std::convertible_to<BaseString::const_pointer>;
+    } -> std::convertible_to<BaseString::const_pointer>;
 };
 
 template <typename T>
-concept HasValidGetCharMethod = requires(T &&val)
-{
+concept HasValidGetCharMethod = requires(T &&val) {
     {
         val.getChar()
-        } -> std::convertible_to<BaseString::const_pointer>;
+    } -> std::convertible_to<BaseString::const_pointer>;
 };
 
 // If not a string type and toString method exists
 template <typename Type, typename CleanType = std::remove_cvref_t<Type>>
-concept HasToStringMethod = NonStringType<Type> && std::is_compound_v<CleanType> && requires(Type &&val)
-{
+concept HasToStringMethod = NonStringType<Type> && std::is_compound_v<CleanType> && requires(Type &&val) {
     {
         val.toString()
-        } -> std::convertible_to<String>;
+    } -> std::convertible_to<String>;
 };
 
 template <typename Type, typename CleanType = std::remove_cvref_t<Type>>
-concept HasOStreamInsertOverrideMethod = NonStringType<Type> && std::is_compound_v<CleanType> && requires(Type &&val, OutputStream &stream)
-{
+concept HasOStreamInsertOverrideMethod = NonStringType<Type> && std::is_compound_v<CleanType> && requires(Type &&val, OutputStream &stream) {
     {
         stream << val
-        } -> std::same_as<OutputStream &>;
+    } -> std::same_as<OutputStream &>;
 };
 
 template <typename Type, typename CleanType = std::remove_cvref_t<Type>>
 concept StringOrFundamentalTypes = std::disjunction_v<IsString<Type>, std::is_fundamental<CleanType>>;
 
 template <typename Type, typename StringFormatType>
-concept StringConvertibleIteratorType = NonStringType<Type> && requires(Type &&val)
-{
+concept StringConvertibleIteratorType = NonStringType<Type> && requires(Type &&val) {
     val.cbegin();
     val.cend();
     {
         StringFormatType::toString(*val.cbegin())
-        } -> StringOrFundamentalTypes;
+    } -> StringOrFundamentalTypes;
 };
 
 template <typename Type, typename StringFormatType>
-concept HasStringFormatToStringImpl = requires(Type &&val)
-{
+concept HasStringFormatToStringImpl = requires(Type &&val) {
     {
         StringFormatType::toString(val)
-        } -> StringOrFundamentalTypes;
+    } -> StringOrFundamentalTypes;
 };
 
 class StringFormat
@@ -79,34 +73,45 @@ class StringFormat
 public:
     // getChar - String to TChar* and primitive types pass templates
     template <typename StrType>
-    requires HasValidCStrMethod<StrType> FORCE_INLINE CONST_EXPR static const TChar *getChar(const StrType &value)
+    requires HasValidCStrMethod<StrType>
+    FORCE_INLINE CONST_EXPR static const TChar *getChar(const StrType &value)
     {
         return static_cast<const TChar *>(value.c_str());
     }
 
     template <typename StrType>
-    requires HasValidGetCharMethod<StrType> &&(!HasValidCStrMethod<StrType>)FORCE_INLINE CONST_EXPR
-        static const TChar *getChar(const StrType &value)
+    requires HasValidGetCharMethod<StrType> && (!HasValidCStrMethod<StrType>)
+    FORCE_INLINE CONST_EXPR static const TChar *getChar(const StrType &value)
     {
         return static_cast<const TChar *>(value.getChar());
     }
 
     template <typename StrType>
-    requires std::convertible_to<StrType, const TChar *> FORCE_INLINE CONST_EXPR static const TChar *getChar(StrType &&value)
+    requires std::convertible_to<StrType, const TChar *>
+    FORCE_INLINE CONST_EXPR static const TChar *getChar(StrType &&value)
     {
         return static_cast<const TChar *>(value);
     }
 
     template <typename StrType>
-    requires NonStringType<StrType> FORCE_INLINE CONST_EXPR static StrType getChar(StrType &&value) { return std::forward<StrType>(value); }
+    requires NonStringType<StrType>
+    FORCE_INLINE CONST_EXPR static StrType getChar(StrType &&value)
+    {
+        return std::forward<StrType>(value);
+    }
 
     // toString - To String templates
     template <typename Type>
-    requires HasToStringMethod<Type> FORCE_INLINE static String toString(const Type &value) { return value.toString(); }
+    requires HasToStringMethod<Type>
+    FORCE_INLINE static String toString(const Type &value)
+    {
+        return value.toString();
+    }
 
     // Only std::ostream << type exists
     template <typename Type>
-    requires HasOStreamInsertOverrideMethod<Type> FORCE_INLINE static BaseString toString(const Type &value)
+    requires HasOStreamInsertOverrideMethod<Type>
+    FORCE_INLINE static BaseString toString(const Type &value)
     {
         OStringStream stream;
         stream << value;
@@ -115,11 +120,15 @@ public:
 
     // All string and primitive(fundamental) type
     template <typename Type>
-    requires StringOrFundamentalTypes<Type> FORCE_INLINE CONST_EXPR static Type toString(Type &&value) { return std::forward<Type>(value); }
+    requires StringOrFundamentalTypes<Type>
+    FORCE_INLINE CONST_EXPR static Type toString(Type &&value)
+    {
+        return std::forward<Type>(value);
+    }
 
     template <typename KeyType, typename ValueType>
     requires HasStringFormatToStringImpl<KeyType, StringFormat> && HasStringFormatToStringImpl<ValueType, StringFormat>
-        FORCE_INLINE static String toString(const std::pair<KeyType, ValueType> &pair)
+    FORCE_INLINE static String toString(const std::pair<KeyType, ValueType> &pair)
     {
         OStringStream stream;
         stream << TCHAR("{ ") << toString(pair.first) << TCHAR(", ") << toString(pair.second) << TCHAR(" }");
@@ -127,7 +136,8 @@ public:
     }
 
     template <typename IterableType>
-    requires StringConvertibleIteratorType<IterableType, StringFormat> FORCE_INLINE static BaseString toString(IterableType &&iterable)
+    requires StringConvertibleIteratorType<IterableType, StringFormat>
+    FORCE_INLINE static BaseString toString(IterableType &&iterable)
     {
         using Type = UnderlyingType<IterableType>;
 

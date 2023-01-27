@@ -43,7 +43,7 @@ struct ReadFieldVisitable
 {
     // Ignore const type
     template <UnsupportedFundamentalOrSpecial Type>
-    static void visit(Type */*val*/, const PropertyInfo &propInfo, void */*userData*/)
+    static void visit(Type * /*val*/, const PropertyInfo &propInfo, void * /*userData*/)
     {
         alertAlwaysf(false, "Why?! This isn't supposed to be invoked %s", propInfo.thisProperty->nameString);
     }
@@ -230,7 +230,7 @@ struct WriteFieldVisitable
 {
     // Ignore const type
     template <UnsupportedFundamentalOrSpecial Type>
-    static void visit(Type */*val*/, const PropertyInfo &propInfo, void */*userData*/)
+    static void visit(Type * /*val*/, const PropertyInfo &propInfo, void * /*userData*/)
     {
         alertAlwaysf(false, "Why?! This isn't supposed to be invoked %s", propInfo.thisProperty->nameString);
     }
@@ -368,9 +368,11 @@ struct StartWriteFieldVisitable
     // Ignore const type
     template <typename Type>
     requires std::is_const_v<Type>
-    static void visit(Type *val, const PropertyInfo &propInfo, void *userData) {}
+    static void visit(Type *val, const PropertyInfo &propInfo, void *userData)
+    {}
     template <typename Type>
-    requires(!std::is_const_v<Type>) static void visit(Type *val, const PropertyInfo &propInfo, void *userData)
+    requires (!std::is_const_v<Type>)
+    static void visit(Type *val, const PropertyInfo &propInfo, void *userData)
     {
         debugAssert(propInfo.fieldProperty);
         if (BIT_SET(propInfo.fieldProperty->getPropertyMetaFlags(), INDEX_TO_FLAG_MASK(EFieldMetaFlags::FIELDMETA_Transient)))
@@ -488,7 +490,7 @@ ObjectArchive &ObjectSerializationHelpers::serializeAllFields(cbe::Object *obj, 
 }
 
 ObjectArchive &
-    ObjectSerializationHelpers::serializeOnlyFields(cbe::Object *obj, ObjectArchive &ar, const std::unordered_set<StringID> &fieldsToSerialize)
+ObjectSerializationHelpers::serializeOnlyFields(cbe::Object *obj, ObjectArchive &ar, const std::unordered_set<StringID> &fieldsToSerialize)
 {
     return serializeObjectFieldsHelper(obj, ar, &fieldsToSerialize);
 }

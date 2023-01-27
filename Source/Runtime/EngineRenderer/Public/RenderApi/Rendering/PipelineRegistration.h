@@ -51,7 +51,7 @@ struct ENGINERENDERER_EXPORT GraphicsPipelineFactoryRegistrant
 public:
     GraphicsPipelineFactoryRegistrant(const TChar *shaderName, GraphicsPipelineConfigGetter configGetter);
     FORCE_INLINE PipelineBase *
-        operator()(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper, const PipelineFactoryArgs &args) const;
+    operator() (IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper, const PipelineFactoryArgs &args) const;
 };
 
 struct ENGINERENDERER_EXPORT ComputePipelineFactoryRegistrant
@@ -59,7 +59,7 @@ struct ENGINERENDERER_EXPORT ComputePipelineFactoryRegistrant
 public:
     ComputePipelineFactoryRegistrant(const TChar *shaderName);
     FORCE_INLINE PipelineBase *
-        operator()(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper, const PipelineFactoryArgs &args) const;
+    operator() (IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper, const PipelineFactoryArgs &args) const;
 };
 
 class ENGINERENDERER_EXPORT PipelineFactory final
@@ -74,5 +74,5 @@ private:
 
 public:
     PipelineBase *
-        create(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper, const PipelineFactoryArgs &args) const final;
+    create(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper, const PipelineFactoryArgs &args) const final;
 };

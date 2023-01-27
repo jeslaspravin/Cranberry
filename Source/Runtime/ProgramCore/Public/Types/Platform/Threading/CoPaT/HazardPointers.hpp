@@ -27,7 +27,7 @@ namespace copat
 template <typename HazardType>
 struct HazardPointerDeleter
 {
-    void operator()(HazardType *ptr) { memDelete(ptr); }
+    void operator() (HazardType *ptr) { memDelete(ptr); }
 };
 
 /**
@@ -140,7 +140,7 @@ public:
         {
             other.record = nullptr;
         }
-        HazardPointer &operator=(HazardPointer &&other)
+        HazardPointer &operator= (HazardPointer &&other)
         {
             record = other.record;
             other.record = nullptr;
@@ -158,7 +158,7 @@ public:
         // No copying allowed
         HazardPointer() = delete;
         HazardPointer(const HazardPointer &) = delete;
-        HazardPointer &operator=(const HazardPointer &) = delete;
+        HazardPointer &operator= (const HazardPointer &) = delete;
     };
 
 private:

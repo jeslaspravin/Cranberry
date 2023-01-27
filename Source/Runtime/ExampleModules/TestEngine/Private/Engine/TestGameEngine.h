@@ -94,9 +94,9 @@ public:
 
     TestGameEngine *operator->() const { return gEngine; }
 
-    TestGameEngine *operator*() const { return gEngine; }
+    TestGameEngine *operator* () const { return gEngine; }
 
-    operator bool() const { return gEngine != nullptr; }
+    operator bool () const { return gEngine != nullptr; }
 
     MAKE_TYPE_NONCOPY_NONMOVE(GameEngineWrapper)
 };

@@ -74,8 +74,8 @@ public:
     GraphicsResourceType() = delete;
     MAKE_TYPE_NONCOPY_NONMOVE(GraphicsResourceType)
 
-    bool operator==(const GraphicsResourceType &otherType) const { return defaultResource == otherType.defaultResource; }
-    bool operator!=(const GraphicsResourceType &otherType) const { return defaultResource != otherType.defaultResource; }
+    bool operator== (const GraphicsResourceType &otherType) const { return defaultResource == otherType.defaultResource; }
+    bool operator!= (const GraphicsResourceType &otherType) const { return defaultResource != otherType.defaultResource; }
 
     void registerResource(GraphicsResource *resource);
     void unregisterResource(GraphicsResource *resource);
@@ -195,7 +195,7 @@ public:
     virtual void release();
     virtual String getResourceName() const;
     // This needs to be set before initializing or needs be reinit for the GPU resource be relabeled.
-    virtual void setResourceName(const String &/*name*/){};
+    virtual void setResourceName(const String & /*name*/){};
 };
 
 // Override only inside classes implements GraphicsResource

@@ -124,8 +124,8 @@ private:
         META_ANNOTATE()
         uint32 value;
 
-        bool operator<(const BerrySecondData &other) const noexcept { return value < other.value; }
-        bool operator==(const BerrySecondData &other) const noexcept { return value == other.value; }
+        bool operator< (const BerrySecondData &other) const noexcept { return value < other.value; }
+        bool operator== (const BerrySecondData &other) const noexcept { return value == other.value; }
     };
 
 public:

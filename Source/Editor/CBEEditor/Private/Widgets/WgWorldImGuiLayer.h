@@ -33,7 +33,7 @@ public:
     virtual int32 sublayerDepth() const { return 1; }
     // Draw to ImGui context
     virtual void draw(ImGuiDrawInterface *drawInterface);
-    virtual bool drawDirect(const DrawDirectParams &/*params*/) { return false; }
+    virtual bool drawDirect(const DrawDirectParams & /*params*/) { return false; }
 
     /* WidgetBase overrides */
     void drawWidget(QuantShortBox2D /*clipBound*/, WidgetGeomId /*thisId*/, const WidgetGeomTree &, WidgetDrawContext &) override {}

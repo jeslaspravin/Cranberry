@@ -303,7 +303,7 @@ public:
 class REFLECTIONRUNTIME_EXPORT IndexableIteratorWrapper : public IteratorElementWrapper
 {
 public:
-    virtual void *operator[](int64 diff) const = 0;
+    virtual void *operator[] (int64 diff) const = 0;
 };
 
 template <typename ContainerType, typename IteratorType = ContainerType::iterator>
@@ -364,7 +364,7 @@ public:
     void iterateBwd() override { --itr; }
     bool isValid() const override { return itr != containerPtr->end(); }
     /* IndexableIteratorWrapper overrides */
-    void *operator[](int64 diff) const override { return &(itr[diff]); }
+    void *operator[] (int64 diff) const override { return &(itr[diff]); }
     /* Override ends */
 };
 
@@ -436,7 +436,8 @@ public:
 
 // For set/unrodered_set
 template <typename ContainerType>
-requires(!Indexable<ContainerType>) class ContainerRetrieverImpl<ContainerType> : public IterateableDataRetriever
+requires (!Indexable<ContainerType>)
+class ContainerRetrieverImpl<ContainerType> : public IterateableDataRetriever
 {
 public:
     IteratorElementWrapperRef createIterator(void *object) const override

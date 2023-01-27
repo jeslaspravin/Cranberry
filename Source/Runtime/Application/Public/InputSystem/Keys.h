@@ -41,17 +41,17 @@ public:
 
     pointer operator->() const { return &iterator->first; }
 
-    reference operator*() const { return iterator->first; }
+    reference operator* () const { return iterator->first; }
 
-    bool operator!=(const InputStateIterator &other) const { return **this != *other; }
+    bool operator!= (const InputStateIterator &other) const { return **this != *other; }
 
-    InputStateIterator &operator++()
+    InputStateIterator &operator++ ()
     {
         ++iterator;
         return *this;
     }
 
-    InputStateIterator operator++(int)
+    InputStateIterator operator++ (int)
     {
         InputStateIterator retVal(iterator);
         ++iterator;
@@ -78,9 +78,9 @@ struct APPLICATION_EXPORT Key
 struct APPLICATION_EXPORT KeyState
 {
     TickRep pressedTick = -1;
-    uint8 isPressed : 1 = 0;
-    uint8 keyWentUp : 1 = 0;   // will be high the frame the key went up
-    uint8 keyWentDown : 1 = 0; // will be high the frame the key went down
+    uint8 isPressed:1 = 0;
+    uint8 keyWentUp:1 = 0;   // will be high the frame the key went up
+    uint8 keyWentDown:1 = 0; // will be high the frame the key went down
 
     KeyState()
         : pressedTick(-1)

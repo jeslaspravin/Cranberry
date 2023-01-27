@@ -48,13 +48,13 @@ Vector4D::Vector4D(const Vector3D &xyz, float w)
     : value(xyz.x(), xyz.y(), xyz.z(), w)
 {}
 
-Vector4D &Vector4D::operator=(const Vector4D &other)
+Vector4D &Vector4D::operator= (const Vector4D &other)
 {
     value = other.value;
     return *this;
 }
 
-Vector4D &Vector4D::operator=(Vector4D &&other)
+Vector4D &Vector4D::operator= (Vector4D &&other)
 {
     value = std::move(other.value);
     return *this;
@@ -76,83 +76,83 @@ float &Vector4D::w() { return value.w; }
 
 float Vector4D::w() const { return value.w; }
 
-float Vector4D::operator[](uint32 index) const
+float Vector4D::operator[] (uint32 index) const
 {
     debugAssert(index < 4);
     return value[index];
 }
 
-float &Vector4D::operator[](uint32 index)
+float &Vector4D::operator[] (uint32 index)
 {
     debugAssert(index < 4);
     return value[index];
 }
 
-bool Vector4D::operator==(const Vector4D &b) const { return isSame(b); }
+bool Vector4D::operator== (const Vector4D &b) const { return isSame(b); }
 
-float Vector4D::operator|(const Vector4D &b) const { return glm::dot(value, b.value); }
+float Vector4D::operator| (const Vector4D &b) const { return glm::dot(value, b.value); }
 
-Vector4D Vector4D::operator*(const Vector4D &b) const { return Vector4D(value * b.value); }
+Vector4D Vector4D::operator* (const Vector4D &b) const { return Vector4D(value * b.value); }
 
-Vector4D &Vector4D::operator*=(const Vector4D &b)
+Vector4D &Vector4D::operator*= (const Vector4D &b)
 {
     value *= b.value;
     return *this;
 }
 
-Vector4D Vector4D::operator*(float scalar) const { return Vector4D(value * scalar); }
+Vector4D Vector4D::operator* (float scalar) const { return Vector4D(value * scalar); }
 
-Vector4D &Vector4D::operator*=(float scalar)
+Vector4D &Vector4D::operator*= (float scalar)
 {
     value *= scalar;
     return *this;
 }
 
-Vector4D Vector4D::operator/(const Vector4D &b) const { return Vector4D(value / b.value); }
+Vector4D Vector4D::operator/ (const Vector4D &b) const { return Vector4D(value / b.value); }
 
-Vector4D &Vector4D::operator/=(const Vector4D &b)
+Vector4D &Vector4D::operator/= (const Vector4D &b)
 {
     value /= b.value;
     return *this;
 }
 
-Vector4D Vector4D::operator/(float scalar) const { return Vector4D(value / scalar); }
+Vector4D Vector4D::operator/ (float scalar) const { return Vector4D(value / scalar); }
 
-Vector4D &Vector4D::operator/=(float scalar)
+Vector4D &Vector4D::operator/= (float scalar)
 {
     value /= scalar;
     return *this;
 }
 
-Vector4D Vector4D::operator-(const Vector4D &b) const { return Vector4D(value - b.value); }
+Vector4D Vector4D::operator- (const Vector4D &b) const { return Vector4D(value - b.value); }
 
-Vector4D &Vector4D::operator-=(const Vector4D &b)
+Vector4D &Vector4D::operator-= (const Vector4D &b)
 {
     value -= b.value;
     return *this;
 }
 
-Vector4D Vector4D::operator-(float scalar) const { return Vector4D(value - scalar); }
+Vector4D Vector4D::operator- (float scalar) const { return Vector4D(value - scalar); }
 
-Vector4D &Vector4D::operator-=(float scalar)
+Vector4D &Vector4D::operator-= (float scalar)
 {
     value -= scalar;
     return *this;
 }
 
-Vector4D Vector4D::operator-() const { return Vector4D(-value); }
+Vector4D Vector4D::operator- () const { return Vector4D(-value); }
 
-Vector4D Vector4D::operator+(const Vector4D &b) const { return Vector4D(value + b.value); }
+Vector4D Vector4D::operator+ (const Vector4D &b) const { return Vector4D(value + b.value); }
 
-Vector4D &Vector4D::operator+=(const Vector4D &b)
+Vector4D &Vector4D::operator+= (const Vector4D &b)
 {
     value += b.value;
     return *this;
 }
 
-Vector4D Vector4D::operator+(float scalar) const { return Vector4D(value + scalar); }
+Vector4D Vector4D::operator+ (float scalar) const { return Vector4D(value + scalar); }
 
-Vector4D &Vector4D::operator+=(float scalar)
+Vector4D &Vector4D::operator+= (float scalar)
 {
     value += scalar;
     return *this;

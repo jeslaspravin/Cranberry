@@ -81,9 +81,9 @@ int appMain(String cmdLine, InstanceHandle appPlatformInstance)
 
 #include "WindowsCommonHeaders.h"
 
-//#define _CRTDBG_MAP_ALLOC
-//#include <cstdlib>
-//#include <crtdbg.h>
+// #define _CRTDBG_MAP_ALLOC
+// #include <cstdlib>
+// #include <crtdbg.h>
 
 int wWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, PWSTR pCmdLine, int /*nCmdShow*/)
 {

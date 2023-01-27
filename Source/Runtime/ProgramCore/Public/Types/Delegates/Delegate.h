@@ -17,7 +17,7 @@
 #include "Types/CoreTypes.h"
 
 #include <map>
-//#include <memory_resource>
+// #include <memory_resource>
 #include <tuple>
 #include <type_traits>
 #include <vector>
@@ -53,7 +53,7 @@ struct FunctionExecutor
 
         template <typename ObjectType, size_t... Indices>
         ReturnType
-            execute(ObjectType *object, const FunctionType &function, Params... params, const Tuple &varStore, std::index_sequence<Indices...>)
+        execute(ObjectType *object, const FunctionType &function, Params... params, const Tuple &varStore, std::index_sequence<Indices...>)
         {
             return function(object, std::forward<Params>(params)..., std::get<Indices>(varStore)...);
         }
@@ -147,7 +147,7 @@ private:
             other.functionPtr = nullptr;
         }
 
-        bool operator==(const FunctionHolder &otherType) const
+        bool operator== (const FunctionHolder &otherType) const
         {
             return objectPtr == otherType.objectPtr && functionPtr == otherType.functionPtr;
         }
@@ -203,7 +203,7 @@ private:
             other.functionPtr = nullptr;
         }
 
-        bool operator==(const FunctionHolder &otherType) const
+        bool operator== (const FunctionHolder &otherType) const
         {
             return objectPtr == otherType.objectPtr && functionPtr == otherType.functionPtr;
         }
@@ -317,9 +317,8 @@ protected:
 
 public:
     template <typename ObjectType, typename... Variables>
-    std::enable_if_t<std::negation_v<std::is_const<ObjectType>>, void> bindObject(
-        ObjectType *object, const typename ObjDelegateType<ObjectType, Variables...>::FunctionPtr &bindingFunction, Variables... vars
-    )
+    std::enable_if_t<std::negation_v<std::is_const<ObjectType>>, void>
+    bindObject(ObjectType *object, const typename ObjDelegateType<ObjectType, Variables...>::FunctionPtr &bindingFunction, Variables... vars)
     {
         delegatePtr.reset(new ObjDelegateType<ObjectType, Variables...>(object, bindingFunction, std::forward<Variables>(vars)...));
     }
@@ -355,7 +354,7 @@ public:
     void unbind() { delegatePtr.reset(); }
 
     bool isBound() const { return bool(delegatePtr); }
-    operator bool() const { return isBound(); }
+    operator bool () const { return isBound(); }
 
     template <typename ObjectType>
     bool isBoundTo(const ObjectType *object) const
@@ -387,7 +386,7 @@ public:
     ~SingleCastDelegate() { unbind(); }
 
     ReturnType invoke(Params... params) const { return delegatePtr->invoke(std::forward<Params>(params)...); }
-    ReturnType operator()(Params... params) const { return invoke(std::forward<Params>(params)...); }
+    ReturnType operator() (Params... params) const { return invoke(std::forward<Params>(params)...); }
 
     template <typename ObjectType, typename... Variables>
     static std::enable_if_t<std::negation_v<std::is_const<ObjectType>>, SingleCastDelegate> createObject(
@@ -413,7 +412,7 @@ public:
 
     template <typename... Variables>
     static SingleCastDelegate
-        createStatic(const typename Base::template StaticDelegateType<Variables...>::FunctionPtr &bindingFunction, Variables... vars)
+    createStatic(const typename Base::template StaticDelegateType<Variables...>::FunctionPtr &bindingFunction, Variables... vars)
     {
         SingleCastDelegate sDelegate;
         sDelegate.bindStatic(bindingFunction, std::forward<Variables>(vars)...);
@@ -492,9 +491,8 @@ protected:
 
 public:
     template <typename ObjectType, typename... Variables>
-    std::enable_if_t<std::negation_v<std::is_const<ObjectType>>, DelegateHandle> bindObject(
-        ObjectType *object, const typename ObjDelegateType<ObjectType, Variables...>::FunctionPtr &bindingFunction, Variables... vars
-    )
+    std::enable_if_t<std::negation_v<std::is_const<ObjectType>>, DelegateHandle>
+    bindObject(ObjectType *object, const typename ObjDelegateType<ObjectType, Variables...>::FunctionPtr &bindingFunction, Variables... vars)
     {
         SharedPtr<DelegateInterface> ptr = SharedPtr<DelegateInterface>(
             new ObjDelegateType<ObjectType, Variables...>(object, bindingFunction, std::forward<Variables>(vars)...)
@@ -619,7 +617,7 @@ public:
     }
 
     bool isBound() const { return !allDelegates.empty(); }
-    operator bool() const { return isBound(); }
+    operator bool () const { return isBound(); }
 
     void clear();
 };
@@ -638,7 +636,9 @@ template <typename... Params>
 FORCE_INLINE void invokeHelper(const std::map<int32, SharedPtr<IDelegate<void, Params...>>> &allDelegates, Params... params)
 {
     if (allDelegates.empty())
+    {
         return;
+    }
 
     int32 buffer[128];
     // <memory_resource> is huge header so not using it in delegate
@@ -687,7 +687,7 @@ public:
     ~Delegate();
 
     void invoke(Params... params) const { invokeHelper<Params...>(allDelegates, std::forward<Params>(params)...); }
-    void operator()(Params... params) const { invoke(std::forward<Params>(params)...); }
+    void operator() (Params... params) const { invoke(std::forward<Params>(params)...); }
 };
 
 using SimpleDelegate = Delegate<>;

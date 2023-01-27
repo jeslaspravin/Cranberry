@@ -41,7 +41,7 @@ public:
 template <bool bAscending>
 struct SortAssetByName
 {
-    constexpr bool operator()(const AssetBase *lhs, const AssetBase *rhs) const
+    constexpr bool operator() (const AssetBase *lhs, const AssetBase *rhs) const
     {
         if constexpr (bAscending)
         {

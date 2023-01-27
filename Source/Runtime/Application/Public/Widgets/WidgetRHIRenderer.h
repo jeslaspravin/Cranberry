@@ -69,9 +69,8 @@ private:
         const SharedPtr<WgWindow> &window, GenericWindowCanvas *swapchainCanvas, IRenderCommandList *cmdList,
         const LocalPipelineContext &pipelineContext, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
     );
-    void createVerticesAndIndices(
-        uint64 indexCount, uint32 vertCount, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
-    );
+    void
+    createVerticesAndIndices(uint64 indexCount, uint32 vertCount, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
     void drawWindowWidgetsRenderThread(
         const std::vector<std::pair<SharedPtr<WgWindow>, WidgetDrawContext>> &drawingContexts, IRenderCommandList *cmdList,
         IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper

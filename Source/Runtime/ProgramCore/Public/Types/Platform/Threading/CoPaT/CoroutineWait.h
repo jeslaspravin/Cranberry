@@ -42,7 +42,7 @@ public:
     {
         other.ownerCoroutine = nullptr;
     }
-    WaitOnAwaitable &operator=(WaitOnAwaitable &&other)
+    WaitOnAwaitable &operator= (WaitOnAwaitable &&other)
     {
         ownerCoroutine = other.ownerCoroutine;
         other.ownerCoroutine = nullptr;
@@ -61,7 +61,7 @@ public:
     // Delete copy and default initializations
     WaitOnAwaitable() = delete;
     WaitOnAwaitable(const WaitOnAwaitable &) = delete;
-    WaitOnAwaitable &operator=(const WaitOnAwaitable &) = delete;
+    WaitOnAwaitable &operator= (const WaitOnAwaitable &) = delete;
 
     struct PromiseType
     {
@@ -136,7 +136,8 @@ WaitOnAwaitable<void> awaitOnVoidAwaitable(AwaitableType &awaitable)
 }
 
 template <AwaitableTypeConcept AwaitableType, typename RetType = AwaiterReturnType<GetAwaiterType_t<AwaitableType>>>
-requires(!std::is_void_v<RetType>) RetType waitOnAwaitable(AwaitableType &&awaitable)
+requires (!std::is_void_v<RetType>)
+RetType waitOnAwaitable(AwaitableType &&awaitable)
 {
     impl::WaitOnAwaitable<RetType> waitingOnAwaitable = impl::awaitOnAwaitable<AwaitableType, RetType>(awaitable);
     std::binary_semaphore semaphore{ 0 };
@@ -147,7 +148,8 @@ requires(!std::is_void_v<RetType>) RetType waitOnAwaitable(AwaitableType &&await
 }
 
 template <AwaitableTypeConcept AwaitableType, typename RetType = AwaiterReturnType<GetAwaiterType_t<AwaitableType>>>
-requires std::is_void_v<RetType> RetType waitOnAwaitable(AwaitableType &&awaitable)
+requires std::is_void_v<RetType>
+RetType waitOnAwaitable(AwaitableType &&awaitable)
 {
     impl::WaitOnAwaitable<RetType> waitingOnAwaitable = impl::awaitOnVoidAwaitable(awaitable);
     std::binary_semaphore semaphore{ 0 };

@@ -38,9 +38,8 @@ public:
         const Color &packedInRectCol
     );
 
-    bool inputText(
-        const char *label, String *str, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback = nullptr, void *user_data = nullptr
-    );
+    bool
+    inputText(const char *label, String *str, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback = nullptr, void *user_data = nullptr);
     bool inputTextMultiline(
         const char *label, String *str, const ImVec2 &size, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback = nullptr,
         void *user_data = nullptr

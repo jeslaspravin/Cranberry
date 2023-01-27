@@ -54,7 +54,9 @@ bool ArrayArchiveStream::allocate(SizeT byteCount)
 uint8 ArrayArchiveStream::readForwardAt(SizeT idx) const
 {
     if (buffer.size() <= (cursor + idx))
+    {
         return 0;
+    }
 
     return buffer[cursor + idx];
 }
@@ -62,7 +64,9 @@ uint8 ArrayArchiveStream::readForwardAt(SizeT idx) const
 uint8 ArrayArchiveStream::readBackwardAt(SizeT idx) const
 {
     if (cursor < idx)
+    {
         return 0;
+    }
 
     return buffer[cursor - idx];
 }

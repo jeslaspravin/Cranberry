@@ -97,8 +97,8 @@ public:
     VulkanDevice(VkPhysicalDevice &&device);
     VulkanDevice(const VulkanDevice &otherDevice);
     VulkanDevice(VulkanDevice &&rVulkanDevice);
-    void operator=(const VulkanDevice &otherDevice);
-    void operator=(VulkanDevice &&rVulkanDevice);
+    void operator= (const VulkanDevice &otherDevice);
+    void operator= (VulkanDevice &&rVulkanDevice);
 
     ~VulkanDevice();
 
@@ -133,5 +133,5 @@ struct VulkanDeviceCompare
 {
     WindowCanvasRef windowCanvas;
 
-    bool operator()(const VulkanDevice &lhs, const VulkanDevice &rhs) { return lhs.compare(rhs, windowCanvas) >= 0 ? true : false; }
+    bool operator() (const VulkanDevice &lhs, const VulkanDevice &rhs) { return lhs.compare(rhs, windowCanvas) >= 0 ? true : false; }
 };

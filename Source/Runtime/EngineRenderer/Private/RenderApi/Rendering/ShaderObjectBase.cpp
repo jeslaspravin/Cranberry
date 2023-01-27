@@ -57,7 +57,7 @@ const ShaderResource *DrawMeshShaderObject::getShader(
 }
 
 GraphicsResource *
-    DrawMeshShaderObject::getVariantUniqueParamsLayout(EVertexType::Type inputVertexType, const FramebufferFormat &outputBufferFormat) const
+DrawMeshShaderObject::getVariantUniqueParamsLayout(EVertexType::Type inputVertexType, const FramebufferFormat &outputBufferFormat) const
 {
     auto shadersForFormatItr = shadersForRenderPass.find(outputBufferFormat);
     auto shadersForVertex = shadersForVertexType.find(inputVertexType);

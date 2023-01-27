@@ -97,7 +97,7 @@ public:
     {}
 
     // Equality
-    CONST_EXPR std::strong_ordering operator<=>(const CBEGuid &rhs) const noexcept
+    CONST_EXPR std::strong_ordering operator<=> (const CBEGuid &rhs) const noexcept
     {
         for (int32 i = 0; i < ARRAY_LENGTH(components); ++i)
         {
@@ -109,11 +109,11 @@ public:
         return std::strong_ordering::equal;
     }
     // Better than xor based equality
-    CONST_EXPR bool operator==(const CBEGuid &rhs) const noexcept
+    CONST_EXPR bool operator== (const CBEGuid &rhs) const noexcept
     {
         return parts.a == rhs.parts.a && parts.b == rhs.parts.b && parts.c == rhs.parts.c && parts.d == rhs.parts.d;
     }
-    FORCE_INLINE bool isValid() const { return (parts.a | parts.b | parts.c | parts.d) > 0; };
+    FORCE_INLINE bool isValid() const { return (parts.a | parts.b | parts.c | parts.d) > 0; }
 
     String toString(EGuidFormat format = DWordWithHyphen) const;
 
@@ -182,7 +182,7 @@ public:
 template <>
 struct PROGRAMCORE_EXPORT std::hash<CBEGuid>
 {
-    NODISCARD SizeT operator()(const CBEGuid &val) const noexcept
+    NODISCARD SizeT operator() (const CBEGuid &val) const noexcept
     {
         SizeT hashVal = 0;
         HashUtility::hashAllInto(hashVal, val.parts.a, val.parts.b, val.parts.c, val.parts.d);
@@ -193,7 +193,7 @@ struct PROGRAMCORE_EXPORT std::hash<CBEGuid>
 template <typename CharType>
 struct CBEGuid::ParseFromFormat<CBEGuid::DigitsOnly, CharType>
 {
-    NODISCARD CONST_EXPR CBEGuid operator()(const CharType *str, SizeT len) const
+    NODISCARD CONST_EXPR CBEGuid operator() (const CharType *str, SizeT len) const
     {
         // AAAAAAAABBBBBBBBCCCCCCCCDDDDDDDD
         if (len != 32)
@@ -218,7 +218,7 @@ struct CBEGuid::ParseFromFormat<CBEGuid::DigitsOnly, CharType>
 template <typename CharType>
 struct CBEGuid::ParseFromFormat<CBEGuid::DWordWithHyphen, CharType>
 {
-    NODISCARD CONST_EXPR CBEGuid operator()(const CharType *str, SizeT len) const
+    NODISCARD CONST_EXPR CBEGuid operator() (const CharType *str, SizeT len) const
     {
         // AAAAAAAA-BBBBBBBB-CCCCCCCC-DDDDDDDD
         if (len != 35)
@@ -243,7 +243,7 @@ struct CBEGuid::ParseFromFormat<CBEGuid::DWordWithHyphen, CharType>
 template <typename CharType>
 struct CBEGuid::ParseFromFormat<CBEGuid::HexValues, CharType>
 {
-    NODISCARD CONST_EXPR CBEGuid operator()(const CharType *str, SizeT len) const
+    NODISCARD CONST_EXPR CBEGuid operator() (const CharType *str, SizeT len) const
     {
         // {0xAAAAAAAA,0xBBBB,0xBBBB,{0xCC,0xCC,0xCC,0xCC,0xDD,0xDD,0xDD,0xDD}}
         if (len != 68)
@@ -275,7 +275,7 @@ struct CBEGuid::ParseFromFormat<CBEGuid::HexValues, CharType>
 template <typename CharType>
 struct CBEGuid::ParseFromFormat<CBEGuid::DigitsWithHyphen, CharType>
 {
-    NODISCARD CONST_EXPR CBEGuid operator()(const CharType *str, SizeT len) const
+    NODISCARD CONST_EXPR CBEGuid operator() (const CharType *str, SizeT len) const
     {
         // AAAAAAAA-BBBB-BBBB-CCCC-CCCCDDDDDDDD
         if (len != 36)
@@ -302,7 +302,7 @@ struct CBEGuid::ParseFromFormat<CBEGuid::DigitsWithHyphen, CharType>
 template <typename CharType>
 struct CBEGuid::ParseFromFormat<CBEGuid::DigitsInBraces, CharType>
 {
-    NODISCARD CONST_EXPR CBEGuid operator()(const CharType *str, SizeT len) const
+    NODISCARD CONST_EXPR CBEGuid operator() (const CharType *str, SizeT len) const
     {
         // {AAAAAAAA-BBBB-BBBB-CCCC-CCCCDDDDDDDD}
         if (len != 38)
@@ -316,7 +316,7 @@ struct CBEGuid::ParseFromFormat<CBEGuid::DigitsInBraces, CharType>
 template <typename CharType>
 struct CBEGuid::ParseFromFormat<CBEGuid::DigitsInParans, CharType>
 {
-    NODISCARD CONST_EXPR CBEGuid operator()(const CharType *str, SizeT len) const
+    NODISCARD CONST_EXPR CBEGuid operator() (const CharType *str, SizeT len) const
     {
         // (AAAAAAAA-BBBB-BBBB-CCCC-CCCCDDDDDDDD)
         if (len != 38)

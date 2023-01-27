@@ -103,8 +103,8 @@ void EnvironmentMapAsset::initAsset()
                 SamplerCreateInfo samplerCI{
                     .filtering = ESamplerFiltering::Linear,
                     .mipFiltering = ESamplerFiltering::Linear,
-                    .tilingMode = {ESamplerTilingMode::Repeat,      ESamplerTilingMode::Repeat, ESamplerTilingMode::Repeat },
-                    .mipLodRange = {                         0, float(hdrImage->getNumOfMips())                          }
+                    .tilingMode = { ESamplerTilingMode::Repeat, ESamplerTilingMode::Repeat, ESamplerTilingMode::Repeat },
+                    .mipLodRange = { 0, float(hdrImage->getNumOfMips()) }
                 };
                 SamplerRef sampler = graphicsHelper->createSampler(graphicsInstance, samplerCI);
                 sampler->init();

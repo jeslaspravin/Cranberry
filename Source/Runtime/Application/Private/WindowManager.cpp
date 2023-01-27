@@ -155,12 +155,16 @@ GenericAppWindow *WindowManager::findWindowUnder(Short2D screenPos) const
 GenericAppWindow *WindowManager::findNativeHandleWindow(WindowHandle wndHnd) const
 {
     if (wndHnd == nullptr)
+    {
         return nullptr;
+    }
 
     for (const std::pair<GenericAppWindow *const, ManagerData> &wnd : windowsOpened)
     {
         if (wnd.first->getWindowHandle() == wndHnd)
+        {
             return wnd.first;
+        }
     }
     return nullptr;
 }

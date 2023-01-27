@@ -26,7 +26,7 @@ DECLARE_MODULE(EngineRenderer, EngineRendererModule)
 //////////////////////////////////////////////////////////////////////////
 
 copat::NormalFuncAwaiter
-    initializeGraphicsStub(RenderManager *renderManager, IGraphicsInstance *graphicsInstanceCache, const GraphicsHelperAPI *graphicsHelper)
+initializeGraphicsStub(RenderManager *renderManager, IGraphicsInstance *graphicsInstanceCache, const GraphicsHelperAPI *graphicsHelper)
 {
     co_await renderManager->initialize(graphicsInstanceCache, graphicsHelper);
 }

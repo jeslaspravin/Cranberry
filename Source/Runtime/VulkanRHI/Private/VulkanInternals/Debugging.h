@@ -67,8 +67,8 @@ public:
 
     VulkanDebugGraphics(const VulkanDebugGraphics &other);
     VulkanDebugGraphics(VulkanDebugGraphics &&rValue);
-    void operator=(const VulkanDebugGraphics &other);
-    void operator=(VulkanDebugGraphics &&rValue);
+    void operator= (const VulkanDebugGraphics &other);
+    void operator= (VulkanDebugGraphics &&rValue);
 
     void markObject(const IVulkanResources *resource) const;
     void markObject(uint64 objectHandle, const String &objectName, VkObjectType objectType) const;

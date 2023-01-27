@@ -50,11 +50,11 @@ public:
     // Actual initialization
     FontManager(EInitType);
     FontManager(FontManager &&otherManager);
-    FontManager &operator=(FontManager &&otherManager);
+    FontManager &operator= (FontManager &&otherManager);
     ~FontManager();
     // No copy allowed
     FontManager(const FontManager &otherManager) = delete;
-    FontManager &operator=(const FontManager &otherManager) = delete;
+    FontManager &operator= (const FontManager &otherManager) = delete;
 
     void clear();
 
@@ -77,7 +77,7 @@ public:
      * @return void
      */
     APPLICATION_EXPORT void
-        addGlyphs(FontIndex font, const std::vector<ValueRange<uint32>> &glyphCodeRanges, const std::vector<uint32> &heights) const;
+    addGlyphs(FontIndex font, const std::vector<ValueRange<uint32>> &glyphCodeRanges, const std::vector<uint32> &heights) const;
     APPLICATION_EXPORT void addGlyphs(FontIndex font, const ValueRange<uint32> &glyphCodeRange, uint32 height) const;
 
     // Flushes all pending glyphs and font added

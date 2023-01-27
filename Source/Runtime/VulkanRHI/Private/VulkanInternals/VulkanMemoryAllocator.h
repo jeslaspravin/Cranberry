@@ -49,7 +49,7 @@ namespace std
 template <>
 struct default_delete<IVulkanMemoryAllocator>
 {
-    void operator()(IVulkanMemoryAllocator *_Ptr) const noexcept
+    void operator() (IVulkanMemoryAllocator *_Ptr) const noexcept
     {
         _Ptr->destroyAllocator();
         delete _Ptr;

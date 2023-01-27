@@ -41,14 +41,14 @@ private:
     StringID id;
 
     template <ArchiveTypeName ArchiveType>
-    friend ArchiveType &operator<<(ArchiveType &archive, NameString &value);
+    friend ArchiveType &operator<< (ArchiveType &archive, NameString &value);
 
 public:
     STRING_FUNCQUALIFIER NameString() = default;
     STRING_FUNCQUALIFIER NameString(const NameString &) = default;
     STRING_FUNCQUALIFIER NameString(NameString &&) = default;
-    STRING_FUNCQUALIFIER NameString &operator=(const NameString &) = default;
-    STRING_FUNCQUALIFIER NameString &operator=(NameString &&) = default;
+    STRING_FUNCQUALIFIER NameString &operator= (const NameString &) = default;
+    STRING_FUNCQUALIFIER NameString &operator= (NameString &&) = default;
 
     STRING_FUNCQUALIFIER explicit NameString(EInitType initType)
         : nameStr()
@@ -75,19 +75,19 @@ public:
         , id(str)
     {}
     // Additional assignments
-    FORCE_INLINE NameString &operator=(const String &str)
+    FORCE_INLINE NameString &operator= (const String &str)
     {
         nameStr = str;
         id = nameStr;
         return *this;
     }
-    STRING_FUNCQUALIFIER NameString &operator=(const AChar *str)
+    STRING_FUNCQUALIFIER NameString &operator= (const AChar *str)
     {
         nameStr = UTF8_TO_TCHAR(str);
         id = str;
         return *this;
     }
-    STRING_FUNCQUALIFIER NameString &operator=(const WChar *str)
+    STRING_FUNCQUALIFIER NameString &operator= (const WChar *str)
     {
         nameStr = WCHAR_TO_TCHAR(str);
         id = str;
@@ -95,7 +95,7 @@ public:
     }
 
     // Equality
-    CONST_EXPR std::strong_ordering operator<=>(const NameString &rhs) const noexcept
+    CONST_EXPR std::strong_ordering operator<=> (const NameString &rhs) const noexcept
     {
         std::strong_ordering ordering = id <=> rhs.id;
         if (ordering == std::strong_ordering::equal)
@@ -105,23 +105,23 @@ public:
         return ordering;
     }
     // Since the == operator is necessary even though spaceship is defined for hash map
-    CONST_EXPR bool operator==(const NameString &rhs) const noexcept { return id == rhs.id && nameStr.isEqual(rhs.nameStr); }
+    CONST_EXPR bool operator== (const NameString &rhs) const noexcept { return id == rhs.id && nameStr.isEqual(rhs.nameStr); }
     // String ID equality
-    friend CONST_EXPR std::strong_ordering operator<=>(const NameString &lhs, const StringID &rhs) noexcept { return lhs.id <=> rhs; }
-    friend CONST_EXPR bool operator==(const NameString &lhs, const StringID &rhs) noexcept { return lhs.id == rhs; }
-    friend CONST_EXPR std::strong_ordering operator<=>(const StringID &lhs, const NameString &rhs) noexcept { return lhs <=> rhs.id; }
-    friend CONST_EXPR bool operator==(const StringID &lhs, const NameString &rhs) noexcept { return lhs == rhs.id; }
+    friend CONST_EXPR std::strong_ordering operator<=> (const NameString &lhs, const StringID &rhs) noexcept { return lhs.id <=> rhs; }
+    friend CONST_EXPR bool operator== (const NameString &lhs, const StringID &rhs) noexcept { return lhs.id == rhs; }
+    friend CONST_EXPR std::strong_ordering operator<=> (const StringID &lhs, const NameString &rhs) noexcept { return lhs <=> rhs.id; }
+    friend CONST_EXPR bool operator== (const StringID &lhs, const NameString &rhs) noexcept { return lhs == rhs.id; }
 
     FORCE_INLINE const String &toString() const { return nameStr; }
     FORCE_INLINE bool isValid() const noexcept { return id.isValid(); }
-    FORCE_INLINE explicit operator StringID() const noexcept { return id; }
-    FORCE_INLINE explicit operator String() const noexcept { return nameStr; }
+    FORCE_INLINE explicit operator StringID () const noexcept { return id; }
+    FORCE_INLINE explicit operator String () const noexcept { return nameStr; }
 };
 
 template <>
 struct PROGRAMCORE_EXPORT std::hash<NameString>
 {
-    NODISCARD SizeT operator()(const NameString &keyval) const noexcept { return StringID(keyval).getID(); }
+    NODISCARD SizeT operator() (const NameString &keyval) const noexcept { return StringID(keyval).getID(); }
 };
 
 #undef STRING_FUNCQUALIFIER

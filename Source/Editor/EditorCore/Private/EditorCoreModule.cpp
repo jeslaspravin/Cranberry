@@ -49,7 +49,9 @@ void EditorCoreModule::release() {}
 void EditorCoreModule::registerAssetImporter(CBEClass importerClass)
 {
     if (importerClass == nullptr)
+    {
         return;
+    }
     AssetImporterBase *importer = cbe::cast<AssetImporterBase>(cbe::getDefaultObject(importerClass));
     if (importer && std::find(importers.cbegin(), importers.cend(), importer) == importers.cend())
     {

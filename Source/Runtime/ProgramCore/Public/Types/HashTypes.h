@@ -62,7 +62,7 @@ DEBUG_INLINE size_t hashRange(It first, It last)
 template <typename... SeedTypes>
 void combineSeeds(size_t &outSeed, SeedTypes &&...seeds);
 template <>
-FORCE_INLINE void combineSeeds(size_t &/*outSeed*/)
+FORCE_INLINE void combineSeeds(size_t & /*outSeed*/)
 {}
 template <typename FirstSeedType, typename... SeedTypes>
 FORCE_INLINE void combineSeeds(size_t &outSeed, FirstSeedType &&seed, SeedTypes &&...seeds)
@@ -84,7 +84,7 @@ DEBUG_INLINE size_t hashAllReturn(Types &&...hashables)
 template <typename... Types>
 void hashAllInto(size_t &outSeed, Types &&...hashables);
 template <>
-FORCE_INLINE void hashAllInto(size_t &/*outSeed*/)
+FORCE_INLINE void hashAllInto(size_t & /*outSeed*/)
 {}
 template <typename FirstType, typename... Types>
 FORCE_INLINE void hashAllInto(size_t &outSeed, FirstType &&hashable, Types &&...hashables)
@@ -97,7 +97,7 @@ FORCE_INLINE void hashAllInto(size_t &outSeed, FirstType &&hashable, Types &&...
 template <typename FirstType, typename SecondType>
 struct std::hash<std::pair<FirstType, SecondType>>
 {
-    NODISCARD size_t operator()(const std::pair<FirstType, SecondType> &val) const noexcept
+    NODISCARD size_t operator() (const std::pair<FirstType, SecondType> &val) const noexcept
     {
         auto hashCode = HashUtility::hash(val.first);
         HashUtility::hashCombine(hashCode, val.second);
@@ -112,7 +112,7 @@ struct std::hash<PtrType *>
     using is_transparent = std::true_type;
     using ConstPtr = std::remove_cv_t<PtrType> const *;
 
-    NODISCARD size_t operator()(ConstPtr const &ptr) const noexcept { return HashUtility::hash(ptr); }
+    NODISCARD size_t operator() (ConstPtr const &ptr) const noexcept { return HashUtility::hash(ptr); }
 };
 template <typename PtrType>
 struct std::equal_to<PtrType *>
@@ -120,9 +120,9 @@ struct std::equal_to<PtrType *>
     using is_transparent = std::true_type;
     using ConstPtr = std::remove_cv_t<PtrType> const *;
 
-    NODISCARD constexpr bool operator()(ConstPtr const &lhs, ConstPtr const &rhs) const { return lhs == rhs; }
-    NODISCARD constexpr bool operator()(UPtrInt lhs, ConstPtr const &rhs) const { return reinterpret_cast<ConstPtr>(lhs) == rhs; }
-    NODISCARD constexpr bool operator()(ConstPtr const &lhs, UPtrInt rhs) const { return lhs == reinterpret_cast<ConstPtr>(rhs); }
+    NODISCARD constexpr bool operator() (ConstPtr const &lhs, ConstPtr const &rhs) const { return lhs == rhs; }
+    NODISCARD constexpr bool operator() (UPtrInt lhs, ConstPtr const &rhs) const { return reinterpret_cast<ConstPtr>(lhs) == rhs; }
+    NODISCARD constexpr bool operator() (ConstPtr const &lhs, UPtrInt rhs) const { return lhs == reinterpret_cast<ConstPtr>(rhs); }
 };
 template <typename PtrType>
 struct std::less<PtrType *>
@@ -130,9 +130,9 @@ struct std::less<PtrType *>
     using is_transparent = std::true_type;
     using ConstPtr = std::remove_cv_t<PtrType> const *;
 
-    NODISCARD constexpr bool operator()(ConstPtr const &lhs, ConstPtr const &rhs) const { return lhs < rhs; }
-    NODISCARD constexpr bool operator()(UPtrInt lhs, ConstPtr const &rhs) const { return reinterpret_cast<ConstPtr>(lhs) < rhs; }
-    NODISCARD constexpr bool operator()(ConstPtr const &lhs, UPtrInt rhs) const { return lhs < reinterpret_cast<ConstPtr>(rhs); }
+    NODISCARD constexpr bool operator() (ConstPtr const &lhs, ConstPtr const &rhs) const { return lhs < rhs; }
+    NODISCARD constexpr bool operator() (UPtrInt lhs, ConstPtr const &rhs) const { return reinterpret_cast<ConstPtr>(lhs) < rhs; }
+    NODISCARD constexpr bool operator() (ConstPtr const &lhs, UPtrInt rhs) const { return lhs < reinterpret_cast<ConstPtr>(rhs); }
 };
 template <typename PtrType>
 struct std::greater<PtrType *>
@@ -140,7 +140,7 @@ struct std::greater<PtrType *>
     using is_transparent = std::true_type;
     using ConstPtr = std::remove_cv_t<PtrType> const *;
 
-    NODISCARD constexpr bool operator()(ConstPtr const &lhs, ConstPtr const &rhs) const { return lhs > rhs; }
-    NODISCARD constexpr bool operator()(UPtrInt lhs, ConstPtr const &rhs) const { return reinterpret_cast<ConstPtr>(lhs) > rhs; }
-    NODISCARD constexpr bool operator()(ConstPtr const &lhs, UPtrInt rhs) const { return lhs > reinterpret_cast<ConstPtr>(rhs); }
+    NODISCARD constexpr bool operator() (ConstPtr const &lhs, ConstPtr const &rhs) const { return lhs > rhs; }
+    NODISCARD constexpr bool operator() (UPtrInt lhs, ConstPtr const &rhs) const { return reinterpret_cast<ConstPtr>(lhs) > rhs; }
+    NODISCARD constexpr bool operator() (ConstPtr const &lhs, UPtrInt rhs) const { return lhs > reinterpret_cast<ConstPtr>(rhs); }
 };

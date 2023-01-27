@@ -27,7 +27,7 @@ template <>
 struct std::hash<tinyobj::index_t>
 {
 
-    size_t operator()(const tinyobj::index_t keyval) const noexcept
+    size_t operator() (const tinyobj::index_t keyval) const noexcept
     {
         size_t hashVal = std::hash<int32>{}(keyval.vertex_index);
         HashUtility::hashCombine(hashVal, keyval.normal_index);
@@ -38,7 +38,7 @@ struct std::hash<tinyobj::index_t>
 template <>
 struct std::equal_to<tinyobj::index_t>
 {
-    constexpr bool operator()(const tinyobj::index_t &lhs, const tinyobj::index_t &rhs) const
+    constexpr bool operator() (const tinyobj::index_t &lhs, const tinyobj::index_t &rhs) const
     {
         return lhs.vertex_index == rhs.vertex_index && lhs.normal_index == rhs.normal_index && lhs.texcoord_index == rhs.texcoord_index;
     }
@@ -197,7 +197,9 @@ void calcTangent(
 void rotateVertices(tinyobj::attrib_t &attrib, const StaticMeshImportOptions &options)
 {
     if (!options.bFromYUp)
+    {
         return;
+    }
 
     static const Quat ROTATION_Y2Z_UP = Quat(90.f, Vector3D::FWD);
 

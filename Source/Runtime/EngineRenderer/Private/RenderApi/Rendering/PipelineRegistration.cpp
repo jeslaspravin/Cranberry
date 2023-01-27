@@ -27,7 +27,7 @@ GraphicsPipelineFactoryRegistrant::GraphicsPipelineFactoryRegistrant(const TChar
     PipelineFactory::graphicsPipelineFactoriesRegistry().insert({ shaderName, *this });
 }
 
-FORCE_INLINE PipelineBase *GraphicsPipelineFactoryRegistrant::operator()(
+FORCE_INLINE PipelineBase *GraphicsPipelineFactoryRegistrant::operator() (
     IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper, const PipelineFactoryArgs &args
 ) const
 {
@@ -52,7 +52,7 @@ ComputePipelineFactoryRegistrant::ComputePipelineFactoryRegistrant(const TChar *
     PipelineFactory::computePipelineFactoriesRegistry().insert({ shaderName, *this });
 }
 
-FORCE_INLINE PipelineBase *ComputePipelineFactoryRegistrant::operator()(
+FORCE_INLINE PipelineBase *ComputePipelineFactoryRegistrant::operator() (
     IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper, const PipelineFactoryArgs &args
 ) const
 {
@@ -84,7 +84,7 @@ std::map<StringID, ComputePipelineFactoryRegistrant> &PipelineFactory::computePi
 }
 
 PipelineBase *
-    PipelineFactory::create(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper, const PipelineFactoryArgs &args) const
+PipelineFactory::create(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper, const PipelineFactoryArgs &args) const
 {
     fatalAssertf(args.pipelineShader, "Pipeline shader cannot be null");
     if (args.pipelineShader->getShaderConfig()->getType()->isChildOf<DrawMeshShaderConfig>()

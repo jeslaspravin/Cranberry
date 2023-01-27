@@ -129,8 +129,8 @@ public:
 };
 
 template <ArchiveTypeName ArchiveType, ReflectClassType ObjectType>
-requires(std::derived_from<ArchiveType, ObjectArchive> &&std::derived_from<ObjectType, cbe::Object>) ArchiveType &
-    operator<<(ArchiveType &archive, ObjectType *&value)
+requires (std::derived_from<ArchiveType, ObjectArchive> && std::derived_from<ObjectType, cbe::Object>)
+ArchiveType &operator<< (ArchiveType &archive, ObjectType *&value)
 {
     ObjectArchive &objArchive = static_cast<ObjectArchive &>(archive);
     cbe::Object **objectPtrPtr = reinterpret_cast<cbe::Object **>(&value);

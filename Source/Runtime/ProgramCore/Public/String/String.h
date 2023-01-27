@@ -84,9 +84,8 @@ public:
     // Count of String's character code points
     FORCE_INLINE uint64 codeCount() const;
 
-    STRING_FUNCQUALIFIER bool findAny(
-        size_type &outIndex, String &outFoundString, const std::vector<String> &findStrgs, size_type offset = 0, bool fromEnd = false
-    ) const
+    STRING_FUNCQUALIFIER bool
+    findAny(size_type &outIndex, String &outFoundString, const std::vector<String> &findStrgs, size_type offset = 0, bool fromEnd = false) const
     {
         size_type foundAt = npos;
         for (const String &strg : findStrgs)
@@ -134,7 +133,9 @@ public:
     STRING_FUNCQUALIFIER bool isEqual(const String &match, bool bMatchCase = true) const
     {
         if (length() != match.length())
+        {
             return false;
+        }
 
         if (bMatchCase)
         {
@@ -155,7 +156,9 @@ public:
     STRING_FUNCQUALIFIER bool startsWith(const String &match, bool bMatchCase = true) const
     {
         if (length() < match.length())
+        {
             return false;
+        }
 
         if (bMatchCase)
         {
@@ -191,7 +194,9 @@ public:
     STRING_FUNCQUALIFIER bool endsWith(const String &match, bool bMatchCase = true) const
     {
         if (length() < match.length())
+        {
             return false;
+        }
 
         if (bMatchCase)
         {
@@ -478,7 +483,7 @@ public:
 template <>
 struct PROGRAMCORE_EXPORT std::hash<String>
 {
-    NODISCARD SizeT operator()(const String &keyval) const noexcept
+    NODISCARD SizeT operator() (const String &keyval) const noexcept
     {
         auto stringHash = hash<BaseString>();
         return stringHash(keyval);

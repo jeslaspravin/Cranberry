@@ -43,7 +43,7 @@ struct ReflectTypeInfo
     uint32 alignment; // alignof(Type)
     uint32 qualifiers;
 
-    std::strong_ordering operator<=>(const ReflectTypeInfo &otherTypeInfo) const = default;
+    std::strong_ordering operator<=> (const ReflectTypeInfo &otherTypeInfo) const = default;
 
     REFLECTIONRUNTIME_EXPORT static const ReflectTypeInfo *createTypeInfo(
         const std::type_info &cleanTypeInfo, const ReflectTypeInfo *innerTypeInfo, SizeT size, uint32 alignment, uint32 inQualifiers
@@ -105,9 +105,10 @@ const ReflectTypeInfo *typeInfoFrom()
         typeid(CleanType<Type>), (std::is_same_v<Type, InnerType> ? nullptr : typeInfoFrom<InnerType>()), TypeSizeAndAlignment<Type>::sizeOf(),
         TypeSizeAndAlignment<Type>::alignOf(),
         {
-            ConditionalValue_v<
-                uint32, uint32, std::is_lvalue_reference<Type>, EReflectTypeQualifiers::LReference,
-                0> | ConditionalValue_v<uint32, uint32, std::is_rvalue_reference<Type>, EReflectTypeQualifiers::RReference, 0> | ConditionalValue_v<uint32, uint32, std::is_const<Type>, EReflectTypeQualifiers::Constant, 0> | ConditionalValue_v<uint32, uint32, std::is_pointer<Type>, EReflectTypeQualifiers::Pointer, 0>
+            ConditionalValue_v<uint32, uint32, std::is_lvalue_reference<Type>, EReflectTypeQualifiers::LReference, 0>
+            | ConditionalValue_v<uint32, uint32, std::is_rvalue_reference<Type>, EReflectTypeQualifiers::RReference, 0>
+            | ConditionalValue_v<uint32, uint32, std::is_const<Type>, EReflectTypeQualifiers::Constant, 0>
+            | ConditionalValue_v<uint32, uint32, std::is_pointer<Type>, EReflectTypeQualifiers::Pointer, 0>
             //| ConditionalValue_v<uint32, uint32, std::is_class<Type>,
             // EReflectTypeQualifiers::ClassType, 0> | ConditionalValue_v<uint32, uint32,
             // std::is_enum<Type>, EReflectTypeQualifiers::EnumType, 0>
@@ -132,7 +133,7 @@ FORCE_INLINE std::vector<const ReflectTypeInfo *> typeInfoListFrom()
     << (BIT_SET(ti.qualifiers, EReflectTypeQualifiers::Type::QualifierEnum) ? TCHAR(" " #QualifierEnum) : TCHAR(""))
 
 // Logger overrides
-inline OutputStream &operator<<(OutputStream &stream, const ReflectTypeInfo &ti)
+inline OutputStream &operator<< (OutputStream &stream, const ReflectTypeInfo &ti)
 {
     stream << TCHAR("Type info[0x") << std::hex << &ti << std::dec << TCHAR("]");
     stream << TCHAR("[Name:") << ti.typeID.name() << TCHAR(", ");
@@ -152,7 +153,7 @@ inline OutputStream &operator<<(OutputStream &stream, const ReflectTypeInfo &ti)
 template <>
 struct std::hash<ReflectTypeInfo>
 {
-    NODISCARD size_t operator()(const ReflectTypeInfo &keyval) const noexcept
+    NODISCARD size_t operator() (const ReflectTypeInfo &keyval) const noexcept
     {
         size_t hashSeed = 0;
         // we do not have to hash size and alignment as they are just info variables

@@ -18,9 +18,8 @@
 #include "Classes/StaticMesh.h"
 #include "Components/StaticMeshComponent.h"
 
-cbe::StaticMesh *EditorHelpers::createStaticMesh(
-    const String &packageName, const String &packagePath, const String &meshName, cbe::SMCreateInfo &&createInfo
-)
+cbe::StaticMesh *
+EditorHelpers::createStaticMesh(const String &packageName, const String &packagePath, const String &meshName, cbe::SMCreateInfo &&createInfo)
 {
     cbe::Package *package = cbe::Package::createPackage(packageName, packagePath, false);
     if (package == nullptr)
@@ -36,10 +35,10 @@ cbe::StaticMesh *EditorHelpers::createStaticMesh(
     debugAssert(mesh);
 
     return mesh;
-};
+}
 
 cbe::Actor *
-    EditorHelpers::addStaticMeshesToWorld(const std::vector<cbe::StaticMesh *> &staticMeshes, cbe::World *world, const String &rootActorName)
+EditorHelpers::addStaticMeshesToWorld(const std::vector<cbe::StaticMesh *> &staticMeshes, cbe::World *world, const String &rootActorName)
 {
     using namespace cbe;
     if (rootActorName.empty())

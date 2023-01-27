@@ -35,8 +35,8 @@ public:
     explicit Rotation(float allValue);
     Rotation(const Rotation &other);
     Rotation(Rotation &&other);
-    Rotation &operator=(const Rotation &other);
-    Rotation &operator=(Rotation &&other);
+    Rotation &operator= (const Rotation &other);
+    Rotation &operator= (Rotation &&other);
 
     float &roll();
     float &pitch();
@@ -50,24 +50,24 @@ public:
     Vector3D upVector() const;
 
 public:
-    bool operator==(const Rotation &b) const;
+    bool operator== (const Rotation &b) const;
     // Component wise operations
-    Rotation operator*(const Rotation &b) const;
-    Rotation &operator*=(const Rotation &b);
-    Rotation operator/(const Rotation &b) const;
-    Rotation &operator/=(const Rotation &b);
-    Rotation operator-(const Rotation &b) const;
-    Rotation &operator-=(const Rotation &b);
-    Rotation operator+(const Rotation &b) const;
-    Rotation &operator+=(const Rotation &b);
-    Rotation operator*(float scalar) const;
-    Rotation &operator*=(float scalar);
-    Rotation operator/(float scalar) const;
-    Rotation &operator/=(float scalar);
-    Rotation operator-(float scalar) const;
-    Rotation &operator-=(float scalar);
-    Rotation operator+(float scalar) const;
-    Rotation &operator+=(float scalar);
+    Rotation operator* (const Rotation &b) const;
+    Rotation &operator*= (const Rotation &b);
+    Rotation operator/ (const Rotation &b) const;
+    Rotation &operator/= (const Rotation &b);
+    Rotation operator- (const Rotation &b) const;
+    Rotation &operator-= (const Rotation &b);
+    Rotation operator+ (const Rotation &b) const;
+    Rotation &operator+= (const Rotation &b);
+    Rotation operator* (float scalar) const;
+    Rotation &operator*= (float scalar);
+    Rotation operator/ (float scalar) const;
+    Rotation &operator/= (float scalar);
+    Rotation operator- (float scalar) const;
+    Rotation &operator-= (float scalar);
+    Rotation operator+ (float scalar) const;
+    Rotation &operator+= (float scalar);
     bool isSame(const Rotation &b, float epsilon = SMALL_EPSILON) const;
     bool isFinite() const;
 

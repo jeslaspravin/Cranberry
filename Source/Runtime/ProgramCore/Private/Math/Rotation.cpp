@@ -36,13 +36,13 @@ Rotation::Rotation(float r, float p, float y)
     : value(r, p, y)
 {}
 
-Rotation &Rotation::operator=(const Rotation &other)
+Rotation &Rotation::operator= (const Rotation &other)
 {
     value = other.value;
     return *this;
 }
 
-Rotation &Rotation::operator=(Rotation &&other)
+Rotation &Rotation::operator= (Rotation &&other)
 {
     value = std::move(other.value);
     return *this;
@@ -60,67 +60,67 @@ float &Rotation::yaw() { return value.z; }
 
 float Rotation::yaw() const { return value.z; }
 
-bool Rotation::operator==(const Rotation &b) const { return isSame(b); }
+bool Rotation::operator== (const Rotation &b) const { return isSame(b); }
 
-Rotation Rotation::operator*(const Rotation &b) const { return Rotation(value * b.value); }
+Rotation Rotation::operator* (const Rotation &b) const { return Rotation(value * b.value); }
 
-Rotation &Rotation::operator*=(const Rotation &b)
+Rotation &Rotation::operator*= (const Rotation &b)
 {
     value *= b.value;
     return *this;
 }
 
-Rotation Rotation::operator*(float scalar) const { return Rotation(value * scalar); }
+Rotation Rotation::operator* (float scalar) const { return Rotation(value * scalar); }
 
-Rotation &Rotation::operator*=(float scalar)
+Rotation &Rotation::operator*= (float scalar)
 {
     value *= scalar;
     return *this;
 }
 
-Rotation Rotation::operator/(const Rotation &b) const { return Rotation(value / b.value); }
+Rotation Rotation::operator/ (const Rotation &b) const { return Rotation(value / b.value); }
 
-Rotation &Rotation::operator/=(const Rotation &b)
+Rotation &Rotation::operator/= (const Rotation &b)
 {
     value /= b.value;
     return *this;
 }
 
-Rotation Rotation::operator/(float scalar) const { return Rotation(value / scalar); }
+Rotation Rotation::operator/ (float scalar) const { return Rotation(value / scalar); }
 
-Rotation &Rotation::operator/=(float scalar)
+Rotation &Rotation::operator/= (float scalar)
 {
     value /= scalar;
     return *this;
 }
 
-Rotation Rotation::operator-(const Rotation &b) const { return Rotation(value - b.value); }
+Rotation Rotation::operator- (const Rotation &b) const { return Rotation(value - b.value); }
 
-Rotation &Rotation::operator-=(const Rotation &b)
+Rotation &Rotation::operator-= (const Rotation &b)
 {
     value -= b.value;
     return *this;
 }
 
-Rotation Rotation::operator-(float scalar) const { return Rotation(value - scalar); }
+Rotation Rotation::operator- (float scalar) const { return Rotation(value - scalar); }
 
-Rotation &Rotation::operator-=(float scalar)
+Rotation &Rotation::operator-= (float scalar)
 {
     value -= scalar;
     return *this;
 }
 
-Rotation Rotation::operator+(const Rotation &b) const { return Rotation(value + b.value); }
+Rotation Rotation::operator+ (const Rotation &b) const { return Rotation(value + b.value); }
 
-Rotation &Rotation::operator+=(const Rotation &b)
+Rotation &Rotation::operator+= (const Rotation &b)
 {
     value += b.value;
     return *this;
 }
 
-Rotation Rotation::operator+(float scalar) const { return Rotation(value + scalar); }
+Rotation Rotation::operator+ (float scalar) const { return Rotation(value + scalar); }
 
-Rotation &Rotation::operator+=(float scalar)
+Rotation &Rotation::operator+= (float scalar)
 {
     value += scalar;
     return *this;

@@ -39,21 +39,21 @@ struct CXStringWrapper : public RefCountable
 };
 
 // Hashing overrides
-FORCE_INLINE bool operator==(const CXCursor &lhs, const CXCursor &rhs) { return clang_equalCursors(lhs, rhs); }
+FORCE_INLINE bool operator== (const CXCursor &lhs, const CXCursor &rhs) { return clang_equalCursors(lhs, rhs); }
 template <>
 struct std::hash<CXCursor>
 {
-    NODISCARD SizeT operator()(const CXCursor &keyval) const noexcept { return clang_hashCursor(keyval); }
+    NODISCARD SizeT operator() (const CXCursor &keyval) const noexcept { return clang_hashCursor(keyval); }
 };
 
 // Logger overrides
-FORCE_INLINE OutputStream &operator<<(OutputStream &stream, const CXStringRef &str)
+FORCE_INLINE OutputStream &operator<< (OutputStream &stream, const CXStringRef &str)
 {
     stream << str->toString();
     return stream;
 }
 
-FORCE_INLINE OutputStream &operator<<(OutputStream &stream, const CXString &cxStr)
+FORCE_INLINE OutputStream &operator<< (OutputStream &stream, const CXString &cxStr)
 {
     if (const AChar *cPtr = clang_getCString(cxStr))
     {
@@ -63,7 +63,7 @@ FORCE_INLINE OutputStream &operator<<(OutputStream &stream, const CXString &cxSt
     return stream;
 }
 
-FORCE_INLINE OutputStream &operator<<(OutputStream &stream, const CXSourceLocation &cxStrLoc)
+FORCE_INLINE OutputStream &operator<< (OutputStream &stream, const CXSourceLocation &cxStrLoc)
 {
     CXFile file;
     uint32 lineNum, colNum;

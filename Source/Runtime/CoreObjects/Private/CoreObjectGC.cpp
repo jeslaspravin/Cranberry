@@ -183,7 +183,9 @@ void CoreObjectGC::clearUnused(TickRep &budgetTicks)
 void CoreObjectGC::startNewGC(TickRep &budgetTicks)
 {
     if (gCBEObjectAllocators == nullptr)
+    {
         return;
+    }
 
     objUsedFlags.clear();
     classesLeft.clear();

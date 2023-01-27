@@ -27,18 +27,15 @@ private:
 public:
     static bool shouldReflectHeader(const String &headerFilePath);
     static bool shouldReflectHeader(const String &headerFilePath, const std::vector<StringView> &lines);
-    static void parseClassMeta(
-        std::vector<String> &metaFlags, std::vector<String> &metaData, std::vector<String> &buildFlags, const String &annotatedStr
-    );
-    static void parseFieldMeta(
-        std::vector<String> &metaFlags, std::vector<String> &metaData, std::vector<String> &buildFlags, const String &annotatedStr
-    );
+    static void
+    parseClassMeta(std::vector<String> &metaFlags, std::vector<String> &metaData, std::vector<String> &buildFlags, const String &annotatedStr);
+    static void
+    parseFieldMeta(std::vector<String> &metaFlags, std::vector<String> &metaData, std::vector<String> &buildFlags, const String &annotatedStr);
     static void parseFunctionMeta(
         std::vector<String> &metaFlags, std::vector<String> &metaData, std::vector<String> &buildFlags, const String &annotatedStr
     );
-    static void parseEnumMeta(
-        std::vector<String> &metaFlags, std::vector<String> &metaData, std::vector<String> &buildFlags, const String &annotatedStr
-    );
+    static void
+    parseEnumMeta(std::vector<String> &metaFlags, std::vector<String> &metaData, std::vector<String> &buildFlags, const String &annotatedStr);
 
     // Gets type name without any const attached to it
     // Cursor if available will be used over type to find type-ref from it

@@ -185,8 +185,7 @@ void RenderTargetTexture::release(RenderTargetTexture *texture)
     ImageResourceRef textureResource = texture->textureResource;
     ENQUEUE_COMMAND(RtDestroyTexture)
     (
-        [rtResource,
-         textureResource](class IRenderCommandList *, IGraphicsInstance *, const GraphicsHelperAPI *)
+        [rtResource, textureResource](class IRenderCommandList *, IGraphicsInstance *, const GraphicsHelperAPI *)
         {
             if (textureResource.isValid())
             {

@@ -415,7 +415,7 @@ GenericRenderPassProperties GlobalRenderingContextBase::renderpassPropsFromFb(co
 }
 
 GenericRenderPassProperties
-    GlobalRenderingContextBase::renderpassPropsFromRpFormat(ERenderPassFormat::Type renderpassFormat, uint32 /*frameIdx*/) const
+GlobalRenderingContextBase::renderpassPropsFromRpFormat(ERenderPassFormat::Type renderpassFormat, uint32 /*frameIdx*/) const
 {
     // const Framebuffer* fb = GlobalBuffers::getFramebuffer(renderpassFormat, frameIdx);
     // if (fb)
@@ -496,7 +496,7 @@ const Framebuffer *GlobalRenderingContextBase::getOrCreateFramebuffer(
 }
 
 PipelineBase *
-    GlobalRenderingContextBase::createNewPipeline(UniqueUtilityShaderObject *shaderObject, const GenericRenderPassProperties &renderpassProps)
+GlobalRenderingContextBase::createNewPipeline(UniqueUtilityShaderObject *shaderObject, const GenericRenderPassProperties &renderpassProps)
 {
     fatalAssertf(
         renderpassProps.renderpassAttachmentFormat.attachments.size()

@@ -50,7 +50,7 @@ private:
     // Copies all staging dst inline. Creates a staging buffer for device only buffers and sets it up ready to be batch copied in caller choice
     // of command buffer. Returns the created staging buffer
     BufferResourceRef
-        copyToBuffer_GenCopyBufferInfo(std::vector<BatchCopyBufferInfo> &outBatchCopies, ArrayView<const BatchCopyBufferData> batchCopies);
+    copyToBuffer_GenCopyBufferInfo(std::vector<BatchCopyBufferInfo> &outBatchCopies, ArrayView<const BatchCopyBufferData> batchCopies);
     void cmdCopyBuffer_GenBarriers(
         std::vector<VkBufferMemoryBarrier2> &outBarriers, const GraphicsResource *cmdBuffer, BufferResourceRef src, BufferResourceRef dst,
         ArrayView<const CopyBufferInfo> copies

@@ -57,7 +57,7 @@ public:
     bool getCompareOp(CoreGraphicsTypes::ECompareOp::Type &compareOpValue);
 
     void setBorderColor(uint8 samplerBorderColFlags);
-    uint8 getBorderColorFlags(bool &/*transparent*/, bool &/*intValue*/, bool &/*useWhiteColor*/) { return config.borderColorFlags; }
+    uint8 getBorderColorFlags(bool & /*transparent*/, bool & /*intValue*/, bool & /*useWhiteColor*/) { return config.borderColorFlags; }
 
     void setTilingMode(ESamplerTilingMode::Type u, ESamplerTilingMode::Type v, ESamplerTilingMode::Type w);
     void getTilingMode(ESamplerTilingMode::Type &u, ESamplerTilingMode::Type &v, ESamplerTilingMode::Type &w);

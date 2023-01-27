@@ -204,7 +204,7 @@ namespace std
 template <>
 struct PROGRAMCORE_EXPORT default_delete<GenericFile>
 {
-    void operator()(GenericFile *_Ptr) const noexcept
+    void operator() (GenericFile *_Ptr) const noexcept
     {
         _Ptr->closeFile();
         delete _Ptr;

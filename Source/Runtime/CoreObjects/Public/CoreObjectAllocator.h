@@ -81,11 +81,10 @@ public:
  * Some private members are copied to PoolAllocator.h's PoolAllocator, If any bug fixes were made do the same there as well!
  */
 template <typename ClassType>
-concept ClassOverridesSlotCount = requires
-{
+concept ClassOverridesSlotCount = requires {
     {
         ClassType::AllocSlotCount
-        } -> std::convertible_to<typename SlotAllocator<sizeof(ClassType), alignof(ClassType), 64, true>::SizeType>;
+    } -> std::convertible_to<typename SlotAllocator<sizeof(ClassType), alignof(ClassType), 64, true>::SizeType>;
     ClassType::AllocSlotCount > 1;
 };
 template <typename ClassType>
@@ -217,7 +216,9 @@ public:
         // Double freeing?
         debugAssert(isValid(allocIdx));
         if (ptr != getAllocAt(allocIdx))
+        {
             return;
+        }
 
         SlotIdxType slotIdx;
         SizeT poolIdx = allocIdxToSlotIdx(slotIdx, allocIdx);

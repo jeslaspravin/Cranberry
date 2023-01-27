@@ -331,7 +331,9 @@ void WindowsPlatformFunctions::detachCosole()
 String WindowsPlatformFunctions::getClipboard()
 {
     if (!::OpenClipboard(NULL))
+    {
         return NULL;
+    }
     HANDLE clipboardHnd = ::GetClipboardData(CF_UNICODETEXT);
     if (clipboardHnd == NULL)
     {
@@ -347,7 +349,9 @@ String WindowsPlatformFunctions::getClipboard()
 bool WindowsPlatformFunctions::setClipboard(const String &text)
 {
     if (!::OpenClipboard(NULL))
+    {
         return false;
+    }
 
     std::wstring clipboardText = TCHAR_TO_WCHAR(text.getChar());
     // Allocate global memory and copy wchar to it, and transfer the ownership to clip board

@@ -23,24 +23,22 @@ template <typename FromType, typename ToType>
 struct IsStaticCastable<FromType, ToType, decltype(static_cast<ToType>(std::declval<FromType>()))> : std::true_type
 {};
 template <typename FromType, typename ToType>
-concept StaticCastable = requires(FromType value)
-{
+concept StaticCastable = requires(FromType value) {
     {
         static_cast<ToType>(value)
-        } -> std::same_as<ToType>;
+    } -> std::same_as<ToType>;
 };
 
 // Indexable checks for both compound types and dynamic pointer array and native array
 template <typename DataType>
-concept IndexableCompoundInternal = requires(DataType val, uint64 idx)
-{
+concept IndexableCompoundInternal = requires(DataType val, uint64 idx) {
     typename DataType::value_type;
     {
         val[idx]
-        } -> std::convertible_to<typename DataType::value_type>;
+    } -> std::convertible_to<typename DataType::value_type>;
     {
         val.size()
-        } -> std::convertible_to<SizeT>;
+    } -> std::convertible_to<SizeT>;
 };
 template <typename DataType>
 concept IndexableCompound = IndexableCompoundInternal<std::remove_cvref_t<DataType>>;

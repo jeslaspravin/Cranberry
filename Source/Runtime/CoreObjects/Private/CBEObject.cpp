@@ -79,7 +79,9 @@ void INTERNAL_ObjectCoreAccessors::setOuterAndName(Object *object, const String 
 {
     fatalAssertf(!newName.empty(), "Object name cannot be empty");
     if (outer == object->getOuter() && object->getName() == newName)
+    {
         return;
+    }
 
     CoreObjectsDB &objectsDb = CoreObjectsModule::objectsDB();
 

@@ -39,7 +39,7 @@ struct StringLiteralStore
 
     CONST_EXPR const TChar *getChar() const { return StoreValue.value; }
 
-    operator String() const { return { StoreValue.value }; }
+    operator String () const { return { StoreValue.value }; }
 
     String toString() const { return { StoreValue.value }; }
 };
@@ -174,7 +174,7 @@ CONST_EXPR void replaceInPlace(CharType *replaceIn, SizeT replaceFrom, SizeT rep
 // Allocated char array must be cleared including null terminated character as count
 template <typename CharType, typename AllocatorType>
 NODISCARD CONST_EXPR CharType *
-    replace(const CharType *replaceIn, SizeT replaceFrom, SizeT replaceLen, const CharType *replaceWith, AllocatorType &allocator)
+replace(const CharType *replaceIn, SizeT replaceFrom, SizeT replaceLen, const CharType *replaceWith, AllocatorType &allocator)
 {
     if (replaceLen <= 0 || replaceIn == nullptr || replaceWith == nullptr)
     {
@@ -275,7 +275,9 @@ CONST_EXPR bool startsWith(const CharType *matchIn, const CharType *match)
     SizeT matchLen = length(match);
 
     if (matchInLen < matchLen)
+    {
         return false;
+    }
 
     StringViewType matchInView(matchIn, 0, matchLen);
     StringViewType matchView(match, 0, matchLen);
@@ -290,7 +292,9 @@ NODISCARD bool startsWith(const CharType *matchIn, const CharType *match, bool b
     SizeT matchLen = length(match);
 
     if (matchInLen < matchLen)
+    {
         return false;
+    }
 
     StringViewType matchInView(matchIn, 0, matchLen);
     StringViewType matchView(match, 0, matchLen);
@@ -332,7 +336,9 @@ NODISCARD bool endsWith(const CharType *matchIn, const CharType *match, bool bMa
     SizeT matchLen = length(match);
 
     if (matchInLen < matchLen)
+    {
         return false;
+    }
 
     StringViewType matchInView(matchIn, matchInLen - matchLen, matchInLen);
     StringViewType matchView(match, 0, matchLen);

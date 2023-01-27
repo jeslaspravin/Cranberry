@@ -82,8 +82,8 @@ public:
     MyClass();
     MyClass(int32 inField);
 
-    operator int32() const;
-    MyClass &operator=(int32 value);
+    operator int32 () const;
+    MyClass &operator= (int32 value);
 
     META_ANNOTATE(, Deprecate)
     virtual void method(const AChar *ch, const int32 &idxRef, Anarchy &outIdx, int32 inNum, int32 *optionalNum) const = 0;

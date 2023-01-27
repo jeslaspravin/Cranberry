@@ -124,14 +124,13 @@ public:
 
     static IReflectionRuntimeModule *get();
     static void
-        registerClassFactory(const StringID &className, const ReflectTypeInfo *classTypeInfo, const ClassPropertyFactoryCell &factoryCell);
+    registerClassFactory(const StringID &className, const ReflectTypeInfo *classTypeInfo, const ClassPropertyFactoryCell &factoryCell);
     static void
-        registerStructFactory(const StringID &structName, const ReflectTypeInfo *structTypeInfo, const ClassPropertyFactoryCell &factoryCell);
+    registerStructFactory(const StringID &structName, const ReflectTypeInfo *structTypeInfo, const ClassPropertyFactoryCell &factoryCell);
     static void registerEnumFactory(const StringID &enumName, const ReflectTypeInfo *enumTypeInfo, const EnumPropertyFactoryCell &factoryCell);
     static void registerTypeFactory(const ReflectTypeInfo *typeInfo, const TypedPropertyFactoryCell &factoryCell);
     // Just a function to have same register signature as other factor register functions
-    FORCE_INLINE static void
-        registerTypeFactory(const StringID &, const ReflectTypeInfo *typeInfo, const TypedPropertyFactoryCell &factoryCell)
+    FORCE_INLINE static void registerTypeFactory(const StringID &, const ReflectTypeInfo *typeInfo, const TypedPropertyFactoryCell &factoryCell)
     {
         registerTypeFactory(typeInfo, factoryCell);
     }

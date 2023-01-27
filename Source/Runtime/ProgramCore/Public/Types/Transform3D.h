@@ -24,7 +24,7 @@ private:
     Rotation transformRotation;
 
     template <ArchiveTypeName ArchiveType>
-    friend ArchiveType &operator<<(ArchiveType &archive, Transform3D &value);
+    friend ArchiveType &operator<< (ArchiveType &archive, Transform3D &value);
 
 public:
     static Transform3D ZERO_TRANSFORM;
@@ -38,9 +38,9 @@ public:
     Transform3D(const Matrix4 &transformMatrix);
     Transform3D(const Transform3D &otherTransform);
     Transform3D(Transform3D &&otherTransform);
-    Transform3D &operator=(const Transform3D &otherTransform);
-    Transform3D &operator=(Transform3D &&otherTransform);
-    Transform3D &operator=(const Matrix4 &transformMatrix);
+    Transform3D &operator= (const Transform3D &otherTransform);
+    Transform3D &operator= (Transform3D &&otherTransform);
+    Transform3D &operator= (const Matrix4 &transformMatrix);
     bool isSame(const Transform3D &b, float epsilon = SMALL_EPSILON) const;
 
     const Vector3D &getTranslation() const;

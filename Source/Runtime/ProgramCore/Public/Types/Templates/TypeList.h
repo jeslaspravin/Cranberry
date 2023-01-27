@@ -335,7 +335,7 @@ struct DoForEach<TypeList<ThisType, NextType>, Callable>
     {
         Callable<ThisType, UserType>{}(userData);
         DoForEach<NextType, Callable>::call(userData);
-    };
+    }
 };
 
 // Creates typelist from list of types

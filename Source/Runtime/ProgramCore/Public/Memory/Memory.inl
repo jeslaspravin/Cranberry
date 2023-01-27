@@ -34,13 +34,13 @@ FUNCTION_QUALIFIER void *CBEMemory::memAlloc(SizeT size, uint32 alignment /*= CB
 }
 
 FUNCTION_QUALIFIER void *
-    CBEMemory::tryRealloc(void *currentPtr, SizeT size, uint32 alignment /*= CBEMemAllocWrapper::AllocType::DEFAULT_ALIGNMENT*/) noexcept
+CBEMemory::tryRealloc(void *currentPtr, SizeT size, uint32 alignment /*= CBEMemAllocWrapper::AllocType::DEFAULT_ALIGNMENT*/) noexcept
 {
     return GALLOC->tryRealloc(currentPtr, size, alignment);
 }
 
 FUNCTION_QUALIFIER void *
-    CBEMemory::memRealloc(void *currentPtr, SizeT size, uint32 alignment /*= CBEMemAllocWrapper::AllocType::DEFAULT_ALIGNMENT*/) noexcept
+CBEMemory::memRealloc(void *currentPtr, SizeT size, uint32 alignment /*= CBEMemAllocWrapper::AllocType::DEFAULT_ALIGNMENT*/) noexcept
 {
     return GALLOC->memRealloc(currentPtr, size, alignment);
 }

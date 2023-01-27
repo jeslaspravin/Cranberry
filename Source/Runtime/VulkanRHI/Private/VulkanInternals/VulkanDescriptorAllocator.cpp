@@ -20,7 +20,7 @@
 
 #include <array>
 
-bool DescriptorPoolSizeLessThan::operator()(const VkDescriptorPoolSize &lhs, const VkDescriptorPoolSize &rhs) const
+bool DescriptorPoolSizeLessThan::operator() (const VkDescriptorPoolSize &lhs, const VkDescriptorPoolSize &rhs) const
 {
     // Not using type count as the query pool's descriptors type will be unique and merged at calling
     // code return lhs.type == rhs.type ? lhs.descriptorCount < rhs.descriptorCount : lhs.type <
@@ -57,7 +57,7 @@ bool DescriptorsSetQueryLessThan::recursivelyCompare(
     return rhsEnded != 0 ? false : true;
 }
 
-bool DescriptorsSetQueryLessThan::operator()(const DescriptorsSetQuery &lhs, const DescriptorsSetQuery &rhs) const
+bool DescriptorsSetQueryLessThan::operator() (const DescriptorsSetQuery &lhs, const DescriptorsSetQuery &rhs) const
 {
     auto lhsItr = lhs.supportedTypes.cbegin();
     auto lhsEnd = lhs.supportedTypes.cend();
@@ -342,8 +342,7 @@ VulkanDescriptorsSetAllocatorInfo &VulkanDescriptorsSetAllocator::findOrCreateAl
     return *allocationPool;
 }
 
-VulkanDescriptorsSetAllocatorInfo &
-    VulkanDescriptorsSetAllocator::findOrCreateAllocPool(const DescriptorsSetQuery &query, uint32 setsCount)
+VulkanDescriptorsSetAllocatorInfo &VulkanDescriptorsSetAllocator::findOrCreateAllocPool(const DescriptorsSetQuery &query, uint32 setsCount)
 {
     VulkanDescriptorsSetAllocatorInfo *allocationPool = nullptr;
     std::vector<VulkanDescriptorsSetAllocatorInfo *> allocationPoolsFound = findInAvailablePool(query);
@@ -463,7 +462,7 @@ VulkanDescriptorsSetAllocator::~VulkanDescriptorsSetAllocator()
 }
 
 VkDescriptorSet
-    VulkanDescriptorsSetAllocator::allocDescriptorsSet(const DescriptorsSetQuery &query, const VkDescriptorSetLayout &descriptorsSetLayout)
+VulkanDescriptorsSetAllocator::allocDescriptorsSet(const DescriptorsSetQuery &query, const VkDescriptorSetLayout &descriptorsSetLayout)
 {
     // Empty
     if (query.supportedTypes.empty())

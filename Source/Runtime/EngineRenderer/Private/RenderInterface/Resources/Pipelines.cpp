@@ -149,7 +149,9 @@ int32 GraphicsPipelineBase::idxFromParam(GraphicsPipelineQueryParams queryParam)
     // Draw mode
     polyDeg /= int32(config.allowedDrawModes.size());
     while (tempIdx < config.allowedDrawModes.size() && config.allowedDrawModes[tempIdx] != queryParam.drawMode)
+    {
         ++tempIdx;
+    }
     if (tempIdx >= config.allowedDrawModes.size())
     {
         LOG_WARN(
@@ -162,7 +164,9 @@ int32 GraphicsPipelineBase::idxFromParam(GraphicsPipelineQueryParams queryParam)
     polyDeg /= int32(config.supportedCullings.size());
     tempIdx = 0;
     while (tempIdx < config.supportedCullings.size() && config.supportedCullings[tempIdx] != queryParam.cullingMode)
+    {
         ++tempIdx;
+    }
     if (tempIdx >= config.supportedCullings.size())
     {
         LOG_WARN(

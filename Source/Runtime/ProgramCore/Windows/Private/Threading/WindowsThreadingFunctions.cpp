@@ -210,7 +210,9 @@ SystemProcessorsCacheInfo WindowsThreadingFunctions::getProcessorCacheInfo()
         [&cacheInfo, &setupCacheInfo](const SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *procInfo)
         {
             if (procInfo->Cache.CacheSize == 0)
+            {
                 return;
+            }
 
             if (cacheInfo.cacheLineSize == 0)
             {

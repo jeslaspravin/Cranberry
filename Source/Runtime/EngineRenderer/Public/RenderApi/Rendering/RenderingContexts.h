@@ -115,11 +115,11 @@ protected:
     // with predefined render passes
     GenericRenderPassProperties renderpassPropsFromRpFormat(ERenderPassFormat::Type renderpassFormat, uint32 frameIdx) const;
     const Framebuffer *
-        getFramebuffer(const GenericRenderPassProperties &renderpassProps, const std::vector<ImageResourceRef> &frameAttachments) const;
+    getFramebuffer(const GenericRenderPassProperties &renderpassProps, const std::vector<ImageResourceRef> &frameAttachments) const;
     const Framebuffer *
-        createNewFramebuffer(const GenericRenderPassProperties &renderpassProps, const std::vector<ImageResourceRef> &frameAttachments) const;
+    createNewFramebuffer(const GenericRenderPassProperties &renderpassProps, const std::vector<ImageResourceRef> &frameAttachments) const;
     const Framebuffer *
-        getOrCreateFramebuffer(const GenericRenderPassProperties &renderpassProps, const std::vector<ImageResourceRef> &frameAttachments);
+    getOrCreateFramebuffer(const GenericRenderPassProperties &renderpassProps, const std::vector<ImageResourceRef> &frameAttachments);
     // Creates new pipeline based on default pipeline of shader object but with new render pass or
     // different render pass and returns it
     PipelineBase *createNewPipeline(UniqueUtilityShaderObject *shaderObject, const GenericRenderPassProperties &renderpassProps);

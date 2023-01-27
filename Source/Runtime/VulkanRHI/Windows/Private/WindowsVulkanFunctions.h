@@ -29,8 +29,8 @@ struct PFN_Win32SurfaceKHR : PFN_SurfaceKHR<VkInstance, const void *, const VkAl
     {}
 
     void setInstanceWindow(const ApplicationInstance *instance, const class GenericAppWindow *window) override;
-    void operator()(VkInstance instance, const void *pNext, const VkAllocationCallbacks *allocatorCallback, VkSurfaceKHR *surface)
-        const override;
+    void
+    operator() (VkInstance instance, const void *pNext, const VkAllocationCallbacks *allocatorCallback, VkSurfaceKHR *surface) const override;
 };
 
 namespace GVulkanPlatform

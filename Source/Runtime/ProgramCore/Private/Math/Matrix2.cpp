@@ -44,27 +44,27 @@ Matrix2::Matrix2(const Vector2D &scale)
     : value(scale.x(), 0, 0, scale.y())
 {}
 
-Matrix2 &Matrix2::operator=(const Matrix2 &other)
+Matrix2 &Matrix2::operator= (const Matrix2 &other)
 {
     value = other.value;
     return *this;
 }
 
-Matrix2 &Matrix2::operator=(Matrix2 &&other)
+Matrix2 &Matrix2::operator= (Matrix2 &&other)
 {
     value = std::move(other.value);
     return *this;
 }
 
-Matrix2Col &Matrix2::operator[](uint32 colIndex) { return value[colIndex]; }
+Matrix2Col &Matrix2::operator[] (uint32 colIndex) { return value[colIndex]; }
 
-Matrix2Col Matrix2::operator[](uint32 colIndex) const { return value[colIndex]; }
+Matrix2Col Matrix2::operator[] (uint32 colIndex) const { return value[colIndex]; }
 
-Vector2D Matrix2::operator*(const Vector2D &transformingVector) const { return Vector2D(value * transformingVector.value); }
+Vector2D Matrix2::operator* (const Vector2D &transformingVector) const { return Vector2D(value * transformingVector.value); }
 
-Matrix2 Matrix2::operator*(const Matrix2 &b) const { return value * b.value; }
+Matrix2 Matrix2::operator* (const Matrix2 &b) const { return value * b.value; }
 
-Matrix2 &Matrix2::operator*=(const Matrix2 &b)
+Matrix2 &Matrix2::operator*= (const Matrix2 &b)
 {
     value *= b.value;
     return *this;
@@ -76,67 +76,67 @@ float Matrix2::determinant() const { return glm::determinant(value); }
 
 Matrix2 Matrix2::transpose() const { return glm::transpose(value); }
 
-Matrix2 Matrix2::operator*(float scalar) const { return value * scalar; }
+Matrix2 Matrix2::operator* (float scalar) const { return value * scalar; }
 
-Matrix2 &Matrix2::operator*=(float scalar)
+Matrix2 &Matrix2::operator*= (float scalar)
 {
     value *= scalar;
     return *this;
 }
 
-Matrix2 Matrix2::operator|(const Matrix2 &b) const { return glm::matrixCompMult(value, b.value); }
+Matrix2 Matrix2::operator| (const Matrix2 &b) const { return glm::matrixCompMult(value, b.value); }
 
-Matrix2 &Matrix2::operator|=(const Matrix2 &b)
+Matrix2 &Matrix2::operator|= (const Matrix2 &b)
 {
     value = glm::matrixCompMult(value, b.value);
     return *this;
 }
 
-Matrix2 Matrix2::operator/(const Matrix2 &b) const { return value / b.value; }
+Matrix2 Matrix2::operator/ (const Matrix2 &b) const { return value / b.value; }
 
-Matrix2 &Matrix2::operator/=(const Matrix2 &b)
+Matrix2 &Matrix2::operator/= (const Matrix2 &b)
 {
     value /= b.value;
     return *this;
 }
 
-Matrix2 Matrix2::operator/(float scalar) const { return Matrix2(value / scalar); }
+Matrix2 Matrix2::operator/ (float scalar) const { return Matrix2(value / scalar); }
 
-Matrix2 &Matrix2::operator/=(float scalar)
+Matrix2 &Matrix2::operator/= (float scalar)
 {
     value /= scalar;
     return *this;
 }
 
-Matrix2 Matrix2::operator-(const Matrix2 &b) const { return (value - b.value); }
+Matrix2 Matrix2::operator- (const Matrix2 &b) const { return (value - b.value); }
 
-Matrix2 &Matrix2::operator-=(const Matrix2 &b)
+Matrix2 &Matrix2::operator-= (const Matrix2 &b)
 {
     value -= b.value;
     return *this;
 }
 
-Matrix2 Matrix2::operator-(float scalar) const { return (value - scalar); }
+Matrix2 Matrix2::operator- (float scalar) const { return (value - scalar); }
 
-Matrix2 &Matrix2::operator-=(float scalar)
+Matrix2 &Matrix2::operator-= (float scalar)
 {
     value -= scalar;
     return *this;
 }
 
-Matrix2 Matrix2::operator-() const { return -value; }
+Matrix2 Matrix2::operator- () const { return -value; }
 
-Matrix2 Matrix2::operator+(const Matrix2 &b) const { return (value + b.value); }
+Matrix2 Matrix2::operator+ (const Matrix2 &b) const { return (value + b.value); }
 
-Matrix2 &Matrix2::operator+=(const Matrix2 &b)
+Matrix2 &Matrix2::operator+= (const Matrix2 &b)
 {
     value += b.value;
     return *this;
 }
 
-Matrix2 Matrix2::operator+(float scalar) const { return (value + scalar); }
+Matrix2 Matrix2::operator+ (float scalar) const { return (value + scalar); }
 
-Matrix2 &Matrix2::operator+=(float scalar)
+Matrix2 &Matrix2::operator+= (float scalar)
 {
     value += scalar;
     return *this;

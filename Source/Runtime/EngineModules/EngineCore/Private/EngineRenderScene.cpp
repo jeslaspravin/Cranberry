@@ -94,9 +94,8 @@ const TChar *toString(Type textureType)
 // SceneRenderTexturePool Implementations
 //////////////////////////////////////////////////////////////////////////
 
-const RendererIntermTexture &SceneRenderTexturePool::getTexture(
-    IRenderCommandList *cmdList, ERendererIntermTexture::Type rtType, Size3D size, PoolTextureDesc textureDesc
-)
+const RendererIntermTexture &
+SceneRenderTexturePool::getTexture(IRenderCommandList *cmdList, ERendererIntermTexture::Type rtType, Size3D size, PoolTextureDesc textureDesc)
 {
     ASSERT_INSIDE_RENDERTHREAD();
 
@@ -147,9 +146,8 @@ const RendererIntermTexture &SceneRenderTexturePool::getTexture(
     return texture;
 }
 
-const RendererIntermTexture &SceneRenderTexturePool::getTexture(
-    IRenderCommandList *cmdList, ERendererIntermTexture::Type rtType, Size2D size, PoolTextureDesc textureDesc
-)
+const RendererIntermTexture &
+SceneRenderTexturePool::getTexture(IRenderCommandList *cmdList, ERendererIntermTexture::Type rtType, Size2D size, PoolTextureDesc textureDesc)
 {
     ASSERT_INSIDE_RENDERTHREAD();
     return getTexture(cmdList, rtType, Size3D(size, 1), textureDesc);

@@ -41,14 +41,14 @@ public:
         : rpFormat(renderpassFormat)
     {}
 
-    bool operator==(const FramebufferFormat &otherFormat) const;
-    bool operator<(const FramebufferFormat &otherFormat) const;
+    bool operator== (const FramebufferFormat &otherFormat) const;
+    bool operator< (const FramebufferFormat &otherFormat) const;
 };
 
 template <>
 struct ENGINERENDERER_EXPORT std::hash<FramebufferFormat>
 {
-    _NODISCARD size_t operator()(const FramebufferFormat &keyval) const noexcept
+    _NODISCARD size_t operator() (const FramebufferFormat &keyval) const noexcept
     {
         // If generic then keying is based on formats
         if (keyval.rpFormat == ERenderPassFormat::Generic)
@@ -90,13 +90,13 @@ struct ENGINERENDERER_EXPORT GenericRenderPassProperties
         , bOneRtPerFormat(true)
     {}
 
-    bool operator==(const GenericRenderPassProperties &otherProperties) const;
+    bool operator== (const GenericRenderPassProperties &otherProperties) const;
 };
 
 template <>
 struct ENGINERENDERER_EXPORT std::hash<GenericRenderPassProperties>
 {
-    _NODISCARD size_t operator()(const GenericRenderPassProperties &keyval) const noexcept
+    _NODISCARD size_t operator() (const GenericRenderPassProperties &keyval) const noexcept
     {
         size_t hashVal = HashUtility::hash(keyval.renderpassAttachmentFormat);
         HashUtility::hashCombine(hashVal, keyval.multisampleCount);
@@ -121,7 +121,7 @@ struct ENGINERENDERER_EXPORT RenderPassAdditionalProps
     // If attachments be used as present source
     bool bUsedAsPresentSource = false;
 
-    constexpr bool operator==(const RenderPassAdditionalProps &otherProps) const
+    constexpr bool operator== (const RenderPassAdditionalProps &otherProps) const
     {
         return colorAttachmentLoadOp == otherProps.colorAttachmentLoadOp && colorAttachmentStoreOp == otherProps.colorAttachmentStoreOp
                && depthLoadOp == otherProps.depthLoadOp && depthStoreOp == otherProps.depthStoreOp && stencilLoadOp == otherProps.stencilLoadOp

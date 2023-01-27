@@ -38,30 +38,30 @@ public:
     FORCE_INLINE Quat(const Rotation &rotation) { fromRotationImpl(rotation); }
     FORCE_INLINE Quat(const RotationMatrix &rotationMatrix) { fromRotationMatImpl(rotationMatrix); }
 
-    Quat &operator=(const Quat &other) = default;
-    Quat &operator=(Quat &&other) = default;
+    Quat &operator= (const Quat &other) = default;
+    Quat &operator= (Quat &&other) = default;
 
-    float operator[](uint32 index) const;
-    float &operator[](uint32 index);
+    float operator[] (uint32 index) const;
+    float &operator[] (uint32 index);
 
-    bool operator==(const Quat &b) const;
-    float operator|(const Quat &b) const;
-    Quat operator*(const Quat &b) const;
-    Quat &operator*=(const Quat &b);
+    bool operator== (const Quat &b) const;
+    float operator| (const Quat &b) const;
+    Quat operator* (const Quat &b) const;
+    Quat &operator*= (const Quat &b);
     // Component wise operations
-    Quat operator-(const Quat &b) const;
-    Quat &operator-=(const Quat &b);
-    Quat operator+(const Quat &b) const;
-    Quat &operator+=(const Quat &b);
-    Quat operator*(float scalar) const;
-    Quat &operator*=(float scalar);
-    Quat operator/(float scalar) const;
-    Quat &operator/=(float scalar);
-    Quat operator-(float scalar) const;
-    Quat &operator-=(float scalar);
-    Quat operator+(float scalar) const;
-    Quat &operator+=(float scalar);
-    Quat operator-() const;
+    Quat operator- (const Quat &b) const;
+    Quat &operator-= (const Quat &b);
+    Quat operator+ (const Quat &b) const;
+    Quat &operator+= (const Quat &b);
+    Quat operator* (float scalar) const;
+    Quat &operator*= (float scalar);
+    Quat operator/ (float scalar) const;
+    Quat &operator/= (float scalar);
+    Quat operator- (float scalar) const;
+    Quat &operator-= (float scalar);
+    Quat operator+ (float scalar) const;
+    Quat &operator+= (float scalar);
+    Quat operator- () const;
     bool isSame(const Quat &b, float epsilon = SMALL_EPSILON) const;
     bool isFinite() const;
     Quat normalized() const;
@@ -87,7 +87,7 @@ public:
         Vector3D q{ x, y, z };
         return (w * w - q.sqrlength()) * vector + 2 * ((q | vector) * q + w * (q ^ vector));
     }
-    
+
     FORCE_INLINE static Quat fromRotation(const Rotation &rotation)
     {
         Quat ret;
@@ -102,8 +102,8 @@ public:
     }
 };
 
-FORCE_INLINE Quat operator-(float n, const Quat &d) { return Quat(n - d.x, n - d.y, n - d.z, n - d.w); }
+FORCE_INLINE Quat operator- (float n, const Quat &d) { return Quat(n - d.x, n - d.y, n - d.z, n - d.w); }
 
-FORCE_INLINE Quat operator*(float n, const Quat &d) { return d * n; }
+FORCE_INLINE Quat operator* (float n, const Quat &d) { return d * n; }
 
-FORCE_INLINE Quat operator+(float n, const Quat &d) { return d + n; }
+FORCE_INLINE Quat operator+ (float n, const Quat &d) { return d + n; }

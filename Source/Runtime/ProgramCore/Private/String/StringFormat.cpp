@@ -30,7 +30,7 @@ FormatArg::FormatArg(FormatArg &&arg)
     (*this) = std::move(arg);
 }
 
-FormatArg &FormatArg::operator=(FormatArg &&arg)
+FormatArg &FormatArg::operator= (FormatArg &&arg)
 {
     type = std::move(arg.type);
     switch (type)
@@ -80,7 +80,7 @@ FormatArg &FormatArg::operator=(FormatArg &&arg)
     return *this;
 }
 
-FormatArg &FormatArg::operator=(const FormatArg &arg)
+FormatArg &FormatArg::operator= (const FormatArg &arg)
 {
     type = arg.type;
     switch (type)
@@ -181,7 +181,7 @@ String FormatArg::toString() const
 }
 #undef FORMAT_FUNDAMENTALS
 
-FormatArg::operator bool() const
+FormatArg::operator bool () const
 {
     switch (type)
     {
@@ -534,7 +534,7 @@ uint32 MustacheStringFormatter::renderTag(
 }
 
 String
-    MustacheStringFormatter::render(const MustacheContext &context, const std::unordered_map<String, MustacheStringFormatter> &partials) const
+MustacheStringFormatter::render(const MustacheContext &context, const std::unordered_map<String, MustacheStringFormatter> &partials) const
 {
     // If no matches then return format string itself
     if (allMatches.empty())

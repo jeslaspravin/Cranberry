@@ -25,8 +25,8 @@ private:
 
 public:
     template <typename SeparartorType, typename FirstType, typename LastType>
-    requires StringTypes<FirstType, LastType> CONST_EXPR static String
-        combinePathWithSep(SeparartorType &&separator, FirstType &&firstPath, LastType &&lastPath)
+    requires StringTypes<FirstType, LastType>
+    CONST_EXPR static String combinePathWithSep(SeparartorType &&separator, FirstType &&firstPath, LastType &&lastPath)
     {
         String returnPath(std::forward<FirstType>(firstPath));
         returnPath.append(std::forward<SeparartorType>(separator));
@@ -35,8 +35,8 @@ public:
     }
 
     template <typename SeparartorType, typename BaseType, typename... Paths>
-    requires StringTypes<SeparartorType, BaseType, Paths...> CONST_EXPR static String
-        combinePathWithSep(SeparartorType &&separator, BaseType &&basePath, Paths &&...paths)
+    requires StringTypes<SeparartorType, BaseType, Paths...>
+    CONST_EXPR static String combinePathWithSep(SeparartorType &&separator, BaseType &&basePath, Paths &&...paths)
     {
         String returnPath(std::forward<BaseType>(basePath));
         returnPath.append(std::forward<SeparartorType>(separator));
@@ -45,7 +45,8 @@ public:
     }
 
     template <typename... Paths>
-    requires StringTypes<Paths...> CONST_EXPR static String combinePath(Paths &&...paths)
+    requires StringTypes<Paths...>
+    CONST_EXPR static String combinePath(Paths &&...paths)
     {
         return combinePathWithSep(FS_PATH_SEPARATOR, std::forward<Paths>(paths)...);
     }

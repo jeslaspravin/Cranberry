@@ -23,27 +23,27 @@
 class PROGRAMCORE_EXPORT AllocFromBuiltInMalloc
 {
 public:
-    NODISCARD void *operator new(SizeT size);
-    NODISCARD void *operator new(SizeT size, const std::nothrow_t &);
-    NODISCARD void *operator new(SizeT size, SizeT);
-    NODISCARD void *operator new(SizeT size, SizeT, const std::nothrow_t &);
-    NODISCARD void *operator new(std::size_t, void *allocatedPtr) { return allocatedPtr; }
-    NODISCARD void *operator new(std::size_t, std::align_val_t, void *allocatedPtr) { return allocatedPtr; }
-    void operator delete(void *ptr) noexcept;
-    void operator delete(void *ptr, const std::nothrow_t &) noexcept;
-    void operator delete(void *ptr, SizeT) noexcept;
-    void operator delete(void *ptr, SizeT, const std::nothrow_t &) noexcept;
+    NODISCARD void *operator new (SizeT size);
+    NODISCARD void *operator new (SizeT size, const std::nothrow_t &);
+    NODISCARD void *operator new (SizeT size, SizeT);
+    NODISCARD void *operator new (SizeT size, SizeT, const std::nothrow_t &);
+    NODISCARD void *operator new (std::size_t, void *allocatedPtr) { return allocatedPtr; }
+    NODISCARD void *operator new (std::size_t, std::align_val_t, void *allocatedPtr) { return allocatedPtr; }
+    void operator delete (void *ptr) noexcept;
+    void operator delete (void *ptr, const std::nothrow_t &) noexcept;
+    void operator delete (void *ptr, SizeT) noexcept;
+    void operator delete (void *ptr, SizeT, const std::nothrow_t &) noexcept;
 
-    NODISCARD void *operator new[](SizeT size);
-    NODISCARD void *operator new[](SizeT size, const std::nothrow_t &);
-    NODISCARD void *operator new[](SizeT size, SizeT);
-    NODISCARD void *operator new[](SizeT size, SizeT, const std::nothrow_t &);
-    NODISCARD void *operator new[](std::size_t, void *allocatedPtr) { return allocatedPtr; }
-    NODISCARD void *operator new[](std::size_t, std::align_val_t, void *allocatedPtr) { return allocatedPtr; }
-    void operator delete[](void *ptr) noexcept;
-    void operator delete[](void *ptr, const std::nothrow_t &) noexcept;
-    void operator delete[](void *ptr, SizeT) noexcept;
-    void operator delete[](void *ptr, SizeT, const std::nothrow_t &) noexcept;
+    NODISCARD void *operator new[] (SizeT size);
+    NODISCARD void *operator new[] (SizeT size, const std::nothrow_t &);
+    NODISCARD void *operator new[] (SizeT size, SizeT);
+    NODISCARD void *operator new[] (SizeT size, SizeT, const std::nothrow_t &);
+    NODISCARD void *operator new[] (std::size_t, void *allocatedPtr) { return allocatedPtr; }
+    NODISCARD void *operator new[] (std::size_t, std::align_val_t, void *allocatedPtr) { return allocatedPtr; }
+    void operator delete[] (void *ptr) noexcept;
+    void operator delete[] (void *ptr, const std::nothrow_t &) noexcept;
+    void operator delete[] (void *ptr, SizeT) noexcept;
+    void operator delete[] (void *ptr, SizeT, const std::nothrow_t &) noexcept;
 };
 
 class PROGRAMCORE_EXPORT CBEMemAlloc : public AllocFromBuiltInMalloc

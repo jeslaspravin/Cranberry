@@ -27,7 +27,7 @@ void PFN_Win32SurfaceKHR::setInstanceWindow(const ApplicationInstance *instance,
     hWindow = window->getWindowHandle();
 }
 
-void PFN_Win32SurfaceKHR::operator()(
+void PFN_Win32SurfaceKHR::operator() (
     VkInstance instance, const void *pNext, const VkAllocationCallbacks *allocatorCallback, VkSurfaceKHR *surface
 ) const
 {

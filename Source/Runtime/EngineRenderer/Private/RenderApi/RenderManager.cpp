@@ -163,7 +163,7 @@ DEBUG_INLINE void renderpassPropsFromRTs(GenericRenderPassProperties &outRenderP
 }
 
 DEBUG_INLINE void
-    rtTexturesToFrameAttachments(ArrayView<const IRenderTargetTexture *> rtTextures, std::vector<ImageResourceRef> &frameAttachments)
+rtTexturesToFrameAttachments(ArrayView<const IRenderTargetTexture *> rtTextures, std::vector<ImageResourceRef> &frameAttachments)
 {
     frameAttachments.clear();
 

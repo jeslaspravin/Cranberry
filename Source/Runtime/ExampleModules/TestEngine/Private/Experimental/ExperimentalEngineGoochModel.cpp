@@ -255,7 +255,7 @@ class ExperimentalEngineGoochModel
     SwapchainBufferedResource<ShaderParametersRef> drawLitColorsDescs;
 
     void
-        createShaderParameters(class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
+    createShaderParameters(class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
     void setupShaderParameterParams(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
     void destroyShaderParameters();
 
@@ -286,9 +286,8 @@ class ExperimentalEngineGoochModel
     void clearPipelineContexts();
 
     std::vector<FrameResource> frameResources;
-    void createPipelineResources(
-        class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
-    );
+    void
+    createPipelineResources(class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
     void destroyPipelineResources();
 
     // End shader pipeline resources
@@ -313,9 +312,8 @@ class ExperimentalEngineGoochModel
     uint32 textVertCount, textIdxCount;
     BufferResourceRef textVertsBuffer;
     BufferResourceRef textIndexBuffer;
-    void createTextRenderResources(
-        class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
-    );
+    void
+    createTextRenderResources(class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
     void destroyTextRenderResources();
     void updateTextRenderData(class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
 
@@ -351,8 +349,8 @@ void ExperimentalEngineGoochModel::createImages(IGraphicsInstance *graphicsInsta
     SamplerCreateInfo samplerCI{
         .filtering = ESamplerFiltering::Nearest,
         .mipFiltering = ESamplerFiltering::Nearest,
-        .tilingMode = {ESamplerTilingMode::Repeat,                                 ESamplerTilingMode::Repeat, ESamplerTilingMode::Repeat },
-        .mipLodRange = {                         0, float(GlobalRenderVariables::MIN_SAMPLINE_MIP_LEVEL.get())                          },
+        .tilingMode = { ESamplerTilingMode::Repeat, ESamplerTilingMode::Repeat, ESamplerTilingMode::Repeat },
+        .mipLodRange = { 0, float(GlobalRenderVariables::MIN_SAMPLINE_MIP_LEVEL.get()) },
         .resourceName = TCHAR("NearestSampler")
     };
     nearestFiltering = graphicsHelper->createSampler(graphicsInstance, samplerCI);
@@ -1874,9 +1872,9 @@ void ExperimentalEngineGoochModel::draw(class ImGuiDrawInterface *drawInterface)
     }
 }
 
-//TestGameEngine *GameEngineWrapper::createEngineInstance()
+// TestGameEngine *GameEngineWrapper::createEngineInstance()
 //{
-//    static SharedPtr<ExperimentalEngineGoochModel> engineInst = std::make_shared<ExperimentalEngineGoochModel>();
-//    return engineInst.get();
-//}
+//     static SharedPtr<ExperimentalEngineGoochModel> engineInst = std::make_shared<ExperimentalEngineGoochModel>();
+//     return engineInst.get();
+// }
 #endif
