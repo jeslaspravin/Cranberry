@@ -28,6 +28,16 @@
                 {
                     "type": "BOOL",
                     "value": "ON"
+                },
+                "Cranberry_ENABLE_TRACY":
+                {
+                    "type": "BOOL",
+                    "value": "ON"
+                },
+                "Cranberry_ENABLE_MEMORY_PROFILING":
+                {
+                    "type": "BOOL",
+                    "value": "OFF"
                 }
             }
         },

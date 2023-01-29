@@ -317,6 +317,8 @@ private:
      */
     void gcCollect()
     {
+        COPAT_PROFILER_SCOPE(COPAT_PROFILER_CHAR("CopatGCPointers"));
+
         HazardPtrPerThreadData &threadData = getPerThreadData();
 
         std::vector<HazardPointerType> referencedPtrs;

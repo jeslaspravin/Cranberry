@@ -18,6 +18,8 @@
 #include "RenderInterface/Resources/GraphicsSyncResource.h"
 #include "RenderInterface/ShaderCore/ShaderParameterResources.h"
 
+#include <unordered_map>
+
 class LocalPipelineContext;
 class GenericWindowCanvas;
 

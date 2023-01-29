@@ -243,6 +243,8 @@ public:
             const int idx = ltail->enqidx.fetch_add(1, std::memory_order::acq_rel);
             if (idx > QUEUE_NODE_BUFFER_SIZE - 1) // This node is full
             {
+                COPAT_PROFILER_SCOPE(COPAT_PROFILER_CHAR("CopatSetupNextTail"));
+
                 if (ltail != tail.load(std::memory_order::acquire))
                 {
                     continue;
@@ -308,6 +310,8 @@ public:
             const int idx = lhead->deqidx.fetch_add(1, std::memory_order::acq_rel);
             if (idx > QUEUE_NODE_BUFFER_SIZE - 1) // This node has been drained, check if there is another one
             {
+                COPAT_PROFILER_SCOPE(COPAT_PROFILER_CHAR("CopatSetupNextHead"));
+
                 Node *lnext = lhead->next.load(std::memory_order::acquire);
                 if (lnext == nullptr) // No more nodes in the queue
                 {
@@ -406,6 +410,8 @@ public:
             const int idx = ltail->enqidx.fetch_add(1, std::memory_order::acq_rel);
             if (idx > QUEUE_NODE_BUFFER_SIZE - 1) // This node is full
             {
+                COPAT_PROFILER_SCOPE(COPAT_PROFILER_CHAR("CopatSetupNextTail"));
+
                 if (ltail != tail.load(std::memory_order::acquire))
                 {
                     continue;
@@ -467,6 +473,8 @@ public:
             const int idx = lhead->deqidx++;
             if (idx > QUEUE_NODE_BUFFER_SIZE - 1) // This node has been drained, check if there is another one
             {
+                COPAT_PROFILER_SCOPE(COPAT_PROFILER_CHAR("CopatSetupNextHead"));
+
                 Node *lnext = lhead->next.load(std::memory_order::acquire);
                 if (lnext == nullptr) // No more nodes in the queue
                 {

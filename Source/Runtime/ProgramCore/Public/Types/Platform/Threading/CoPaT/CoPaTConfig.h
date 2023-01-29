@@ -13,6 +13,7 @@
 
 #include "Types/CoreTypes.h"
 #include "Types/CoreDefines.h"
+#include "Profiler/ProgramProfiler.hpp"
 #include "Memory/Memory.h"
 #include "Types/Delegates/Delegate.h"
 #include "Types/Platform/Threading/PlatformThreading.h"
@@ -72,6 +73,15 @@
 // #define OVERRIDE_TOSTRING(expr) std::to_wstring(expr)
 #define OVERRIDE_TCHAR(expr) TCHAR(expr)
 #define OVERRIDE_TOSTRING(expr) String::toString(expr)
+
+/**
+ * Override for profiler char
+ * Override for profiler scope macro. Name will be static char
+ */
+// #define OVERRIDE_PROFILER_CHAR(expr)
+// #define OVERRIDE_PROFILER_SCOPE(Name)
+#define OVERRIDE_PROFILER_CHAR(expr) CBE_PROFILER_CHAR(expr)
+#define OVERRIDE_PROFILER_SCOPE(Name) CBE_PROFILER_SCOPE(Name)
 
 /**
  * Override PlatformThreadingFunctions.
@@ -139,6 +149,18 @@
 #define COPAT_TOSTRING(x) OVERRIDE_TOSTRING(x)
 #else
 #define COPAT_TOSTRING(x) std::to_string(x)
+#endif
+
+#ifdef OVERRIDE_PROFILER_SCOPE
+#define COPAT_PROFILER_SCOPE(Name) OVERRIDE_PROFILER_SCOPE(Name)
+#else
+#define COPAT_PROFILER_SCOPE(Name)
+#endif
+
+#ifdef OVERRIDE_PROFILER_CHAR
+#define COPAT_PROFILER_CHAR(x) OVERRIDE_PROFILER_CHAR(x)
+#else
+#define COPAT_PROFILER_CHAR(x) COPAT_TCHAR(x)
 #endif
 
 #ifndef COPAT_ENABLE_QUEUE_ALLOC_TRACKING

@@ -253,6 +253,7 @@ private:
         {
             while (void *coroPtr = specialThreadsPool.getThreadJobsQueue(SpecialThreadIdx)->dequeue())
             {
+                COPAT_PROFILER_SCOPE(COPAT_PROFILER_CHAR("CopatSpecialJob"));
                 std::coroutine_handle<>::from_address(coroPtr).resume();
             }
 
@@ -276,6 +277,8 @@ template <u32 SpecialThreadsCount>
 void SpecialThreadsPool<SpecialThreadsCount>::initialize(JobSystem *jobSystem)
 {
     COPAT_ASSERT(jobSystem);
+    COPAT_PROFILER_SCOPE(COPAT_PROFILER_CHAR("CopatSpecialThreadsInit"));
+
     ownerJobSystem = jobSystem;
 
     tokensAllocator.initialize(ownerJobSystem->getTotalThreadsCount());
@@ -285,6 +288,7 @@ void SpecialThreadsPool<SpecialThreadsCount>::initialize(JobSystem *jobSystem)
 template <u32 SpecialThreadsCount>
 void SpecialThreadsPool<SpecialThreadsCount>::shutdown()
 {
+    COPAT_PROFILER_SCOPE(COPAT_PROFILER_CHAR("CopatSpecialThreadsShutdown"));
     for (u32 i = 0; i < COUNT; ++i)
     {
         specialJobEvents[i].notify();

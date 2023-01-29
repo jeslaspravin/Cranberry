@@ -13,6 +13,7 @@
 
 #include <optional>
 #include <set>
+#include <unordered_map>
 
 #include "Math/Box.h"
 #include "RenderInterface/Resources/GenericWindowCanvas.h"

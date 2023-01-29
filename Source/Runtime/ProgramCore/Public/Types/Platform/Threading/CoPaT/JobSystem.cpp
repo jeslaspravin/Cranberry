@@ -33,6 +33,8 @@ JobSystem *JobSystem::singletonInstance = nullptr;
 
 void JobSystem::initialize(MainThreadTickFunc &&mainTick, void *inUserData)
 {
+    COPAT_PROFILER_SCOPE(COPAT_PROFILER_CHAR("CopatInit"));
+
     if (!singletonInstance)
     {
         singletonInstance = this;
@@ -58,6 +60,8 @@ void JobSystem::initialize(MainThreadTickFunc &&mainTick, void *inUserData)
 
 void JobSystem::initializeWorkers()
 {
+    COPAT_PROFILER_SCOPE(COPAT_PROFILER_CHAR("CopatWorkerThreadsInit"));
+
     u32 coreCount, logicalProcCount;
     getCoreCount(coreCount, logicalProcCount);
     const u32 htCount = logicalProcCount / coreCount;
@@ -93,6 +97,8 @@ void JobSystem::initializeWorkers()
 
 void JobSystem::shutdown()
 {
+    COPAT_PROFILER_SCOPE(COPAT_PROFILER_CHAR("CopatShutdown"));
+
     PerThreadData *mainThreadTlData = getPerThreadData();
     COPAT_ASSERT(mainThreadTlData->threadType == EJobThreadType::MainThread);
 
@@ -128,6 +134,8 @@ void JobSystem::enqueueJob(std::coroutine_handle<> coro, EJobThreadType enqueueT
 
     if (enqueueToThread == EJobThreadType::MainThread)
     {
+        COPAT_PROFILER_SCOPE(COPAT_PROFILER_CHAR("CopatEnqueueToMain"));
+
         if (threadData)
         {
             mainThreadJobs.enqueue(coro.address(), threadData->mainEnqToken);
@@ -139,6 +147,7 @@ void JobSystem::enqueueJob(std::coroutine_handle<> coro, EJobThreadType enqueueT
     }
     else if (enqueueToThread == EJobThreadType::WorkerThreads)
     {
+        COPAT_PROFILER_SCOPE(COPAT_PROFILER_CHAR("CopatEnqueueToWorker"));
         COPAT_ASSERT(!workersFinishedEvent.try_wait());
 
         if (threadData)
@@ -158,6 +167,7 @@ void JobSystem::enqueueJob(std::coroutine_handle<> coro, EJobThreadType enqueueT
     }
     else
     {
+        COPAT_PROFILER_SCOPE(COPAT_PROFILER_CHAR("CopatEnqueueToSpecial"));
         if (threadData)
         {
             specialThreadsPool.enqueueJob(coro, enqueueToThread, threadData->specialThreadTokens);
@@ -188,6 +198,7 @@ void JobSystem::runMain()
     tlData->threadType = EJobThreadType::MainThread;
     while (true)
     {
+        COPAT_PROFILER_SCOPE(COPAT_PROFILER_CHAR("CopatMainTick"));
         if (bool(mainThreadTick))
         {
             mainThreadTick(userData);
@@ -195,6 +206,7 @@ void JobSystem::runMain()
 
         while (void *coroPtr = mainThreadJobs.dequeue())
         {
+            COPAT_PROFILER_SCOPE(COPAT_PROFILER_CHAR("CopatMainJob"));
             std::coroutine_handle<>::from_address(coroPtr).resume();
         }
 
@@ -213,6 +225,7 @@ void JobSystem::doWorkerJobs()
     {
         while (void *coroPtr = workerJobs.dequeue(tlData->workerEnqDqToken))
         {
+            COPAT_PROFILER_SCOPE(COPAT_PROFILER_CHAR("CopatWorkerJob"));
             std::coroutine_handle<>::from_address(coroPtr).resume();
         }
 
