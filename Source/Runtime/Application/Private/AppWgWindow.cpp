@@ -89,13 +89,13 @@ void ApplicationInstance::exitNextFrame() { enqExitApp(); }
 
 StackAllocator<EThreadSharing::ThreadSharing_Exclusive> &ApplicationInstance::getFrameAllocator()
 {
-    debugAssert(copat::JobSystem::get()->getCurrentThreadType() == copat::EJobThreadType::MainThread);
+    debugAssert(copat::JobSystem::get()->isInThread(copat::EJobThreadType::MainThread));
     return frameAllocator;
 }
 
 StackAllocator<EThreadSharing::ThreadSharing_Exclusive> &ApplicationInstance::getRenderFrameAllocator()
 {
-    debugAssert(copat::JobSystem::get()->getCurrentThreadType() == copat::EJobThreadType::RenderThread);
+    ASSERT_INSIDE_RENDERTHREAD();
     return renderFrameAllocator;
 }
 
@@ -159,10 +159,7 @@ SharedPtr<WgWindow> ApplicationInstance::createWindow(Size2D size, const TChar *
         LOG_ERROR("ApplicationInstance", "Window(%s) creation not allowed in this application %s", name, applicationName);
         return nullptr;
     }
-    fatalAssertf(
-        jobSystem->getCurrentThreadType() == copat::EJobThreadType::MainThread, "Windows[%s] should be created or destroyed from main thread",
-        name
-    );
+    fatalAssertf(jobSystem->isInThread(copat::EJobThreadType::MainThread), "Windows[%s] should be created or destroyed from main thread", name);
 
     GenericAppWindow *window = windowManager->createWindow(size, name, parent ? parent->getAppWindow() : nullptr);
     SharedPtr<WgWindow> windowWidget = createWindowWidget(window);
@@ -173,7 +170,7 @@ SharedPtr<WgWindow> ApplicationInstance::createWindow(Size2D size, const TChar *
 void ApplicationInstance::destroyWindow(SharedPtr<WgWindow> window)
 {
     fatalAssertf(
-        jobSystem->getCurrentThreadType() == copat::EJobThreadType::MainThread, "Windows[%s] should be created or destroyed from main thread",
+        jobSystem->isInThread(copat::EJobThreadType::MainThread), "Windows[%s] should be created or destroyed from main thread",
         window->getAppWindow()->getWindowName()
     );
     debugAssert(window && window->getAppWindow());

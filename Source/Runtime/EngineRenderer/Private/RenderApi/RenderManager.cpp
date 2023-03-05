@@ -74,7 +74,7 @@ void RenderManager::finalizeInit()
     engineRendererModule->renderStateEvents.invoke(ERenderStateEvent::PostFinalizeInit);
 }
 
-RenderThreadEnqTask RenderManager::destroy()
+copat::JobSystemTask RenderManager::destroy()
 {
     debugAssert(IRenderInterfaceModule::get());
     auto engineRendererModule = static_cast<EngineRendererModule *>(IRenderInterfaceModule::get());
@@ -82,38 +82,38 @@ RenderThreadEnqTask RenderManager::destroy()
     // TODO(Commented) EngineSettings::enableVsync.onConfigChanged().unbind(onVsyncChangeHandle);
     engineRendererModule->renderStateEvents.invoke(ERenderStateEvent::PreCleanupCommands);
 
-    return RenderThreadEnqueuer::execInRenderThreadAwaitable(
-        [this, engineRendererModule](
-            class IRenderCommandList * /*cmdList*/, IGraphicsInstance * /*graphicsInstance*/, const GraphicsHelperAPI * /*graphicsHelper*/
-        )
+    // Rest of the destroy happens in render thread
+    if (!copat::JobSystem::get()->isInThread(copat::EJobThreadType::RenderThread))
+    {
+        co_await copat::SwitchJobThreadAwaiter<copat::EJobThreadType::RenderThread>{};
+    }
+
+    engineRendererModule->renderStateEvents.invoke(ERenderStateEvent::Cleanup);
+
+    globalContext->clearContext();
+    GlobalBuffers::destroy();
+
+    delete renderCmds;
+    renderCmds = nullptr;
+
+    engineRendererModule->renderStateEvents.invoke(ERenderStateEvent::PostCleanupCommands);
+
+    graphicsInstanceCache->unload();
+
+    std::vector<GraphicsResource *> resourceLeak;
+    GraphicsResource::staticType()->allRegisteredResources(resourceLeak, true);
+    if (!resourceLeak.empty())
+    {
+        LOG_ERROR("GraphicsResourceLeak", "Resource leak detected");
+        for (const GraphicsResource *resource : resourceLeak)
         {
-            engineRendererModule->renderStateEvents.invoke(ERenderStateEvent::Cleanup);
-
-            globalContext->clearContext();
-            GlobalBuffers::destroy();
-
-            delete renderCmds;
-            renderCmds = nullptr;
-
-            engineRendererModule->renderStateEvents.invoke(ERenderStateEvent::PostCleanupCommands);
-
-            graphicsInstanceCache->unload();
-
-            std::vector<GraphicsResource *> resourceLeak;
-            GraphicsResource::staticType()->allRegisteredResources(resourceLeak, true);
-            if (!resourceLeak.empty())
-            {
-                LOG_ERROR("GraphicsResourceLeak", "Resource leak detected");
-                for (const GraphicsResource *resource : resourceLeak)
-                {
-                    LOG_ERROR(
-                        "GraphicsResourceLeak", "\tType:%s, Resource Name %s", resource->getType()->getName(),
-                        resource->getResourceName().getChar()
-                    );
-                }
-            }
+            LOG_ERROR(
+                "GraphicsResourceLeak", "\tType:%s, Resource Name %s", resource->getType()->getName(), resource->getResourceName().getChar()
+            );
         }
-    );
+    }
+
+    co_return;
 }
 
 void RenderManager::renderFrame(float timedelta)

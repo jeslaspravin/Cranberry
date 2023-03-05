@@ -148,6 +148,9 @@ public:
     SpecialQHazardToken *allocateEnqTokens() { return nullptr; }
 };
 
+#define NO_SPECIALTHREAD_MASK_FIRST(ThreadType) No##ThreadType = BitMasksStart,
+#define NO_SPECIALTHREAD_MASK(ThreadType) No##ThreadType,
+
 class COPAT_EXPORT_SYM JobSystem
 {
 public:
@@ -172,10 +175,31 @@ public:
         {}
     };
 
+    // clang-format off
+
+    // Allows controlling the threading model of the application at runtime
+    enum EThreadingConstraint : u32
+    {
+        // Normal with all special and worker threads
+        NoConstraints,
+        // No worker or special threads, Only main thread exists
+        SingleThreaded,
+        NoSpecialThreads,
+        NoWorkerThreads,
+        // Anything after 8 will be bit masked values. Bit shift is determined by (Flag - BitMasksStart)
+        BitMasksStart = 8,
+        // Each of below NoSpecialThread mask will not stop creating those threads but will be used only at Enqueue. This is just to avoid unnecessary complexity
+        FOR_EACH_UDTHREAD_TYPES_UNIQUE_FIRST_LAST(NO_SPECIALTHREAD_MASK_FIRST, NO_SPECIALTHREAD_MASK, NO_SPECIALTHREAD_MASK) 
+        BitMasksEnd
+    };
+
+    // clang-format on
+
 private:
     static JobSystem *singletonInstance;
 
-    u32 tlsSlot;
+    u32 tlsSlot = 0;
+    u32 threadingConstraints = EThreadingConstraint::NoConstraints;
 
     u32 workersCount;
     WorkerThreadQueueType workerJobs;
@@ -192,23 +216,16 @@ private:
     std::atomic_flag bExitMain[2];
     // Main thread tick function type, This function gets ticked in main thread for every loop and then main job queue will be emptied
     MainThreadTickFunc mainThreadTick;
-    void *userData;
+    void *userData = nullptr;
 
     SpecialThreadsPoolType specialThreadsPool;
 
+    EJobThreadType enqIndirection[u32(EJobThreadType::MaxThreads)];
+
 public:
-    JobSystem()
-        : workersCount(calculateWorkersCount())
-        , workerJobEvent(0)
-        , availableWorkersCount(0)
-        , workersFinishedEvent(workersCount)
-    {}
-    JobSystem(u32 inWorkerCount)
-        : workersCount(inWorkerCount)
-        , workerJobEvent(0)
-        , availableWorkersCount(0)
-        , workersFinishedEvent(workersCount)
-    {}
+    // EThreadingConstraint for constraints
+    JobSystem(u32 constraints);
+    JobSystem(u32 inWorkerCount, u32 constraints);
 
     static JobSystem *get() { return singletonInstance; }
 
@@ -231,6 +248,9 @@ public:
             return tlData->threadType;
         }
     }
+    EJobThreadType enqToThreadType(EJobThreadType forThreadType) const { return EJobThreadType(enqIndirection[u32(forThreadType)]); }
+    bool isInThread(EJobThreadType threadType) const { return getCurrentThreadType() == enqToThreadType(threadType); }
+
     u32 getWorkersCount() const { return workersCount; }
     u32 getTotalThreadsCount() const { return workersCount + SpecialThreadsPoolType::COUNT + 1; }
 

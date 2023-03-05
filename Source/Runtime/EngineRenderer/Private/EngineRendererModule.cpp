@@ -81,7 +81,8 @@ void EngineRendererModule::init()
 void EngineRendererModule::release()
 {
     if (GlobalRenderVariables::GPU_DEVICE_INITIALIZED)
-    { // Wait till all graphics resources are released
+    {
+        // Wait till all graphics resources are released
         copat::waitOnAwaitable(renderManager->destroy());
     }
     renderManager = nullptr;
@@ -121,7 +122,7 @@ RenderThreadEnqTask RenderThreadEnqueuer::execInRenderThreadAwaitable(RenderThre
 
 void RenderThreadEnqueuer::execInRenderThreadAndWait(RenderEnqFuncType &&execFunc)
 {
-    if (copat::JobSystem::get()->getCurrentThreadType() == copat::EJobThreadType::RenderThread)
+    if (copat::JobSystem::get()->isInThread(copat::EJobThreadType::RenderThread))
     {
         IRenderInterfaceModule *renderInterface = IRenderInterfaceModule::get();
         debugAssert(renderInterface);
@@ -136,7 +137,7 @@ void RenderThreadEnqueuer::execInRenderThreadAndWait(RenderEnqFuncType &&execFun
 
 copat::NormalFuncAwaiter RenderThreadEnqueuer::execInRenderingThreadOrImmediate(RenderEnqFuncType &&execFunc)
 {
-    if (copat::JobSystem::get()->getCurrentThreadType() == copat::EJobThreadType::RenderThread)
+    if (copat::JobSystem::get()->isInThread(copat::EJobThreadType::RenderThread))
     {
         IRenderInterfaceModule *renderInterface = IRenderInterfaceModule::get();
         debugAssert(renderInterface);

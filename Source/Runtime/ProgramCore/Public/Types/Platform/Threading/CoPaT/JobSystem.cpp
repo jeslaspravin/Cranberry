@@ -29,7 +29,45 @@ void getCoreCount(u32 &outCoreCount, u32 &outLogicalProcessorCount)
     }
 }
 
+JobSystem::EThreadingConstraint getThreadingConstraint(u32 constraints)
+{
+    return JobSystem::EThreadingConstraint(constraints & (JobSystem::BitMasksStart - 1));
+}
+
 JobSystem *JobSystem::singletonInstance = nullptr;
+
+JobSystem::JobSystem(u32 constraints)
+    : threadingConstraints(constraints)
+    , workersCount(calculateWorkersCount())
+    , workerJobEvent(0)
+    , availableWorkersCount(0)
+    , workersFinishedEvent(workersCount)
+{
+    for (u32 i = 0; i < u32(EJobThreadType::MaxThreads); ++i)
+    {
+        enqIndirection[i] = EJobThreadType(i);
+    }
+}
+JobSystem::JobSystem(u32 inWorkerCount, u32 constraints)
+    : threadingConstraints(constraints)
+    , workersCount(inWorkerCount)
+    , workerJobEvent(0)
+    , availableWorkersCount(0)
+    , workersFinishedEvent(workersCount)
+{
+    for (u32 i = 0; i < u32(EJobThreadType::MaxThreads); ++i)
+    {
+        enqIndirection[i] = EJobThreadType(i);
+    }
+}
+
+#define NO_SPECIALTHREADS_INDIR_SETUP(ThreadType) enqIndirection[u32(EJobThreadType::##ThreadType)] = EJobThreadType::MainThread;
+#define SPECIALTHREAD_INDIR_SETUP(ThreadType)                                                                                                  \
+    enqIndirection[u32(EJobThreadType::##ThreadType)]                                                                                          \
+        = (threadingConstraints                                                                                                                \
+           & (EThreadingConstraint::BitMasksStart << (EThreadingConstraint::No##ThreadType - EThreadingConstraint::BitMasksStart)))            \
+              ? EJobThreadType::MainThread                                                                                                     \
+              : EJobThreadType::##ThreadType;
 
 void JobSystem::initialize(MainThreadTickFunc &&mainTick, void *inUserData)
 {
@@ -45,9 +83,27 @@ void JobSystem::initialize(MainThreadTickFunc &&mainTick, void *inUserData)
         return;
     }
 
-    specialThreadsPool.initialize(this);
+    EThreadingConstraint tConstraint = getThreadingConstraint(threadingConstraints);
 
-    initializeWorkers();
+    // Setup special threads
+    if (tConstraint == EThreadingConstraint::SingleThreaded || tConstraint == EThreadingConstraint::NoSpecialThreads)
+    {
+        FOR_EACH_UDTHREAD_TYPES(NO_SPECIALTHREADS_INDIR_SETUP);
+    }
+    else
+    {
+        FOR_EACH_UDTHREAD_TYPES(SPECIALTHREAD_INDIR_SETUP);
+        specialThreadsPool.initialize(this);
+    }
+
+    if (tConstraint == EThreadingConstraint::SingleThreaded || tConstraint == EThreadingConstraint::NoWorkerThreads)
+    {
+        enqIndirection[u32(EJobThreadType::WorkerThreads)] = EJobThreadType::MainThread;
+    }
+    else
+    {
+        initializeWorkers();
+    }
 
     // Setup main thread
     mainThreadTick = std::forward<MainThreadTickFunc>(mainTick);
@@ -57,6 +113,8 @@ void JobSystem::initialize(MainThreadTickFunc &&mainTick, void *inUserData)
     PerThreadData &mainThreadData = getOrCreatePerThreadData();
     mainThreadData.threadType = EJobThreadType::MainThread;
 }
+#undef NO_SPECIALTHREADS_INDIR_SETUP
+#undef SPECIALTHREAD_INDIR_SETUP
 
 void JobSystem::initializeWorkers()
 {
@@ -106,20 +164,22 @@ void JobSystem::shutdown()
     bExitMain[0].test_and_set(std::memory_order::relaxed);
     bExitMain[1].test_and_set(std::memory_order::release);
 
-    specialThreadsPool.shutdown();
+    EThreadingConstraint tConstraint = getThreadingConstraint(threadingConstraints);
 
-    // Binary semaphore
-    // while (!workersFinishedEvent.try_wait())
-    //{
-    //    workerJobEvent.release();
-    //}
+    if (tConstraint != EThreadingConstraint::SingleThreaded && tConstraint != EThreadingConstraint::NoSpecialThreads)
+    {
+        specialThreadsPool.shutdown();
+    }
 
-    // Counting semaphore
-    // Drain the worker job events if any so we can release all workers
-    while (workerJobEvent.try_acquire())
-    {}
-    workerJobEvent.release(workersCount);
-    workersFinishedEvent.wait();
+    if (tConstraint != EThreadingConstraint::SingleThreaded && tConstraint != EThreadingConstraint::NoWorkerThreads)
+    {
+        // Counting semaphore
+        // Drain the worker job events if any so we can release all workers
+        while (workerJobEvent.try_acquire())
+        {}
+        workerJobEvent.release(workersCount);
+        workersFinishedEvent.wait();
+    }
 
     memDelete(mainThreadTlData);
     if (singletonInstance == this)
@@ -131,6 +191,7 @@ void JobSystem::shutdown()
 void JobSystem::enqueueJob(std::coroutine_handle<> coro, EJobThreadType enqueueToThread /*= EJobThreadType::WorkerThreads*/)
 {
     PerThreadData *threadData = getPerThreadData();
+    enqueueToThread = enqToThreadType(enqueueToThread);
 
     if (enqueueToThread == EJobThreadType::MainThread)
     {

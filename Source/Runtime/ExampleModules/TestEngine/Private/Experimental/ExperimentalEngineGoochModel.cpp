@@ -1872,9 +1872,9 @@ void ExperimentalEngineGoochModel::draw(class ImGuiDrawInterface *drawInterface)
     }
 }
 
-// TestGameEngine *GameEngineWrapper::createEngineInstance()
-//{
-//     static SharedPtr<ExperimentalEngineGoochModel> engineInst = std::make_shared<ExperimentalEngineGoochModel>();
-//     return engineInst.get();
-// }
+TestGameEngine *GameEngineWrapper::createEngineInstance()
+{
+    static SharedPtr<ExperimentalEngineGoochModel> engineInst = std::make_shared<ExperimentalEngineGoochModel>();
+    return engineInst.get();
+}
 #endif

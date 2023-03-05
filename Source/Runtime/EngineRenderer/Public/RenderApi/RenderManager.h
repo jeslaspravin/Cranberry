@@ -43,7 +43,7 @@ public:
 
     RenderThreadEnqTask initialize(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
     void finalizeInit();
-    RenderThreadEnqTask destroy();
+    copat::JobSystemTask destroy();
 
     void renderFrame(float timedelta);
     GlobalRenderingContextBase *getGlobalRenderingContext() const;

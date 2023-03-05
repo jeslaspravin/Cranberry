@@ -56,6 +56,5 @@ private:
 
 #define ASSERT_INSIDE_RENDERTHREAD()                                                                                                           \
     debugAssertf(                                                                                                                              \
-        copat::JobSystem::get() && copat::JobSystem::get()->getCurrentThreadType() == copat::EJobThreadType::RenderThread,                     \
-        "Thread is not a render thread!"                                                                                                       \
+        copat::JobSystem::get() && copat::JobSystem::get()->isInThread(copat::EJobThreadType::RenderThread), "Thread is not a render thread!"  \
     )

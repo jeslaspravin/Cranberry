@@ -56,7 +56,7 @@ void INTERNAL_destroyCBEObject(Object *obj)
 
 void INTERNAL_createdCBEObject(Object *obj) { CoreObjectDelegates::broadcastObjectCreated(obj); }
 
-bool INTERNAL_isInMainThread() { return copat::JobSystem::get()->getCurrentThreadType() == copat::EJobThreadType::MainThread; }
+bool INTERNAL_isInMainThread() { return copat::JobSystem::get()->isInThread(copat::EJobThreadType::MainThread); }
 
 bool INTERNAL_validateObjectName(const String &name, CBEClass clazz)
 {

@@ -23,9 +23,18 @@
 /**
  * Thread types that are added by user
  */
-// #define USER_DEFINED_THREADS() Thread1 = 1, Thread2, ... , ThreadN = WorkerThreads - 1
-// #define USER_DEFINED_THREADS() RenderThread,
-#define USER_DEFINED_THREADS() RenderThread,
+// #define FOR_EACH_THREAD_TYPES_UNIQUE_FIRST_LAST(FirstMacroName, MacroName, LastMacroName)    \
+//      FirstMacroName(Thread1)                                                                 \
+//      MacroName(Thread2)                                                                      \
+//      ...                                                                                     \
+//      LastMacroName(ThreadN)
+//
+// #define FOR_EACH_THREAD_TYPES_UNIQUE_FIRST_LAST(FirstMacroName, MacroName, LastMacroName) FirstMacroName(RenderThread)
+#define FOR_EACH_UDTHREAD_TYPES_UNIQUE_FIRST_LAST(FirstMacroName, MacroName, LastMacroName) FirstMacroName(RenderThread)
+#define FOR_EACH_UDTHREAD_TYPES(MacroName) FOR_EACH_UDTHREAD_TYPES_UNIQUE_FIRST_LAST(MacroName, MacroName, MacroName)
+
+#define USER_DEFINED_THREAD(ThreadType) ThreadType,
+#define USER_DEFINED_THREADS() FOR_EACH_UDTHREAD_TYPES(USER_DEFINED_THREAD)
 
 /**
  * Define Cache line size override here

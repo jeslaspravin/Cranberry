@@ -15,10 +15,7 @@
 
 #include <shared_mutex>
 
-FORCE_INLINE bool CoreObjectsDB::isMainThread() const
-{
-    return copat::JobSystem::get()->getCurrentThreadType() == copat::EJobThreadType::MainThread;
-}
+FORCE_INLINE bool CoreObjectsDB::isMainThread() const { return copat::JobSystem::get()->isInThread(copat::EJobThreadType::MainThread); }
 
 void CoreObjectsDB::SharedLockObjectsDB::lockShared() const { objsDb->dbLock->lock_shared(); }
 void CoreObjectsDB::SharedLockObjectsDB::unlockShared() const { objsDb->dbLock->unlock_shared(); }

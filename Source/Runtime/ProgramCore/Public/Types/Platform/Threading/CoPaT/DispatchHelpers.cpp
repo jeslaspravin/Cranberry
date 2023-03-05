@@ -40,14 +40,18 @@ AwaitAllTasks<std::vector<DispatchAwaitableType>> dispatch(JobSystem *jobSys, co
         return {};
     }
 
-    if (!jobSys)
+    // If there is no worker threads and the current thread is same as queuing thread then execute serially.
+    // This means workers can enqueue to more workers, Beware of deadlocks when queuing from workers
+    if (!jobSys
+        || (jobSys->enqToThreadType(EJobThreadType::WorkerThreads) != EJobThreadType::WorkerThreads
+            && jobSys->enqToThreadType(EJobThreadType::WorkerThreads) == jobSys->getCurrentThreadType()))
     {
         // No job system just call all functions serially
         for (u32 i = 0; i < count; ++i)
         {
             callback(i);
         }
-        return awaitAllTasks(std::vector<DispatchAwaitableType>{});
+        return {};
     }
 
     std::vector<DispatchAwaitableType> dispatchedJobs;

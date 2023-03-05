@@ -614,13 +614,11 @@ using JobSystemEnqTaskMultiAwait = JobSystemTaskType<void, JobSystemPromiseBaseM
 /**
  * Single awaitable, Manual await enqueue task with no return type
  */
-template <EJobThreadType EnqueueInThread>
-using JobSystemTask = JobSystemTaskType<void, JobSystemPromiseBase, false, EnqueueInThread>;
+using JobSystemTask = JobSystemTaskType<void, JobSystemPromiseBase, false, EJobThreadType::MainThread>;
 /**
  * Multi awaitable, Manual await task with no return type
  */
-template <EJobThreadType EnqueueInThread>
-using JobSystemTaskMC = JobSystemTaskType<void, JobSystemPromiseBaseMC, false, EnqueueInThread>;
+using JobSystemTaskMC = JobSystemTaskType<void, JobSystemPromiseBaseMC, false, EJobThreadType::MainThread>;
 
 /**
  * Single awaitable task with return type
