@@ -64,10 +64,7 @@ JobSystem::JobSystem(u32 inWorkerCount, u32 constraints)
 #define NO_SPECIALTHREADS_INDIR_SETUP(ThreadType) enqIndirection[u32(EJobThreadType::##ThreadType)] = EJobThreadType::MainThread;
 #define SPECIALTHREAD_INDIR_SETUP(ThreadType)                                                                                                  \
     enqIndirection[u32(EJobThreadType::##ThreadType)]                                                                                          \
-        = (threadingConstraints                                                                                                                \
-           & (EThreadingConstraint::BitMasksStart << (EThreadingConstraint::No##ThreadType - EThreadingConstraint::BitMasksStart)))            \
-              ? EJobThreadType::MainThread                                                                                                     \
-              : EJobThreadType::##ThreadType;
+        = (threadingConstraints & NOSPECIALTHREAD_ENUM_TO_FLAGBIT(ThreadType)) ? EJobThreadType::MainThread : EJobThreadType::##ThreadType;
 
 void JobSystem::initialize(MainThreadTickFunc &&mainTick, void *inUserData)
 {
@@ -231,6 +228,8 @@ void JobSystem::enqueueJob(std::coroutine_handle<> coro, EJobThreadType enqueueT
         COPAT_PROFILER_SCOPE(COPAT_PROFILER_CHAR("CopatEnqueueToSpecial"));
         if (threadData)
         {
+            // Special thread queue token must not be null in this case
+            COPAT_ASSERT(threadData->specialThreadTokens);
             specialThreadsPool.enqueueJob(coro, enqueueToThread, threadData->specialThreadTokens);
         }
         else

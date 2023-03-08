@@ -48,7 +48,7 @@ void ModuleSources::printDiagnostics(CXDiagnostic diagnostic, uint32 formatOptio
 
 void ModuleSources::addAdditionalCompileOpts(std::vector<std::string> &compilerArgs)
 {
-    if (!ProgramCmdLine::get()->hasArg(ReflectToolCmdLineConst::FILTER_DIAGNOSTICS))
+    if (!ProgramCmdLine::get().hasArg(ReflectToolCmdLineConst::FILTER_DIAGNOSTICS))
     {
         return;
     }
@@ -85,12 +85,12 @@ ModuleSources::ModuleSources()
 {
     String includesFile;
     String compileDefsFile;
-    ProgramCmdLine::get()->getArg(genFiles, ReflectToolCmdLineConst::GENERATED_TU_LIST);
-    ProgramCmdLine::get()->getArg(srcDir, ReflectToolCmdLineConst::MODULE_SRC_DIR);
-    ProgramCmdLine::get()->getArg(genDir, ReflectToolCmdLineConst::GENERATED_DIR);
-    ProgramCmdLine::get()->getArg(intermediateDir, ReflectToolCmdLineConst::INTERMEDIATE_DIR);
-    ProgramCmdLine::get()->getArg(includesFile, ReflectToolCmdLineConst::INCLUDE_LIST_FILE);
-    ProgramCmdLine::get()->getArg(compileDefsFile, ReflectToolCmdLineConst::COMPILE_DEF_LIST_FILE);
+    ProgramCmdLine::get().getArg(genFiles, ReflectToolCmdLineConst::GENERATED_TU_LIST);
+    ProgramCmdLine::get().getArg(srcDir, ReflectToolCmdLineConst::MODULE_SRC_DIR);
+    ProgramCmdLine::get().getArg(genDir, ReflectToolCmdLineConst::GENERATED_DIR);
+    ProgramCmdLine::get().getArg(intermediateDir, ReflectToolCmdLineConst::INTERMEDIATE_DIR);
+    ProgramCmdLine::get().getArg(includesFile, ReflectToolCmdLineConst::INCLUDE_LIST_FILE);
+    ProgramCmdLine::get().getArg(compileDefsFile, ReflectToolCmdLineConst::COMPILE_DEF_LIST_FILE);
     LOG_DEBUG("ModuleReflectTool", "Reflecting source from %s", srcDir);
 
     fatalAssertf(
@@ -279,7 +279,7 @@ bool ModuleSources::compileAllSources(bool bFullCompile /*= false*/)
             }
             else
             {
-                if (!ProgramCmdLine::get()->hasArg(ReflectToolCmdLineConst::NO_DIAGNOSTICS))
+                if (!ProgramCmdLine::get().hasArg(ReflectToolCmdLineConst::NO_DIAGNOSTICS))
                 {
                     uint32 formatOptions = CXDiagnostic_DisplayCategoryName | CXDiagnostic_DisplayOption;
                     uint32 diagnosticsNum = clang_getNumDiagnostics(unit);

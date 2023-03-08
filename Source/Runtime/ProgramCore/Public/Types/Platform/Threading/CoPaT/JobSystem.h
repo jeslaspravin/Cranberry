@@ -109,7 +109,12 @@ public:
     SpecialQHazardToken *allocateEnqTokens()
     {
         SpecialQHazardToken *tokens = tokensAllocator.allocate();
-        COPAT_ASSERT(tokens);
+        // Tokens can be null if special thread is disabled
+        if (tokens == nullptr)
+        {
+            return tokens;
+        }
+
         for (u32 specialThreadIdx = 0; specialThreadIdx < COUNT; ++specialThreadIdx)
         {
             new (tokens + specialThreadIdx) SpecialQHazardToken(getThreadJobsQueue(specialThreadIdx)->getHazardToken());
@@ -148,8 +153,8 @@ public:
     SpecialQHazardToken *allocateEnqTokens() { return nullptr; }
 };
 
-#define NO_SPECIALTHREAD_MASK_FIRST(ThreadType) No##ThreadType = BitMasksStart,
-#define NO_SPECIALTHREAD_MASK(ThreadType) No##ThreadType,
+#define NOSPECIALTHREAD_ENUM_TO_FLAGBIT(ThreadType)                                                                                            \
+    (copat::JobSystem::BitMasksStart << (copat::JobSystem::No##ThreadType - copat::JobSystem::BitMasksStart))
 
 class COPAT_EXPORT_SYM JobSystem
 {
@@ -175,6 +180,8 @@ public:
         {}
     };
 
+#define NOSPECIALTHREAD_ENUM_FIRST(ThreadType) No##ThreadType = BitMasksStart,
+#define NOSPECIALTHREAD_ENUM(ThreadType) No##ThreadType,
     // clang-format off
 
     // Allows controlling the threading model of the application at runtime
@@ -189,11 +196,13 @@ public:
         // Anything after 8 will be bit masked values. Bit shift is determined by (Flag - BitMasksStart)
         BitMasksStart = 8,
         // Each of below NoSpecialThread mask will not stop creating those threads but will be used only at Enqueue. This is just to avoid unnecessary complexity
-        FOR_EACH_UDTHREAD_TYPES_UNIQUE_FIRST_LAST(NO_SPECIALTHREAD_MASK_FIRST, NO_SPECIALTHREAD_MASK, NO_SPECIALTHREAD_MASK) 
+        FOR_EACH_UDTHREAD_TYPES_UNIQUE_FIRST_LAST(NOSPECIALTHREAD_ENUM_FIRST, NOSPECIALTHREAD_ENUM, NOSPECIALTHREAD_ENUM) 
         BitMasksEnd
     };
 
     // clang-format on
+#undef NOSPECIALTHREAD_ENUM_FIRST
+#undef NOSPECIALTHREAD_ENUM
 
 private:
     static JobSystem *singletonInstance;

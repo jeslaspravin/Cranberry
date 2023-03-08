@@ -50,7 +50,7 @@ void SourceGenerator::writeGeneratedFiles()
         }
     }
     String moduleExpMacro;
-    ProgramCmdLine::get()->getArg(moduleExpMacro, ReflectToolCmdLineConst::MODULE_EXP_MACRO);
+    ProgramCmdLine::get().getArg(moduleExpMacro, ReflectToolCmdLineConst::MODULE_EXP_MACRO);
 
     for (const auto &sourceGen : sourceToGenCntxt)
     {
@@ -130,7 +130,7 @@ bool SourceGenerator::isTemplatesModified()
     }
 
     String templateTs;
-    ProgramCmdLine::get()->getArg(templateTs, ReflectToolCmdLineConst::INTERMEDIATE_DIR);
+    ProgramCmdLine::get().getArg(templateTs, ReflectToolCmdLineConst::INTERMEDIATE_DIR);
     templateTs = PathFunctions::combinePath(templateTs, "Templates.timestamp");
     PlatformFile templateTsFile(templateTs);
     // If last modified after last generation

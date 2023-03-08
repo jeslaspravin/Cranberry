@@ -34,10 +34,6 @@ private:
     AppWindowDelegate onWindowSurfaceUpdated;
     SimpleDelegate onAllWindowsDestroyed;
 
-private:
-    DelegateHandle graphicsInitEventHandle;
-    void graphicsInitEvents(ERenderStateEvent renderState);
-
 public:
     /* IApplicationModule finals */
     ApplicationInstance *getApplication() const final;
@@ -62,12 +58,16 @@ public:
     DelegateHandle registerAllWindowDestroyed(SimpleDelegate::SingleCastDelegateType callback) final;
     void unregisterAllWindowDestroyed(const DelegateHandle &callbackHandle) final;
 
-protected:
-    void startAndRun(ApplicationInstance *appInst, const AppInstanceCreateInfo &appCI) final;
-
-public:
     /* IModuleBase finals */
     void init() final;
     void release() final;
     /* finals end */
+protected:
+    void startAndRun(ApplicationInstance *appInst, const AppInstanceCreateInfo &appCI) final;
+
+private:
+    DelegateHandle graphicsInitEventHandle;
+    void graphicsInitEvents(ERenderStateEvent renderState);
+
+    static uint32 getThreadingConstraints();
 };

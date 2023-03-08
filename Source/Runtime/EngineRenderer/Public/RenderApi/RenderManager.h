@@ -41,7 +41,7 @@ public:
     RenderManager() = default;
     MAKE_TYPE_NONCOPY_NONMOVE(RenderManager)
 
-    RenderThreadEnqTask initialize(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
+    copat::JobSystemTask initialize(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
     void finalizeInit();
     copat::JobSystemTask destroy();
 

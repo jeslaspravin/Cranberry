@@ -76,13 +76,13 @@ public:
 
 CmdLineArgument::CmdLineArgument(String description, String cmdArg, String shortArg /*= ""*/)
 {
-    static_cast<ProgramCmdLineInstance *>(ProgramCmdLine::get())->addAllowedArg(cmdArg, shortArg, description);
+    static_cast<ProgramCmdLineInstance *>(&ProgramCmdLine::get())->addAllowedArg(cmdArg, shortArg, description);
 }
 
-ProgramCmdLine *ProgramCmdLine::get()
+ProgramCmdLine &ProgramCmdLine::get()
 {
     static ProgramCmdLineInstance singletonProgramCmdLine;
-    return &singletonProgramCmdLine;
+    return static_cast<ProgramCmdLine &>(singletonProgramCmdLine);
 }
 
 bool ProgramCmdLine::parseViews(const std::vector<StringView> &strViews)
@@ -323,7 +323,7 @@ bool ProgramCmdLine::printHelp() const
                 );
             }
         }
-        LOG("CmdLineHelp", "\n%s\n", outHelp);
+        LOG("CmdLineHelp", "\n[HELP]\n%s\n", outHelp);
         return true;
     }
     return false;

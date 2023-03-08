@@ -25,7 +25,7 @@
 
 void RenderManager::createSingletons() { globalContext = graphicsHelperCache->createGlobalRenderingContext(); }
 
-RenderThreadEnqTask RenderManager::initialize(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+copat::JobSystemTask RenderManager::initialize(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
 {
     graphicsInstanceCache = graphicsInstance;
     graphicsHelperCache = graphicsHelper;
@@ -37,24 +37,25 @@ RenderThreadEnqTask RenderManager::initialize(IGraphicsInstance *graphicsInstanc
     graphicsInstanceCache->load();
     // Load instance done
     engineRendererModule->renderStateEvents.invoke(ERenderStateEvent::PostLoadInstance);
+    
+    // Rest of the initialization happens in render thread
+    if (!copat::JobSystem::get()->isInThread(copat::EJobThreadType::RenderThread))
+    {
+        co_await copat::SwitchJobThreadAwaiter<copat::EJobThreadType::RenderThread>{};
+    }
 
-    return RenderThreadEnqueuer::execInRenderThreadAwaitable(
-        [this, engineRendererModule](class IRenderCommandList *, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
-        {
-            engineRendererModule->renderStateEvents.invoke(ERenderStateEvent::PreinitDevice);
-            graphicsInstance->updateSurfaceDependents();
-            graphicsInstance->initializeCmds(renderCmds);
-            engineRendererModule->renderStateEvents.invoke(ERenderStateEvent::PostInitDevice);
+    engineRendererModule->renderStateEvents.invoke(ERenderStateEvent::PreinitDevice);
+    graphicsInstance->updateSurfaceDependents();
+    graphicsInstance->initializeCmds(renderCmds);
+    engineRendererModule->renderStateEvents.invoke(ERenderStateEvent::PostInitDevice);
 
-            globalContext->initContext(graphicsInstance, graphicsHelper);
-            engineRendererModule->renderStateEvents.invoke(ERenderStateEvent::PostInitGraphicsContext);
+    globalContext->initContext(graphicsInstance, graphicsHelper);
+    engineRendererModule->renderStateEvents.invoke(ERenderStateEvent::PostInitGraphicsContext);
 
-            // Below depends on devices and pipelines
-            GlobalBuffers::initialize();
+    // Below depends on devices and pipelines
+    GlobalBuffers::initialize();
 
-            engineRendererModule->renderStateEvents.invoke(ERenderStateEvent::PostInititialize);
-        }
-    );
+    engineRendererModule->renderStateEvents.invoke(ERenderStateEvent::PostInititialize);
 
     // TODO(Commented) onVsyncChangeHandle = EngineSettings::enableVsync.onConfigChanged().bindLambda(
     // TODO(Commented)     [this](bool oldVal, bool newVal)
@@ -62,6 +63,8 @@ RenderThreadEnqTask RenderManager::initialize(IGraphicsInstance *graphicsInstanc
     // TODO(Commented)         graphicsInstance->updateSurfaceDependents();
     // TODO(Commented)         gEngine->appInstance().appWindowManager.updateWindowCanvas();
     // TODO(Commented)     });
+
+    co_return;
 }
 
 void RenderManager::finalizeInit()

@@ -64,7 +64,7 @@ void initializeCmdArguments()
     CmdLineArgument noDiagnostics(TCHAR("No diagnostics will be displayed"), ReflectToolCmdLineConst::NO_DIAGNOSTICS);
     CmdLineArgument logVerbose(TCHAR("Sets the verbosity of logger to debug"), ReflectToolCmdLineConst::LOG_VERBOSE);
 
-    ProgramCmdLine::get()->setProgramDescription(TCHAR("ModuleReflectTool Copyright (C) Jeslas Pravin, Since 2022\n\
+    ProgramCmdLine::get().setProgramDescription(TCHAR("ModuleReflectTool Copyright (C) Jeslas Pravin, Since 2022\n\
     Parses the headers in provided module and creates reflection files for them.\n\
     It uses clang libraries and mustache style templates to generate reflection data"));
 }
@@ -80,19 +80,19 @@ int32 main(int32 argsc, AChar **args)
     moduleManager->loadModule(TCHAR("ProgramCore"));
     initializeCmdArguments();
 
-    if (!ProgramCmdLine::get()->parse(args, argsc))
+    if (!ProgramCmdLine::get().parse(args, argsc))
     {
         // We cannot initialize logger before parsing command line args
         Logger::initialize();
         LOG_ERROR("CPPReflect", "Failed to parse command line arguments");
-        ProgramCmdLine::get()->printCommandLine();
+        ProgramCmdLine::get().printCommandLine();
     }
     Logger::initialize();
-    if (!ProgramCmdLine::get()->hasArg(ReflectToolCmdLineConst::LOG_VERBOSE))
+    if (!ProgramCmdLine::get().hasArg(ReflectToolCmdLineConst::LOG_VERBOSE))
     {
         Logger::pushMuteSeverities(Logger::Verbose | Logger::Debug | Logger::Log);
     }
-    if (ProgramCmdLine::get()->printHelp())
+    if (ProgramCmdLine::get().printHelp())
     {
         // Since this invocation is for printing help
         return 0;
@@ -106,10 +106,10 @@ int32 main(int32 argsc, AChar **args)
 
     Logger::flushStream();
 
-    if (ProgramCmdLine::get()->hasArg(ReflectToolCmdLineConst::SAMPLE_CODE))
+    if (ProgramCmdLine::get().hasArg(ReflectToolCmdLineConst::SAMPLE_CODE))
     {
         LOG_DEBUG("CPPReflect", "Executing sample codes");
-        String srcDir = ProgramCmdLine::get()->atIdx(ProgramCmdLine::get()->cmdLineCount() - 1);
+        String srcDir = ProgramCmdLine::get().atIdx(ProgramCmdLine::get().cmdLineCount() - 1);
 
         SampleCode::testLibClangParsing(srcDir);
         // SampleCode::testTypesAndProperties();
@@ -144,7 +144,7 @@ int32 main(int32 argsc, AChar **args)
         {
             SCOPED_MUTE_LOG_SEVERITIES(Logger::Debug);
             String moduleSrcDir;
-            ProgramCmdLine::get()->getArg(moduleSrcDir, ReflectToolCmdLineConst::MODULE_SRC_DIR);
+            ProgramCmdLine::get().getArg(moduleSrcDir, ReflectToolCmdLineConst::MODULE_SRC_DIR);
             sw.stop();
             LOG("ModuleReflectTool", "%s : Reflected in %0.2f seconds", PathFunctions::fileOrDirectoryName(moduleSrcDir), sw.duration());
         }

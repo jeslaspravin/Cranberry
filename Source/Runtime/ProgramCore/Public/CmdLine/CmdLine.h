@@ -20,6 +20,12 @@ struct PROGRAMCORE_EXPORT CmdLineArgument
     CmdLineArgument(String description, String cmdArg, String shortArg = TCHAR(""));
 };
 
+// Use if want to have static registration of command line arguments
+#define REGISTER_CMDARG_S(Desc, CmdArgName, ShortArgName)                                                                                      \
+    static const CmdLineArgument COMBINE(zzzCmdLineArg_, __COUNTER__) { TCHAR(Desc), CmdArgName, ShortArgName }
+#define REGISTER_CMDARG(Desc, CmdArgName)                                                                                                      \
+    static const CmdLineArgument COMBINE(zzzCmdLineArg_, __COUNTER__) { TCHAR(Desc), CmdArgName }
+
 /*
  * Args starting with `single -` will be short hand flags and can be stringed together and they cannot
  * accept values. Args starting with `--` Can have values space delimited strings Args starting with `@`
@@ -43,7 +49,7 @@ private:
     bool parseViews(const std::vector<StringView> &strViews);
 
 public:
-    static ProgramCmdLine *get();
+    static ProgramCmdLine &get();
     // Takes the pointer as it is and hold it for all parsing and data retrieval
     bool parse(AChar **cmdArgs, uint32 count);
     // Takes the reference as it is and uses the TChar* to the cmdLine references

@@ -1739,8 +1739,9 @@ void EngineRenderScene::createNextDrawList(
     if (bInstanceParamsUpdating || bVertexUpdating)
     {
         testFlag = true;
+        testCounter = 0;
     }
-    if (testFlag && !bInstanceParamsUpdating && !bVertexUpdating)
+    if (testFlag)
     {
         testCounter++;
     }

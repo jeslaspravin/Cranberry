@@ -18,6 +18,7 @@
 #include "ApplicationInstance.h"
 #include "FontManager.h"
 #include "Profiler/ProgramProfiler.hpp"
+#include "String/TCharString.h"
 
 DECLARE_MODULE(Application, ApplicationModule)
 
@@ -59,17 +60,56 @@ void ApplicationModule::graphicsInitEvents(ERenderStateEvent renderState)
     }
 }
 
+constexpr StringLiteralStore<TCHAR("--noRenderThread")> CMDLINE_NORENDERTHREAD;
+REGISTER_CMDARG("Runs the application without special render thread. Useful for debugging!", CMDLINE_NORENDERTHREAD);
+
+constexpr StringLiteralStore<TCHAR("--noSpecialThreads")> CMDLINE_NOSPECIALTHREADS;
+REGISTER_CMDARG("Runs the application without any special render threads. Useful for debugging!\n\
+    Only main thread and worker threads will exist.",
+    CMDLINE_NOSPECIALTHREADS
+);
+
+constexpr StringLiteralStore<TCHAR("--singleThread")> CMDLINE_SINGLETHREADED;
+REGISTER_CMDARG("Runs the application only with main thread in Application's copat job system!", CMDLINE_SINGLETHREADED);
+
+uint32 ApplicationModule::getThreadingConstraints() 
+{
+    ProgramCmdLine &cmdLines = ProgramCmdLine::get();
+    if (cmdLines.hasArg(CMDLINE_SINGLETHREADED))
+    {
+        return copat::JobSystem::SingleThreaded;
+    }
+
+    if (cmdLines.hasArg(CMDLINE_NOSPECIALTHREADS))
+    {
+        return copat::JobSystem::NoSpecialThreads;
+    }
+
+    uint32 constraint = copat::JobSystem::NoConstraints;
+    if (cmdLines.hasArg(CMDLINE_NORENDERTHREAD))
+    {
+        constraint |= NOSPECIALTHREAD_ENUM_TO_FLAGBIT(RenderThread);
+    }
+    return constraint;
+}
+
 void ApplicationModule::startAndRun(ApplicationInstance *appInst, const AppInstanceCreateInfo &appCI)
 {
     // Load core if not loaded already
     bool bCoreModulesLoaded = ModuleManager::get()->loadModule(TCHAR("ProgramCore"));
     fatalAssertf(bCoreModulesLoaded, "Loading core modules failed");
     // Needs to be parsed asap
-    if (!ProgramCmdLine::get()->parse(appInst->getCmdLine()))
+    if (!ProgramCmdLine::get().parse(appInst->getCmdLine()))
     {
         LOG_ERROR("Engine", "Invalid command line");
-        ProgramCmdLine::get()->printCommandLine();
+        ProgramCmdLine::get().printCommandLine();
     }
+    ProgramCmdLine::get().setProgramDescription(TCHAR("Cranberry application - ") + appCI.applicationName);
+    if (ProgramCmdLine::get().printHelp())
+    {
+        return;
+    }
+
     // Start the profiler immediately
     CBE_START_PROFILER();
     CBE_PROFILER_MESSAGE_LC("Hello Profiler! Cranberry Here!", ColorConst::GREEN);
@@ -82,7 +122,7 @@ void ApplicationModule::startAndRun(ApplicationInstance *appInst, const AppInsta
 
     // Initialize job system
     PlatformThreadingFunctions::printSystemThreadingInfo();
-    copat::JobSystem jobSys(copat::JobSystem::NoConstraints);
+    copat::JobSystem jobSys(getThreadingConstraints());
     jobSys.initialize(
         copat::JobSystem::MainThreadTickFunc::createLambda(
             [&jobSys](void *appModulePtr)

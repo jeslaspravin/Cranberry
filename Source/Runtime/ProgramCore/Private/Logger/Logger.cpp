@@ -180,9 +180,9 @@ bool LoggerImpl::openNewLogFile()
 {
     String logFileName = Paths::applicationName();
     String logFolderPath = PathFunctions::combinePath(Paths::savedDirectory(), TCHAR("Logs"));
-    if (ProgramCmdLine::get()->hasArg(TCHAR("--logFileName")))
+    if (ProgramCmdLine::get().hasArg(TCHAR("--logFileName")))
     {
-        ProgramCmdLine::get()->getArg(logFileName, TCHAR("--logFileName"));
+        ProgramCmdLine::get().getArg(logFileName, TCHAR("--logFileName"));
     }
 
     String logFilePath = PathFunctions::combinePath(logFolderPath, logFileName + TCHAR(".log"));
