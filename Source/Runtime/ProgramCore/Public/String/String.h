@@ -19,6 +19,7 @@
 #include "ProgramCoreExports.h"
 #include "Types/CoreDefines.h"
 #include "Types/CoreTypes.h"
+#include "Types/Templates/TemplateTypes.h"
 
 #define STRINGIFY(...) #__VA_ARGS__
 
