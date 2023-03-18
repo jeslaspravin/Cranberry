@@ -163,12 +163,18 @@ const StringID ImGuiManager::TEXTURE_PARAM_NAME{ TCHAR("textureAtlas") };
 const NameString ImGuiManager::IMGUI_SHADER_NAME{ TCHAR("DrawImGui") };
 
 ImGuiManager::ImGuiManager(const TChar *managerName, ImGuiManager *parent)
-    : parentGuiManager(parent)
+    : bCaptureInput(false)
+    , parentGuiManager(parent)
+    , context(nullptr)
+    , implotContext(nullptr)
     , name(TCHAR_TO_UTF8(managerName))
 {}
 
 ImGuiManager::ImGuiManager(const TChar *managerName)
-    : parentGuiManager(nullptr)
+    : bCaptureInput(false)
+    , parentGuiManager(nullptr)
+    , context(nullptr)
+    , implotContext(nullptr)
     , name(TCHAR_TO_UTF8(managerName))
 {}
 
@@ -798,19 +804,19 @@ bool ImGuiManager::inputKey(Keys::StateKeyType key, Keys::StateInfoType state, c
         {
         case EKeyCode::KEY_LCTRL:
         case EKeyCode::KEY_RCTRL:
-            io.KeyCtrl = state.isPressed;
+            io.AddKeyEvent(ImGuiMod_Ctrl, state.isPressed);
             break;
         case EKeyCode::KEY_LSHIFT:
         case EKeyCode::KEY_RSHIFT:
-            io.KeyShift = state.isPressed;
+            io.AddKeyEvent(ImGuiMod_Shift, state.isPressed);
             break;
         case EKeyCode::KEY_LALT:
         case EKeyCode::KEY_RALT:
-            io.KeyAlt = state.isPressed;
+            io.AddKeyEvent(ImGuiMod_Alt, state.isPressed);
             break;
         case EKeyCode::KEY_LWIN:
         case EKeyCode::KEY_RWIN:
-            io.KeySuper = state.isPressed;
+            io.AddKeyEvent(ImGuiMod_Super, state.isPressed);
             break;
         default:
             break;
