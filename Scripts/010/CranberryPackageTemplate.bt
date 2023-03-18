@@ -1,0 +1,176 @@
+//------------------------------------------------
+//--- 010 Editor v12.0.1 Binary Template
+//
+//      File: CranberryPackage
+//   Authors: Jeslas Pravin
+//   Version: 0.01
+//   Purpose: Parse cranberry engine's binary package headers
+//  Category: EngineObject
+// File Mask: *.berry
+//   History: 
+//------------------------------------------------
+
+// Archive metadata 
+struct VersionPair
+{
+    uint32 versionID;
+    uint32 version;
+};
+
+struct ArchiveMeta 
+{
+    uint32 archiveMarker<read = PrintArchiveMarker>;
+    uint32 archiveVersion;
+    uint64 customVersionsLen<hidden=true>;    
+    VersionPair customVersions[customVersionsLen];
+};
+
+#define ARCHIVE_MARKER_VALUE 1042438380
+string PrintArchiveMarker(uint32 archiveMarkerVal)
+{
+    string retStr;
+    SPrintf(retStr, "%s(%u)"
+        , (archiveMarkerVal == ARCHIVE_MARKER_VALUE)? "ValidArchive" : "InvalidArchive", archiveMarkerVal);
+    return retStr;
+}
+
+// Package data
+struct PackageContainedData
+{
+    uint64 objectPathLen<hidden=true>;
+    char objectPath[objectPathLen];
+    uint32 classVersion;
+    uint64 objectFlags<read = ObjectFlagsDisplay>;
+    uint32 className;
+
+    uint64 streamStart;
+    uint64 streamSize;
+    // Have a local copy of data
+    local int64 cursorPos = FTell();
+    FSeek(streamStart);
+    uchar serializedData[streamSize];
+    FSeek(cursorPos);
+};
+struct PackageDependencyData
+{
+    uint64 objectPathLen<hidden=true>;
+    char objectFullPath[objectPathLen];
+    uint32 className;
+};
+
+// Object flags
+enum <uint64> ObjectFlagBits
+{
+    OBJECTFLAG_Default= 0x0000000000000001,
+    OBJECTFLAG_MarkedForDelete= 0x0000000000000002,
+    OBJECTFLAG_Deleted= 0x0000000000000004,
+    OBJECTFLAG_RootObject= 0x0000000000000008,
+    OBJECTFLAG_Transient= 0x0000000000000010,
+    OBJECTFLAG_PackageDirty= 0x0000000000000020,
+    OBJECTFLAG_PackageLoadPending= 0x0000000000000040,
+    OBJECTFLAG_PackageLoaded= 0x0000000000000080,
+    OBJECTFLAG_TemplateDefault= 0x0000000000000100,
+    OBJECTFLAG_FromTemplate= 0x0000000000000200
+};
+
+string ObjectFlagsDisplay(uint64 flags)
+{
+    string retStr;
+    if (Strlen(ObjectBitFlagToStr(flags)) == 0)
+    {
+        return IntToBinaryStr(flags);
+    }
+    SPrintf(retStr, "%s(%s)", IntToBinaryStr(flags),  ObjectBitFlagToStr(flags));
+    return retStr;
+}
+
+string ObjectBitFlagToStr(uint64 flags)
+{
+    string fmtStr;
+    if((flags & OBJECTFLAG_Default) != 0)
+    {
+        Strcat(fmtStr, "Default | ");
+    }
+    if((flags & OBJECTFLAG_MarkedForDelete) != 0)
+    {
+        Strcat(fmtStr, "MarkedForDelete | ");
+    }
+    if((flags & OBJECTFLAG_Deleted) != 0)
+    {
+        Strcat(fmtStr, "Deleted | ");
+    }
+    if((flags & OBJECTFLAG_RootObject) != 0)
+    {
+        Strcat(fmtStr, "RootObject | ");
+    }
+    if((flags & OBJECTFLAG_Transient) != 0)
+    {
+        Strcat(fmtStr, "Transient | ");
+    }
+    if((flags & OBJECTFLAG_PackageDirty) != 0)
+    {
+        Strcat(fmtStr, "DirtyPackage | ");
+    }
+    if((flags & OBJECTFLAG_PackageLoadPending) != 0)
+    {
+        Strcat(fmtStr, "PendingLoad | ");
+    }
+    if((flags & OBJECTFLAG_PackageLoaded) != 0)
+    {
+        Strcat(fmtStr, "PackageLoaded | ");
+    }
+    if((flags & OBJECTFLAG_TemplateDefault) != 0)
+    {
+        Strcat(fmtStr, "TemplateDefault | ");
+    }
+    if((flags & OBJECTFLAG_FromTemplate) != 0)
+    {
+        Strcat(fmtStr, "FromTemplate | ");
+    }
+    uint64 fmtStrLen = Strlen(fmtStr);
+    if(fmtStrLen > 0)
+    {
+        fmtStr = StrDel(fmtStr, fmtStrLen - 3, 3);         
+    }
+    return fmtStr;    
+}
+
+#define ARCHIVE_MARKER_VALUE 1042438380
+#define PACKAGE_MARKER_VALUE 3759085268 
+string PrintPackageMarker(uint32 packageMarkerVal)
+{
+    string retStr;
+    SPrintf(retStr, "%s(%u)"
+        , (packageMarkerVal == PACKAGE_MARKER_VALUE)? "ValidPackage" : "InvalidPackage", packageMarkerVal);
+    return retStr;
+}
+
+///////////////////
+// Start parsing //
+///////////////////
+
+LittleEndian();
+
+ArchiveMeta archiveMeta<fgcolor=cBlack, bgcolor=cSilver>;
+
+uint32 packageMarker<read = PrintPackageMarker>;
+if (packageMarker != PACKAGE_MARKER_VALUE)
+{
+    FSkip(-4);
+}
+
+uint64 containedDataCount<hidden=true>;
+PackageContainedData packagedObjects[containedDataCount]<optimize=false, fgcolor=cLtBlue>;
+
+uint64 dependentDataCount<hidden=true>;
+PackageDependencyData dependentObjects[dependentDataCount]<optimize=false, fgcolor=cDkYellow>;
+
+SetColor(cNone, cNone);
+local int32 idx = 0;
+for(idx = 0; idx < containedDataCount; ++idx)
+{
+    struct ObjectBlock
+    {        
+        uchar data[packagedObjects[idx].streamSize];
+    } objectBlock;
+}

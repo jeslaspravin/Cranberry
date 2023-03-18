@@ -1,0 +1,623 @@
+//------------------------------------------------
+//--- 010 Editor v12.0.1 Binary Template
+//
+//      File: ShaderReflections
+//   Authors: Jeslas Pravin
+//   Version: 0.01
+//   Purpose: Parse my binary shader reflections file
+//  Category: Shaders
+// File Mask: *.ref
+//   History: 
+//------------------------------------------------
+
+// Data types
+struct NamedAttribute 
+{
+    string attributeName;
+};
+#define ATTRIB_NAME NamedAttribute name<hidden=false, read = NamedAttribDisplay>;
+
+struct ArrayDefinition
+{
+    uint32 dimension;
+    uint32 shaderStageIndex;
+    uchar isSpecializationConst;
+    uchar padding[3]<hidden=true>;
+};
+#define ARRAY_EXTENT int32 arraySizeNum<hidden=true>;    ArrayDefinition arraySize[arraySizeNum]
+
+struct StructInnerFields
+{
+    uint32 offset;
+    uint32 stride;
+    uint32 totalSize;
+    ARRAY_EXTENT;
+};
+
+// FIELD REFLECTIONS
+
+enum EReflectBufferPrimitiveType
+{
+    RelectPrimitive_invalid = 0,
+    ReflectPrimitive_bool = 1,
+    ReflectPrimitive_int = 2,
+    ReflectPrimitive_uint = 3,
+    ReflectPrimitive_float = 4,
+    ReflectPrimitive_double = 5,
+};
+
+struct ReflectFieldType
+{
+    EReflectBufferPrimitiveType primitive;
+    uint32 vecSize;
+    uint32 colSize;
+};
+
+// BUFFER REFLECTIONS
+
+struct ReflectBufferEntry
+{
+    ATTRIB_NAME;
+    StructInnerFields fieldInfo;
+    ReflectFieldType type<read = ReflectFieldTypeDisplay>;
+};
+
+struct ReflectBufferShaderField;
+
+struct ReflectBufferStructEntry
+{
+    ATTRIB_NAME;
+    StructInnerFields fieldInfo;
+    ReflectBufferShaderField field; 
+};
+
+struct ReflectBufferShaderField
+{
+    uint32 stride;
+    int32 bufferFieldsNum<hidden=true>;
+    ReflectBufferEntry bufferFields[bufferFieldsNum]<optimize=false>;
+    int32 bufferStructFieldsNum<hidden=true>;
+    ReflectBufferStructEntry bufferStructFields[bufferStructFieldsNum]<optimize=false>;
+};
+
+
+// PUSH CONSTANTS
+struct PushConstantEntry
+{
+    uint32 stagesUsed<read = StagesBitFlagDisplay>;
+    ReflectBufferShaderField pushConstantField;
+};
+
+struct ReflectPushConstant
+{
+    ATTRIB_NAME;
+    PushConstantEntry entryData;
+};
+
+// SPECIALIZATION CONSTANTS
+
+struct SpecializationConstantDefaultValue
+{
+    union Value
+    {
+        uchar boolVal;
+        int i32Val;
+        uint32 u32Val;
+        float f32Val;
+        double f64Val;
+    };
+
+    Value defaltValue<hidden = true>;
+};
+
+struct SpecializationConstantEntry
+{
+    SpecializationConstantDefaultValue defaultValue;
+    EReflectBufferPrimitiveType type;
+    uint32 constantId;
+};
+
+struct ReflectSpecializationConstant
+{
+    ATTRIB_NAME;
+    SpecializationConstantEntry entryData<read = SpecializationConstEntry>; 
+};
+
+// SHADER CUSTOM
+struct ShaderCodeView
+{
+    uint32 startIdx;
+    uint32 size;
+};
+
+struct ShaderStageDescription
+{
+    uint32 stage<read = StageDisplay>;
+    uint32 pipelineBindPoint<read = BindPoint>;
+    string entryPoint;
+    ShaderCodeView codeView<read = CodeView>;
+    int32 stageSpecEntriesNum<hidden=true>;
+    ReflectSpecializationConstant stageSpecializationEntries[stageSpecEntriesNum]<optimize=false, read = SpecializationConst>;
+};
+
+// INPUT OUTPUT
+struct InputOutputEntry
+{
+    uint32 location;
+    ReflectFieldType type<read = ReflectFieldTypeDisplay>;
+};
+
+struct ReflectInputOutput
+{
+    ATTRIB_NAME;
+    InputOutputEntry entryData;
+};
+
+// DESCRIPTORS
+struct DescriptorSetEntry
+{
+    uchar ReadWriteState<read = DescriptorReadWriteState>;
+    uint32 binding;
+    uint32 stagesUsed<read = StagesBitFlagDisplay>;
+    uint32 type<read = DescriptorTypeDisplay>;
+};
+#define DESCRIPTORS_COMMON ATTRIB_NAME;    DescriptorSetEntry setInfo
+
+// BUFFER ENTRY
+struct DescEntryBuffer
+{
+    DESCRIPTORS_COMMON;
+    ReflectBufferShaderField fieldEntry;
+};
+
+// TEXEL BUFFER ENTRY
+struct TexelComponentFormat
+{
+    EReflectBufferPrimitiveType type;
+    uint32 componentCount;
+    uint32 componentSize[4];
+    uchar bIsNormalized;
+    uchar bIsScaled;
+    uchar padding[2]<hidden=true>;
+};
+
+struct ReflectTexelBufferShaderField
+{
+    ARRAY_EXTENT;
+    TexelComponentFormat format;
+};
+
+struct DescEntryTexelBuffer
+{
+    DESCRIPTORS_COMMON;
+    ReflectTexelBufferShaderField fieldEntry;
+};
+
+// SAMPLED, TEXTURE and STORAGE ENTRY for textures 
+
+struct ReflectTextureShaderField
+{
+    uint32 imageViewType;
+    ARRAY_EXTENT;
+    TexelComponentFormat format;
+    uchar bIsMultiSampled;
+};
+struct DescEntryTexture
+{
+    DESCRIPTORS_COMMON;
+    ReflectTextureShaderField fieldEntry;
+};
+
+// SUBPASS INPUT ENTRY
+
+struct DescEntrySubpassInput
+{
+    DESCRIPTORS_COMMON;
+    uint32 subpassAttachmentIdx;
+};
+
+// SAMPLERS
+struct DescEntrySampler
+{
+    DESCRIPTORS_COMMON;
+    ARRAY_EXTENT;
+};
+
+// DESCRIPTOR BODY
+struct ReflectDescriptorBody
+{
+    uint set;
+    int32 bindingsNum<hidden=true>;
+    uint32 usedBindings[bindingsNum]<optimize=false>;
+
+    uint32 combinedSetUsage<read = StagesBitFlagDisplay>;
+
+    int32 uniformsNum<hidden=true>;
+    DescEntryBuffer uniforms[uniformsNum]<optimize=false, read = DescEntryBufferDisplay>;
+
+    int32 buffersNum<hidden=true>;
+    DescEntryBuffer buffers[buffersNum]<optimize=false, read = DescEntryBufferDisplay>;
+    
+    int32 samplerBuffersNum<hidden=true>;
+    DescEntryTexelBuffer samplerBuffers[samplerBuffersNum]<optimize=false, read = DescEntryTexelBufferDisplay>;
+    
+    int32 imageBuffersNum<hidden=true>;
+    DescEntryTexelBuffer imageBuffers[imageBuffersNum]<optimize=false, read = DescEntryTexelBufferDisplay>;
+
+    int32 sampledTexAndArraysNum<hidden=true>;
+    DescEntryTexture sampledTexAndArrays[sampledTexAndArraysNum]<optimize=false, read = DescEntryTextureDisplay>;
+    
+    int32 textureAndArraysNum<hidden=true>;
+    DescEntryTexture textureAndArrays[textureAndArraysNum]<optimize=false, read = DescEntryTextureDisplay>;
+
+    int32 subpassInputsNum<hidden=true>;
+    DescEntrySubpassInput subpassInputs[subpassInputsNum]<optimize=false, read = DescEntrySubpassInputDisplay>;
+
+    int32 imagesAndImgArrays<hidden=true>;
+    DescEntryTexture imagesAndImgArrays[imagesAndImgArrays]<optimize=false, read = DescEntryTextureDisplay>;
+    
+    int32 samplersNum<hidden=true>;
+    DescEntrySampler samplers[samplersNum]<optimize=false, read = DescEntrySamplerDisplay>;
+};
+
+// Functions
+
+string NamedAttribDisplay(NamedAttribute& namedAttrib)
+{
+    return namedAttrib.attributeName;
+}
+
+string ReflectFieldTypeDisplay(ReflectFieldType& fieldType)
+{
+    string retStr;
+    
+    switch(fieldType.primitive)
+    {
+        case RelectPrimitive_invalid:
+            retStr = "Invalid default";
+            break;
+        case ReflectPrimitive_bool:
+            SPrintf(retStr, "bool%dx%d", fieldType.vecSize, fieldType.colSize);
+            break;
+        case ReflectPrimitive_int:
+            SPrintf(retStr, "int%dx%d", fieldType.vecSize, fieldType.colSize);
+            break;
+        case ReflectPrimitive_uint:
+            SPrintf(retStr, "uint%dx%d", fieldType.vecSize, fieldType.colSize);
+            break;
+        case ReflectPrimitive_float:
+            SPrintf(retStr, "float%dx%d", fieldType.vecSize, fieldType.colSize);
+            break;
+        case ReflectPrimitive_double:
+            SPrintf(retStr, "double%dx%d", fieldType.vecSize, fieldType.colSize);
+            break;
+    }
+    return retStr;
+}
+
+// STAGES
+#define COMPUTE_STAGE 0
+#define VERTEX_STAGE 1
+#define TESS_CONTROL_STAGE 2
+#define TESS_EVAL_STAGE 3
+#define GEOMETRY_STAGE 4
+#define FRAGMENT_STAGE 5
+#define INVALID 0x7FFFFFFF
+string StagesDisplay(ShaderStageDescription& stageDesc)
+{
+    switch(stageDesc.stage)
+    {
+        case COMPUTE_STAGE:
+            return "Compute shader";
+        case VERTEX_STAGE:
+            return "Vetex shader";
+        case TESS_CONTROL_STAGE:
+            return "Tessellation control shader";
+        case TESS_EVAL_STAGE:
+            return "Tessellation evaluation shader";
+        case GEOMETRY_STAGE:
+            return "Geometry shader";
+        case FRAGMENT_STAGE:
+            return "Fragment shader";
+        case INVALID:
+            return "INVALID";        
+    }
+    return "";
+}
+
+string StageDisplay(uint32 stage)
+{
+    switch(stage)
+    {
+        case COMPUTE_STAGE:
+            return "Compute";
+        case VERTEX_STAGE:
+            return "Vetex";
+        case TESS_CONTROL_STAGE:
+            return "Tessellation control";
+        case TESS_EVAL_STAGE:
+            return "Tessellation evaluation";
+        case GEOMETRY_STAGE:
+            return "Geometry";
+        case FRAGMENT_STAGE:
+            return "Fragment";
+        case INVALID:
+            return "INVALID";        
+    }
+    return "";
+}
+#undef COMPUTE_STAGE
+#undef VERTEX_STAGE
+#undef TESS_CONTROL_STAGE
+#undef TESS_EVAL_STAGE
+#undef GEOMETRY_STAGE
+#undef FRAGMENT_STAGE
+#undef INVALID
+
+// PIPELINE BIND POINTS
+#define GRAPHICS 0
+#define COMPUTE 1
+#define RAYTRACING_NV 1000165000
+
+string BindPoint(uint32 bindPoint)
+{
+    switch(bindPoint)
+    {
+        case GRAPHICS:
+            return "Graphics pipeline";
+        case COMPUTE:
+            return "Compute pipeline";
+        case RAYTRACING_NV:
+            return "Nvidia raytracing pipeline";
+    }
+    return "";
+}
+#undef GRAPHICS
+#undef COMPUTE
+#undef RAYTRACING_NV
+
+// CODE VIEW
+string CodeView(ShaderCodeView& codeView)
+{
+    string retStr;
+    SPrintf(retStr,"Start : %d, Size : %d", codeView.startIdx, codeView.size);
+    return retStr;
+}
+
+// SPEC CONST ENTRY
+string SpecializationConst(ReflectSpecializationConstant& constant)
+{
+    return NamedAttribDisplay(constant.name);
+}
+string SpecializationConstEntry(SpecializationConstantEntry& entryData)
+{
+    string retStr;
+    switch(entryData.type)
+    {
+        case RelectPrimitive_invalid:
+            retStr = "Invalid default";
+            break;
+        case ReflectPrimitive_bool:
+            retStr = entryData.defaultValue.defaltValue.boolVal == 0? "Default: false" : "Default: true";
+            break;
+        case ReflectPrimitive_int:
+            SPrintf(retStr, "Default: %di", entryData.defaultValue.defaltValue.i32Val);
+            break;
+        case ReflectPrimitive_uint:
+            SPrintf(retStr, "Default: %du", entryData.defaultValue.defaltValue.u32Val);
+            break;
+        case ReflectPrimitive_float:
+            SPrintf(retStr, "Default: %ff", entryData.defaultValue.defaltValue.f32Val);
+            break;
+        case ReflectPrimitive_double:
+            SPrintf(retStr, "Default: %lfd", entryData.defaultValue.defaltValue.d64Val);
+            break;
+    }
+    return retStr;
+}
+
+// INPUT and OUTPUTS
+string InputOutputEntryDisplay(ReflectInputOutput& io)
+{
+    string retStr;
+    SPrintf(retStr,"Location: %d, %s", io.entryData.location, NamedAttribDisplay(io.name));
+    return retStr;
+}
+
+// SHADER STAGES
+#define VERTEX_BIT 0x00000001
+#define TESSELLATION_CONTROL_BIT 0x00000002
+#define TESSELLATION_EVALUATION_BIT 0x00000004
+#define GEOMETRY_BIT 0x00000008
+#define FRAGMENT_BIT 0x00000010
+#define COMPUTE_BIT 0x00000020
+
+string StagesBitFlagDisplay(uint32 stages)
+{
+    string retStr;
+    SPrintf(retStr, "%d(%s)", stages, StageBitFlagToStr(stages));
+    return retStr;
+}
+
+string StageBitFlagToStr(uint32 stages)
+{
+    string fmtStr;
+    if((stages & VERTEX_BIT) != 0)
+    {
+        Strcat(fmtStr, "V | ");
+    }
+    if((stages & TESSELLATION_CONTROL_BIT) != 0)
+    {
+        Strcat(fmtStr, "TC | ");
+    }
+    if((stages & TESSELLATION_EVALUATION_BIT) != 0)
+    {
+        Strcat(fmtStr, "TE | ");
+    }
+    if((stages & GEOMETRY_BIT) != 0)
+    {
+        Strcat(fmtStr, "GEOM | ");
+    }
+    if((stages & FRAGMENT_BIT) != 0)
+    {
+        Strcat(fmtStr, "F | ");
+    }
+    if((stages & COMPUTE_BIT) != 0)
+    {
+        Strcat(fmtStr, "COMP | ");
+    }
+    int32 fmtStrLen = Strlen(fmtStr);
+    if(fmtStrLen > 0)
+    {
+        fmtStr = StrDel(fmtStr, fmtStrLen - 3, 3);         
+    }
+    return fmtStr;    
+}
+
+#undef VERTEX_BIT
+#undef TESSELLATION_CONTROL_BIT
+#undef TESSELLATION_EVALUATION_BIT
+#undef GEOMETRY_BIT
+#undef FRAGMENT_BIT
+#undef COMPUTE_BIT
+
+// DESCRIPTOR DISPLAYS
+
+#define READ_BIT 0x00000001
+#define WRITE_BIT 0x00000002
+string DescriptorReadWriteState(uchar state)
+{
+    string retStr;
+    if((state & READ_BIT) != 0)
+    {
+        Strcat(retStr, "Read | ");
+    }
+    if((state & WRITE_BIT) != 0)
+    {
+        Strcat(retStr, "Write | ");
+    }
+    int32 fmtStrLen = Strlen(retStr);
+    if(fmtStrLen > 0)
+    {
+        retStr = StrDel(retStr, fmtStrLen - 3, 3);         
+    }    
+    return retStr;
+}
+#undef READ_BIT
+#undef WRITE_BIT
+
+string DescriptorsSetDisplay(ReflectDescriptorBody& descsSetBody)
+{
+    string retStr;
+    SPrintf(retStr, "Set Idx: %d, Bindings num: %d", descsSetBody.set, descsSetBody.bindingsNum);
+    return retStr;
+}
+
+#define SAMPLER 0
+#define COMBINED_IMAGE_SAMPLER 1
+#define SAMPLED_IMAGE 2
+#define STORAGE_IMAGE 3
+#define UNIFORM_TEXEL_BUFFER 4
+#define STORAGE_TEXEL_BUFFER 5
+#define UNIFORM_BUFFER 6
+#define STORAGE_BUFFER 7
+#define UNIFORM_BUFFER_DYNAMIC 8
+#define STORAGE_BUFFER_DYNAMIC 9
+#define INPUT_ATTACHMENT 10
+string DescriptorTypeDisplay(uint32 descType)
+{
+    switch(descType)
+    {
+        case SAMPLER:
+            return "Sampler";
+        case COMBINED_IMAGE_SAMPLER:
+            return "Combined image sampler";
+        case SAMPLED_IMAGE: 
+            return "Sampled image(without sampler)";
+        case STORAGE_IMAGE: 
+            return "Storage image";
+        case UNIFORM_TEXEL_BUFFER: 
+            return "Uniform texel buffer";
+        case STORAGE_TEXEL_BUFFER: 
+            return "Storage texel buffer";
+        case UNIFORM_BUFFER: 
+            return "Uniform buffer";
+        case STORAGE_BUFFER: 
+            return "Storage buffer";
+        case UNIFORM_BUFFER_DYNAMIC: 
+            return "Uniform dynamic buffer";
+        case STORAGE_BUFFER_DYNAMIC: 
+            return "Storage dynamic buffer";
+        case INPUT_ATTACHMENT: 
+            return "Input attachment";
+    }
+    return "invalid descriptor type";
+}
+#undef SAMPLER 
+#undef COMBINED_IMAGE_SAMPLER 
+#undef SAMPLED_IMAGE 
+#undef STORAGE_IMAGE 
+#undef UNIFORM_TEXEL_BUFFER 
+#undef STORAGE_TEXEL_BUFFER 
+#undef UNIFORM_BUFFER 
+#undef STORAGE_BUFFER 
+#undef UNIFORM_BUFFER_DYNAMIC 
+#undef STORAGE_BUFFER_DYNAMIC 
+#undef INPUT_ATTACHMENT 
+
+#define DESC_DISPLAY \
+{\
+    string retStr;\
+    SPrintf(retStr, "Binding: %d, %s(%s)", desc.setInfo.binding, NamedAttribDisplay(desc.name)\
+        , StageBitFlagToStr(desc.setInfo.stagesUsed));\
+    return retStr;\
+}
+
+string DescEntryBufferDisplay(DescEntryBuffer& desc) DESC_DISPLAY
+
+string DescEntryTexelBufferDisplay(DescEntryTexelBuffer& desc) DESC_DISPLAY
+
+string DescEntryTextureDisplay(DescEntryTexture& desc) DESC_DISPLAY
+
+string DescEntrySubpassInputDisplay(DescEntrySubpassInput& desc) DESC_DISPLAY
+    
+string DescEntrySamplerDisplay(DescEntrySampler& desc) DESC_DISPLAY
+
+// PUSH CONSTANT
+string ReflectPushConstantDisplay(ReflectPushConstant& pushConst)
+{
+    string retStr;
+    SPrintf(retStr, "%s(%s)", NamedAttribDisplay(pushConst.name)
+        , StageBitFlagToStr(pushConst.entryData.stagesUsed));
+    return retStr;
+}
+
+///////////////////
+// Start parsing //
+///////////////////
+
+LittleEndian();
+
+//SetBackColor(0x353535);
+int32 numOfStages<hidden=true>;
+ShaderStageDescription stages[numOfStages]<optimize=false, read = StagesDisplay>;
+
+//SetBackColor(0x356535);
+SetForeColor(0x66FFFF);
+int32 numOfInputs<hidden=true>;
+ReflectInputOutput inputs[numOfInputs]<optimize=false, read = InputOutputEntryDisplay>;
+
+//SetBackColor(0x353565);
+SetForeColor(0xFF66FF);
+int32 numOfOutputs<hidden=true>;
+ReflectInputOutput outputs[numOfOutputs]<optimize=false, read = InputOutputEntryDisplay>;
+
+//SetBackColor(0x232323);
+SetForeColor(0xFFFFFF);
+int32 numOfDescriptorsSet<hidden=true>;
+ReflectDescriptorBody descriptorsSets[numOfDescriptorsSet]<optimize=false, read = DescriptorsSetDisplay>;
+
+//SetBackColor(0x996666);
+SetForeColor(0x6600FF);
+ReflectPushConstant pushConstant<read = ReflectPushConstantDisplay>;
+

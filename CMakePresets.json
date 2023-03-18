@@ -1,0 +1,131 @@
+{
+    "version": 3,
+    "cmakeMinimumRequired":
+    {
+        "major": 3,
+        "minor": 22,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "BasePreset",
+            "description": "Base preset that needs to be inherited and overriden by all others",
+            "hidden": true,
+            "binaryDir": "${sourceDir}/Build",
+            "cacheVariables":
+            {
+                "CMAKE_INSTALL_PREFIX":
+                {
+                    "type": "STRING",
+                    "value": "${sourceDir}/Installed"
+                },
+                "Cranberry_STATIC_MODULES":
+                {
+                    "type": "BOOL",
+                    "value": "OFF"
+                },
+                "Cranberry_EDITOR_BUILD":
+                {
+                    "type": "BOOL",
+                    "value": "ON"
+                },
+                "Cranberry_ENABLE_TRACY":
+                {
+                    "type": "BOOL",
+                    "value": "ON"
+                },
+                "Cranberry_ENABLE_MEMORY_PROFILING":
+                {
+                    "type": "BOOL",
+                    "value": "OFF"
+                }
+            }
+        },
+        {
+            "name": "Editor-DynamicLinked",
+            "description": "Creates dynamically linked engine editor libraries",
+            "generator": "Visual Studio 17 2022",
+            "inherits": "BasePreset",
+            "architecture":
+            {
+                "strategy": "set",
+                "value": "x64"
+            },
+            "toolset":
+            {
+                "strategy": "set",
+                "value": "host=x64"
+            },
+            "condition":
+            {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            },
+            "vendor":
+            {
+                "microsoft.com/VisualStudioSettings/CMake/1.0":
+                {
+                    "hostOS": ["Windows"]
+                }
+            }
+        },
+        {
+            "name": "Editor-StaticLinked",
+            "description": "Creates statically linked engine editor libraries",
+            "inherits": "Editor-DynamicLinked",
+            "binaryDir": "${sourceDir}/StaticBuild",
+            "cacheVariables":
+            {
+                "Cranberry_STATIC_MODULES":
+                {
+                    "type": "BOOL",
+                    "value": "ON"
+                }
+            }
+        },
+        {
+            "name": "Runtime-DynamicLinked",
+            "description": "Creates dynamically linked engine runtime libraries",
+            "inherits": "Editor-DynamicLinked",
+            "binaryDir": "${sourceDir}/RuntimeBuild",
+            "cacheVariables":
+            {
+                "Cranberry_EDITOR_BUILD":
+                {
+                    "type": "BOOL",
+                    "value": "OFF"
+                }
+            }
+        },
+        {
+            "name": "Runtime-StaticLinked",
+            "description": "Creates statically linked engine runtime libraries",
+            "inherits": "Runtime-DynamicLinked",
+            "binaryDir": "${sourceDir}/RuntimeStaticBuild",
+            "cacheVariables":
+            {
+                "Cranberry_STATIC_MODULES":
+                {
+                    "type": "BOOL",
+                    "value": "ON"
+                }
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "Editor-DynamicLinked",
+            "configurePreset": "Editor-DynamicLinked"
+        }
+    ],
+    "testPresets": [
+    ],
+    "vendor":
+    {
+        "microsoft.com/VisualStudioSettings/CMake/1.0":
+        {
+            "hostOS": ["Windows"]
+        }
+    }
+}

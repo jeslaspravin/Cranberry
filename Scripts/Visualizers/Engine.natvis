@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+.natvis file for Visual Studio debugger.
+Purpose: provide nicer views on data types used by Dear ImGui.
+
+To enable:
+* include file in your VS project (most recommended: not intrusive and always kept up to date!)
+* or copy in %USERPROFILE%\Documents\Visual Studio XXXX\Visualizers (current user)
+* or copy in %VsInstallDirectory%\Common7\Packages\Debugger\Visualizers (all users)
+
+Schema can be found at %VsInstallDirectory%\2xxx\Community\Xml\Schemas\1033\natvis.xsd
+
+More information at: https://docs.microsoft.com/en-us/visualstudio/debugger/create-custom-views-of-native-objects?view=vs-2019
+-->
+
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+
+  <Type Name="Vector2D" Priority="High">
+    <DisplayString>{value}</DisplayString>
+  </Type>
+  <Type Name="Vector3D" Priority="High">
+    <DisplayString>{value}</DisplayString>
+  </Type>
+  <Type Name="Vector4D" Priority="High">
+    <DisplayString>{value}</DisplayString>
+  </Type>
+
+  <Type Name="Matrix2" Priority="High">
+    <DisplayString>{value}</DisplayString>
+    <Expand HideRawView="1">
+      <Item Name="col 1">value.value[0]</Item>
+      <Item Name="col 2">value.value[1]</Item>
+    </Expand>
+  </Type>
+  <Type Name="Matrix3" Priority="High">
+    <DisplayString>{value}</DisplayString>
+    <Expand HideRawView="1">
+      <Item Name="col 1">value.value[0]</Item>
+      <Item Name="col 2">value.value[1]</Item>
+      <Item Name="col 3">value.value[2]</Item>
+    </Expand>
+  </Type>
+  <Type Name="Matrix4" Priority="High">
+    <DisplayString>{value}</DisplayString>
+    <Expand HideRawView="1">
+      <Item Name="col 1">value.value[0]</Item>
+      <Item Name="col 2">value.value[1]</Item>
+      <Item Name="col 3">value.value[2]</Item>
+      <Item Name="col 4">value.value[3]</Item>
+    </Expand>
+  </Type>
+  
+  <Type Name="Rotation" Priority="High">
+    <DisplayString>{value}</DisplayString>
+    <Expand HideRawView="1">
+      <Item Name="roll">value.x,g</Item>
+      <Item Name="pitch">value.y,g</Item>
+      <Item Name="yaw">value.z,g</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="RotationMatrix" Priority="High">
+    <DisplayString>{rotationMatrix}</DisplayString>
+  </Type>
+
+  <Type Name="Quat" Priority="High">
+    <DisplayString>{x,g}i + {y,g}j + {z,g}k + {w,g}</DisplayString>
+    <Expand HideRawView="1">
+      <CustomListItems MaxItemsPerView="1">
+        <!-- calculate length using fast inverse sqrt -->
+        <Variable Name="k" InitialValue="x*x+y*y+z*z+w*w"/>
+        <Variable Name="n" InitialValue="k/2"/>
+        <Variable Name="i" InitialValue="0x5F3759DF - ((*(int *)&amp;k) &gt;&gt; 1)"/>
+        <If Condition="k != 0">
+          <Exec>k = *(float *)&amp;i</Exec>
+          <Exec>k = k * (1.5f - (n * k * k))</Exec>
+          <Exec>k = k * (1.5f - (n * k * k))</Exec>
+          <Exec>k = k * (1.5f - (n * k * k))</Exec>
+          <Item Name="[len]">1/k,g</Item>
+        </If>
+        <If Condition="k == 0">
+          <Item Name="[len]">0.0f,g</Item>
+        </If>
+      </CustomListItems>
+      <Item Name="x">x,g</Item>
+      <Item Name="y">y,g</Item>
+      <Item Name="z">z,g</Item>
+      <Item Name="w">w,g</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Color" Priority="High">
+    <DisplayString>{colorValue}</DisplayString>
+    <Expand HideRawView="1">
+      <Synthetic Name="[rgba]">
+        <DisplayString>
+          <!-- hex RGBA color -->
+          #{
+          (colorValue.x &lt;&lt; 24) |
+          (colorValue.y &lt;&lt; 16) |
+          (colorValue.z &lt;&lt; 8)  |
+          (colorValue.w &lt;&lt; 0),Xb
+          }
+        </DisplayString>
+      </Synthetic>
+      <Item Name="x">colorValue.x</Item>
+      <Item Name="y">colorValue.y</Item>
+      <Item Name="z">colorValue.z</Item>
+      <Item Name="w">colorValue.w</Item>
+    </Expand>
+  </Type>
+  
+  <Type Name="LinearColor" Priority="High">
+    <DisplayString>{colorValue}</DisplayString>
+    <Expand HideRawView="1">
+      <Synthetic Name="[rgba]">
+        <DisplayString>
+          <!-- hex RGBA color -->
+          #{
+          (unsigned((colorValue.x&lt;0?0:(colorValue.x&gt;1?1:colorValue.x))*255.5f) &lt;&lt; 24) |
+          (unsigned((colorValue.y&lt;0?0:(colorValue.y&gt;1?1:colorValue.y))*255.5f) &lt;&lt; 16) |
+          (unsigned((colorValue.z&lt;0?0:(colorValue.z&gt;1?1:colorValue.z))*255.5f) &lt;&lt; 8)  |
+          (unsigned((colorValue.w&lt;0?0:(colorValue.w&gt;1?1:colorValue.w))*255.5f) &lt;&lt; 0),Xb
+          }
+        </DisplayString>
+      </Synthetic>
+      <Item Name="x">colorValue.x,g</Item>
+      <Item Name="y">colorValue.y,g</Item>
+      <Item Name="z">colorValue.z,g</Item>
+      <Item Name="w">colorValue.w,g</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="CellIndex&lt;2&gt;" Priority="High">
+    <DisplayString>[{idx[0]} {idx[1]}]</DisplayString>
+  </Type>
+  <Type Name="CellIndex&lt;3&gt;" Priority="High">
+    <DisplayString>[{idx[0]} {idx[1]} {idx[2]}]</DisplayString>
+  </Type>
+  <Type Name="CellIndex&lt;4&gt;" Priority="High">
+    <DisplayString>[{idx[0]} {idx[1]} {idx[2]} {idx[3]}]</DisplayString>
+  </Type>
+  <Type Name="CellIndex&lt;*&gt;">
+    <DisplayString>{idx}</DisplayString>
+  </Type>
+
+  <Type Name="VectorND&lt;*,*&gt;">
+    <DisplayString>{cellsCount} {"$T1"}</DisplayString>
+  </Type>
+
+  <!-- BitArray as individual bits below might be too long to debug, So using binary representation of each word
+  <Type Name="BitArray&lt;*&gt;">
+    <DisplayString>size={bitsCount}</DisplayString>
+    <Expand>
+      <IndexListItems>
+        <Size>bitsCount</Size>
+        <ValueNode>(bits._Mypair._Myval2._Myfirst[$i / BITS_PER_ELEMENT] &gt;&gt; ($i % BITS_PER_ELEMENT)) &amp; 1,d</ValueNode>
+      </IndexListItems>
+    </Expand>
+  </Type> -->
+  <Type Name="BitArray&lt;*&gt;">
+    <DisplayString>size={bitsCount}</DisplayString>
+    <Expand HideRawView="1">
+      <IndexListItems>
+        <Size>bits._Mypair._Myval2._Mylast - bits._Mypair._Myval2._Myfirst</Size>
+        <ValueNode>bits._Mypair._Myval2._Myfirst[$i],b</ValueNode>
+      </IndexListItems>
+    </Expand>
+  </Type>
+
+  <!-- To display list as tree with condition
+  <TreeItems>
+    <Size>debugStrings-&gt;_List._Mypair._Myval2._Mysize</Size>
+    <HeadPointer>debugStrings-&gt;_List._Mypair._Myval2._Myhead-&gt;_Next</HeadPointer>
+    <LeftPointer>_Prev</LeftPointer>
+    <RightPointer>_Next</RightPointer>
+    <ValueNode>_Myval</ValueNode>
+  </TreeItems>-->
+  <!-- Get from map based on key
+  <CustomListItems>
+    <Variable Name="pNode" InitialValue="debugStrings-&gt;_List._Mypair._Myval2._Myhead-&gt;_Next" />
+    <Size>1</Size>
+    <Loop>
+      <Break Condition="pNode == nullptr" />
+      <If Condition="pNode->_Myval.first == id">
+        <Item>pNode->_Myval</Item>
+      </If>
+      <Exec>pNode = pNode->_Next</Exec>
+    </Loop>
+  </CustomListItems>-->
+  
+  <Type Name="StringID" Priority="High">
+    <DisplayString Condition="id == 0">Invalid</DisplayString>
+    <DisplayString>{id}</DisplayString>
+    <Expand HideRawView="1">
+      <CustomListItems Optional="true">
+        <Variable Name="pNode" InitialValue="debugStrings-&gt;_List._Mypair._Myval2._Myhead-&gt;_Next" />
+        <Size>1</Size>
+        <Loop Condition="id != 0">
+          <Break Condition="pNode == nullptr" />
+          <If Condition="pNode->_Myval.first == id">
+            <Item>pNode->_Myval</Item>
+          </If>
+          <Exec>pNode = pNode->_Next</Exec>
+        </Loop>
+      </CustomListItems>      
+      <Item Name="Debug strings">debugStrings</Item>
+    </Expand>
+  </Type>  
+</AutoVisualizer>

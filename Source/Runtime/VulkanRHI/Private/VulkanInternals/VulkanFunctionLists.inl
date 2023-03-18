@@ -1,0 +1,230 @@
+/*!
+ * \file VulkanFunctionLists.inl
+ *
+ * \author Jeslas Pravin
+ * \date January 2022
+ * \copyright
+ *  Copyright (C) Jeslas Pravin, Since 2022
+ *  @jeslaspravin pravinjeslas@gmail.com
+ *  License can be read in LICENSE file at this repository's root
+ */
+
+#ifndef EXPORTED_VK_FUNCTIONS
+#define EXPORTED_VK_FUNCTIONS(function)
+#endif
+
+EXPORTED_VK_FUNCTIONS(vkGetInstanceProcAddr)
+
+#undef EXPORTED_VK_FUNCTIONS
+
+#ifndef GLOBAL_VK_FUNCTIONS
+#define GLOBAL_VK_FUNCTIONS(function)
+#endif
+GLOBAL_VK_FUNCTIONS(vkEnumerateInstanceVersion)
+GLOBAL_VK_FUNCTIONS(vkEnumerateInstanceExtensionProperties)
+GLOBAL_VK_FUNCTIONS(vkEnumerateInstanceLayerProperties)
+GLOBAL_VK_FUNCTIONS(vkCreateInstance)
+#undef GLOBAL_VK_FUNCTIONS
+
+#ifndef INSTANCE_VK_FUNCTIONS
+#define INSTANCE_VK_FUNCTIONS(function)
+#endif
+INSTANCE_VK_FUNCTIONS(vkDestroyInstance)
+INSTANCE_VK_FUNCTIONS(vkEnumeratePhysicalDevices)
+INSTANCE_VK_FUNCTIONS(vkGetPhysicalDeviceProperties)
+INSTANCE_VK_FUNCTIONS(vkGetPhysicalDeviceProperties2)
+INSTANCE_VK_FUNCTIONS(vkGetPhysicalDeviceFeatures)
+INSTANCE_VK_FUNCTIONS(vkGetPhysicalDeviceFeatures2)
+INSTANCE_VK_FUNCTIONS(vkGetPhysicalDeviceQueueFamilyProperties)
+INSTANCE_VK_FUNCTIONS(vkGetPhysicalDeviceMemoryProperties)
+INSTANCE_VK_FUNCTIONS(vkGetPhysicalDeviceMemoryProperties2)
+INSTANCE_VK_FUNCTIONS(vkGetPhysicalDeviceFormatProperties)
+INSTANCE_VK_FUNCTIONS(vkGetPhysicalDeviceImageFormatProperties)
+INSTANCE_VK_FUNCTIONS(vkEnumerateDeviceExtensionProperties)
+INSTANCE_VK_FUNCTIONS(vkEnumerateDeviceLayerProperties)
+INSTANCE_VK_FUNCTIONS(vkCreateDevice)
+INSTANCE_VK_FUNCTIONS(vkGetDeviceProcAddr)
+#undef INSTANCE_VK_FUNCTIONS
+
+#ifndef INSTANCE_VK_EXT_FUNCTIONS
+#define INSTANCE_VK_EXT_FUNCTIONS(function, extension)
+#endif
+INSTANCE_VK_EXT_FUNCTIONS(vkDestroySurfaceKHR, VK_KHR_SURFACE_EXTENSION_NAME)
+INSTANCE_VK_EXT_FUNCTIONS(vkGetPhysicalDeviceSurfaceSupportKHR, VK_KHR_SURFACE_EXTENSION_NAME)
+INSTANCE_VK_EXT_FUNCTIONS(vkGetPhysicalDeviceSurfaceCapabilitiesKHR, VK_KHR_SURFACE_EXTENSION_NAME)
+INSTANCE_VK_EXT_FUNCTIONS(vkGetPhysicalDeviceSurfaceFormatsKHR, VK_KHR_SURFACE_EXTENSION_NAME)
+INSTANCE_VK_EXT_FUNCTIONS(vkGetPhysicalDeviceSurfacePresentModesKHR, VK_KHR_SURFACE_EXTENSION_NAME)
+/* Debug Functions */
+INSTANCE_VK_EXT_FUNCTIONS(vkCreateDebugUtilsMessengerEXT, VK_EXT_DEBUG_UTILS_EXTENSION_NAME)
+INSTANCE_VK_EXT_FUNCTIONS(vkDestroyDebugUtilsMessengerEXT, VK_EXT_DEBUG_UTILS_EXTENSION_NAME)
+
+#undef INSTANCE_VK_EXT_FUNCTIONS
+
+#ifndef INSTANCE_VK_PLATFORM_EXT_FUNCTIONS
+#define INSTANCE_VK_PLATFORM_EXT_FUNCTIONS(function)
+#endif
+INSTANCE_VK_PLATFORM_EXT_FUNCTIONS(vkCreatePlatformSurfaceKHR)
+#undef INSTANCE_VK_PLATFORM_EXT_FUNCTIONS
+
+#ifndef DEVICE_VK_FUNCTIONS
+#define DEVICE_VK_FUNCTIONS(function)
+#endif
+DEVICE_VK_FUNCTIONS(vkDestroyDevice)
+DEVICE_VK_FUNCTIONS(vkGetDeviceQueue)
+DEVICE_VK_FUNCTIONS(vkQueueSubmit)
+// DEVICE_VK_FUNCTIONS(vkQueueSubmit2)
+DEVICE_VK_FUNCTIONS(vkDeviceWaitIdle)
+
+/* Synchronizing Functions */
+DEVICE_VK_FUNCTIONS(vkCreateSemaphore)
+DEVICE_VK_FUNCTIONS(vkDestroySemaphore)
+DEVICE_VK_FUNCTIONS(vkCreateFence)
+DEVICE_VK_FUNCTIONS(vkGetFenceStatus)
+DEVICE_VK_FUNCTIONS(vkResetFences)
+DEVICE_VK_FUNCTIONS(vkWaitForFences)
+DEVICE_VK_FUNCTIONS(vkDestroyFence)
+DEVICE_VK_FUNCTIONS(vkGetSemaphoreCounterValue)
+DEVICE_VK_FUNCTIONS(vkWaitSemaphores)
+DEVICE_VK_FUNCTIONS(vkSignalSemaphore)
+DEVICE_VK_FUNCTIONS(vkCreateEvent)
+DEVICE_VK_FUNCTIONS(vkDestroyEvent)
+DEVICE_VK_FUNCTIONS(vkGetEventStatus)
+DEVICE_VK_FUNCTIONS(vkResetEvent)
+
+/* Memory and Buffers */
+DEVICE_VK_FUNCTIONS(vkAllocateMemory)
+DEVICE_VK_FUNCTIONS(vkFreeMemory)
+DEVICE_VK_FUNCTIONS(vkMapMemory)
+DEVICE_VK_FUNCTIONS(vkUnmapMemory)
+DEVICE_VK_FUNCTIONS(vkFlushMappedMemoryRanges)
+
+DEVICE_VK_FUNCTIONS(vkCreateBuffer)
+DEVICE_VK_FUNCTIONS(vkGetBufferMemoryRequirements)
+DEVICE_VK_FUNCTIONS(vkBindBufferMemory)
+DEVICE_VK_FUNCTIONS(vkDestroyBuffer)
+DEVICE_VK_FUNCTIONS(vkCreateBufferView)
+DEVICE_VK_FUNCTIONS(vkDestroyBufferView)
+
+DEVICE_VK_FUNCTIONS(vkCreateImage)
+DEVICE_VK_FUNCTIONS(vkGetImageMemoryRequirements)
+DEVICE_VK_FUNCTIONS(vkBindImageMemory)
+DEVICE_VK_FUNCTIONS(vkDestroyImage)
+DEVICE_VK_FUNCTIONS(vkCreateImageView)
+DEVICE_VK_FUNCTIONS(vkDestroyImageView)
+
+/* Image samplers */
+DEVICE_VK_FUNCTIONS(vkCreateSampler)
+DEVICE_VK_FUNCTIONS(vkDestroySampler)
+
+/* Pipeline and shader resources */
+DEVICE_VK_FUNCTIONS(vkCreateDescriptorSetLayout)
+DEVICE_VK_FUNCTIONS(vkDestroyDescriptorSetLayout)
+DEVICE_VK_FUNCTIONS(vkCreateDescriptorPool)
+DEVICE_VK_FUNCTIONS(vkResetDescriptorPool)
+DEVICE_VK_FUNCTIONS(vkDestroyDescriptorPool)
+DEVICE_VK_FUNCTIONS(vkAllocateDescriptorSets)
+DEVICE_VK_FUNCTIONS(vkFreeDescriptorSets)
+DEVICE_VK_FUNCTIONS(vkUpdateDescriptorSets)
+
+DEVICE_VK_FUNCTIONS(vkCreateRenderPass)
+DEVICE_VK_FUNCTIONS(vkDestroyRenderPass)
+DEVICE_VK_FUNCTIONS(vkCreateFramebuffer)
+DEVICE_VK_FUNCTIONS(vkDestroyFramebuffer)
+
+DEVICE_VK_FUNCTIONS(vkCreateShaderModule)
+DEVICE_VK_FUNCTIONS(vkDestroyShaderModule)
+
+DEVICE_VK_FUNCTIONS(vkCreatePipelineCache)
+DEVICE_VK_FUNCTIONS(vkDestroyPipelineCache)
+DEVICE_VK_FUNCTIONS(vkGetPipelineCacheData)
+DEVICE_VK_FUNCTIONS(vkMergePipelineCaches)
+
+DEVICE_VK_FUNCTIONS(vkCreatePipelineLayout)
+DEVICE_VK_FUNCTIONS(vkDestroyPipelineLayout)
+
+DEVICE_VK_FUNCTIONS(vkCreateGraphicsPipelines)
+DEVICE_VK_FUNCTIONS(vkCreateComputePipelines)
+DEVICE_VK_FUNCTIONS(vkDestroyPipeline)
+
+/* CommandPool Functions */
+DEVICE_VK_FUNCTIONS(vkCreateCommandPool)
+DEVICE_VK_FUNCTIONS(vkDestroyCommandPool)
+DEVICE_VK_FUNCTIONS(vkResetCommandPool)
+
+/* Command buffer Functions */
+DEVICE_VK_FUNCTIONS(vkAllocateCommandBuffers)
+DEVICE_VK_FUNCTIONS(vkResetCommandBuffer)
+DEVICE_VK_FUNCTIONS(vkFreeCommandBuffers)
+DEVICE_VK_FUNCTIONS(vkBeginCommandBuffer)
+DEVICE_VK_FUNCTIONS(vkEndCommandBuffer);
+
+/* Commands */
+DEVICE_VK_FUNCTIONS(vkCmdSetEvent)
+DEVICE_VK_FUNCTIONS(vkCmdWaitEvents)
+
+DEVICE_VK_FUNCTIONS(vkCmdPipelineBarrier)
+// DEVICE_VK_FUNCTIONS(vkCmdPipelineBarrier2)
+
+DEVICE_VK_FUNCTIONS(vkCmdCopyBuffer);
+// DEVICE_VK_FUNCTIONS(vkCmdCopyBuffer2);
+DEVICE_VK_FUNCTIONS(vkCmdCopyBufferToImage)
+DEVICE_VK_FUNCTIONS(vkCmdCopyImageToBuffer)
+DEVICE_VK_FUNCTIONS(vkCmdCopyImage)
+DEVICE_VK_FUNCTIONS(vkCmdResolveImage)
+DEVICE_VK_FUNCTIONS(vkCmdBlitImage)
+
+DEVICE_VK_FUNCTIONS(vkCmdClearColorImage)
+DEVICE_VK_FUNCTIONS(vkCmdClearDepthStencilImage)
+DEVICE_VK_FUNCTIONS(vkCmdClearAttachments)
+DEVICE_VK_FUNCTIONS(vkCmdDispatch)
+DEVICE_VK_FUNCTIONS(vkCmdDraw)
+DEVICE_VK_FUNCTIONS(vkCmdDrawIndexed)
+DEVICE_VK_FUNCTIONS(vkCmdDrawIndirect)
+DEVICE_VK_FUNCTIONS(vkCmdDrawIndexedIndirect)
+
+DEVICE_VK_FUNCTIONS(vkCmdBeginRenderPass)
+DEVICE_VK_FUNCTIONS(vkCmdNextSubpass)
+DEVICE_VK_FUNCTIONS(vkCmdEndRenderPass)
+
+DEVICE_VK_FUNCTIONS(vkCmdSetScissor)
+DEVICE_VK_FUNCTIONS(vkCmdSetViewport)
+DEVICE_VK_FUNCTIONS(vkCmdSetBlendConstants)
+DEVICE_VK_FUNCTIONS(vkCmdSetStencilReference)
+DEVICE_VK_FUNCTIONS(vkCmdSetDepthBounds)
+DEVICE_VK_FUNCTIONS(vkCmdSetDepthBias)
+DEVICE_VK_FUNCTIONS(vkCmdSetLineWidth)
+DEVICE_VK_FUNCTIONS(vkCmdPushConstants)
+
+DEVICE_VK_FUNCTIONS(vkCmdBindPipeline)
+DEVICE_VK_FUNCTIONS(vkCmdBindDescriptorSets)
+DEVICE_VK_FUNCTIONS(vkCmdBindVertexBuffers)
+DEVICE_VK_FUNCTIONS(vkCmdBindIndexBuffer)
+
+/* Debug Functions */
+DEVICE_VK_FUNCTIONS(vkQueueBeginDebugUtilsLabelEXT)
+DEVICE_VK_FUNCTIONS(vkQueueEndDebugUtilsLabelEXT)
+DEVICE_VK_FUNCTIONS(vkQueueInsertDebugUtilsLabelEXT)
+DEVICE_VK_FUNCTIONS(vkCmdBeginDebugUtilsLabelEXT)
+DEVICE_VK_FUNCTIONS(vkCmdEndDebugUtilsLabelEXT)
+DEVICE_VK_FUNCTIONS(vkCmdInsertDebugUtilsLabelEXT)
+DEVICE_VK_FUNCTIONS(vkSetDebugUtilsObjectNameEXT)
+
+#undef DEVICE_VK_FUNCTIONS
+
+#ifndef DEVICE_VK_EXT_FUNCTIONS
+#define DEVICE_VK_EXT_FUNCTIONS(function, extension)
+#endif
+/* Swapchain & Present Functions */
+DEVICE_VK_EXT_FUNCTIONS(vkCreateSwapchainKHR, VK_KHR_SWAPCHAIN_EXTENSION_NAME)
+DEVICE_VK_EXT_FUNCTIONS(vkDestroySwapchainKHR, VK_KHR_SWAPCHAIN_EXTENSION_NAME)
+DEVICE_VK_EXT_FUNCTIONS(vkGetSwapchainImagesKHR, VK_KHR_SWAPCHAIN_EXTENSION_NAME)
+DEVICE_VK_EXT_FUNCTIONS(vkAcquireNextImageKHR, VK_KHR_SWAPCHAIN_EXTENSION_NAME)
+DEVICE_VK_EXT_FUNCTIONS(vkQueuePresentKHR, VK_KHR_SWAPCHAIN_EXTENSION_NAME)
+
+/* synchronization 2 Functions */
+DEVICE_VK_EXT_FUNCTIONS(vkCmdPipelineBarrier2KHR, VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME)
+DEVICE_VK_EXT_FUNCTIONS(vkQueueSubmit2KHR, VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME)
+/* copy commands 2 functions */
+DEVICE_VK_EXT_FUNCTIONS(vkCmdCopyBuffer2KHR, VK_KHR_COPY_COMMANDS_2_EXTENSION_NAME);
+
+#undef DEVICE_VK_EXT_FUNCTIONS

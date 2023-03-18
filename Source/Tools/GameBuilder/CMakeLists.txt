@@ -1,0 +1,2 @@
+include(EngineProjectMacros)
+generate_csharp_console_project()
