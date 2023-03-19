@@ -57,29 +57,13 @@ private:
     GlobalFieldPtr globalFieldPtr;
 
 public:
-    GlobalField()
-        : globalFieldPtr(nullptr)
+    GlobalField() = default;
+    MAKE_TYPE_DEFAULT_COPY_MOVE(GlobalField)
+
+    GlobalField(GlobalFieldPtr fieldPtr)
+        : globalFieldPtr(fieldPtr)
     {}
-    GlobalField(const GlobalField &otherField)
-        : globalFieldPtr(otherField.memberPtr)
-    {}
-    GlobalField(GlobalField &&otherField)
-        : globalFieldPtr(std::move(otherField.memberPtr))
-    {}
-    GlobalField(const GlobalFieldPtr &memberField)
-        : globalFieldPtr(memberField)
-    {}
-    GlobalField &operator= (const GlobalField &otherField)
-    {
-        globalFieldPtr = otherField.memberPtr;
-        return *this;
-    }
-    GlobalField &operator= (GlobalField &&otherField)
-    {
-        globalFieldPtr = std::move(otherField.memberPtr);
-        return *this;
-    }
-    GlobalField &operator= (const GlobalFieldPtr &fieldPtr)
+    GlobalField &operator= (GlobalFieldPtr fieldPtr)
     {
         globalFieldPtr = fieldPtr;
         return *this;
@@ -143,29 +127,13 @@ private:
     GlobalFieldPtr globalFieldPtr;
 
 public:
-    GlobalField()
-        : globalFieldPtr(nullptr)
+    GlobalField() = default;
+    MAKE_TYPE_DEFAULT_COPY_MOVE(GlobalField)
+
+    GlobalField(GlobalFieldPtr fieldPtr)
+        : globalFieldPtr(fieldPtr)
     {}
-    GlobalField(const GlobalField &otherField)
-        : globalFieldPtr(otherField.memberPtr)
-    {}
-    GlobalField(GlobalField &&otherField)
-        : globalFieldPtr(std::move(otherField.memberPtr))
-    {}
-    GlobalField(const GlobalFieldPtr &memberField)
-        : globalFieldPtr(memberField)
-    {}
-    GlobalField &operator= (const GlobalField &otherField)
-    {
-        globalFieldPtr = otherField.memberPtr;
-        return *this;
-    }
-    GlobalField &operator= (GlobalField &&otherField)
-    {
-        globalFieldPtr = std::move(otherField.memberPtr);
-        return *this;
-    }
-    GlobalField &operator= (const GlobalFieldPtr &fieldPtr)
+    GlobalField &operator= (GlobalFieldPtr fieldPtr)
     {
         globalFieldPtr = fieldPtr;
         return *this;
@@ -176,6 +144,78 @@ public:
     const MemberType &get() const { return *globalFieldPtr; }
 };
 
+//////////////////////////////////////////////////////////////////////////
+// Class Member field
+//////////////////////////////////////////////////////////////////////////
+
+template <bool IsConst, typename ClassType, typename MemberType>
+struct MemberFieldOffsetStorage
+{
+public:
+    using DeclaredMemberType = std::conditional_t<IsConst, const MemberType, MemberType>;
+    typedef DeclaredMemberType(ClassType::*DeclaredMemberFieldPtr);
+    using MemberFieldPtr = DeclaredMemberFieldPtr;
+
+    MemberFieldOffsetStorage() = default;
+    MAKE_TYPE_DEFAULT_COPY_MOVE(MemberFieldOffsetStorage)
+
+    MemberFieldOffsetStorage(MemberFieldPtr memberField)
+        : offset((OffsetType) reinterpret_cast<PtrInt>(&(reinterpret_cast<ClassType *>(0)->*memberField)))
+    {}
+    MemberFieldOffsetStorage &operator= (MemberFieldPtr memberField)
+    {
+        offset = (OffsetType) reinterpret_cast<PtrInt>(&(reinterpret_cast<ClassType *>(0)->*memberField));
+        return *this;
+    }
+
+    template <typename ObjectType>
+    requires std::is_same_v<ClassType, std::remove_const_t<ObjectType>>
+    FORCE_INLINE DeclaredMemberType &memberDeref(ObjectType *object) const
+    {
+        return *reinterpret_cast<DeclaredMemberType *>(reinterpret_cast<UPtrInt>(object) + offset);
+    }
+    FORCE_INLINE bool isValid() const { return offset >= 0; }
+
+private:
+    using OffsetType = int32;
+
+    // Offset will always be positive
+    OffsetType offset = -1;
+};
+
+template <bool IsConst, typename ClassType, typename MemberType>
+struct MemberFieldPtrStorage
+{
+public:
+    typedef MemberType(ClassType::*NonConstMemberFieldPtr);
+    typedef const MemberType(ClassType::*ConstMemberFieldPtr);
+
+    using MemberFieldPtr = std::conditional_t<IsConst, ConstMemberFieldPtr, NonConstMemberFieldPtr>;
+
+    MemberFieldPtrStorage() = default;
+    MAKE_TYPE_DEFAULT_COPY_MOVE(MemberFieldPtrStorage)
+
+    MemberFieldPtrStorage(MemberFieldPtr memberField)
+        : fieldPtr(memberField)
+    {}
+    MemberFieldPtrStorage &operator= (MemberFieldPtr memberField)
+    {
+        fieldPtr = memberField;
+        return *this;
+    }
+
+    template <typename ObjectType>
+    requires std::is_same_v<ClassType, std::remove_const_t<ObjectType>>
+    FORCE_INLINE auto &memberDeref(ObjectType *object) const
+    {
+        return (object->*fieldPtr);
+    }
+    FORCE_INLINE bool isValid() const { return fieldPtr != nullptr; }
+
+private:
+    MemberFieldPtr fieldPtr;
+};
+
 // Can be both class and struct member
 template <bool IsConst, typename ClassType, typename MemberType>
 class ClassMemberField;
@@ -184,53 +224,39 @@ template <typename ClassType, typename MemberType>
 class ClassMemberField<false, ClassType, MemberType>
 {
 public:
-    typedef MemberType(ClassType::*MemberFieldPtr);
+    // Replace with MemberFieldPtrStorage or MemberFieldOffsetStorage
+    using MemberFieldStorage = MemberFieldOffsetStorage<false, ClassType, MemberType>;
+    using ConstMemberType = const MemberType;
+    using MemberFieldPtr = MemberFieldStorage::MemberFieldPtr;
 
 private:
-    MemberFieldPtr memberPtr;
+    MemberFieldStorage storage;
 
 public:
-    ClassMemberField()
-        : memberPtr(nullptr)
+    ClassMemberField() = default;
+    MAKE_TYPE_DEFAULT_COPY_MOVE(ClassMemberField)
+
+    ClassMemberField(MemberFieldPtr memberField)
+        : storage(memberField)
     {}
-    ClassMemberField(const ClassMemberField &otherField)
-        : memberPtr(otherField.memberPtr)
-    {}
-    ClassMemberField(ClassMemberField &&otherField)
-        : memberPtr(std::move(otherField.memberPtr))
-    {}
-    ClassMemberField(const MemberFieldPtr &memberField)
-        : memberPtr(memberField)
-    {}
-    ClassMemberField &operator= (const ClassMemberField &otherField)
+    ClassMemberField &operator= (MemberFieldPtr fieldPtr)
     {
-        memberPtr = otherField.memberPtr;
-        return *this;
-    }
-    ClassMemberField &operator= (ClassMemberField &&otherField)
-    {
-        memberPtr = std::move(otherField.memberPtr);
-        return *this;
-    }
-    ClassMemberField &operator= (const MemberFieldPtr &fieldPtr)
-    {
-        memberPtr = fieldPtr;
+        storage = fieldPtr;
         return *this;
     }
 
-    operator bool () const { return memberPtr != nullptr; }
+    operator bool () const { return storage.isValid(); }
 
     template <typename Type>
     requires DirectAssignableFrom<MemberType, Type>
     void set(ClassType *object, Type &&newValue) const
     {
-        object->*memberPtr = std::forward<Type>(newValue);
+        storage.memberDeref(object) = std::forward<Type>(newValue);
     }
     template <typename Type>
     requires DirectAssignableFrom<MemberType, Type>
     void set(ClassType &object, Type &&newValue) const
     {
-        // object.*memberPtr = std::forward<Type>(newValue);
         set<Type>(&object, std::forward<Type>(newValue));
     }
 
@@ -241,7 +267,7 @@ public:
         // Find element type from pointer or array
         using AssignFromElementType = std::conditional_t<std::is_pointer_v<Type>, std::remove_pointer_t<Type>, std::remove_all_extents_t<Type>>;
 
-        MemberType &memberValue = object->*memberPtr;
+        MemberType &memberValue = storage.memberDeref(object);
         const uint32 arrayLen = uint32(ARRAY_LENGTH(memberValue));
 
         using ElementType = std::remove_all_extents_t<MemberType>;
@@ -263,7 +289,7 @@ public:
     requires ArrayAssignableFrom<MemberType, Type>
     void set(ClassType *object, Type &&newValue) const
     {
-        memcpy(object->*memberPtr, std::forward<Type>(newValue), sizeof(MemberType));
+        memcpy(&storage.memberDeref(object), &newValue, sizeof(MemberType));
     }
     template <typename Type>
     requires ArrayAssignableFrom<MemberType, Type>
@@ -276,65 +302,47 @@ public:
     requires ElementAssignableFrom<MemberType, Type>
     void set(ClassType *object, Type &&newValue, uint32 index) const
     {
-        (object->*memberPtr)[index] = std::forward<Type>(newValue);
+        storage.memberDeref(object)[index] = std::forward<Type>(newValue);
     }
     template <typename Type>
     requires ElementAssignableFrom<MemberType, Type>
     void set(ClassType &object, Type &&newValue, uint32 index) const
     {
-        // (object.*memberPtr)[index] = std::forward<Type>(newValue);
         set<Type>(&object, std::forward<Type>(newValue), index);
     }
 
-    MemberType &get(ClassType &object) const { return object.*memberPtr; }
+    MemberType &get(ClassType &object) const { return storage.memberDeref(&object); }
+    MemberType &get(ClassType *object) const { return storage.memberDeref(object); }
 
-    MemberType &get(ClassType *object) const { return object->*memberPtr; }
-
-    const MemberType &get(const ClassType &object) const { return object.*memberPtr; }
-
-    const MemberType &get(const ClassType *object) const { return object->*memberPtr; }
+    ConstMemberType &get(const ClassType &object) const { return storage.memberDeref(&object); }
+    ConstMemberType &get(const ClassType *object) const { return storage.memberDeref(object); }
 };
 template <typename ClassType, typename MemberType>
 class ClassMemberField<true, ClassType, MemberType>
 {
 public:
-    typedef const MemberType(ClassType::*MemberFieldPtr);
+    using MemberFieldStorage = MemberFieldOffsetStorage<true, ClassType, MemberType>;
+    using ConstMemberType = const MemberType;
+    using MemberFieldPtr = MemberFieldStorage::MemberFieldPtr;
 
 private:
-    MemberFieldPtr memberPtr;
+    MemberFieldStorage storage;
 
 public:
-    ClassMemberField()
-        : memberPtr(nullptr)
+    ClassMemberField() = default;
+    MAKE_TYPE_DEFAULT_COPY_MOVE(ClassMemberField)
+
+    ClassMemberField(MemberFieldPtr memberField)
+        : storage(memberField)
     {}
-    ClassMemberField(const ClassMemberField &otherField)
-        : memberPtr(otherField.memberPtr)
-    {}
-    ClassMemberField(ClassMemberField &&otherField)
-        : memberPtr(std::move(otherField.memberPtr))
-    {}
-    ClassMemberField(const MemberFieldPtr &memberField)
-        : memberPtr(memberField)
-    {}
-    ClassMemberField &operator= (const ClassMemberField &otherField)
+    ClassMemberField &operator= (MemberFieldPtr fieldPtr)
     {
-        memberPtr = otherField.memberPtr;
-        return *this;
-    }
-    ClassMemberField &operator= (ClassMemberField &&otherField)
-    {
-        memberPtr = std::move(otherField.memberPtr);
-        return *this;
-    }
-    ClassMemberField &operator= (const MemberFieldPtr &fieldPtr)
-    {
-        memberPtr = fieldPtr;
+        storage = fieldPtr;
         return *this;
     }
 
-    operator bool () const { return memberPtr != nullptr; }
+    operator bool () const { return storage.isValid(); }
 
-    const MemberType &get(const ClassType &object) const { return object.*memberPtr; }
-
-    const MemberType &get(const ClassType *object) const { return object->*memberPtr; }
+    ConstMemberType &get(const ClassType &object) const { return storage.memberDeref(&object); }
+    ConstMemberType &get(const ClassType *object) const { return storage.memberDeref(object); }
 };
