@@ -368,6 +368,7 @@ enum class EPolygonDrawMode
     Point = 2
 };
 
+// Face orientation in screen space to cull. Back face triangles are once that is counter clockwise in the frame or screen space 
 enum class ECullingMode
 {
     None = 0,

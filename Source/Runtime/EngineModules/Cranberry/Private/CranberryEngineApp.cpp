@@ -257,10 +257,14 @@ void tempTest()
                         vert.position[i] = 50 * m;
                         vert.tangent[i] = 0;
 
-                        float jm = (vIdx >> 1) ^ (vIdx & 1) ? 1.f : -1.f;
-                        float km = ((vIdx >> 1) & 1) ? -1.f : 1.f;
-                        vert.position[j] = 50 * jm * m;
-                        vert.position[k] = 50 * km;
+                        // 0: jm =  1, km = -1
+                        // 1: jm =  1, km =  1
+                        // 2: jm = -1, km =  1
+                        // 3: jm = -1, km = -1
+                        float jm = ((vIdx >> 1) & 1) ? -1.f : 1.f;
+                        float km = (vIdx >> 1) ^ (vIdx & 1) ? 1.f : -1.f;
+                        vert.position[j] = 50 * jm;
+                        vert.position[k] = 50 * km * m;
 
                         vert.tangent[j] = (1 - (vIdx % 2)) * -jm;
                         vert.tangent[k] = (vIdx % 2) * -km;
