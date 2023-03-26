@@ -156,10 +156,10 @@ void ApplicationInstance::startApp()
 
 bool ApplicationInstance::appTick()
 {
-    startNewFrame();
-
     if (windowManager && inputSystem)
     {
+        CBE_PROFILER_SCOPE(CBE_PROFILER_CHAR("PollWindowsAndInputs"));
+
         bAppActive = windowManager->pollWindows();
         inputSystem->updateInputStates();
         timeData.setApplicationState(bAppActive);
@@ -177,11 +177,8 @@ bool ApplicationInstance::appTick()
         fontManager->flushUpdates();
     }
 
-    tickWindowWidgets();
-    // Application tick
-    onTick();
-
-    // Rendering widgets after application tick to allow application updates to be visible, No idea if it is right choice!
+    // Start rendering widgets before application tick to allow application tick and render thread to run parallel
+    // This frame's widget update will be visible next frame
     if (wgRenderer)
     {
         auto drawnWnds = drawWindowWidgets();
@@ -191,8 +188,14 @@ bool ApplicationInstance::appTick()
         }
     }
 
+    tickWindowWidgets();
+    // Application tick
+    onTick();
+
     // Below must be last executed
     Logger::flushStream();
+
+    startNextFrame();
     timeData.progressFrame();
     return !bExitNextFrame;
 }

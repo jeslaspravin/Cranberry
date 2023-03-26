@@ -37,7 +37,7 @@ copat::JobSystemTask RenderManager::initialize(IGraphicsInstance *graphicsInstan
     graphicsInstanceCache->load();
     // Load instance done
     engineRendererModule->renderStateEvents.invoke(ERenderStateEvent::PostLoadInstance);
-    
+
     // Rest of the initialization happens in render thread
     if (!copat::JobSystem::get()->isInThread(copat::EJobThreadType::RenderThread))
     {

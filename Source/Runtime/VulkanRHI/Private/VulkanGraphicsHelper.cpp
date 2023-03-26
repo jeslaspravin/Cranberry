@@ -14,6 +14,7 @@
 #include <vector>
 
 #include "ApplicationSettings.h"
+#include "Profiler/ProgramProfiler.hpp"
 #include "Math/Math.h"
 #include "RenderInterface/Resources/QueueResource.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
@@ -271,8 +272,13 @@ void VulkanGraphicsHelper::presentImage(
     presentInfo.pWaitSemaphores = semaphores.size() > 0 ? semaphores.data() : nullptr;
     presentInfo.waitSemaphoreCount = (uint32)semaphores.size();
 
-    VkResult result
-        = device->vkQueuePresentKHR(getQueue<EQueueFunction::Present>(device)->getQueueOfPriority<EQueuePriority::SuperHigh>(), &presentInfo);
+    VkResult result = VK_ERROR_UNKNOWN;
+    {
+        CBE_PROFILER_SCOPE(CBE_PROFILER_CHAR("PresentASwapchain"));
+        result = device->vkQueuePresentKHR(
+            getQueue<EQueueFunction::Present>(device)->getQueueOfPriority<EQueuePriority::SuperHigh>(), &presentInfo
+        );
+    }
 
     if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
     {

@@ -243,8 +243,11 @@ void ApplicationInstance::onWindowDestroyed(GenericAppWindow *appWindow)
 
 void ApplicationInstance::tickWindowWidgets()
 {
+    CBE_PROFILER_SCOPE(CBE_PROFILER_CHAR("TickWindowWidgets"));
     if (hasActiveWindow())
     {
+        CBE_PROFILER_SCOPE(CBE_PROFILER_CHAR("HandleWidgetInputs"));
+
         SharedPtr<WgWindow> window = getActiveWindow();
         debugAssert(window);
 
@@ -335,8 +338,10 @@ void ApplicationInstance::clearWidgets()
     lastHoverWnd.reset();
 }
 
-void ApplicationInstance::startNewFrame()
+void ApplicationInstance::startNextFrame()
 {
+    CBE_PROFILER_SCOPE(CBE_PROFILER_CHAR("StartNextFrame"));
+
     frameAllocator.reset();
 
     /**
@@ -348,22 +353,29 @@ void ApplicationInstance::startNewFrame()
         [this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI * /*graphicsHelper*/)
         {
             CBE_PROFILER_MARKFRAME_N(CBE_PROFILER_CHAR("RenderFrame"));
+            CBE_PROFILER_SCOPE(CBE_PROFILER_CHAR("StartNextRenderFrame"));
+
             renderFrameAllocator.reset();
             IRenderInterfaceModule::get()->getRenderManager()->renderFrame(timeData.deltaTime);
 
             // Copy all shader updates from previous frame in this frame
-            std::vector<BatchCopyBufferData> copies;
-            std::vector<GraphicsResource *> shaderParams;
-            ShaderParameters::staticType()->allRegisteredResources(shaderParams, true, true);
-            for (GraphicsResource *resource : shaderParams)
             {
-                static_cast<ShaderParameters *>(resource)->pullBufferParamUpdates(copies, cmdList, graphicsInstance);
-                // Mostly update buffer/texture params will be empty as it will be handled in respective update codes
-                static_cast<ShaderParameters *>(resource)->updateParams(cmdList, graphicsInstance);
-            }
-            if (!copies.empty())
-            {
-                cmdList->copyToBuffer(copies);
+                CBE_PROFILER_SCOPE(CBE_PROFILER_CHAR("UploadBuffers"));
+
+                std::vector<BatchCopyBufferData> copies;
+                std::vector<GraphicsResource *> shaderParams;
+                ShaderParameters::staticType()->allRegisteredResources(shaderParams, true, true);
+                for (GraphicsResource *resource : shaderParams)
+                {
+                    static_cast<ShaderParameters *>(resource)->pullBufferParamUpdates(copies, cmdList, graphicsInstance);
+                    // Mostly update buffer/texture params will be empty as it will be handled in respective update codes
+                    static_cast<ShaderParameters *>(resource)->updateParams(cmdList, graphicsInstance);
+                }
+                if (!copies.empty())
+                {
+                    CBE_PROFILER_SCOPE(CBE_PROFILER_CHAR("CPU2GPU"));
+                    cmdList->copyToBuffer(copies);
+                }
             }
         }
     );
@@ -375,6 +387,8 @@ void ApplicationInstance::startNewFrame()
 
 std::vector<SharedPtr<WgWindow>> WidgetRenderer::drawWindowWidgets(const std::vector<SharedPtr<WgWindow>> &windows)
 {
+    CBE_PROFILER_SCOPE(CBE_PROFILER_CHAR("DrawWindowWidgets"));
+
     std::vector<SharedPtr<WgWindow>> drawingWindows;
     drawingWindows.reserve(windows.size());
     std::vector<std::pair<SharedPtr<WgWindow>, WidgetDrawContext>> allDrawCtxs;

@@ -362,6 +362,7 @@ void FontManagerContext::updatePendingGlyphs()
     {
         return;
     }
+    CBE_PROFILER_SCOPE(CBE_PROFILER_CHAR("UpdatePendingGlyphs"));
 
     allGlyphCoords.reserve(allGlyphCoords.size() + glyphsPending.size());
     allGlyphs.reserve(allGlyphs.size() + glyphsPending.size());
@@ -495,6 +496,8 @@ void FontManagerContext::updatePendingGlyphs()
     (
         [this, atlasTexels](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
+            CBE_PROFILER_SCOPE(CBE_PROFILER_CHAR("UploadGlyphAtlas"));
+
             for (int32 i = 0; i < atlasTexels.size(); ++i)
             {
                 ImageResourceCreateInfo ci{

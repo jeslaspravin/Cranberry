@@ -761,6 +761,8 @@ void PBRSceneEntity::updateMaterialParams(
 
 void ExperimentalEnginePBR::setupLightSceneDrawCmdsBuffer(class IRenderCommandList *cmdList, IGraphicsInstance *)
 {
+    CBE_PROFILER_SCOPE(CBE_PROFILER_CHAR("SetupSceneLightDrawCmds"));
+
     struct alignas(2 * CACHELINE_SIZE) LightObjectCulling
     {
         std::vector<DrawIndexedIndirectCommand> drawCmds;
@@ -1995,6 +1997,8 @@ void ExperimentalEnginePBR::destroyShaderParameters()
 
 void ExperimentalEnginePBR::setupLightShaderData()
 {
+    CBE_PROFILER_SCOPE(CBE_PROFILER_CHAR("SetupLightData"));
+
     lightDataShadowed->setIntParam(TCHAR("shadowFlags"), shadowFlags);
 
     setupLightShadowViews();
@@ -2991,6 +2995,8 @@ void ExperimentalEnginePBR::debugFrameRender(
 
 void ExperimentalEnginePBR::tickEngine()
 {
+    CBE_PROFILER_SCOPE(CBE_PROFILER_CHAR("EngineTick"));
+
     TestGameEngine::tickEngine();
     updateCameraParams();
     setupLightShaderData();
@@ -3045,6 +3051,7 @@ void ExperimentalEnginePBR::tickEngine()
         (
             [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
             {
+                CBE_PROFILER_SCOPE(CBE_PROFILER_CHAR("FrameRender"));
 #if SHADOWS_USE_CULLED_DRAW_CMDS
                 setupLightSceneDrawCmdsBuffer(cmdList, graphicsInstance);
 #endif
@@ -3669,9 +3676,10 @@ void ExperimentalEnginePBR::tempTestPerFrame()
 
 void ExperimentalEnginePBR::tempTestQuit() {}
 
-// TestGameEngine *GameEngineWrapper::createEngineInstance()
-//{
-//     static SharedPtr<ExperimentalEnginePBR> engineInst = std::make_shared<ExperimentalEnginePBR>();
-//     return engineInst.get();
-// }
+TestGameEngine *getExperimentalEnginePBR()
+{
+    static SharedPtr<ExperimentalEnginePBR> engineInst = std::make_shared<ExperimentalEnginePBR>();
+    return engineInst.get();
+}
+
 #endif

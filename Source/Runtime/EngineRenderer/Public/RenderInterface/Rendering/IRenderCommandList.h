@@ -34,10 +34,18 @@ class Color;
 class LinearColor;
 class IRenderCommandList;
 
-#define SCOPED_CMD_MARKER(CmdList, CommandBuffer, Name) ScopedCommandMarker cmdMarker_##Name(CmdList, CommandBuffer, TCHAR(#Name))
-#define SCOPED_STR_CMD_MARKER(CmdList, CommandBuffer, Name) ScopedCommandMarker COMBINE(cmdMarker_, __COUNTER__)(CmdList, CommandBuffer, (Name))
+#define SCOPED_CMD_MARKER(CmdList, CommandBuffer, Name)                                                                                        \
+    ScopedCommandMarker cmdMarker_##Name(CmdList, CommandBuffer, TCHAR(#Name));                                                                \
+    CBE_PROFILER_SCOPE(CBE_PROFILER_CHAR(#Name))
+
+#define SCOPED_STR_CMD_MARKER(CmdList, CommandBuffer, Name)                                                                                    \
+    ScopedCommandMarker COMBINE(cmdMarker_, __COUNTER__)(CmdList, CommandBuffer, (Name));                                                      \
+    CBE_PROFILER_TSCOPE(Name.getChar())
+
 #define SCOPED_CMD_COLORMARKER(CmdList, CommandBuffer, Name, Color)                                                                            \
-    ScopedCommandMarker cmdMarker_##Name(CmdList, CommandBuffer, TCHAR(#Name), Color)
+    ScopedCommandMarker cmdMarker_##Name(CmdList, CommandBuffer, TCHAR(#Name), Color);                                                         \
+    CBE_PROFILER_SCOPE_C(CBE_PROFILER_CHAR(#Name), Color)
+
 struct ScopedCommandMarker
 {
     const GraphicsResource *cmdBuffer;

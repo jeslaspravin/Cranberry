@@ -85,16 +85,24 @@ class GameEngineWrapper final
 private:
     TestGameEngine *gEngine = nullptr;
 
-    TestGameEngine *createEngineInstance();
+    void createEngineInstance();
 
 public:
-    GameEngineWrapper() { gEngine = createEngineInstance(); }
+    GameEngineWrapper() = default;
 
     ~GameEngineWrapper() { gEngine = nullptr; }
 
-    TestGameEngine *operator->() const { return gEngine; }
+    TestGameEngine *operator->()
+    {
+        CALL_ONCE(createEngineInstance);
+        return gEngine;
+    }
 
-    TestGameEngine *operator* () const { return gEngine; }
+    TestGameEngine *operator* ()
+    {
+        CALL_ONCE(createEngineInstance);
+        return gEngine;
+    }
 
     operator bool () const { return gEngine != nullptr; }
 

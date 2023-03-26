@@ -188,7 +188,7 @@ private:
     void presentDrawnWnds(const std::vector<SharedPtr<WgWindow>> &windowsDrawn);
     void clearWidgets();
 
-    void startNewFrame();
+    void startNextFrame();
 };
 
 FORCE_INLINE void ApplicationInstance::getVersion(int32 &majorVer, int32 &minorVer, int32 &patchVer) const

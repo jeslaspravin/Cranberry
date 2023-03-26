@@ -177,7 +177,7 @@ public:
         const CharType *name, const CBEProfilerChar *function, const CBEProfilerChar *file, uint32 line, Color color, bool bActive
     )
         : srcLoc(CBEProfiler::allocateTransientSrcLoc(name, function, file, line, color))
-        , ctx(CBEProfiler::beginTransientScope(&srcLoc, bActive))
+        , ctx(CBEProfiler::beginTransientScope(srcLoc, bActive))
     {
 #if USE_TRACY_PROFILER
         CBEProfiler::setScopeColor(ctx, color);
@@ -188,7 +188,7 @@ public:
         const CharType *name, const CBEProfilerChar *function, const CBEProfilerChar *file, uint32 line, Color color, bool bActive, uint64 value
     )
         : srcLoc(CBEProfiler::allocateTransientSrcLoc(name, function, file, line, color))
-        , ctx(CBEProfiler::beginTransientScope(&srcLoc, bActive))
+        , ctx(CBEProfiler::beginTransientScope(srcLoc, bActive))
     {
 #if USE_TRACY_PROFILER
         CBEProfiler::setScopeColor(ctx, color);
@@ -201,7 +201,7 @@ public:
         const TextCharType *text
     )
         : srcLoc(CBEProfiler::allocateTransientSrcLoc(name, function, file, line, color))
-        , ctx(CBEProfiler::beginTransientScope(&srcLoc, bActive))
+        , ctx(CBEProfiler::beginTransientScope(srcLoc, bActive))
     {
 #if USE_TRACY_PROFILER
         CBEProfiler::setScopeColor(ctx, color);
@@ -214,7 +214,7 @@ public:
         const TextCharType *text, uint64 value
     )
         : srcLoc(CBEProfiler::allocateTransientSrcLoc(name, function, file, line, color))
-        , ctx(CBEProfiler::beginTransientScope(&srcLoc, bActive))
+        , ctx(CBEProfiler::beginTransientScope(srcLoc, bActive))
     {
 #if USE_TRACY_PROFILER
         CBEProfiler::setScopeColor(ctx, color);
@@ -280,28 +280,18 @@ public:
 #define CBE_PROFILER_TSCOPE_VAR_FULL(VarName, Name, ControlVar, Text, Colour, Value)                                                           \
     CBEProfilerTransientScope VarName                                                                                                          \
     {                                                                                                                                          \
-        Name, CBE_PROFILER_CHAR(__func__), CBE_PROFILER_CHAR(__FILE__), __LINE__, CBE_PROFILER_COLOR(Colour), ControlVar, Text, Value          \
+        Name, CBE_PROFILER_CHAR(__func__), CBE_PROFILER_CHAR(__FILE__), __LINE__, Colour, ControlVar, Text, Value                              \
     }
 #define CBE_PROFILER_TSCOPE_VAR_VC(VarName, Name, ControlVar, Colour, Value)                                                                   \
-    CBEProfilerTransientScope VarName                                                                                                          \
-    {                                                                                                                                          \
-        Name, CBE_PROFILER_CHAR(__func__), CBE_PROFILER_CHAR(__FILE__), __LINE__, CBE_PROFILER_COLOR(Colour), ControlVar, Value                \
-    }
+    CBEProfilerTransientScope VarName { Name, CBE_PROFILER_CHAR(__func__), CBE_PROFILER_CHAR(__FILE__), __LINE__, Colour, ControlVar, Value }
 #define CBE_PROFILER_TSCOPE_VAR_TC(VarName, Name, ControlVar, Text, Colour)                                                                    \
-    CBEProfilerTransientScope VarName                                                                                                          \
-    {                                                                                                                                          \
-        Name, CBE_PROFILER_CHAR(__func__), CBE_PROFILER_CHAR(__FILE__), __LINE__, CBE_PROFILER_COLOR(Colour), ControlVar, Text                 \
-    }
+    CBEProfilerTransientScope VarName { Name, CBE_PROFILER_CHAR(__func__), CBE_PROFILER_CHAR(__FILE__), __LINE__, Colour, ControlVar, Text }
 #define CBE_PROFILER_TSCOPE_VAR_C(VarName, Name, ControlVar, Colour)                                                                           \
-    CBEProfilerTransientScope VarName                                                                                                          \
-    {                                                                                                                                          \
-        Name, CBE_PROFILER_CHAR(__func__), CBE_PROFILER_CHAR(__FILE__), __LINE__, CBE_PROFILER_COLOR(Colour), ControlVar                       \
-    }
+    CBEProfilerTransientScope VarName { Name, CBE_PROFILER_CHAR(__func__), CBE_PROFILER_CHAR(__FILE__), __LINE__, Colour, ControlVar }
 #define CBE_PROFILER_TSCOPE_VAR(VarName, Name, ControlVar)                                                                                     \
     CBEProfilerTransientScope VarName                                                                                                          \
     {                                                                                                                                          \
-        Name, CBE_PROFILER_CHAR(__func__), CBE_PROFILER_CHAR(__FILE__), __LINE__, CBE_PROFILER_COLOR(ColorConst::BLACK_Transparent),           \
-            ControlVar                                                                                                                         \
+        Name, CBE_PROFILER_CHAR(__func__), CBE_PROFILER_CHAR(__FILE__), __LINE__, ColorConst::BLACK_Transparent, ControlVar                    \
     }
 
 #else // ENABLE_PROFILING

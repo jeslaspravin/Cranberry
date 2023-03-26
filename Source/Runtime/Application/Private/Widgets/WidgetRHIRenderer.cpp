@@ -180,6 +180,8 @@ void WidgetRHIRenderer::presentWindows(const std::vector<SharedPtr<WgWindow>> &w
         [swapchains, windows,
          this](IRenderCommandList *cmdList, IGraphicsInstance * /*graphicsInstance*/, const GraphicsHelperAPI * /*graphicsHelper*/)
         {
+            CBE_PROFILER_SCOPE(CBE_PROFILER_CHAR("PresentWindows"));
+
             std::vector<uint32> swapchainIdxs(swapchains.size());
             std::vector<SemaphoreRef> presentWaits(windows.size());
             for (uint32 i = 0; i < swapchains.size(); ++i)
@@ -205,6 +207,8 @@ void WidgetRHIRenderer::drawWindowWidgets(std::vector<std::pair<SharedPtr<WgWind
         [allDrawCtxs = std::forward<std::vector<std::pair<SharedPtr<WgWindow>, WidgetDrawContext>>>(drawingContexts),
          this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
+            CBE_PROFILER_SCOPE(CBE_PROFILER_CHAR("RenderWindowWidgets"));
+
             drawWindowWidgetsRenderThread(allDrawCtxs, cmdList, graphicsInstance, graphicsHelper);
         }
     );
@@ -451,7 +455,8 @@ void WidgetRHIRenderer::drawWindowWidgetsRenderThread(
             = cmdList->startCmd(windowState->perFrameCmdBuffers[pipelineContext.swapchainIdx], EQueueFunction::Graphics, true);
         cmdBufferPerWnd[i] = cmdBuffer;
 
-        SCOPED_STR_CMD_MARKER(cmdList, cmdBuffer, TCHAR("WidgetRHIRender_") + drawingContexts[i].first->getAppWindow()->getWindowName());
+        String CmdMarker = TCHAR("WidgetRHIRender_") + drawingContexts[i].first->getAppWindow()->getWindowName();
+        SCOPED_STR_CMD_MARKER(cmdList, cmdBuffer, CmdMarker);
         cmdList->cmdBeginRenderPass(cmdBuffer, pipelineContext, renderArea, additionalParams, clearValue);
         cmdList->cmdSetViewportAndScissor(cmdBuffer, renderArea, renderArea);
         cmdList->cmdBindVertexBuffer(cmdBuffer, 0, vertices, 0);

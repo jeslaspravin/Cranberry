@@ -25,6 +25,7 @@
 #include "RenderApi/RenderManager.h"
 #include "RenderApi/Rendering/RenderingContexts.h"
 #include "RenderInterface/Rendering/IRenderCommandList.h"
+#include "CmdLine/CmdLine.h"
 
 void EngineTime::engineStart() { startTick = Time::timeNow(); }
 
@@ -156,10 +157,33 @@ void TestGameEngine::onQuit() {}
 
 void TestGameEngine::tickEngine() {}
 
-#if !EXPERIMENTAL
-TestGameEngine *GameEngineWrapper::createEngineInstance()
+#if EXPERIMENTAL
+
+TestGameEngine *getExperimentalEngineGoochModel();
+TestGameEngine *getExperimentalEnginePBR();
+
+void GameEngineWrapper::createEngineInstance()
 {
-    static SharedPtr<TestGameEngine> engineInst = std::make_shared<TestGameEngine>();
-    return engineInst.get();
+    if (gEngine == nullptr)
+    {
+        if (ProgramCmdLine::get().hasArg(TCHAR("--pbr")))
+        {
+            gEngine = getExperimentalEnginePBR();
+            return;
+        }
+        else if (ProgramCmdLine::get().hasArg(TCHAR("--gooch")))
+        {
+            gEngine = getExperimentalEngineGoochModel();
+            return;
+        }
+        gEngine = getExperimentalEngineGoochModel();
+    }
+}
+
+#else
+void GameEngineWrapper::createEngineInstance()
+{
+    static TestGameEngine engineInst;
+    gEngine = &engineInst;
 }
 #endif

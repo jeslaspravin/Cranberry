@@ -151,6 +151,9 @@ void LoggerImpl::flushStream()
 
 void LoggerImpl::flushStreamInternal()
 {
+    // The final flush happens after the profiler is shutdown
+    CBE_PROFILER_SCOPE_DYN(CBE_PROFILER_CHAR("FlushLogStream"), CBEProfiler::profilerAvailable());
+
     allTlDataLock.lock();
     for (LoggerPerThreadData *tlData : allPerThreadData)
     {

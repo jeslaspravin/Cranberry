@@ -65,17 +65,21 @@ static_assert(
     }(Ctx)
 
 #if defined TRACY_HAS_CALLSTACK && defined TRACY_CALLSTACK
+
 #define CBE_PROFILER_BEGIN_STATIC_SCOPE(SrcLoc, Active)                                                                                        \
     TRACY_SCOPE_CTX_TO_CBEPROFILER_CTX(                                                                                                        \
         ___tracy_emit_zone_begin_callstack(reinterpret_cast<const ___tracy_source_location_data *>(SrcLoc), TRACY_CALLSTACK, Active)           \
     )
 #define CBE_PROFILER_BEGIN_TRANSIENT_SCOPE(SrcLoc, Active)                                                                                     \
     TRACY_SCOPE_CTX_TO_CBEPROFILER_CTX(___tracy_emit_zone_begin_alloc_callstack(SrcLoc, TRACY_CALLSTACK, Active))
-#else
+
+#else // defined TRACY_HAS_CALLSTACK && defined TRACY_CALLSTACK
+
 #define CBE_PROFILER_BEGIN_STATIC_SCOPE(SrcLoc, Active)                                                                                        \
     TRACY_SCOPE_CTX_TO_CBEPROFILER_CTX(___tracy_emit_zone_begin(reinterpret_cast<const ___tracy_source_location_data *>(SrcLoc), Active))
 #define CBE_PROFILER_BEGIN_TRANSIENT_SCOPE(SrcLoc, Active) TRACY_SCOPE_CTX_TO_CBEPROFILER_CTX(___tracy_emit_zone_begin_alloc(SrcLoc, Active))
-#endif
+
+#endif // defined TRACY_HAS_CALLSTACK && defined TRACY_CALLSTACK
 #define CBE_PROFILER_END_SCOPE(Ctx) TracyCZoneEnd(*reinterpret_cast<const TracyCZoneCtx *>(&Ctx))
 
 #define CBE_PROFILER_SCOPE_SETTEXT(Ctx, Text) TracyCZoneText(*reinterpret_cast<const TracyCZoneCtx *>(&Ctx), Text, TCharStr::length(Text))
