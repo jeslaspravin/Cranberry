@@ -39,23 +39,23 @@ public:
     ApplicationInstance *getApplication() const final;
 
     void windowCreated(GenericAppWindow *createdWindow) const final;
-    DelegateHandle registerOnWindowCreated(AppWindowDelegate::SingleCastDelegateType callback) final;
+    DelegateHandle registerOnWindowCreated(AppWindowDelegate::SingleCastDelegateType &&callback) final;
     void unregisterOnWindowCreated(const DelegateHandle &callbackHandle) final;
 
     void preWindowSurfaceUpdate(GenericAppWindow *window) const final { onPreWindowSurfaceUpdate.invoke(window); }
-    DelegateHandle registerPreWindowSurfaceUpdate(AppWindowDelegate::SingleCastDelegateType callback) final;
+    DelegateHandle registerPreWindowSurfaceUpdate(AppWindowDelegate::SingleCastDelegateType &&callback) final;
     void unregisterPreWindowSurfaceUpdate(const DelegateHandle &callbackHandle) final;
 
     void windowSurfaceUpdated(GenericAppWindow *window) const final { onWindowSurfaceUpdated.invoke(window); }
-    DelegateHandle registerOnWindowSurfaceUpdated(AppWindowDelegate::SingleCastDelegateType callback) final;
+    DelegateHandle registerOnWindowSurfaceUpdated(AppWindowDelegate::SingleCastDelegateType &&callback) final;
     void unregisterOnWindowSurfaceUpdated(const DelegateHandle &callbackHandle) final;
 
     void windowDestroyed(GenericAppWindow *window) const final { onWindowDestroyed.invoke(window); }
-    DelegateHandle registerOnWindowDestroyed(AppWindowDelegate::SingleCastDelegateType callback) final;
+    DelegateHandle registerOnWindowDestroyed(AppWindowDelegate::SingleCastDelegateType &&callback) final;
     void unregisterOnWindowDestroyed(const DelegateHandle &callbackHandle) final;
 
     void allWindowDestroyed() const final;
-    DelegateHandle registerAllWindowDestroyed(SimpleDelegate::SingleCastDelegateType callback) final;
+    DelegateHandle registerAllWindowDestroyed(SimpleDelegate::SingleCastDelegateType &&callback) final;
     void unregisterAllWindowDestroyed(const DelegateHandle &callbackHandle) final;
 
     /* IModuleBase finals */

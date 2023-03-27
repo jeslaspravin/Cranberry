@@ -34,7 +34,7 @@ public:
     void initializeGraphics(bool bComputeOnly = false);
     void finalizeGraphicsInitialization() final;
     RenderManager *getRenderManager() const final;
-    DelegateHandle registerToStateEvents(RenderStateDelegate::SingleCastDelegateType callback) final;
+    DelegateHandle registerToStateEvents(RenderStateDelegate::SingleCastDelegateType &&callback) final;
     void unregisterToStateEvents(const DelegateHandle &handle) final;
     /* IModuleBase finals */
     void init() final;

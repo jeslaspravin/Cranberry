@@ -18,6 +18,8 @@
 #include "Types/Delegates/Delegate.h"
 #include "Types/Platform/PlatformTypes.h"
 
+#include <map>
+
 class ApplicationInstance;
 
 class APPLICATION_EXPORT GenericAppWindow

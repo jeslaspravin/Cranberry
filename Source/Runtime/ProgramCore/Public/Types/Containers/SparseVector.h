@@ -12,6 +12,7 @@
 #pragma once
 
 #include "Types/Platform/PlatformAssertionErrors.h"
+#include "Math/Math.h"
 
 #include <vector>
 
@@ -67,8 +68,7 @@ private:
 
 public:
     SparseVector() = default;
-    SparseVector(const SparseVector &) = default;
-    SparseVector(SparseVector &&) = default;
+    MAKE_TYPE_DEFAULT_COPY_MOVE(SparseVector)
 
     SparseVector(SizeType count, const ValueType &value) noexcept
         : elements(count, value)
@@ -168,6 +168,8 @@ public:
 
         freeSlots.push_free(index);
     }
+    template <typename ItrValueType>
+    auto reset(SparseVectorIterator<ItrValueType, SparsityPolicy> itr);
 
     void clear(SizeType PreserveSize = 0)
     {
@@ -199,8 +201,8 @@ class SparseVectorIterator
 public:
     constexpr static const bool bIsConst = std::is_const_v<ElementType>;
 
-    using SparseVectorType = std::conditional_t<
-        bIsConst, const SparseVector<std::remove_const_t<ElementType>, SparsityPolicyType>, SparseVector<ElementType, SparsityPolicyType>>;
+    using SparseVectorType = SparseVector<std::remove_const_t<ElementType>, SparsityPolicyType>;
+    using ContainerConstCorrectType = std::conditional_t<bIsConst, const SparseVectorType, SparseVectorType>;
     using SizeType = typename SparseVectorType::size_type;
 
     using value_type = std::conditional_t<bIsConst, typename SparseVectorType::value_type const, typename SparseVectorType::value_type>;
@@ -208,12 +210,12 @@ public:
     using pointer = value_type *;
     using size_type = SizeType;
     using difference_type = typename SparseVectorType::difference_type;
-    using iterator_concept = typename std::contiguous_iterator_tag;
+    using iterator_concept = typename std::random_access_iterator_tag;
     using iterator_category = typename std::random_access_iterator_tag;
 
 private:
     SizeType idx;
-    SparseVectorType *iteratingVector;
+    ContainerConstCorrectType *iteratingVector;
 
 private:
     FORCE_INLINE void validateItr() const { fatalAssertf(iteratingVector && iteratingVector->isValid(idx), "Iterator is invalid!"); }
@@ -224,7 +226,7 @@ public:
     CONST_EXPR SparseVectorIterator(SparseVectorIterator &&) = default;
     CONST_EXPR SparseVectorIterator &operator= (const SparseVectorIterator &) = default;
     CONST_EXPR SparseVectorIterator &operator= (SparseVectorIterator &&) = default;
-    CONST_EXPR SparseVectorIterator(SizeType startIdx, SparseVectorType &sparseVector)
+    CONST_EXPR SparseVectorIterator(SizeType startIdx, ContainerConstCorrectType &sparseVector)
         : idx(startIdx)
         , iteratingVector(&sparseVector)
     {
@@ -351,6 +353,13 @@ public:
         retVal += off;
         return *retVal;
     }
+
+    void reset() noexcept
+    {
+        SizeType oldIdx = idx;
+        this->operator++ ();
+        iteratingVector->reset(oldIdx);
+    }
 };
 
 template <typename ElementType, typename SparsityPolicyType>
@@ -379,4 +388,14 @@ NODISCARD CONST_EXPR typename SparseVector<ElementType, SparsityPolicyType>::ite
 SparseVector<ElementType, SparsityPolicyType>::end() noexcept
 {
     return iterator(totalCount(), *this);
+}
+
+template <typename ElementType, typename SparsityPolicyType>
+template <typename ItrValueType>
+auto SparseVector<ElementType, SparsityPolicyType>::reset(
+    SparseVectorIterator<ItrValueType, SparseVector<ElementType, SparsityPolicyType>::SparsityPolicy> itr
+)
+{
+    itr.reset();
+    return itr;
 }

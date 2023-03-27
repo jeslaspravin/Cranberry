@@ -42,26 +42,26 @@ public:
     APPLICATION_EXPORT virtual ApplicationInstance *getApplication() const = 0;
 
     virtual void windowCreated(GenericAppWindow *createdWindow) const = 0;
-    APPLICATION_EXPORT virtual DelegateHandle registerOnWindowCreated(AppWindowDelegate::SingleCastDelegateType callback) = 0;
+    virtual DelegateHandle registerOnWindowCreated(AppWindowDelegate::SingleCastDelegateType &&callback) = 0;
     APPLICATION_EXPORT virtual void unregisterOnWindowCreated(const DelegateHandle &callbackHandle) = 0;
 
     // Called before window property change has lead to surface reinitialization
     virtual void preWindowSurfaceUpdate(GenericAppWindow *window) const = 0;
-    APPLICATION_EXPORT virtual DelegateHandle registerPreWindowSurfaceUpdate(AppWindowDelegate::SingleCastDelegateType callback) = 0;
+    virtual DelegateHandle registerPreWindowSurfaceUpdate(AppWindowDelegate::SingleCastDelegateType &&callback) = 0;
     APPLICATION_EXPORT virtual void unregisterPreWindowSurfaceUpdate(const DelegateHandle &callbackHandle) = 0;
 
     // When resized/updated that lead to underlying surface/canvas to be updated
     virtual void windowSurfaceUpdated(GenericAppWindow *window) const = 0;
-    APPLICATION_EXPORT virtual DelegateHandle registerOnWindowSurfaceUpdated(AppWindowDelegate::SingleCastDelegateType callback) = 0;
+    virtual DelegateHandle registerOnWindowSurfaceUpdated(AppWindowDelegate::SingleCastDelegateType &&callback) = 0;
     APPLICATION_EXPORT virtual void unregisterOnWindowSurfaceUpdated(const DelegateHandle &callbackHandle) = 0;
 
     // Called just before windows is finalized to be0 destroyed
     virtual void windowDestroyed(GenericAppWindow *window) const = 0;
-    APPLICATION_EXPORT virtual DelegateHandle registerOnWindowDestroyed(AppWindowDelegate::SingleCastDelegateType callback) = 0;
+    virtual DelegateHandle registerOnWindowDestroyed(AppWindowDelegate::SingleCastDelegateType &&callback) = 0;
     APPLICATION_EXPORT virtual void unregisterOnWindowDestroyed(const DelegateHandle &callbackHandle) = 0;
 
     // After all windows are destroyed
     virtual void allWindowDestroyed() const = 0;
-    APPLICATION_EXPORT virtual DelegateHandle registerAllWindowDestroyed(SimpleDelegate::SingleCastDelegateType callback) = 0;
+    virtual DelegateHandle registerAllWindowDestroyed(SimpleDelegate::SingleCastDelegateType &&callback) = 0;
     APPLICATION_EXPORT virtual void unregisterAllWindowDestroyed(const DelegateHandle &callbackHandle) = 0;
 };

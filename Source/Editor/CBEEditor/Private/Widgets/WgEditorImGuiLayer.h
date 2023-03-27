@@ -41,7 +41,7 @@ public:
 
     /* Overrides ends */
 
-    DelegateHandle addMenuDrawExtender(const TChar *menuName, ImGuiDrawInterfaceCallback::SingleCastDelegateType &callback);
+    DelegateHandle addMenuDrawExtender(const TChar *menuName, ImGuiDrawInterfaceCallback::SingleCastDelegateType &&callback);
     void removeMenuExtender(const TChar *menuName, DelegateHandle handle);
 
 private:

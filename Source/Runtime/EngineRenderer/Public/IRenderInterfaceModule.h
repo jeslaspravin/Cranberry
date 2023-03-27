@@ -63,6 +63,6 @@ public:
     virtual void initializeGraphics(bool bComputeOnly = false) = 0;
     virtual void finalizeGraphicsInitialization() = 0;
 
-    virtual DelegateHandle registerToStateEvents(RenderStateDelegate::SingleCastDelegateType callback) = 0;
+    virtual DelegateHandle registerToStateEvents(RenderStateDelegate::SingleCastDelegateType &&callback) = 0;
     virtual void unregisterToStateEvents(const DelegateHandle &handle) = 0;
 };

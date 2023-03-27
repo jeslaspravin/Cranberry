@@ -219,16 +219,16 @@ void ApplicationModule::windowCreated(GenericAppWindow *createdWindow) const
     onWindowCreated.invoke(createdWindow);
 }
 
-DelegateHandle ApplicationModule::registerOnWindowCreated(AppWindowDelegate::SingleCastDelegateType callback)
+DelegateHandle ApplicationModule::registerOnWindowCreated(AppWindowDelegate::SingleCastDelegateType &&callback)
 {
-    return onWindowCreated.bind(callback);
+    return onWindowCreated.bind(std::forward<AppWindowDelegate::SingleCastDelegateType>(callback));
 }
 
 void ApplicationModule::unregisterOnWindowCreated(const DelegateHandle &callbackHandle) { onWindowCreated.unbind(callbackHandle); }
 
-DelegateHandle ApplicationModule::registerPreWindowSurfaceUpdate(AppWindowDelegate::SingleCastDelegateType callback)
+DelegateHandle ApplicationModule::registerPreWindowSurfaceUpdate(AppWindowDelegate::SingleCastDelegateType &&callback)
 {
-    return onPreWindowSurfaceUpdate.bind(callback);
+    return onPreWindowSurfaceUpdate.bind(std::forward<AppWindowDelegate::SingleCastDelegateType>(callback));
 }
 
 void ApplicationModule::unregisterPreWindowSurfaceUpdate(const DelegateHandle &callbackHandle)
@@ -236,9 +236,9 @@ void ApplicationModule::unregisterPreWindowSurfaceUpdate(const DelegateHandle &c
     onPreWindowSurfaceUpdate.unbind(callbackHandle);
 }
 
-DelegateHandle ApplicationModule::registerOnWindowSurfaceUpdated(AppWindowDelegate::SingleCastDelegateType callback)
+DelegateHandle ApplicationModule::registerOnWindowSurfaceUpdated(AppWindowDelegate::SingleCastDelegateType &&callback)
 {
-    return onWindowSurfaceUpdated.bind(callback);
+    return onWindowSurfaceUpdated.bind(std::forward<AppWindowDelegate::SingleCastDelegateType>(callback));
 }
 
 void ApplicationModule::unregisterOnWindowSurfaceUpdated(const DelegateHandle &callbackHandle)
@@ -246,9 +246,9 @@ void ApplicationModule::unregisterOnWindowSurfaceUpdated(const DelegateHandle &c
     onWindowSurfaceUpdated.unbind(callbackHandle);
 }
 
-DelegateHandle ApplicationModule::registerOnWindowDestroyed(AppWindowDelegate::SingleCastDelegateType callback)
+DelegateHandle ApplicationModule::registerOnWindowDestroyed(AppWindowDelegate::SingleCastDelegateType &&callback)
 {
-    return onWindowDestroyed.bind(callback);
+    return onWindowDestroyed.bind(std::forward<AppWindowDelegate::SingleCastDelegateType>(callback));
 }
 
 void ApplicationModule::unregisterOnWindowDestroyed(const DelegateHandle &callbackHandle) { onWindowDestroyed.unbind(callbackHandle); }
@@ -262,9 +262,9 @@ void ApplicationModule::allWindowDestroyed() const
     onAllWindowsDestroyed.invoke();
 }
 
-DelegateHandle ApplicationModule::registerAllWindowDestroyed(SimpleDelegate::SingleCastDelegateType callback)
+DelegateHandle ApplicationModule::registerAllWindowDestroyed(SimpleDelegate::SingleCastDelegateType &&callback)
 {
-    return onAllWindowsDestroyed.bind(callback);
+    return onAllWindowsDestroyed.bind(std::forward<SimpleDelegate::SingleCastDelegateType>(callback));
 }
 
 void ApplicationModule::unregisterAllWindowDestroyed(const DelegateHandle &callbackHandle) { onAllWindowsDestroyed.unbind(callbackHandle); }

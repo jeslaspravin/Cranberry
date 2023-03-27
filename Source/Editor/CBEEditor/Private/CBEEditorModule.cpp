@@ -33,7 +33,7 @@ public:
     void init() override;
     void release() override;
 
-    DelegateHandle addMenuDrawCallback(const TChar *menuName, ImGuiDrawInterfaceCallback::SingleCastDelegateType callback) const override;
+    DelegateHandle addMenuDrawCallback(const TChar *menuName, ImGuiDrawInterfaceCallback::SingleCastDelegateType &&callback) const override;
     void removeMenuDrawCallback(const TChar *menuName, DelegateHandle handle) const override;
     /* Override ends */
 };
@@ -55,11 +55,11 @@ void CBEEditorModule::release()
     }
 }
 
-DelegateHandle CBEEditorModule::addMenuDrawCallback(const TChar *menuName, ImGuiDrawInterfaceCallback::SingleCastDelegateType callback) const
+DelegateHandle CBEEditorModule::addMenuDrawCallback(const TChar *menuName, ImGuiDrawInterfaceCallback::SingleCastDelegateType &&callback) const
 {
     if (cbe::gCBEditorEngine && cbe::gCBEditorEngine->editorLayer)
     {
-        return cbe::gCBEditorEngine->editorLayer->addMenuDrawExtender(menuName, callback);
+        return cbe::gCBEditorEngine->editorLayer->addMenuDrawExtender(menuName, std::forward<decltype(callback)>(callback));
     }
     return {};
 }

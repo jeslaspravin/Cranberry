@@ -20,6 +20,8 @@
 #include "Types/Platform/PlatformTypes.h"
 #include "IRenderInterfaceModule.h"
 
+#include <map>
+
 class PlatformAppInstanceBase;
 class InputSystem;
 class FontManager;

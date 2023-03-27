@@ -61,9 +61,9 @@ void EngineRendererModule::initializeGraphics(bool bComputeOnly /*= false*/)
 
 void EngineRendererModule::finalizeGraphicsInitialization() { renderManager->finalizeInit(); }
 
-DelegateHandle EngineRendererModule::registerToStateEvents(RenderStateDelegate::SingleCastDelegateType callback)
+DelegateHandle EngineRendererModule::registerToStateEvents(RenderStateDelegate::SingleCastDelegateType &&callback)
 {
-    return renderStateEvents.bind(callback);
+    return renderStateEvents.bind(std::forward<RenderStateDelegate::SingleCastDelegateType>(callback));
 }
 
 void EngineRendererModule::unregisterToStateEvents(const DelegateHandle &handle) { renderStateEvents.unbind(handle); }

@@ -47,8 +47,8 @@ struct PROGRAMCORE_EXPORT FormatArg
         ArgValue(StrType &&inStrVal)
             : strVal(std::forward<StrType>(inStrVal))
         {}
-        ArgValue(const ArgGetter &getter)
-            : argGetter(getter)
+        ArgValue(ArgGetter &&getter)
+            : argGetter(std::forward<ArgGetter>(getter))
         {}
         ArgValue()
             : strVal()
@@ -133,8 +133,8 @@ struct PROGRAMCORE_EXPORT FormatArg
     {
         value.fundamentalVals.doubleVal = argValue;
     }
-    FormatArg(ArgGetter argValue)
-        : value(argValue)
+    FormatArg(ArgGetter &&argValue)
+        : value(std::forward<ArgGetter>(argValue))
         , type(Getter)
     {}
     template <typename InType>

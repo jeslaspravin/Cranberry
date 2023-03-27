@@ -13,11 +13,11 @@
 
 #include "Memory/SmartPointers.h"
 #include "Reflections/Functions.h"
+#include "Types/Containers/SparseVector.h"
+#include "Types/Containers/BitArray.h"
 #include "Types/CoreDefines.h"
 #include "Types/CoreTypes.h"
 
-#include <map>
-// #include <memory_resource>
 #include <tuple>
 #include <type_traits>
 #include <vector>
@@ -62,7 +62,8 @@ struct FunctionExecutor
     Tuple varStore;
 
     FunctionExecutor() = default;
-    FunctionExecutor(FunctionExecutor &&other) = default;
+    MAKE_TYPE_DEFAULT_COPY_MOVE(FunctionExecutor)
+
     FunctionExecutor(Variables... vars)
         : varStore(std::forward<Variables>(vars)...)
     {}
@@ -85,7 +86,8 @@ template <>
 struct FunctionExecutor<>
 {
     FunctionExecutor() = default;
-    FunctionExecutor(FunctionExecutor &&other) = default;
+    MAKE_TYPE_DEFAULT_COPY_MOVE(FunctionExecutor)
+
     template <typename ReturnType, typename FunctionType, typename... Params>
     ReturnType execute(const FunctionType &function, Params... params) const
     {
@@ -460,7 +462,8 @@ public:
     typedef void FuncType(Params...);
 
 protected:
-    std::map<int32, SharedPtr<DelegateInterface>> allDelegates;
+    using StorageContainer = SparseVector<SharedPtr<DelegateInterface>, BitArraySparsityPolicy>;
+    StorageContainer allDelegates;
 
     template <typename ObjectType, typename... Variables>
     using ObjDelegateType = ObjectDelegate<false, ObjectType, FuncType, Variables...>;
@@ -471,35 +474,14 @@ protected:
     template <typename... Variables>
     using LambdaDelegateType = LambdaDelegate<FuncType, Variables...>;
 
-    // Returns true if ID is found at end of sequence
-    bool getNextId(int32 &nextId) const
-    {
-        int32 index = -1;
-        for (std::pair<int32, SharedPtr<DelegateInterface>> indexedDelegate : allDelegates)
-        {
-            index++;
-            if (indexedDelegate.first != index) // Map always sorts, so if an index is not equal when
-                                                // equally incrementing it is not available.
-            {
-                nextId = index;
-                return false;
-            }
-        }
-        nextId = index + 1;
-        return true;
-    }
-
 public:
     template <typename ObjectType, typename... Variables>
     std::enable_if_t<std::negation_v<std::is_const<ObjectType>>, DelegateHandle>
     bindObject(ObjectType *object, const typename ObjDelegateType<ObjectType, Variables...>::FunctionPtr &bindingFunction, Variables... vars)
     {
-        SharedPtr<DelegateInterface> ptr = SharedPtr<DelegateInterface>(
-            new ObjDelegateType<ObjectType, Variables...>(object, bindingFunction, std::forward<Variables>(vars)...)
-        );
         DelegateHandle handle;
-        getNextId(handle.value);
-        allDelegates[handle.value] = ptr;
+        handle.value
+            = (int32)allDelegates.get(new ObjDelegateType<ObjectType, Variables...>(object, bindingFunction, std::forward<Variables>(vars)...));
         return handle;
     }
 
@@ -508,83 +490,65 @@ public:
         const ObjectType *object, const typename ConstObjDelegateType<ObjectType, Variables...>::FunctionPtr &bindingFunction, Variables... vars
     )
     {
-        SharedPtr<DelegateInterface> ptr = SharedPtr<DelegateInterface>(
-            new ConstObjDelegateType<ObjectType, Variables...>(object, bindingFunction, std::forward<Variables>(vars)...)
-        );
         DelegateHandle handle;
-        getNextId(handle.value);
-        allDelegates[handle.value] = ptr;
+        handle.value = (int32
+        )allDelegates.get(new ConstObjDelegateType<ObjectType, Variables...>(object, bindingFunction, std::forward<Variables>(vars)...));
         return handle;
     }
 
     template <typename... Variables>
     DelegateHandle bindStatic(const typename StaticDelegateType<Variables...>::FunctionPtr &bindingFunction, Variables... vars)
     {
-        SharedPtr<DelegateInterface> ptr
-            = SharedPtr<DelegateInterface>(new StaticDelegateType<Variables...>(bindingFunction, std::forward<Variables>(vars)...));
         DelegateHandle handle;
-        getNextId(handle.value);
-        allDelegates[handle.value] = ptr;
+        handle.value = (int32)allDelegates.get(new StaticDelegateType<Variables...>(bindingFunction, std::forward<Variables>(vars)...));
         return handle;
     }
 
     template <typename... Variables>
     DelegateHandle bindLambda(const typename LambdaDelegateType<Variables...>::FunctionPtr &lambda, Variables... vars)
     {
-        SharedPtr<DelegateInterface> ptr
-            = SharedPtr<DelegateInterface>(new LambdaDelegateType<Variables...>(lambda, std::forward<Variables>(vars)...));
         DelegateHandle handle;
-        getNextId(handle.value);
-        allDelegates[handle.value] = ptr;
+        handle.value = (int32)allDelegates.get(new LambdaDelegateType<Variables...>(lambda, std::forward<Variables>(vars)...));
         return handle;
     }
 
     template <typename LambdaType, typename... Variables>
     DelegateHandle bindLambda(LambdaType &&lambda, Variables... vars)
     {
-        SharedPtr<DelegateInterface> ptr = SharedPtr<DelegateInterface>(new LambdaDelegateType<Variables...>(
+        DelegateHandle handle;
+        handle.value = (int32)allDelegates.get(new LambdaDelegateType<Variables...>(
             LambdaDelegateType<Variables...>::FunctionPtr(std::forward<LambdaType>(lambda)), std::forward<Variables>(vars)...
         ));
-        DelegateHandle handle;
-        getNextId(handle.value);
-        allDelegates[handle.value] = ptr;
         return handle;
     }
 
+    // Below bind functions should be used with temporaries only
     // Returns list of pair of old to new DelegateHandle
-    std::vector<std::pair<DelegateHandle, DelegateHandle>> bind(const MultiCastDelegateBase &fromDelegate)
+    std::vector<std::pair<DelegateHandle, DelegateHandle>> bind(MultiCastDelegateBase &&fromDelegate)
     {
         std::vector<std::pair<DelegateHandle, DelegateHandle>> retHandles;
+        retHandles.resize(fromDelegate.allDelegates.size());
 
-        int32 nextId;
-        bool bSeqEnd = getNextId(nextId);
-        for (auto fromItr = fromDelegate.allDelegates.begin(); fromItr != fromDelegate.allDelegates.end(); ++fromItr)
+        const uint32 nonSparseCount = (uint32)fromDelegate.allDelegates.totalCount();
+        for (uint32 i = 0, retIdx = 0; i < nonSparseCount; ++i)
         {
-            DelegateHandle handle;
-            handle.value = nextId;
-            if (bSeqEnd)
+            if (fromDelegate.allDelegates.isValid(i))
             {
-                nextId++;
+                uint32 newIdx = (uint32)allDelegates.get(std::move(fromDelegate.allDelegates[i]));
+                retHandles[retIdx] = std::pair<DelegateHandle, DelegateHandle>{ { i }, { newIdx } };
+                ++retIdx;
             }
-            else
-            {
-                bSeqEnd = getNextId(nextId);
-            }
-            retHandles.emplace_back(std::pair<DelegateHandle, DelegateHandle>{ { fromItr->first }, handle });
-            allDelegates[handle.value] = fromItr->second;
         }
+
+        fromDelegate.clear();
         return retHandles;
     }
 
-    DelegateHandle bind(const SingleCastDelegateType &fromDelegate)
+    DelegateHandle bind(SingleCastDelegateType &&fromDelegate)
     {
-        int32 nextId;
-        getNextId(nextId);
-
         DelegateHandle handle;
-        handle.value = nextId;
-
-        allDelegates[handle.value] = fromDelegate.delegatePtr;
+        handle.value = (int32)allDelegates.get(std::move(fromDelegate.delegatePtr));
+        fromDelegate.unbind();
         return handle;
     }
 
@@ -592,11 +556,7 @@ public:
     {
         if (handle.isValid())
         {
-            auto itr = allDelegates.find(handle.value);
-            if (itr != allDelegates.end())
-            {
-                allDelegates.erase(itr);
-            }
+            allDelegates.reset(handle.value);
         }
     }
 
@@ -605,9 +565,9 @@ public:
     {
         for (auto itr = allDelegates.begin(); itr != allDelegates.end();)
         {
-            if (itr->second->hasSameObject(object))
+            if ((*itr)->hasSameObject(object))
             {
-                allDelegates.erase(itr++);
+                itr = allDelegates.reset(itr);
             }
             else
             {
@@ -632,45 +592,21 @@ void MultiCastDelegateBase<Params...>::clear()
 // Delegate and Event implementations
 //////////////////////////////////////////////////////////////////////////
 
-template <typename... Params>
-FORCE_INLINE void invokeHelper(const std::map<int32, SharedPtr<IDelegate<void, Params...>>> &allDelegates, Params... params)
+template <typename SparsityPolicy, typename... Params>
+FORCE_INLINE void invokeHelper(const SparseVector<SharedPtr<IDelegate<void, Params...>>, SparsityPolicy> &allDelegates, Params... params)
 {
     if (allDelegates.empty())
     {
         return;
     }
 
-    int32 buffer[128];
-    // <memory_resource> is huge header so not using it in delegate
-    // TODO(Jeslas) : Improve this with some form of inline allocator in the future
-    // std::pmr::monotonic_buffer_resource bufferRes(buffer, ARRAY_LENGTH(buffer) * sizeof(uint32));
-    // std::pmr::vector<int32> delegateIndices(&bufferRes);
-    int32 *delegateIndices = buffer;
-    if (allDelegates.size() > ARRAY_LENGTH(buffer))
+    const uint32 nonSparseCount = (uint32)allDelegates.totalCount();
+    for (uint32 i = 0; i < nonSparseCount; ++i)
     {
-        delegateIndices = new int32[allDelegates.size()];
-    }
-
-    uint32 delegateIndicesIdx = 0;
-    for (const std::pair<const int32, SharedPtr<IDelegate<void, Params...>>> &delegateInterface : allDelegates)
-    {
-        delegateIndices[delegateIndicesIdx] = delegateInterface.first;
-        delegateIndicesIdx++;
-    }
-
-    uint32 allDelegatesCount = uint32(allDelegates.size());
-    for (delegateIndicesIdx = 0; delegateIndicesIdx < allDelegatesCount; ++delegateIndicesIdx)
-    {
-        auto itr = allDelegates.find(delegateIndices[delegateIndicesIdx]);
-        if (itr != allDelegates.cend())
+        if (allDelegates.isValid(i))
         {
-            itr->second->invoke(std::forward<Params>(params)...);
+            allDelegates[i]->invoke(std::forward<Params>(params)...);
         }
-    }
-
-    if (allDelegatesCount > ARRAY_LENGTH(buffer))
-    {
-        delete[] delegateIndices;
     }
 }
 
@@ -680,13 +616,17 @@ class Delegate : public MultiCastDelegateBase<Params...>
 {
 private:
     using typename MultiCastDelegateBase<Params...>::DelegateInterface;
+    using typename MultiCastDelegateBase<Params...>::StorageContainer;
     using MultiCastDelegateBase<Params...>::allDelegates;
 
 public:
     using MultiCastDelegateBase<Params...>::clear;
     ~Delegate();
 
-    void invoke(Params... params) const { invokeHelper<Params...>(allDelegates, std::forward<Params>(params)...); }
+    void invoke(Params... params) const
+    {
+        invokeHelper<StorageContainer::SparsityPolicy, Params...>(allDelegates, std::forward<Params>(params)...);
+    }
     void operator() (Params... params) const { invoke(std::forward<Params>(params)...); }
 };
 
@@ -704,11 +644,15 @@ class Event : public MultiCastDelegateBase<Params...>
 {
 private:
     using typename MultiCastDelegateBase<Params...>::DelegateInterface;
+    using typename MultiCastDelegateBase<Params...>::StorageContainer;
     using MultiCastDelegateBase<Params...>::allDelegates;
 
     friend OwnerType;
 
-    void invoke(Params... params) const { invokeHelper<Params...>(allDelegates, std::forward<Params>(params)...); }
+    void invoke(Params... params) const
+    {
+        invokeHelper<StorageContainer::SparsityPolicy, Params...>(allDelegates, std::forward<Params>(params)...);
+    }
 
 public:
     using MultiCastDelegateBase<Params...>::clear;

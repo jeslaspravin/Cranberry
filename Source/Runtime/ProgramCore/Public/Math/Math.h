@@ -11,8 +11,8 @@
 
 #pragma once
 
-#include "Math/CoreMathTypedefs.h"
 #include "ProgramCoreExports.h"
+#include "Math/CoreMathTypedefs.h"
 #include "Types/CoreDefines.h"
 #include "Types/Templates/TypeTraits.h"
 

@@ -88,9 +88,9 @@ void WgEditorImGuiLayer::draw(ImGuiDrawInterface *drawInterface)
     aboutWindow();
 }
 
-DelegateHandle WgEditorImGuiLayer::addMenuDrawExtender(const TChar *menuName, ImGuiDrawInterfaceCallback::SingleCastDelegateType &callback)
+DelegateHandle WgEditorImGuiLayer::addMenuDrawExtender(const TChar *menuName, ImGuiDrawInterfaceCallback::SingleCastDelegateType &&callback)
 {
-    return menuExtenders[TCHAR_TO_UTF8(menuName)].bind(callback);
+    return menuExtenders[TCHAR_TO_UTF8(menuName)].bind(std::forward<decltype(callback)>(callback));
 }
 
 void WgEditorImGuiLayer::removeMenuExtender(const TChar *menuName, DelegateHandle handle)
