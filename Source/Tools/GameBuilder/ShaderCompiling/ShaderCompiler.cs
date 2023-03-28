@@ -20,8 +20,11 @@ namespace GameBuilder.ShaderCompiling
 {
     public struct IntermediateTargetFile
     {
-        public string targetOutputFile;
+        public string targetIntermFile;
+        // Log output from individual shader stage's compilation
         public string logFile;
+        // SPIRV shader disassembled output
+        public string disasmFile;
     }
 
     public class ShaderCompiler

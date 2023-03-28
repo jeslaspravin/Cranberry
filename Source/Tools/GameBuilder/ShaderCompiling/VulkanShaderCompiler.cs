@@ -71,7 +71,10 @@ namespace GameBuilder.ShaderCompiling
             { "geom" , new VulkanShaderArg(new CommandArgument("stage", "S", "geom"), new CommandArgument("entry", "e", "mainGeo")) },
             { "comp" , new VulkanShaderArg(new CommandArgument("stage", "S", "comp"), new CommandArgument("entry", "e", "mainComp")) }
         };
-        private const string COMPILE_COMMAND = "@\"{0}\" -{1} {2} -{3} {4} --source-entrypoint main --target-env {5} --glsl-version {6} -H -o \"{7}\" \"{8}\"";
+        private const string VK_COMPILE_CMD = "@\"{0}\" -{1} {2} -{3} {4} --source-entrypoint main --target-env {5} --glsl-version {6} -H -o \"{7}\" \"{8}\"";
+        private const string SPIRV_DISASM_CMD = "@\"{0}\" -o \"{1}\" \"{2}\"";
+        private const string VK_COMPILER_EXE = "glslangValidator.exe";
+        private const string SPIRV_DISASM_EXE = "spirv-dis.exe";
         private const string SPIRV_REFLECTION_EXE = "SpirvShaderReflection.exe";
 
         public VulkanShaderCompiler(string compilerPath, string intermediatePath, string targetPath)
@@ -118,11 +121,12 @@ namespace GameBuilder.ShaderCompiling
                 foreach (string shader in Directory.GetFiles(shaderSrcFolder, expr,
                                                 SearchOption.AllDirectories))
                 {
+                    string intermediateFileBase = Path.Combine(intermediateOutDir
+                        , FileUtils.GetRelativePath(Path.GetDirectoryName(shader), shaderSrcFolder), Path.GetFileNameWithoutExtension(shader));
                     IntermediateTargetFile intermediateFileDesc = new IntermediateTargetFile();
-                    intermediateFileDesc.targetOutputFile = Path.Combine(intermediateOutDir
-                        , FileUtils.GetRelativePath(Path.GetDirectoryName(shader), shaderSrcFolder), Path.GetFileNameWithoutExtension(shader) + ".shader");
-                    intermediateFileDesc.logFile = Path.Combine(intermediateOutDir
-                        , FileUtils.GetRelativePath(Path.GetDirectoryName(shader), shaderSrcFolder), Path.GetFileNameWithoutExtension(shader) + ".log");
+                    intermediateFileDesc.targetIntermFile = intermediateFileBase + ".shader";
+                    intermediateFileDesc.logFile = intermediateFileBase + ".log";
+                    intermediateFileDesc.disasmFile = intermediateFileBase + ".txt";
 
                     // To remove both extension and shader type from shader file name
                     string shaderName = Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(shader));
@@ -138,7 +142,7 @@ namespace GameBuilder.ShaderCompiling
                     intermediateRef.intermediateIdx = shaderType.Value.Count;
                     shaderTargets[shaderName].intermediateTargetsRef.Add(intermediateRef);
 
-                    FileUtils.GetOrCreateDir(intermediateFileDesc.targetOutputFile);
+                    FileUtils.GetOrCreateDir(intermediateFileDesc.targetIntermFile);
                     FileUtils.GetOrCreateDir(intermediateFileDesc.logFile);
 
                     shaderType.Value.Add(new Tuple<string, IntermediateTargetFile>(shader, intermediateFileDesc));
@@ -148,7 +152,8 @@ namespace GameBuilder.ShaderCompiling
         public override bool compile(Dictionary<string, List<string>> consoleArgs)
         {
             bool bSuccess = true;
-            string compiler = Path.Combine(compilerDir, "glslangValidator.exe");
+            string compiler = Path.Combine(compilerDir, VK_COMPILER_EXE);
+            string spirvDisasm = Path.Combine(compilerDir, SPIRV_DISASM_EXE);
             string spirvReflector = Path.Combine(spirvReflectorDir, SPIRV_REFLECTION_EXE);
             if (!File.Exists(compiler) || !File.Exists(spirvReflector))
             {
@@ -160,9 +165,13 @@ namespace GameBuilder.ShaderCompiling
             {
                 glslVersion = consoleArgs["glsl-version"][0];
             }
+            if (!File.Exists(spirvDisasm) || !consoleArgs["flags"].Contains("spriv-disasm"))
+            {
+                spirvDisasm = null;
+            }
 
             HashSet<string> compiledShaders = new HashSet<string>();
-            bSuccess = compileAllShadersToSpirV(compiler, ref compiledShaders);
+            bSuccess = compileAllShadersToSpirV(compiler, spirvDisasm, ref compiledShaders);
 
             if (compiledShaders.Count != 0)
             {
@@ -171,7 +180,7 @@ namespace GameBuilder.ShaderCompiling
             return bSuccess;
         }
 
-        bool compileAllShadersToSpirV(in string compiler, ref HashSet<string> outCompiledShaders)
+        bool compileAllShadersToSpirV(in string compiler, in string spirvDisasm, ref HashSet<string> outCompiledShaders)
         {
             bool bSuccess = true;
             StringBuilder errors = new StringBuilder();
@@ -185,7 +194,7 @@ namespace GameBuilder.ShaderCompiling
 
                     // Check if needs recompile
                     List<string> targetFiles = new List<string>();
-                    targetFiles.Add(shaderFile.Item2.targetOutputFile);
+                    targetFiles.Add(shaderFile.Item2.targetIntermFile);
                     // Check target from intermediate as well
                     if (shaderTargets.ContainsKey(shaderName))
                     {
@@ -197,13 +206,13 @@ namespace GameBuilder.ShaderCompiling
                         continue;
                     }
 
-                    string cmd = string.Format(COMPILE_COMMAND
+                    string cmd = string.Format(VK_COMPILE_CMD
                         , compiler
                         , shaderArg.stageType.argKey, shaderArg.stageType.argValue
                         , shaderArg.entry.argKey, shaderArg.entry.argValue
                         , targetEnv
                         , glslVersion
-                        , shaderFile.Item2.targetOutputFile
+                        , shaderFile.Item2.targetIntermFile
                         , shaderFile.Item1
                     );
 
@@ -222,6 +231,19 @@ namespace GameBuilder.ShaderCompiling
                     else
                     {
                         outCompiledShaders.Add(shaderName);
+
+                        // Disassemble the generated spirv binaries if requested
+                        if (spirvDisasm != null)
+                        {
+                            cmd = string.Format(SPIRV_DISASM_CMD
+                                , spirvDisasm
+                                , shaderFile.Item2.disasmFile
+                                , shaderFile.Item2.targetIntermFile
+                            );
+
+                            string disasmResult;
+                            ProcessUtils.ExecuteCommand(out disasmResult, cmd);
+                        }
                     }
                     File.WriteAllText(shaderFile.Item2.logFile, executionResult, Encoding.UTF8);
                 }
@@ -250,7 +272,7 @@ namespace GameBuilder.ShaderCompiling
                 foreach (TargetFile.IntermediateReference intermediateTargetRef in targetInfo.intermediateTargetsRef)
                 {
                     IntermediateTargetFile intermediateShaderTarget = shaders[intermediateTargetRef.shaderType][intermediateTargetRef.intermediateIdx].Item2;
-                    cmdBuilder.Append($" \"{intermediateShaderTarget.targetOutputFile}\"");
+                    cmdBuilder.Append($" \"{intermediateShaderTarget.targetIntermFile}\"");
                 }
                 // at n-2th arg reflection file
                 cmdBuilder.Append($" \"{targetInfo.targetReflectionFile}\"");

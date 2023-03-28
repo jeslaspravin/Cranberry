@@ -19,6 +19,7 @@ add_custom_command(OUTPUT ${compiled_outputs}
         -intermediatePath "\"${PROJECT_BINARY_DIR}/Intermediate/$<CONFIG>\"" 
         -api vulkan 
         -glsl-version 450
+        -spriv-disasm
     WORKING_DIRECTORY $<TARGET_FILE_DIR:GameBuilder>
     USES_TERMINAL
     COMMAND_EXPAND_LISTS
