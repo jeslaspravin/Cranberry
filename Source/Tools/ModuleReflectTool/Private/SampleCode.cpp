@@ -1739,13 +1739,13 @@ void testRegex()
         }
 #endif
 
-    std::unordered_map<String, FormatArg> args{
+    std::unordered_map<String, MustacheFormatArg> args{
         {      TCHAR("name"), TCHAR("Jeslas Pravin")},
         {    TCHAR("Match2"),                   8235},
         {   TCHAR("HelloMe"),                 123.08},
         {TCHAR("PrintInner"),                  false}
     };
-    std::unordered_map<String, FormatArg> args2{
+    std::unordered_map<String, MustacheFormatArg> args2{
         {      TCHAR("name"),  TCHAR("Subity Jerald")},
           {    TCHAR("Match2"),                    8265},
         {   TCHAR("HelloMe"), *typeInfoFrom<uint32>()},
@@ -1799,8 +1799,8 @@ void testRegex()
     };
     TestDynamicFormatData dynDataTest{ &peps, &args, &args2 };
     MustacheContext context2{
-        .args = { { TCHAR("CanRecurse"), FormatArg::ArgGetter::createObject(&dynDataTest, &TestDynamicFormatData::canRecurse) },
-                 { TCHAR("Count"), FormatArg::ArgGetter::createObject(&dynDataTest, &TestDynamicFormatData::getCount) } },
+        .args = { { TCHAR("CanRecurse"), MustacheFormatArg::ArgGetter::createObject(&dynDataTest, &TestDynamicFormatData::canRecurse) },
+                 { TCHAR("Count"), MustacheFormatArg::ArgGetter::createObject(&dynDataTest, &TestDynamicFormatData::getCount) } },
                   .sectionFormatters
                   = { { TCHAR("MSectFormat"), MustacheSectionFormatter::createObject(&dynDataTest, &TestDynamicFormatData::customFormat) } }
     };

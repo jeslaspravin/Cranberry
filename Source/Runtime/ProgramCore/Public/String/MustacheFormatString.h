@@ -30,7 +30,7 @@ class MustacheStringFormatter;
 // mustache(1), http://mustache.github.io/
 //
 
-struct PROGRAMCORE_EXPORT FormatArg
+struct PROGRAMCORE_EXPORT MustacheFormatArg
 {
     using ArgGetter = SingleCastDelegate<String>;
     union ArgValue
@@ -74,81 +74,81 @@ struct PROGRAMCORE_EXPORT FormatArg
         AsString // Whatever other type that will be stored as string after toString conversion
     } type;
 
-    FormatArg()
+    MustacheFormatArg()
         : value()
         , type(NoType)
     {}
-    FormatArg(bool argValue)
+    MustacheFormatArg(bool argValue)
         : type(Bool)
     {
         value.fundamentalVals.boolVal = argValue;
     }
-    FormatArg(uint8 argValue)
+    MustacheFormatArg(uint8 argValue)
         : type(UInt8)
     {
         value.fundamentalVals.uint8Val = argValue;
     }
-    FormatArg(uint16 argValue)
+    MustacheFormatArg(uint16 argValue)
         : type(UInt16)
     {
         value.fundamentalVals.uint16Val = argValue;
     }
-    FormatArg(uint32 argValue)
+    MustacheFormatArg(uint32 argValue)
         : type(UInt32)
     {
         value.fundamentalVals.uint32Val = argValue;
     }
-    FormatArg(uint64 argValue)
+    MustacheFormatArg(uint64 argValue)
         : type(UInt64)
     {
         value.fundamentalVals.uint64Val = argValue;
     }
-    FormatArg(int8 argValue)
+    MustacheFormatArg(int8 argValue)
         : type(Int8)
     {
         value.fundamentalVals.int8Val = argValue;
     }
-    FormatArg(int16 argValue)
+    MustacheFormatArg(int16 argValue)
         : type(Int16)
     {
         value.fundamentalVals.int16Val = argValue;
     }
-    FormatArg(int32 argValue)
+    MustacheFormatArg(int32 argValue)
         : type(Int32)
     {
         value.fundamentalVals.int32Val = argValue;
     }
-    FormatArg(int64 argValue)
+    MustacheFormatArg(int64 argValue)
         : type(Int64)
     {
         value.fundamentalVals.int64Val = argValue;
     }
-    FormatArg(float argValue)
+    MustacheFormatArg(float argValue)
         : type(Float)
     {
         value.fundamentalVals.floatVal = argValue;
     }
-    FormatArg(double argValue)
+    MustacheFormatArg(double argValue)
         : type(Double)
     {
         value.fundamentalVals.doubleVal = argValue;
     }
-    FormatArg(ArgGetter &&argValue)
+    MustacheFormatArg(ArgGetter &&argValue)
         : value(std::forward<ArgGetter>(argValue))
         , type(Getter)
     {}
     template <typename InType>
-    FormatArg(InType &&argValue);
+    MustacheFormatArg(InType &&argValue);
 
-    FormatArg(const FormatArg &arg);
-    FormatArg(FormatArg &&arg);
-    FormatArg &operator= (const FormatArg &arg);
-    FormatArg &operator= (FormatArg &&arg);
+    MustacheFormatArg(const MustacheFormatArg &arg);
+    MustacheFormatArg(MustacheFormatArg &&arg);
+    MustacheFormatArg &operator= (const MustacheFormatArg &arg);
+    MustacheFormatArg &operator= (MustacheFormatArg &&arg);
 
     String toString() const;
     operator bool () const;
 };
-using FormatArgsMap = std::unordered_map<String, FormatArg>;
+using FormatArgsMap = std::unordered_map<String, MustacheFormatArg>;
 
 using MustacheSectionFormatter = SingleCastDelegate<
     String, const MustacheStringFormatter &, const MustacheContext &, const std::unordered_map<String, MustacheStringFormatter> &>;
@@ -251,7 +251,7 @@ public:
 };
 
 template <typename InType>
-FormatArg::FormatArg(InType &&argValue)
+MustacheFormatArg::MustacheFormatArg(InType &&argValue)
     : value(StringFormat::toString<InType>(std::forward<InType>(argValue)))
-    , type(FormatArg::AsString)
+    , type(MustacheFormatArg::AsString)
 {}

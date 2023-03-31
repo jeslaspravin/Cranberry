@@ -18,60 +18,60 @@
 /// MustacheFormatString
 //////////////////////////////////////////////////////////////////////////
 
-FormatArg::FormatArg(const FormatArg &arg)
+MustacheFormatArg::MustacheFormatArg(const MustacheFormatArg &arg)
     : type(arg.type)
 {
     (*this) = arg;
 }
 
-FormatArg::FormatArg(FormatArg &&arg)
+MustacheFormatArg::MustacheFormatArg(MustacheFormatArg &&arg)
     : type(arg.type)
 {
     (*this) = std::move(arg);
 }
 
-FormatArg &FormatArg::operator= (FormatArg &&arg)
+MustacheFormatArg &MustacheFormatArg::operator= (MustacheFormatArg &&arg)
 {
     type = std::move(arg.type);
     switch (type)
     {
-    case FormatArg::Bool:
+    case MustacheFormatArg::Bool:
         value.fundamentalVals.boolVal = std::move(arg.value.fundamentalVals.boolVal);
         break;
-    case FormatArg::UInt8:
+    case MustacheFormatArg::UInt8:
         value.fundamentalVals.uint8Val = std::move(arg.value.fundamentalVals.uint8Val);
         break;
-    case FormatArg::UInt16:
+    case MustacheFormatArg::UInt16:
         value.fundamentalVals.uint16Val = std::move(arg.value.fundamentalVals.uint16Val);
         break;
-    case FormatArg::UInt32:
+    case MustacheFormatArg::UInt32:
         value.fundamentalVals.uint32Val = std::move(arg.value.fundamentalVals.uint32Val);
         break;
-    case FormatArg::UInt64:
+    case MustacheFormatArg::UInt64:
         value.fundamentalVals.uint64Val = std::move(arg.value.fundamentalVals.uint64Val);
         break;
-    case FormatArg::Int8:
+    case MustacheFormatArg::Int8:
         value.fundamentalVals.int8Val = std::move(arg.value.fundamentalVals.int8Val);
         break;
-    case FormatArg::Int16:
+    case MustacheFormatArg::Int16:
         value.fundamentalVals.int16Val = std::move(arg.value.fundamentalVals.int16Val);
         break;
-    case FormatArg::Int32:
+    case MustacheFormatArg::Int32:
         value.fundamentalVals.int32Val = std::move(arg.value.fundamentalVals.int32Val);
         break;
-    case FormatArg::Int64:
+    case MustacheFormatArg::Int64:
         value.fundamentalVals.int64Val = std::move(arg.value.fundamentalVals.int64Val);
         break;
-    case FormatArg::Float:
+    case MustacheFormatArg::Float:
         value.fundamentalVals.floatVal = std::move(arg.value.fundamentalVals.floatVal);
         break;
-    case FormatArg::Double:
+    case MustacheFormatArg::Double:
         value.fundamentalVals.doubleVal = std::move(arg.value.fundamentalVals.doubleVal);
         break;
-    case FormatArg::Getter:
+    case MustacheFormatArg::Getter:
         value.argGetter = std::move(arg.value.argGetter);
         break;
-    case FormatArg::AsString:
+    case MustacheFormatArg::AsString:
         value.strVal = std::move(arg.value.strVal);
         break;
     default:
@@ -80,48 +80,48 @@ FormatArg &FormatArg::operator= (FormatArg &&arg)
     return *this;
 }
 
-FormatArg &FormatArg::operator= (const FormatArg &arg)
+MustacheFormatArg &MustacheFormatArg::operator= (const MustacheFormatArg &arg)
 {
     type = arg.type;
     switch (type)
     {
-    case FormatArg::Bool:
+    case MustacheFormatArg::Bool:
         value.fundamentalVals.boolVal = arg.value.fundamentalVals.boolVal;
         break;
-    case FormatArg::UInt8:
+    case MustacheFormatArg::UInt8:
         value.fundamentalVals.uint8Val = arg.value.fundamentalVals.uint8Val;
         break;
-    case FormatArg::UInt16:
+    case MustacheFormatArg::UInt16:
         value.fundamentalVals.uint16Val = arg.value.fundamentalVals.uint16Val;
         break;
-    case FormatArg::UInt32:
+    case MustacheFormatArg::UInt32:
         value.fundamentalVals.uint32Val = arg.value.fundamentalVals.uint32Val;
         break;
-    case FormatArg::UInt64:
+    case MustacheFormatArg::UInt64:
         value.fundamentalVals.uint64Val = arg.value.fundamentalVals.uint64Val;
         break;
-    case FormatArg::Int8:
+    case MustacheFormatArg::Int8:
         value.fundamentalVals.int8Val = arg.value.fundamentalVals.int8Val;
         break;
-    case FormatArg::Int16:
+    case MustacheFormatArg::Int16:
         value.fundamentalVals.int16Val = arg.value.fundamentalVals.int16Val;
         break;
-    case FormatArg::Int32:
+    case MustacheFormatArg::Int32:
         value.fundamentalVals.int32Val = arg.value.fundamentalVals.int32Val;
         break;
-    case FormatArg::Int64:
+    case MustacheFormatArg::Int64:
         value.fundamentalVals.int64Val = arg.value.fundamentalVals.int64Val;
         break;
-    case FormatArg::Float:
+    case MustacheFormatArg::Float:
         value.fundamentalVals.floatVal = arg.value.fundamentalVals.floatVal;
         break;
-    case FormatArg::Double:
+    case MustacheFormatArg::Double:
         value.fundamentalVals.doubleVal = arg.value.fundamentalVals.doubleVal;
         break;
-    case FormatArg::Getter:
+    case MustacheFormatArg::Getter:
         value.argGetter = arg.value.argGetter;
         break;
-    case FormatArg::AsString:
+    case MustacheFormatArg::AsString:
         value.strVal = arg.value.strVal;
         break;
     default:
@@ -132,46 +132,46 @@ FormatArg &FormatArg::operator= (const FormatArg &arg)
 }
 
 #define FORMAT_FUNDAMENTALS(Specifier, VarName) StringFormat::format(TCHAR(Specifier), value.fundamentalVals.##VarName)
-String FormatArg::toString() const
+String MustacheFormatArg::toString() const
 {
     switch (type)
     {
-    case FormatArg::Bool:
+    case MustacheFormatArg::Bool:
         return (value.fundamentalVals.boolVal) ? TCHAR("true") : TCHAR("false");
         break;
-    case FormatArg::UInt8:
+    case MustacheFormatArg::UInt8:
         return FORMAT_FUNDAMENTALS("%hhu", uint8Val);
         break;
-    case FormatArg::UInt16:
+    case MustacheFormatArg::UInt16:
         return FORMAT_FUNDAMENTALS("%hu", uint16Val);
         break;
-    case FormatArg::UInt32:
+    case MustacheFormatArg::UInt32:
         return FORMAT_FUNDAMENTALS("%u", uint32Val);
         break;
-    case FormatArg::UInt64:
+    case MustacheFormatArg::UInt64:
         return FORMAT_FUNDAMENTALS("%llu", uint64Val);
         break;
-    case FormatArg::Int8:
+    case MustacheFormatArg::Int8:
         return FORMAT_FUNDAMENTALS("%hhd", int8Val);
         break;
-    case FormatArg::Int16:
+    case MustacheFormatArg::Int16:
         return FORMAT_FUNDAMENTALS("%hd", int16Val);
         break;
-    case FormatArg::Int32:
+    case MustacheFormatArg::Int32:
         return FORMAT_FUNDAMENTALS("%d", int32Val);
         break;
-    case FormatArg::Int64:
+    case MustacheFormatArg::Int64:
         return FORMAT_FUNDAMENTALS("%lld", int64Val);
         break;
-    case FormatArg::Float:
+    case MustacheFormatArg::Float:
         return FORMAT_FUNDAMENTALS("%f", floatVal);
         break;
-    case FormatArg::Double:
+    case MustacheFormatArg::Double:
         return FORMAT_FUNDAMENTALS("%f", doubleVal);
         break;
-    case FormatArg::Getter:
+    case MustacheFormatArg::Getter:
         return value.argGetter.invoke();
-    case FormatArg::AsString:
+    case MustacheFormatArg::AsString:
         return value.strVal;
         break;
     default:
@@ -181,42 +181,44 @@ String FormatArg::toString() const
 }
 #undef FORMAT_FUNDAMENTALS
 
-FormatArg::operator bool () const
+MustacheFormatArg::operator bool () const
 {
     switch (type)
     {
-    case FormatArg::Bool:
+    case MustacheFormatArg::Bool:
         return value.fundamentalVals.boolVal;
         break;
-    // TODO(Jeslas) : Check if for uint8 sets all higher bits 0 in uint64
-    case FormatArg::UInt8:
-    case FormatArg::UInt16:
-    case FormatArg::UInt32:
-    case FormatArg::UInt64:
+    case MustacheFormatArg::UInt8:
+        return (value.fundamentalVals.uint8Val != 0);
+    case MustacheFormatArg::UInt16:
+        return (value.fundamentalVals.uint16Val != 0);
+    case MustacheFormatArg::UInt32:
+        return (value.fundamentalVals.uint32Val != 0);
+    case MustacheFormatArg::UInt64:
         return (value.fundamentalVals.uint64Val != 0);
         break;
-    case FormatArg::Int8:
+    case MustacheFormatArg::Int8:
         return (value.fundamentalVals.int8Val != 0);
         break;
-    case FormatArg::Int16:
+    case MustacheFormatArg::Int16:
         return (value.fundamentalVals.int16Val != 0);
         break;
-    case FormatArg::Int32:
+    case MustacheFormatArg::Int32:
         return (value.fundamentalVals.int32Val != 0);
         break;
-    case FormatArg::Int64:
+    case MustacheFormatArg::Int64:
         return (value.fundamentalVals.int64Val) != 0;
         break;
-    case FormatArg::Float:
+    case MustacheFormatArg::Float:
         return (value.fundamentalVals.floatVal) != 0;
         break;
-    case FormatArg::Double:
+    case MustacheFormatArg::Double:
         return (value.fundamentalVals.doubleVal) != 0;
         break;
-    case FormatArg::Getter:
+    case MustacheFormatArg::Getter:
         return value.argGetter.isBound() && !value.argGetter.invoke().empty();
         break;
-    case FormatArg::AsString:
+    case MustacheFormatArg::AsString:
         return !value.strVal.empty();
         break;
     default:
