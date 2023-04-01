@@ -44,6 +44,10 @@ public:
     }
     WaitOnAwaitable &operator= (WaitOnAwaitable &&other)
     {
+        if (ownerCoroutine)
+        {
+            ownerCoroutine.destroy();
+        }
         ownerCoroutine = other.ownerCoroutine;
         other.ownerCoroutine = nullptr;
         return *this;

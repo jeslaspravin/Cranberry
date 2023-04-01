@@ -238,6 +238,10 @@ public:
     }
     JobSystemTaskType &operator= (JobSystemTaskType &&other)
     {
+        if (ownerCoroutine)
+        {
+            ownerCoroutine.destroy();
+        }
         ownerCoroutine = other.ownerCoroutine;
         other.ownerCoroutine = nullptr;
         return *this;
@@ -303,7 +307,8 @@ public:
 
     using promise_type = PromiseType;
 
-    bool await_ready() const { return ownerCoroutine && ownerCoroutine.done(); }
+    // If there is no coroutine then there is no need to wait as well
+    bool await_ready() const { return !ownerCoroutine || ownerCoroutine.done(); }
     template <typename PromiseT>
     bool await_suspend(std::coroutine_handle<PromiseT> awaitingAtCoro)
     {
@@ -336,6 +341,10 @@ public:
     }
     JobSystemTaskType &operator= (JobSystemTaskType &&other)
     {
+        if (ownerCoroutine)
+        {
+            ownerCoroutine.destroy();
+        }
         ownerCoroutine = other.ownerCoroutine;
         other.ownerCoroutine = nullptr;
         return *this;
@@ -396,7 +405,8 @@ public:
 
     using promise_type = PromiseType;
 
-    bool await_ready() const { return ownerCoroutine && ownerCoroutine.done(); }
+    // If there is no coroutine then there is no need to wait as well
+    bool await_ready() const { return !ownerCoroutine || ownerCoroutine.done(); }
     template <typename PromiseT>
     bool await_suspend(std::coroutine_handle<PromiseT> awaitingAtCoro)
     {
@@ -427,22 +437,10 @@ public:
     JobSystemShareableTaskType(std::coroutine_handle<PromiseType> owner)
         : ownerCoroutinePtr(owner.address(), CoroutineDestroyer{})
     {}
-    JobSystemShareableTaskType(JobSystemShareableTaskType &&other)
-        : ownerCoroutinePtr(std::move(other.ownerCoroutinePtr))
-    {}
-    JobSystemShareableTaskType &operator= (JobSystemShareableTaskType &&other)
-    {
-        ownerCoroutinePtr = std::move(other.ownerCoroutinePtr);
-        return *this;
-    }
-    JobSystemShareableTaskType(const JobSystemShareableTaskType &other)
-        : ownerCoroutinePtr(other.ownerCoroutinePtr)
-    {}
-    JobSystemShareableTaskType &operator= (const JobSystemShareableTaskType &other)
-    {
-        ownerCoroutinePtr = other.ownerCoroutinePtr;
-        return *this;
-    }
+    JobSystemShareableTaskType(JobSystemShareableTaskType &&) = default;
+    JobSystemShareableTaskType &operator= (JobSystemShareableTaskType &&) = default;
+    JobSystemShareableTaskType(const JobSystemShareableTaskType &) = default;
+    JobSystemShareableTaskType &operator= (const JobSystemShareableTaskType &) = default;
 
     // Delete default initializations
     JobSystemShareableTaskType() = delete;
@@ -497,7 +495,8 @@ public:
 
     using promise_type = PromiseType;
 
-    bool await_ready() const { return ownerCoroutinePtr && std::coroutine_handle<>::from_address(ownerCoroutinePtr.get()).done(); }
+    // If there is no coroutine then there is no need to wait as well
+    bool await_ready() const { return !ownerCoroutinePtr || std::coroutine_handle<>::from_address(ownerCoroutinePtr.get()).done(); }
     template <typename PromiseT>
     bool await_suspend(std::coroutine_handle<PromiseT> awaitingAtCoro)
     {
@@ -524,22 +523,10 @@ public:
     JobSystemShareableTaskType(std::coroutine_handle<PromiseType> owner)
         : ownerCoroutinePtr(owner.address(), CoroutineDestroyer{})
     {}
-    JobSystemShareableTaskType(JobSystemShareableTaskType &&other)
-        : ownerCoroutinePtr(std::move(other.ownerCoroutinePtr))
-    {}
-    JobSystemShareableTaskType &operator= (JobSystemShareableTaskType &&other)
-    {
-        ownerCoroutinePtr = std::move(other.ownerCoroutinePtr);
-        return *this;
-    }
-    JobSystemShareableTaskType(const JobSystemShareableTaskType &other)
-        : ownerCoroutinePtr(other.ownerCoroutinePtr)
-    {}
-    JobSystemShareableTaskType &operator= (const JobSystemShareableTaskType &other)
-    {
-        ownerCoroutinePtr = other.ownerCoroutinePtr;
-        return *this;
-    }
+    JobSystemShareableTaskType(JobSystemShareableTaskType &&) = default;
+    JobSystemShareableTaskType &operator= (JobSystemShareableTaskType &&) = default;
+    JobSystemShareableTaskType(const JobSystemShareableTaskType &) = default;
+    JobSystemShareableTaskType &operator= (const JobSystemShareableTaskType &) = default;
 
     // Delete default initializations
     JobSystemShareableTaskType() = delete;
@@ -588,7 +575,8 @@ public:
 
     using promise_type = PromiseType;
 
-    bool await_ready() const { return ownerCoroutinePtr && std::coroutine_handle<>::from_address(ownerCoroutinePtr.get()).done(); }
+    // If there is no coroutine then there is no need to wait as well
+    bool await_ready() const { return !ownerCoroutinePtr || std::coroutine_handle<>::from_address(ownerCoroutinePtr.get()).done(); }
     template <typename PromiseT>
     bool await_suspend(std::coroutine_handle<PromiseT> awaitingAtCoro)
     {
@@ -610,6 +598,18 @@ using JobSystemEnqTask = JobSystemTaskType<void, JobSystemPromiseBase, true, Enq
  */
 template <EJobThreadType EnqueueInThread>
 using JobSystemEnqTaskMultiAwait = JobSystemTaskType<void, JobSystemPromiseBaseMC, true, EnqueueInThread>;
+
+/**
+ * Single awaitable, Enqueue to Worker or Main thread specializations
+ */
+using JobSystemMainThreadTask = JobSystemEnqTask<EJobThreadType::MainThread>;
+using JobSystemWorkerThreadTask = JobSystemEnqTask<EJobThreadType::WorkerThreads>;
+
+/**
+ * Multi awaitable, Enqueue to Worker or Main thread specializations
+ */
+using JobSystemMainThreadTaskMC = JobSystemEnqTaskMultiAwait<EJobThreadType::MainThread>;
+using JobSystemWorkerThreadTaskMC = JobSystemEnqTaskMultiAwait<EJobThreadType::WorkerThreads>;
 
 /**
  * Single awaitable, Manual await enqueue task with no return type

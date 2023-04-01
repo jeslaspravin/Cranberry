@@ -52,6 +52,9 @@ const StringView SEVERITY_OUT_STR[Logger::ESeverityID::SevID_Max]
 class LoggerImpl
 {
 private:
+    using LoggerWorkerTask = copat::JobSystemWorkerThreadTask;
+    using LogPacketsDelegate = Delegate<const String &, const std::vector<Logger::LogMsgPacket> &>;
+
     struct LoggerPerThreadData
     {
         // Right now we do per thread mute which is not correct, However this is better than solving below multi threaded scenario
@@ -69,6 +72,11 @@ private:
     // This will not be contented in fast path, fast path which is log, debug, warn, error has minimum spin lock contention
     CBESpinLock allTlDataLock;
     std::vector<LoggerPerThreadData *> allPerThreadData;
+
+    LoggerWorkerTask lastFlushTask{ nullptr };
+
+    CBESpinLock packetsListenersLock;
+    LogPacketsDelegate packetsListeners;
 
     // This is only supposed to be enabled when app ticking starts and must be stopped when app begins shutdown
     std::atomic_flag bEnableLogTime;
@@ -94,6 +102,9 @@ private:
     }
 
 public:
+    using LogPacketsListener = LogPacketsDelegate::SingleCastDelegateType;
+
+public:
     bool initialize();
     void shutdown();
     void startLoggingTime() { bEnableLogTime.test_and_set(std::memory_order::relaxed); }
@@ -101,6 +112,12 @@ public:
 
     std::vector<uint8> &muteFlags() { return getOrCreatePerThreadData().serverityMuteFlags; }
     bool canLogTime() const { return bEnableLogTime.test(std::memory_order::relaxed); }
+
+    DelegateHandle bindPacketListener(LogPacketsListener &&listener)
+    {
+        std::scoped_lock<CBESpinLock> lockListenersList(packetsListenersLock);
+        return packetsListeners.bind(std::forward<LogPacketsDelegate::SingleCastDelegateType>(listener));
+    }
 
     OStringStream &lockLoggerBuffer()
     {
@@ -122,11 +139,10 @@ private:
     bool openNewLogFile();
     void flushStreamInternal();
 
-    copat::NormalFuncAwaiter flushStreamAsync() { co_await flushInWorkerThread(); }
-    copat::JobSystemEnqTask<copat::EJobThreadType::WorkerThreads> flushInWorkerThread()
+    LoggerWorkerTask flushInWorkerThread(LoggerWorkerTask execAfter)
     {
+        co_await execAfter;
         flushStreamInternal();
-        co_return;
     }
 };
 
@@ -143,6 +159,8 @@ bool LoggerImpl::initialize()
 
 void LoggerImpl::shutdown()
 {
+    lastFlushTask = { nullptr };
+    packetsListeners.clear();
     logFile.closeFile();
 
     PlatformFunctions::detachCosole();
@@ -160,7 +178,7 @@ void LoggerImpl::flushStream()
 {
     if (copat::JobSystem::get())
     {
-        flushStreamAsync();
+        lastFlushTask = flushInWorkerThread(std::move(lastFlushTask));
     }
     else
     {
@@ -277,7 +295,13 @@ void LoggerImpl::flushStreamInternal()
     }
     allTlDataLock.unlock();
 
-    // TODO(Jeslas) : Broadcast log packets to other systems
+    // Broadcast log packets to other systems
+    if (packetsListeners.isBound())
+    {
+        CBE_PROFILER_SCOPE_DYN(CBE_PROFILER_CHAR("BroadcastLogPackets"), CBEProfiler::profilerAvailable());
+        std::scoped_lock<CBESpinLock> lockListenersList(packetsListenersLock);
+        packetsListeners.invoke(bufferStr, allPackets);
+    }
 }
 
 bool LoggerImpl::openNewLogFile()
@@ -380,10 +404,12 @@ void Logger::verboseInternal(const SourceLocationType srcLoc, const TChar *categ
         {
             COUT << TCHAR("[") << timeStr << TCHAR("]");
         }
-        COUT << SEVERITY_OUT_STR[ESeverityID::SevID_Verbose] << TCHAR("[") << category << TCHAR("]")
-            << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
-            << message.getChar()
-            << std::endl;
+        COUT << SEVERITY_OUT_STR[ESeverityID::SevID_Verbose];
+        COUT << TCHAR("[") << category << TCHAR("]");
+        COUT << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]");
+        COUT << srcLoc.function_name() << TCHAR("() : ");
+        COUT << message.getChar();
+        COUT << std::endl;
 #endif // SHORT_MSG_IN_CONSOLE
 #endif // LOG_TO_CONSOLE
     }
@@ -445,10 +471,12 @@ void Logger::debugInternal(const SourceLocationType srcLoc, const TChar *categor
         {
             COUT << TCHAR("[") << timeStr << TCHAR("]");
         }
-        COUT  << SEVERITY_OUT_STR[ESeverityID::SevID_Debug] << TCHAR("[") << category << TCHAR("]")
-            << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
-            << message.getChar()
-            << std::endl;
+        COUT << SEVERITY_OUT_STR[ESeverityID::SevID_Debug];
+        COUT << TCHAR("[") << category << TCHAR("]");
+        COUT << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]");
+        COUT << srcLoc.function_name() << TCHAR("() : ");
+        COUT << message.getChar();
+        COUT << std::endl;
 #endif // SHORT_MSG_IN_CONSOLE
 #endif // LOG_TO_CONSOLE
     }
@@ -507,10 +535,12 @@ void Logger::logInternal(const SourceLocationType srcLoc, const TChar *category,
         {
             COUT << TCHAR("[") << timeStr << TCHAR("]");
         }
-        COUT  << SEVERITY_OUT_STR[ESeverityID::SevID_Log] << TCHAR("[") << category << TCHAR("]")
-            << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
-            << message.getChar()
-            << std::endl;
+        COUT << SEVERITY_OUT_STR[ESeverityID::SevID_Log];
+        COUT << TCHAR("[") << category << TCHAR("]");
+        COUT << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]");
+        COUT << srcLoc.function_name() << TCHAR("() : ");
+        COUT << message.getChar();
+        COUT << std::endl;
 #endif // SHORT_MSG_IN_CONSOLE
 #endif // LOG_TO_CONSOLE
     }
@@ -570,12 +600,14 @@ void Logger::warnInternal(const SourceLocationType srcLoc, const TChar *category
 #else  // SHORT_MSG_IN_CONSOLE
         if (canLogTime())
         {
-            COUT << TCHAR("[") << timeStr << TCHAR("]");
+            CERR << TCHAR("[") << timeStr << TCHAR("]");
         }
-        CERR << SEVERITY_OUT_STR[ESeverityID::SevID_Warning] << TCHAR("[") << category << TCHAR("]")
-            << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
-            << message.getChar()
-            << std::endl;
+        CERR << SEVERITY_OUT_STR[ESeverityID::SevID_Warning];
+        CERR << TCHAR("[") << category << TCHAR("]");
+        CERR << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]");
+        CERR << srcLoc.function_name() << TCHAR("() : ");
+        CERR << message.getChar();
+        CERR << std::endl;
 #endif // SHORT_MSG_IN_CONSOLE
 
 #if ENABLE_VIRTUAL_TERMINAL_SEQ
@@ -642,12 +674,14 @@ void Logger::errorInternal(const SourceLocationType srcLoc, const TChar *categor
 #else  // SHORT_MSG_IN_CONSOLE
         if (canLogTime())
         {
-            COUT << TCHAR("[") << timeStr << TCHAR("]");
+            CERR << TCHAR("[") << timeStr << TCHAR("]");
         }
-        CERR << SEVERITY_OUT_STR[ESeverityID::SevID_Error] << TCHAR("[") << category << TCHAR("]")
-            << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
-            << message.getChar()
-            << std::endl;
+        CERR << SEVERITY_OUT_STR[ESeverityID::SevID_Error];
+        CERR << TCHAR("[") << category << TCHAR("]");
+        CERR << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]");
+        CERR << srcLoc.function_name() << TCHAR("() : ");
+        CERR << message.getChar();
+        CERR << std::endl;
 #endif // SHORT_MSG_IN_CONSOLE
 
 #if ENABLE_VIRTUAL_TERMINAL_SEQ
@@ -727,6 +761,24 @@ void Logger::popMuteSeverities()
     {
         loggerImpl->muteFlags().pop_back();
     }
+}
+
+DelegateHandle Logger::bindPacketListener(const LambdaPacketsFunc &listener)
+{
+    if (loggerImpl)
+    {
+        return loggerImpl->bindPacketListener(LoggerImpl::LogPacketsListener::createLambda(listener));
+    }
+    return {};
+}
+
+DelegateHandle Logger::bindPacketListener(StaticPacketsFunc listener)
+{
+    if (loggerImpl)
+    {
+        return loggerImpl->bindPacketListener(LoggerImpl::LogPacketsListener::createStatic(listener));
+    }
+    return {};
 }
 
 void Logger::initialize()

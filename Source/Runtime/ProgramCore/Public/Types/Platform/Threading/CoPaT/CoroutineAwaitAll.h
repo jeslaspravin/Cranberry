@@ -71,6 +71,7 @@ public:
     AwaitOneTask(std::coroutine_handle<PromiseType> coro)
         : ownerCoroutine(coro)
     {}
+    // Default is fine as clearing owner coroutine is taken care by the AwaitAllTasks
     AwaitOneTask(AwaitOneTask &&) = default;
     AwaitOneTask(const AwaitOneTask &) = default;
     AwaitOneTask &operator= (AwaitOneTask &&) = default;
@@ -126,8 +127,11 @@ public:
 
     void destroyOwnerCoroutine()
     {
-        ownerCoroutine.destroy();
-        ownerCoroutine = nullptr;
+        if (ownerCoroutine)
+        {
+            ownerCoroutine.destroy();
+            ownerCoroutine = nullptr;
+        }
     }
 
     constexpr RetTypeStorage::reference_type getReturnValue() const
@@ -167,12 +171,11 @@ public:
         , counter(AWAITABLES_COUNT)
     {}
 
-    AwaitAllTasks(AwaitAllTasks &&other)
-        : allAwaits(std::move(other.allAwaits))
-        , counter(std::move(other.counter))
-    {}
+    AwaitAllTasks(AwaitAllTasks &&) = default;
     AwaitAllTasks &operator= (AwaitAllTasks &&other)
     {
+        destroyAllAwaits(std::make_index_sequence<AWAITABLES_COUNT>{});
+
         allAwaits = std::move(other.allAwaits);
         counter = std::move(other.counter);
         return *this;
@@ -246,12 +249,14 @@ public:
         , counter(u32(allAwaits.size()))
     {}
 
-    AwaitAllTasks(AwaitAllTasks &&other)
-        : allAwaits(std::move(other.allAwaits))
-        , counter(std::move(other.counter))
-    {}
+    AwaitAllTasks(AwaitAllTasks &&) = default;
     AwaitAllTasks &operator= (AwaitAllTasks &&other)
     {
+        for (AwaitOneTaskType &awaitable : allAwaits)
+        {
+            awaitable.destroyOwnerCoroutine();
+        }
+
         allAwaits = std::move(other.allAwaits);
         counter = std::move(other.counter);
         return *this;
@@ -299,6 +304,7 @@ AwaitOneTask<RetType> makeOneTaskAwaitable(Awaitable &&awaitable)
     }
     else
     {
+        // r-value has to be converted to l-value in order to get captured in coroutine stack
         Awaitable localAwaitable(std::forward<Awaitable>(awaitable));
         co_await std::suspend_always{};
         co_yield co_await localAwaitable;
@@ -318,6 +324,7 @@ AwaitOneTask<void> makeOneTaskAwaitable(Awaitable &&awaitable)
     }
     else
     {
+        // r-value has to be converted to l-value in order to get captured in coroutine stack
         Awaitable localAwaitable(std::forward<Awaitable>(awaitable));
         co_await std::suspend_always{};
         co_await localAwaitable;

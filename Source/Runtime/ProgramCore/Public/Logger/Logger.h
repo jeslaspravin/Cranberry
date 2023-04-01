@@ -14,6 +14,7 @@
 #include "ProgramCoreExports.h"
 #include "String/StringFormat.h"
 #include "Types/CompilerDefines.h"
+#include "Reflections/Functions.h"
 
 #if HAS_SOURCE_LOCATION_FEATURE
 #include <source_location>
@@ -22,6 +23,7 @@
 class GenericFile;
 class LoggerImpl;
 class CBESpinLock;
+struct DelegateHandle;
 
 class PROGRAMCORE_EXPORT Logger
 {
@@ -93,6 +95,9 @@ public:
 
         ELogSeverity getServerityFlag() const { return ELogSeverity(1 << severity); }
     };
+
+    using StaticPacketsFunc = Function<void, const String &, const std::vector<LogMsgPacket> &>;
+    using LambdaPacketsFunc = LambdaFunction<void, const String &, const std::vector<LogMsgPacket> &>;
 
     constexpr static const uint8 AllServerity
         = ELogSeverity::Verbose | ELogSeverity::Debug | ELogSeverity::Log | ELogSeverity::Warning | ELogSeverity::Error;
@@ -178,6 +183,9 @@ public:
     static void flushStream();
     static void pushMuteSeverities(uint8 muteSeverities);
     static void popMuteSeverities();
+
+    DelegateHandle bindPacketListener(StaticPacketsFunc listener);
+    DelegateHandle bindPacketListener(const LambdaPacketsFunc &listener);
 
     static void initialize();
     static void shutdown();
