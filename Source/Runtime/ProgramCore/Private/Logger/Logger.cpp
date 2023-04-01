@@ -118,6 +118,11 @@ public:
         std::scoped_lock<CBESpinLock> lockListenersList(packetsListenersLock);
         return packetsListeners.bind(std::forward<LogPacketsDelegate::SingleCastDelegateType>(listener));
     }
+    void unbindPacketListener(DelegateHandle handle)
+    {
+        std::scoped_lock<CBESpinLock> lockListenersList(packetsListenersLock);
+        packetsListeners.unbind(handle);
+    }
 
     OStringStream &lockLoggerBuffer()
     {
@@ -779,6 +784,14 @@ DelegateHandle Logger::bindPacketListener(StaticPacketsFunc listener)
         return loggerImpl->bindPacketListener(LoggerImpl::LogPacketsListener::createStatic(listener));
     }
     return {};
+}
+
+void Logger::unbindPacketListener(DelegateHandle handle)
+{
+    if (loggerImpl)
+    {
+        return loggerImpl->unbindPacketListener(handle);
+    }
 }
 
 void Logger::initialize()

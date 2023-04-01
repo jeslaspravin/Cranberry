@@ -186,6 +186,7 @@ public:
 
     DelegateHandle bindPacketListener(StaticPacketsFunc listener);
     DelegateHandle bindPacketListener(const LambdaPacketsFunc &listener);
+    void unbindPacketListener(DelegateHandle handle);
 
     static void initialize();
     static void shutdown();
