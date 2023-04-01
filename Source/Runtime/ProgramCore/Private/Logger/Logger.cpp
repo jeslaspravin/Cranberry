@@ -34,6 +34,17 @@
 
 #endif // LOG_TO_CONSOLE
 
+NODISCARD constexpr const AChar *filterFileName(const AChar *fileName) noexcept
+{
+    SizeT foundAt = 0;
+    TCharStr::rfind(fileName, FS_PATH_SEPARATOR, &foundAt);
+    return fileName + foundAt + 1;
+}
+
+// Maps log severity to corresponding log out's string
+TChar const *const SEVERITY_OUT_STR[Logger::ESeverityID::SevID_Max]
+    = { TCHAR("[VERBOSE]"), TCHAR("[DEBUG]  "), TCHAR("[LOG]    "), TCHAR("[WARN]   "), TCHAR("[ERROR]  ") };
+
 //////////////////////////////////////////////////////////////////////////
 /// Logger impl
 //////////////////////////////////////////////////////////////////////////
@@ -169,10 +180,10 @@ void LoggerImpl::flushStreamInternal()
             // tlData->bufferStream.seekp(0);
 
             // Below code clears buffer after every data flush
-            auto str = tlData->bufferStream.str();
+            String str{ tlData->bufferStream.str() };
             tlData->bufferStream.str({});
 
-            const std::string utf8str{ TCHAR_TO_UTF8(str.c_str()) };
+            const std::string utf8str{ TCHAR_TO_UTF8(str.getChar()) };
             logFile.write(ArrayView<const uint8>(reinterpret_cast<const uint8 *>(utf8str.data()), uint32(utf8str.length())));
         }
     }
@@ -229,37 +240,35 @@ bool LoggerImpl::openNewLogFile()
 Logger::LoggerAutoShutdown Logger::autoShutdown;
 LoggerImpl *Logger::loggerImpl = nullptr;
 
-NODISCARD constexpr const AChar *filterFileName(const AChar *fileName) noexcept
-{
-    SizeT foundAt = 0;
-    TCharStr::rfind(fileName, FS_PATH_SEPARATOR, &foundAt);
-    return fileName + foundAt + 1;
-}
+static_assert(
+    std::is_same_v<TickRep, decltype(Logger::LogMsgPacket::timeStamp)>,
+    "Type mismatch between Time's TickRep and Timestamp stored in LogMsgPacket"
+);
 
 #if ENABLE_VERBOSE_LOG
 void Logger::verboseInternal(const SourceLocationType srcLoc, const TChar *category, const String &message)
 {
 #if DEV_BUILD
-    static const String CATEGORY{ TCHAR("[VERBOSE]") };
+    const TChar *severityStr = SEVERITY_OUT_STR[ESeverityID::SevID_Verbose];
 
     String timeStr = canLogTime() ? Time::toString(Time::localTimeNow(), false) : TCHAR("");
     const AChar *fileName = filterFileName(srcLoc.file_name());
 
-    if (canLog(ELogServerity::Verbose, ELogOutputType::File))
+    if (canLog(ELogSeverity::Verbose, ELogOutputType::File))
     {
         OStringStream &stream = loggerImpl->lockLoggerBuffer();
         if (canLogTime())
         {
             stream << TCHAR("[") << timeStr << TCHAR("]");
         }
-        stream << CATEGORY << TCHAR("[") << category << TCHAR("]")
+        stream << severityStr << TCHAR("[") << category << TCHAR("]")
             << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
             << message.getChar() 
             << LINE_FEED_TCHAR;
         loggerImpl->unlockLoggerBuffer();
     }
 
-    if (canLog(ELogServerity::Verbose, ELogOutputType::Console))
+    if (canLog(ELogSeverity::Verbose, ELogOutputType::Console))
     {
         std::scoped_lock<CBESpinLock> lockConsole(consoleOutputLock());
 #if LOG_TO_CONSOLE
@@ -270,7 +279,7 @@ void Logger::verboseInternal(const SourceLocationType srcLoc, const TChar *categ
         {
             COUT << TCHAR("[") << timeStr << TCHAR("]");
         }
-        COUT << CATEGORY << TCHAR("[") << category << TCHAR("]")
+        COUT << severityStr << TCHAR("[") << category << TCHAR("]")
             << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
             << message.getChar()
             << std::endl;
@@ -279,7 +288,7 @@ void Logger::verboseInternal(const SourceLocationType srcLoc, const TChar *categ
     }
 
     // Send to profiler
-    if (canLog(ELogServerity::Verbose, ELogOutputType::Profiler))
+    if (canLog(ELogSeverity::Verbose, ELogOutputType::Profiler))
     {
         CBE_PROFILER_MESSAGE_C(message.getChar(), ColorConst::DARK_GRAY);
     }
@@ -293,26 +302,26 @@ void Logger::verboseInternal(const SourceLocationType srcLoc, const TChar *categ
 void Logger::debugInternal(const SourceLocationType srcLoc, const TChar *category, const String &message)
 {
 #if DEV_BUILD
-    static const String CATEGORY{ TCHAR("[DEBUG]  ") };
+    const TChar *severityStr = SEVERITY_OUT_STR[ESeverityID::SevID_Debug];
 
     String timeStr = canLogTime() ? Time::toString(Time::localTimeNow(), false) : TCHAR("");
     const AChar *fileName = filterFileName(srcLoc.file_name());
 
-    if (canLog(ELogServerity::Debug, ELogOutputType::File))
+    if (canLog(ELogSeverity::Debug, ELogOutputType::File))
     {
         OStringStream &stream = loggerImpl->lockLoggerBuffer();
         if (canLogTime())
         {
             stream << TCHAR("[") << timeStr << TCHAR("]");
         }
-        stream  << CATEGORY << TCHAR("[") << category << TCHAR("]")
+        stream  << severityStr << TCHAR("[") << category << TCHAR("]")
             << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
             << message.getChar() 
             << LINE_FEED_TCHAR;
         loggerImpl->unlockLoggerBuffer();
     }
 
-    if (canLog(ELogServerity::Debug, ELogOutputType::Console))
+    if (canLog(ELogSeverity::Debug, ELogOutputType::Console))
     {
         std::scoped_lock<CBESpinLock> lockConsole(consoleOutputLock());
 #if LOG_TO_CONSOLE
@@ -323,7 +332,7 @@ void Logger::debugInternal(const SourceLocationType srcLoc, const TChar *categor
         {
             COUT << TCHAR("[") << timeStr << TCHAR("]");
         }
-        COUT  << CATEGORY << TCHAR("[") << category << TCHAR("]")
+        COUT  << severityStr << TCHAR("[") << category << TCHAR("]")
             << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
             << message.getChar()
             << std::endl;
@@ -332,7 +341,7 @@ void Logger::debugInternal(const SourceLocationType srcLoc, const TChar *categor
     }
 
     // Send to profiler
-    if (canLog(ELogServerity::Debug, ELogOutputType::Profiler))
+    if (canLog(ELogSeverity::Debug, ELogOutputType::Profiler))
     {
         CBE_PROFILER_MESSAGE_C(message.getChar(), ColorConst::GRAY);
     }
@@ -344,26 +353,26 @@ void Logger::debugInternal(const SourceLocationType srcLoc, const TChar *categor
 
 void Logger::logInternal(const SourceLocationType srcLoc, const TChar *category, const String &message)
 {
-    static const String CATEGORY{ TCHAR("[LOG]    ") };
+    const TChar *severityStr = SEVERITY_OUT_STR[ESeverityID::SevID_Log];
 
     String timeStr = canLogTime() ? Time::toString(Time::localTimeNow(), false) : TCHAR("");
     const AChar *fileName = filterFileName(srcLoc.file_name());
 
-    if (canLog(ELogServerity::Log, ELogOutputType::File))
+    if (canLog(ELogSeverity::Log, ELogOutputType::File))
     {
         OStringStream &stream = loggerImpl->lockLoggerBuffer();
         if (canLogTime())
         {
             stream << TCHAR("[") << timeStr << TCHAR("]");
         }
-        stream  << CATEGORY << TCHAR("[") << category << TCHAR("]")
+        stream  << severityStr << TCHAR("[") << category << TCHAR("]")
             << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
             << message.getChar() 
             << LINE_FEED_TCHAR;
         loggerImpl->unlockLoggerBuffer();
     }
 
-    if (canLog(ELogServerity::Log, ELogOutputType::Console))
+    if (canLog(ELogSeverity::Log, ELogOutputType::Console))
     {
         std::scoped_lock<CBESpinLock> lockConsole(consoleOutputLock());
 #if LOG_TO_CONSOLE
@@ -374,7 +383,7 @@ void Logger::logInternal(const SourceLocationType srcLoc, const TChar *category,
         {
             COUT << TCHAR("[") << timeStr << TCHAR("]");
         }
-        COUT  << CATEGORY << TCHAR("[") << category << TCHAR("]")
+        COUT  << severityStr << TCHAR("[") << category << TCHAR("]")
             << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
             << message.getChar()
             << std::endl;
@@ -383,7 +392,7 @@ void Logger::logInternal(const SourceLocationType srcLoc, const TChar *category,
     }
 
     // Send to profiler
-    if (canLog(ELogServerity::Log, ELogOutputType::Profiler))
+    if (canLog(ELogSeverity::Log, ELogOutputType::Profiler))
     {
         CBE_PROFILER_MESSAGE_C(message.getChar(), ColorConst::WHITE);
     }
@@ -391,26 +400,26 @@ void Logger::logInternal(const SourceLocationType srcLoc, const TChar *category,
 
 void Logger::warnInternal(const SourceLocationType srcLoc, const TChar *category, const String &message)
 {
-    static const String CATEGORY{ TCHAR("[WARN]   ") };
+    const TChar *severityStr = SEVERITY_OUT_STR[ESeverityID::SevID_Warning];
 
     String timeStr = canLogTime() ? Time::toString(Time::localTimeNow(), false) : TCHAR("");
     const AChar *fileName = filterFileName(srcLoc.file_name());
 
-    if (canLog(ELogServerity::Warning, ELogOutputType::File))
+    if (canLog(ELogSeverity::Warning, ELogOutputType::File))
     {
         OStringStream &stream = loggerImpl->lockLoggerBuffer();
         if (canLogTime())
         {
             stream << TCHAR("[") << timeStr << TCHAR("]");
         }
-        stream << CATEGORY << TCHAR("[") << category << TCHAR("]")
+        stream << severityStr << TCHAR("[") << category << TCHAR("]")
             << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
             << message.getChar() 
             << LINE_FEED_TCHAR;
         loggerImpl->unlockLoggerBuffer();
     }
 
-    if (canLog(ELogServerity::Warning, ELogOutputType::Console))
+    if (canLog(ELogSeverity::Warning, ELogOutputType::Console))
     {
         std::scoped_lock<CBESpinLock> lockConsole(consoleOutputLock());
 #if LOG_TO_CONSOLE
@@ -428,7 +437,7 @@ void Logger::warnInternal(const SourceLocationType srcLoc, const TChar *category
         {
             COUT << TCHAR("[") << timeStr << TCHAR("]");
         }
-        CERR << CATEGORY << TCHAR("[") << category << TCHAR("]")
+        CERR << severityStr << TCHAR("[") << category << TCHAR("]")
             << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
             << message.getChar()
             << std::endl;
@@ -444,7 +453,7 @@ void Logger::warnInternal(const SourceLocationType srcLoc, const TChar *category
     }
 
     // Send to profiler
-    if (canLog(ELogServerity::Warning, ELogOutputType::Profiler))
+    if (canLog(ELogSeverity::Warning, ELogOutputType::Profiler))
     {
         CBE_PROFILER_MESSAGE_C(message.getChar(), ColorConst::YELLOW);
     }
@@ -452,26 +461,26 @@ void Logger::warnInternal(const SourceLocationType srcLoc, const TChar *category
 
 void Logger::errorInternal(const SourceLocationType srcLoc, const TChar *category, const String &message)
 {
-    static const String CATEGORY{ TCHAR("[ERROR]  ") };
+    const TChar *severityStr = SEVERITY_OUT_STR[ESeverityID::SevID_Error];
 
     String timeStr = canLogTime() ? Time::toString(Time::localTimeNow(), false) : TCHAR("");
     const AChar *fileName = filterFileName(srcLoc.file_name());
 
-    if (canLog(ELogServerity::Error, ELogOutputType::File))
+    if (canLog(ELogSeverity::Error, ELogOutputType::File))
     {
         OStringStream &stream = loggerImpl->lockLoggerBuffer();
         if (canLogTime())
         {
             stream << TCHAR("[") << timeStr << TCHAR("]");
         }
-        stream << CATEGORY << TCHAR("[") << category << TCHAR("]")
+        stream << severityStr << TCHAR("[") << category << TCHAR("]")
             << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
             << message.getChar() 
             << LINE_FEED_TCHAR;
         loggerImpl->unlockLoggerBuffer();
     }
 
-    if (canLog(ELogServerity::Error, ELogOutputType::Console))
+    if (canLog(ELogSeverity::Error, ELogOutputType::Console))
     {
         std::scoped_lock<CBESpinLock> lockConsole(consoleOutputLock());
 #if LOG_TO_CONSOLE
@@ -489,7 +498,7 @@ void Logger::errorInternal(const SourceLocationType srcLoc, const TChar *categor
         {
             COUT << TCHAR("[") << timeStr << TCHAR("]");
         }
-        CERR << CATEGORY << TCHAR("[") << category << TCHAR("]")
+        CERR << severityStr << TCHAR("[") << category << TCHAR("]")
             << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
             << message.getChar()
             << std::endl;
@@ -505,7 +514,7 @@ void Logger::errorInternal(const SourceLocationType srcLoc, const TChar *categor
     }
 
     // Send to profiler
-    if (canLog(ELogServerity::Error, ELogOutputType::Profiler))
+    if (canLog(ELogSeverity::Error, ELogOutputType::Profiler))
     {
         CBE_PROFILER_MESSAGE_C(message.getChar(), ColorConst::RED);
     }
@@ -517,7 +526,7 @@ CBESpinLock &Logger::consoleOutputLock()
     return lock;
 }
 
-bool Logger::canLog(ELogServerity severity, ELogOutputType output)
+bool Logger::canLog(ELogSeverity severity, ELogOutputType output)
 {
     if (loggerImpl == nullptr)
     {

@@ -31,11 +31,11 @@ public:
 #else
     struct SourceLocationType
     {
-        const TChar *fileName = "";
-        const TChar *funcName = "";
+        const AChar *fileName = "";
+        const AChar *funcName = "";
         uint32 lineNum = {};
 
-        constexpr static SourceLocationType current(const TChar *file, const TChar *func, uint32 line)
+        constexpr static SourceLocationType current(const AChar *file, const AChar *func, uint32 line)
         {
             SourceLocationType retVal;
             retVal.fileName = file;
@@ -46,18 +46,27 @@ public:
 
         // Signature and names to match std::source_location
         NODISCARD constexpr uint32 line() const noexcept { return lineNum; }
-        NODISCARD constexpr const TChar *file_name() const noexcept { return fileName; }
-        NODISCARD constexpr const TChar *function_name() const noexcept { return funcName; }
+        NODISCARD constexpr const AChar *file_name() const noexcept { return fileName; }
+        NODISCARD constexpr const AChar *function_name() const noexcept { return funcName; }
     };
 #endif
 
-    enum ELogServerity : uint8
+    enum ESeverityID : uint8
     {
-        Verbose = 1,
-        Debug = 2,
-        Log = 4,
-        Warning = 8,
-        Error = 16
+        SevID_Verbose = 0,
+        SevID_Debug,
+        SevID_Log,
+        SevID_Warning,
+        SevID_Error,
+        SevID_Max
+    };
+    enum ELogSeverity : uint8
+    {
+        Verbose = 1 << SevID_Verbose,
+        Debug = 1 << SevID_Debug,
+        Log = 1 << SevID_Log,
+        Warning = 1 << SevID_Warning,
+        Error = 1 << SevID_Error
     };
 
     enum ELogOutputType : uint8
@@ -67,8 +76,26 @@ public:
         Profiler = 4
     };
 
+    struct LogMsgPacket
+    {
+        SourceLocationType srcLoc;
+        // Since file name is constant allocated
+        const AChar *fileName = nullptr;
+
+        // In const TChar *
+        SizeT categoryStart;
+        SizeT messageStart;
+        uint32 categorySize;
+        uint32 messageSize;
+
+        int64 timeStamp;
+        ESeverityID severity = ESeverityID::SevID_Max;
+
+        ELogSeverity getServerityFlag() const { return ELogSeverity(1 << severity); }
+    };
+
     constexpr static const uint8 AllServerity
-        = ELogServerity::Verbose | ELogServerity::Debug | ELogServerity::Log | ELogServerity::Warning | ELogServerity::Error;
+        = ELogSeverity::Verbose | ELogSeverity::Debug | ELogSeverity::Log | ELogSeverity::Warning | ELogSeverity::Error;
     constexpr static const uint8 AllOutputType = ELogOutputType::File | ELogOutputType::Console | ELogOutputType::Profiler;
 
     constexpr static const TChar *CONSOLE_FOREGROUND_RED = TCHAR("\x1b[31m");
@@ -85,6 +112,7 @@ private:
     static LoggerAutoShutdown autoShutdown;
     static LoggerImpl *loggerImpl;
 
+    // Cannot have move reference in dynamically linked functions
 #if ENABLE_VERBOSE_LOG
     static void verboseInternal(const SourceLocationType srcLoc, const TChar *category, const String &message);
 #endif
@@ -94,7 +122,7 @@ private:
     static void errorInternal(const SourceLocationType srcLoc, const TChar *category, const String &message);
 
     static CBESpinLock &consoleOutputLock();
-    static bool canLog(ELogServerity severity, ELogOutputType output);
+    static bool canLog(ELogSeverity severity, ELogOutputType output);
     static bool canLogTime();
 
 public:
