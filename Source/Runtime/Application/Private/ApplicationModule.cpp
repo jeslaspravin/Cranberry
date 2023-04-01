@@ -199,10 +199,12 @@ void ApplicationModule::startAndRun(ApplicationInstance *appInst, const AppInsta
         ModuleManager::get()->unloadModule(TCHAR("EngineRenderer"));
     }
     Logger::flushStream();
-    Logger::stopLoggingTime();
 
     // Shutdown the job system after renderer is released!
     jobSys.shutdown();
+
+    // Has to be done after shutdown to complete log flush
+    Logger::stopLoggingTime();
 
     // Stop profiler once all systems are done
     CBE_PROFILER_MESSAGE_LC("Bye Profiler from Cranberry!", ColorConst::RED);

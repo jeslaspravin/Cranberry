@@ -60,6 +60,13 @@ PROGRAMCORE_EXPORT int64 toPlatformTime(TickRep tickValue);
 
 // Prints in format "dd-mm-yyyy HH:MM:SS.xxxxxx"
 PROGRAMCORE_EXPORT String toString(TickRep tickValue, bool bIsUTC);
+FORCE_INLINE uint32 toStringLen()
+{
+    return 11  /* "dd-mm-yyyy " */
+           + 9 /* "HH:MM:SS." */
+           + 6 /* "xxxxxx" */
+        ;
+}
 } // namespace Time
 
 // IN NANOSECONDS PRECISION
@@ -98,6 +105,13 @@ PROGRAMCORE_EXPORT int64 toPlatformTime(TickRep tickValue);
 
 // Prints in format "dd-mm-yyyy HH:MM:SS.xxxxxxxxx"
 PROGRAMCORE_EXPORT String toString(TickRep tickValue, bool bIsUTC);
+FORCE_INLINE uint32 toStringLen()
+{
+    return 11  /* "dd-mm-yyyy " */
+           + 9 /* "HH:MM:SS." */
+           + 9 /* "xxxxxxxxx" */
+        ;
+}
 } // namespace HighResolutionTime
 
 // Uses High Res Time

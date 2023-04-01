@@ -42,7 +42,7 @@ NODISCARD constexpr const AChar *filterFileName(const AChar *fileName) noexcept
 }
 
 // Maps log severity to corresponding log out's string
-TChar const *const SEVERITY_OUT_STR[Logger::ESeverityID::SevID_Max]
+const StringView SEVERITY_OUT_STR[Logger::ESeverityID::SevID_Max]
     = { TCHAR("[VERBOSE]"), TCHAR("[DEBUG]  "), TCHAR("[LOG]    "), TCHAR("[WARN]   "), TCHAR("[ERROR]  ") };
 
 //////////////////////////////////////////////////////////////////////////
@@ -59,6 +59,8 @@ private:
         std::vector<uint8> serverityMuteFlags{ 0 };
 
         OStringStream bufferStream = OStringStream(std::ios_base::trunc);
+        // Packets to log this frame
+        std::vector<Logger::LogMsgPacket> packets;
         // Per thread stream locks when flushing all streams
         CBESpinLock streamRWLock;
     };
@@ -105,6 +107,12 @@ public:
         LoggerPerThreadData &tlData = getOrCreatePerThreadData();
         tlData.streamRWLock.lock();
         return tlData.bufferStream;
+    }
+    Logger::LogMsgPacket &getPacketPayload()
+    {
+        LoggerPerThreadData &tlData = getOrCreatePerThreadData();
+        debugAssertf(!tlData.streamRWLock.try_lock(), "Packet payload must be retrieved only after locking the logger stream buffer");
+        return tlData.packets.emplace_back();
     }
     void unlockLoggerBuffer() { getOrCreatePerThreadData().streamRWLock.unlock(); }
 
@@ -165,29 +173,111 @@ void LoggerImpl::flushStreamInternal()
     // The final flush happens after the profiler is shutdown
     CBE_PROFILER_SCOPE_DYN(CBE_PROFILER_CHAR("FlushLogStream"), CBEProfiler::profilerAvailable());
 
+    String bufferStr;
+    std::vector<Logger::LogMsgPacket> allPackets;
+
+    String tempOutputBuffer;
+
     allTlDataLock.lock();
     for (LoggerPerThreadData *tlData : allPerThreadData)
     {
         if (tlData->bufferStream.tellp() != 0)
         {
-            // If not empty then only lock it, Else we can log in next flush!
-            std::scoped_lock<CBESpinLock> lockTlStream(tlData->streamRWLock);
+            SizeT bufferOffset = 0;
+            std::vector<Logger::LogMsgPacket> tlPackets;
+            // Pull from thread data
+            {
+                CBE_PROFILER_SCOPE_DYN(CBE_PROFILER_CHAR("PullThreadLocalLogs"), CBEProfiler::profilerAvailable());
 
-            // Below code uses null termination to mark end of string, by appending a null char at end, This works and does not clears buffer
-            // because TCHAR_TO_UTF8 works on null terminated string
-            // tlData->bufferStream << '\0';
-            // auto str = tlData->bufferStream.str();
-            // tlData->bufferStream.seekp(0);
+                // If not empty then only lock it, Else we can log in next flush!
+                std::scoped_lock<CBESpinLock> lockTlStream(tlData->streamRWLock);
 
-            // Below code clears buffer after every data flush
-            String str{ tlData->bufferStream.str() };
-            tlData->bufferStream.str({});
+                bufferOffset = bufferStr.length();
 
-            const std::string utf8str{ TCHAR_TO_UTF8(str.getChar()) };
+                // Below code uses null termination to mark end of string, by appending a null char at end, This works and does not clears
+                // buffer because c-style string works on null terminated
+                // tlData->bufferStream << '\0';
+                // bufferStr.append({ &tlData->bufferStream.view().front() });
+                // tlData->bufferStream.seekp(0);
+
+                // Below code clears buffer after every data flush
+                bufferStr.append(tlData->bufferStream.view());
+                tlData->bufferStream.str({});
+
+                tlPackets = std::move(tlData->packets);
+            }
+
+            CBE_PROFILER_SCOPE_DYN(CBE_PROFILER_CHAR("WriteThreadLocalLogs"), CBEProfiler::profilerAvailable());
+            // Calculate total string size required for this thread logs
+            SizeT outputLen = (canLogTime() ? Time::toStringLen() + 2 : 0) /* + 2 because of Time's "[]" */
+                              + SEVERITY_OUT_STR[0].length()               /* All severity strings are same size */
+                              + 2                                          /* For category's [] */
+                              + 3 + 5                                      /* 3 For [Filename:Line], 5 for 5 digit line count */
+                              + 5                                          /* For Function name's "() : " */
+                              + TCharStr::length(LINE_FEED_TCHAR);
+            outputLen = outputLen * tlPackets.size() + (tempOutputBuffer.length() - bufferOffset);
+            tempOutputBuffer.clear();
+            tempOutputBuffer.reserve(outputLen);
+
+            allPackets.reserve(allPackets.size() + tlPackets.size());
+            auto processSinglePacket = [&tempOutputBuffer, &allPackets, &bufferStr, bufferOffset](Logger::LogMsgPacket &packet)
+            {
+                packet.categoryStart += bufferOffset;
+                packet.messageStart += bufferOffset;
+
+                allPackets.push_back(packet);
+
+                StringView categoryView{ bufferStr.getChar() + packet.categoryStart, packet.categorySize };
+                StringView msgView{ bufferStr.getChar() + packet.messageStart, packet.messageSize };
+
+                tempOutputBuffer.append(SEVERITY_OUT_STR[packet.severity]);
+
+                tempOutputBuffer.append(TCHAR("["));
+                tempOutputBuffer.append(categoryView);
+                tempOutputBuffer.append(TCHAR("]"));
+
+                tempOutputBuffer.append(TCHAR("["));
+                tempOutputBuffer.append(packet.fileName);
+                tempOutputBuffer.append(TCHAR(":"));
+                tempOutputBuffer.append(String::toString(packet.srcLoc.line()));
+                tempOutputBuffer.append(TCHAR("]"));
+
+                tempOutputBuffer.append(packet.srcLoc.function_name());
+                tempOutputBuffer.append(TCHAR("() : "));
+
+                tempOutputBuffer.append(msgView);
+                tempOutputBuffer.append(LINE_FEED_TCHAR);
+            };
+            if (canLogTime())
+            {
+                for (Logger::LogMsgPacket &packet : tlPackets)
+                {
+                    // Make sure packet also has valid log's timestamp
+                    if (packet.timeStamp != 0)
+                    {
+                        tempOutputBuffer.append(TCHAR("["));
+                        tempOutputBuffer.append(Time::toString(packet.timeStamp, false));
+                        tempOutputBuffer.append(TCHAR("]"));
+                    }
+
+                    processSinglePacket(packet);
+                }
+            }
+            else
+            {
+                for (Logger::LogMsgPacket &packet : tlPackets)
+                {
+                    processSinglePacket(packet);
+                }
+            }
+
+            const std::string utf8str{ TCHAR_TO_UTF8(tempOutputBuffer.getChar()) };
             logFile.write(ArrayView<const uint8>(reinterpret_cast<const uint8 *>(utf8str.data()), uint32(utf8str.length())));
         }
     }
     allTlDataLock.unlock();
+
+    // TODO(Jeslas) : Broadcast log packets to other systems
 }
 
 bool LoggerImpl::openNewLogFile()
@@ -249,22 +339,33 @@ static_assert(
 void Logger::verboseInternal(const SourceLocationType srcLoc, const TChar *category, const String &message)
 {
 #if DEV_BUILD
-    const TChar *severityStr = SEVERITY_OUT_STR[ESeverityID::SevID_Verbose];
-
-    String timeStr = canLogTime() ? Time::toString(Time::localTimeNow(), false) : TCHAR("");
+    TickRep timeStamp = 0;
+    String timeStr;
+    if (canLogTime())
+    {
+        timeStamp = Time::localTimeNow();
+        timeStr = Time::toString(timeStamp, false);
+    }
     const AChar *fileName = filterFileName(srcLoc.file_name());
 
     if (canLog(ELogSeverity::Verbose, ELogOutputType::File))
     {
         OStringStream &stream = loggerImpl->lockLoggerBuffer();
-        if (canLogTime())
-        {
-            stream << TCHAR("[") << timeStr << TCHAR("]");
-        }
-        stream << severityStr << TCHAR("[") << category << TCHAR("]")
-            << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
-            << message.getChar() 
-            << LINE_FEED_TCHAR;
+
+        LogMsgPacket &packet = loggerImpl->getPacketPayload();
+        packet.srcLoc = srcLoc;
+        packet.fileName = fileName;
+        packet.timeStamp = timeStamp;
+        packet.severity = ESeverityID::SevID_Verbose;
+        // Push category
+        packet.categoryStart = stream.tellp();
+        packet.categorySize = uint32(TCharStr::length(category));
+        stream << category;
+        // Push message
+        packet.messageStart = stream.tellp();
+        packet.messageSize = uint32(message.length());
+        stream << message;
+
         loggerImpl->unlockLoggerBuffer();
     }
 
@@ -279,7 +380,7 @@ void Logger::verboseInternal(const SourceLocationType srcLoc, const TChar *categ
         {
             COUT << TCHAR("[") << timeStr << TCHAR("]");
         }
-        COUT << severityStr << TCHAR("[") << category << TCHAR("]")
+        COUT << SEVERITY_OUT_STR[ESeverityID::SevID_Verbose] << TCHAR("[") << category << TCHAR("]")
             << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
             << message.getChar()
             << std::endl;
@@ -302,22 +403,34 @@ void Logger::verboseInternal(const SourceLocationType srcLoc, const TChar *categ
 void Logger::debugInternal(const SourceLocationType srcLoc, const TChar *category, const String &message)
 {
 #if DEV_BUILD
-    const TChar *severityStr = SEVERITY_OUT_STR[ESeverityID::SevID_Debug];
 
-    String timeStr = canLogTime() ? Time::toString(Time::localTimeNow(), false) : TCHAR("");
+    TickRep timeStamp = 0;
+    String timeStr;
+    if (canLogTime())
+    {
+        timeStamp = Time::localTimeNow();
+        timeStr = Time::toString(timeStamp, false);
+    }
     const AChar *fileName = filterFileName(srcLoc.file_name());
 
     if (canLog(ELogSeverity::Debug, ELogOutputType::File))
     {
         OStringStream &stream = loggerImpl->lockLoggerBuffer();
-        if (canLogTime())
-        {
-            stream << TCHAR("[") << timeStr << TCHAR("]");
-        }
-        stream  << severityStr << TCHAR("[") << category << TCHAR("]")
-            << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
-            << message.getChar() 
-            << LINE_FEED_TCHAR;
+
+        LogMsgPacket &packet = loggerImpl->getPacketPayload();
+        packet.srcLoc = srcLoc;
+        packet.fileName = fileName;
+        packet.timeStamp = timeStamp;
+        packet.severity = ESeverityID::SevID_Debug;
+        // Push category
+        packet.categoryStart = stream.tellp();
+        packet.categorySize = uint32(TCharStr::length(category));
+        stream << category;
+        // Push message
+        packet.messageStart = stream.tellp();
+        packet.messageSize = uint32(message.length());
+        stream << message;
+
         loggerImpl->unlockLoggerBuffer();
     }
 
@@ -332,7 +445,7 @@ void Logger::debugInternal(const SourceLocationType srcLoc, const TChar *categor
         {
             COUT << TCHAR("[") << timeStr << TCHAR("]");
         }
-        COUT  << severityStr << TCHAR("[") << category << TCHAR("]")
+        COUT  << SEVERITY_OUT_STR[ESeverityID::SevID_Debug] << TCHAR("[") << category << TCHAR("]")
             << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
             << message.getChar()
             << std::endl;
@@ -353,22 +466,33 @@ void Logger::debugInternal(const SourceLocationType srcLoc, const TChar *categor
 
 void Logger::logInternal(const SourceLocationType srcLoc, const TChar *category, const String &message)
 {
-    const TChar *severityStr = SEVERITY_OUT_STR[ESeverityID::SevID_Log];
-
-    String timeStr = canLogTime() ? Time::toString(Time::localTimeNow(), false) : TCHAR("");
+    TickRep timeStamp = 0;
+    String timeStr;
+    if (canLogTime())
+    {
+        timeStamp = Time::localTimeNow();
+        timeStr = Time::toString(timeStamp, false);
+    }
     const AChar *fileName = filterFileName(srcLoc.file_name());
 
     if (canLog(ELogSeverity::Log, ELogOutputType::File))
     {
         OStringStream &stream = loggerImpl->lockLoggerBuffer();
-        if (canLogTime())
-        {
-            stream << TCHAR("[") << timeStr << TCHAR("]");
-        }
-        stream  << severityStr << TCHAR("[") << category << TCHAR("]")
-            << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
-            << message.getChar() 
-            << LINE_FEED_TCHAR;
+
+        LogMsgPacket &packet = loggerImpl->getPacketPayload();
+        packet.srcLoc = srcLoc;
+        packet.fileName = fileName;
+        packet.timeStamp = timeStamp;
+        packet.severity = ESeverityID::SevID_Log;
+        // Push category
+        packet.categoryStart = stream.tellp();
+        packet.categorySize = uint32(TCharStr::length(category));
+        stream << category;
+        // Push message
+        packet.messageStart = stream.tellp();
+        packet.messageSize = uint32(message.length());
+        stream << message;
+
         loggerImpl->unlockLoggerBuffer();
     }
 
@@ -383,7 +507,7 @@ void Logger::logInternal(const SourceLocationType srcLoc, const TChar *category,
         {
             COUT << TCHAR("[") << timeStr << TCHAR("]");
         }
-        COUT  << severityStr << TCHAR("[") << category << TCHAR("]")
+        COUT  << SEVERITY_OUT_STR[ESeverityID::SevID_Log] << TCHAR("[") << category << TCHAR("]")
             << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
             << message.getChar()
             << std::endl;
@@ -400,22 +524,33 @@ void Logger::logInternal(const SourceLocationType srcLoc, const TChar *category,
 
 void Logger::warnInternal(const SourceLocationType srcLoc, const TChar *category, const String &message)
 {
-    const TChar *severityStr = SEVERITY_OUT_STR[ESeverityID::SevID_Warning];
-
-    String timeStr = canLogTime() ? Time::toString(Time::localTimeNow(), false) : TCHAR("");
+    TickRep timeStamp = 0;
+    String timeStr;
+    if (canLogTime())
+    {
+        timeStamp = Time::localTimeNow();
+        timeStr = Time::toString(timeStamp, false);
+    }
     const AChar *fileName = filterFileName(srcLoc.file_name());
 
     if (canLog(ELogSeverity::Warning, ELogOutputType::File))
     {
         OStringStream &stream = loggerImpl->lockLoggerBuffer();
-        if (canLogTime())
-        {
-            stream << TCHAR("[") << timeStr << TCHAR("]");
-        }
-        stream << severityStr << TCHAR("[") << category << TCHAR("]")
-            << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
-            << message.getChar() 
-            << LINE_FEED_TCHAR;
+
+        LogMsgPacket &packet = loggerImpl->getPacketPayload();
+        packet.srcLoc = srcLoc;
+        packet.fileName = fileName;
+        packet.timeStamp = timeStamp;
+        packet.severity = ESeverityID::SevID_Warning;
+        // Push category
+        packet.categoryStart = stream.tellp();
+        packet.categorySize = uint32(TCharStr::length(category));
+        stream << category;
+        // Push message
+        packet.messageStart = stream.tellp();
+        packet.messageSize = uint32(message.length());
+        stream << message;
+
         loggerImpl->unlockLoggerBuffer();
     }
 
@@ -437,7 +572,7 @@ void Logger::warnInternal(const SourceLocationType srcLoc, const TChar *category
         {
             COUT << TCHAR("[") << timeStr << TCHAR("]");
         }
-        CERR << severityStr << TCHAR("[") << category << TCHAR("]")
+        CERR << SEVERITY_OUT_STR[ESeverityID::SevID_Warning] << TCHAR("[") << category << TCHAR("]")
             << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
             << message.getChar()
             << std::endl;
@@ -461,22 +596,33 @@ void Logger::warnInternal(const SourceLocationType srcLoc, const TChar *category
 
 void Logger::errorInternal(const SourceLocationType srcLoc, const TChar *category, const String &message)
 {
-    const TChar *severityStr = SEVERITY_OUT_STR[ESeverityID::SevID_Error];
-
-    String timeStr = canLogTime() ? Time::toString(Time::localTimeNow(), false) : TCHAR("");
+    TickRep timeStamp = 0;
+    String timeStr;
+    if (canLogTime())
+    {
+        timeStamp = Time::localTimeNow();
+        timeStr = Time::toString(timeStamp, false);
+    }
     const AChar *fileName = filterFileName(srcLoc.file_name());
 
     if (canLog(ELogSeverity::Error, ELogOutputType::File))
     {
         OStringStream &stream = loggerImpl->lockLoggerBuffer();
-        if (canLogTime())
-        {
-            stream << TCHAR("[") << timeStr << TCHAR("]");
-        }
-        stream << severityStr << TCHAR("[") << category << TCHAR("]")
-            << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
-            << message.getChar() 
-            << LINE_FEED_TCHAR;
+
+        LogMsgPacket &packet = loggerImpl->getPacketPayload();
+        packet.srcLoc = srcLoc;
+        packet.fileName = fileName;
+        packet.timeStamp = timeStamp;
+        packet.severity = ESeverityID::SevID_Error;
+        // Push category
+        packet.categoryStart = stream.tellp();
+        packet.categorySize = uint32(TCharStr::length(category));
+        stream << category;
+        // Push message
+        packet.messageStart = stream.tellp();
+        packet.messageSize = uint32(message.length());
+        stream << message;
+
         loggerImpl->unlockLoggerBuffer();
     }
 
@@ -498,7 +644,7 @@ void Logger::errorInternal(const SourceLocationType srcLoc, const TChar *categor
         {
             COUT << TCHAR("[") << timeStr << TCHAR("]");
         }
-        CERR << severityStr << TCHAR("[") << category << TCHAR("]")
+        CERR << SEVERITY_OUT_STR[ESeverityID::SevID_Error] << TCHAR("[") << category << TCHAR("]")
             << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
             << message.getChar()
             << std::endl;
