@@ -147,6 +147,8 @@ private:
     LoggerWorkerTask flushInWorkerThread(LoggerWorkerTask execAfter)
     {
         co_await execAfter;
+        // Frees old task
+        execAfter = { nullptr };
         flushStreamInternal();
     }
 };

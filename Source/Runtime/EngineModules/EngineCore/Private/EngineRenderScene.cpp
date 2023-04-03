@@ -33,6 +33,8 @@
 #include "RenderInterface/Rendering/CommandBuffer.h"
 #include "RenderInterface/ShaderCore/ShaderParameterUtility.h"
 
+#define DISABLE_PER_FRAME_UPDATE 0
+
 namespace ERendererIntermTexture
 {
 
@@ -538,16 +540,17 @@ FORCE_INLINE void EngineRenderScene::addMeshRef(EVertexType::Type vertType, cbe:
 
             uint32 vertStride = compRenderInfo.cpuVertBuffer->bufferStride(), idxStride = compRenderInfo.cpuIdxBuffer->bufferStride();
 
-            BatchCopyBufferInfo copyInfo;
-            copyInfo.dst = sceneVerts.vertices;
-            copyInfo.src = compRenderInfo.cpuVertBuffer;
-            copyInfo.copyInfo = { 0, vertView.vertOffset * vertStride, uint32(vertView.vertCount * vertStride) };
-            sceneVerts.copies.emplace_back(std::move(copyInfo));
+            sceneVerts.copies.emplace_back(BatchCopyBufferInfo{
+                .src = compRenderInfo.cpuVertBuffer,
+                .dst = sceneVerts.vertices,
+                .copyInfo = {0, vertView.vertOffset * vertStride, uint32(vertView.vertCount * vertStride)}
+            });
 
-            copyInfo.dst = sceneVerts.indices;
-            copyInfo.src = compRenderInfo.cpuIdxBuffer;
-            copyInfo.copyInfo = { 0, vertView.idxOffset * idxStride, uint32(vertView.idxCount * idxStride) };
-            sceneVerts.copies.emplace_back(std::move(copyInfo));
+            sceneVerts.copies.emplace_back(BatchCopyBufferInfo{
+                .src = compRenderInfo.cpuIdxBuffer,
+                .dst = sceneVerts.indices,
+                .copyInfo = {0, vertView.idxOffset * idxStride, uint32(vertView.idxCount * idxStride)}
+            });
         }
         else
         {
@@ -1024,6 +1027,8 @@ void EngineRenderScene::performTransferCopies(IRenderCommandList *cmdList, IGrap
 
 void EngineRenderScene::updateVisibility(const RenderSceneViewParams &viewParams)
 {
+    CBE_PROFILER_SCOPE(CBE_PROFILER_CHAR("UpdateVisibility"));
+
     const uint32 totalCompCapacity = uint32(compsRenderInfo.totalCount());
     compsVisibility.resize(totalCompCapacity);
 
@@ -1046,6 +1051,7 @@ void EngineRenderScene::updateVisibility(const RenderSceneViewParams &viewParams
         copat::DispatchFunctionType::createLambda(
             [this, &compsInsideFrustum, &w2clip](uint32 idx)
             {
+                CBE_PROFILER_SCOPE(CBE_PROFILER_CHAR("CompVisibility"));
                 if (!compsRenderInfo.isValid(idx))
                 {
                     return;
@@ -1055,7 +1061,7 @@ void EngineRenderScene::updateVisibility(const RenderSceneViewParams &viewParams
                 if (vertexBuffers[compRenderInfo.vertexType].meshes.contains(compRenderInfo.meshObjPath) && compRenderInfo.tfIndex != 0
                     && compRenderInfo.materialIndex != 0)
                 {
-#if 1
+#if DISABLE_PER_FRAME_UPDATE
                     compsInsideFrustum[idx].test_and_set(std::memory_order::relaxed);
                     return;
 #else
@@ -1088,6 +1094,7 @@ void EngineRenderScene::updateVisibility(const RenderSceneViewParams &viewParams
         totalCompCapacity
     ));
 
+    CBE_PROFILER_SCOPE(CBE_PROFILER_CHAR("WriteVisibilityBits"));
     for (SizeT i = 0; i != totalCompCapacity;)
     {
         bool bIsSet = compsInsideFrustum[i].test(std::memory_order::relaxed);
@@ -1707,12 +1714,16 @@ void EngineRenderScene::createNextDrawList(
     const RenderSceneViewParams &viewParams, IRenderCommandList *, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
 )
 {
+    CBE_PROFILER_SCOPE(CBE_PROFILER_CHAR("CreateDrawList"));
+#if DISABLE_PER_FRAME_UPDATE
     static uint32 testCounter = 0;
     static bool testFlag = false;
     if (!bInstanceParamsUpdating && testCounter > 4)
     {
         return;
     }
+#endif
+
     const SizeT totalCompCapacity = compsRenderInfo.totalCount();
 
     for (std::pair<const String, MaterialShaderParams> &shaderMats : shaderToMaterials)
@@ -1726,89 +1737,102 @@ void EngineRenderScene::createNextDrawList(
     }
 
     std::vector<SizeT> compIndices;
-    compIndices.reserve(compsVisibility.countOnes());
-    for (SizeT i = 0; i != totalCompCapacity; ++i)
     {
-        if (!compsVisibility[i])
+        CBE_PROFILER_SCOPE(CBE_PROFILER_CHAR("SetupVisibleComponents"));
+
+        compIndices.reserve(compsVisibility.countOnes());
+        for (SizeT i = 0; i != totalCompCapacity; ++i)
         {
-            continue;
-        }
-        compIndices.emplace_back(i);
-    }
-
-    if (bInstanceParamsUpdating || bVertexUpdating)
-    {
-        testFlag = true;
-        testCounter = 0;
-    }
-    if (testFlag)
-    {
-        testCounter++;
-    }
-
-    std::sort(
-        compIndices.begin(), compIndices.end(),
-        [this, &viewParams](SizeT lhs, SizeT rhs)
-        {
-            return (compsRenderInfo[lhs].worldTf.getTranslation() - viewParams.view.translation()).sqrlength()
-                   < (compsRenderInfo[rhs].worldTf.getTranslation() - viewParams.view.translation()).sqrlength();
-        }
-    );
-    for (SizeT compIdx : compIndices)
-    {
-        const ComponentRenderInfo &compRenderInfo = compsRenderInfo[compIdx];
-        debugAssert(
-            compRenderInfo.meshObjPath.isValid() && vertexBuffers[compRenderInfo.vertexType].meshes.contains(compRenderInfo.meshObjPath)
-            && compRenderInfo.materialIndex != 0 && compRenderInfo.tfIndex != 0
-        );
-
-        MaterialShaderParams &shaderMats = shaderToMaterials[compRenderInfo.shaderName];
-        const MeshVertexView &meshView = vertexBuffers[compRenderInfo.vertexType].meshes[compRenderInfo.meshObjPath];
-        DrawIndexedIndirectCommand indexedIndirectDraw{ .indexCount = uint32(meshView.idxCount),
-                                                        .instanceCount = 1,
-                                                        .firstIndex = uint32(meshView.idxOffset),
-                                                        .vertexOffset = int32(meshView.vertOffset),
-                                                        .firstInstance = uint32(compRenderInfo.tfIndex) };
-
-        shaderMats.cpuDrawListPerVertType[compRenderInfo.vertexType].emplace_back(std::move(indexedIndirectDraw));
-    }
-
-    // Now that all cpu draw lists are prepared
-    for (std::pair<const String, MaterialShaderParams> &shaderMatsPair : shaderToMaterials)
-    {
-        MaterialShaderParams &shaderMats = shaderMatsPair.second;
-        for (uint32 vertType = EVertexType::TypeStart; vertType != EVertexType::TypeEnd; ++vertType)
-        {
-            std::vector<DrawIndexedIndirectCommand> &cpuDrawList = shaderMats.cpuDrawListPerVertType[vertType];
-            if (cpuDrawList.empty())
+            if (!compsVisibility[i])
             {
                 continue;
             }
+            compIndices.emplace_back(i);
+        }
 
-            uint32 drawListIdx = vertType * BUFFER_COUNT + getBufferedWriteOffset();
-            // Resize GPU buffer if necessary
-            BufferResourceRef bufferRes = shaderMats.drawListPerVertType[drawListIdx];
-            shaderMats.drawListCounts[drawListIdx] = uint32(cpuDrawList.size());
-            if (!bufferRes.isValid() || !bufferRes->isValid() || bufferRes->bufferCount() < cpuDrawList.size())
+#if DISABLE_PER_FRAME_UPDATE
+        if (bInstanceParamsUpdating || bVertexUpdating)
+        {
+            testFlag = true;
+            testCounter = 0;
+        }
+        if (testFlag)
+        {
+            testCounter++;
+        }
+#endif
+
+        std::sort(
+            compIndices.begin(), compIndices.end(),
+            [this, &viewParams](SizeT lhs, SizeT rhs)
             {
-                bufferRes = graphicsHelper->createReadOnlyIndirectBuffer(
-                    graphicsInstance, uint32(sizeof(DrawIndexedIndirectCommand)), uint32(cpuDrawList.size())
-                );
-                bufferRes->setResourceName(
-                    world.getObjectName()
-                    + TCHAR("_") + shaderMatsPair.first + EVertexType::toString(EVertexType::Type(vertType)) + TCHAR("_IdxIndirect"));
-                bufferRes->init();
-
-                shaderMats.drawListPerVertType[drawListIdx] = bufferRes;
-                shaderMats.drawListCopied[drawListIdx] = false;
+                return (compsRenderInfo[lhs].worldTf.getTranslation() - viewParams.view.translation()).sqrlength()
+                       < (compsRenderInfo[rhs].worldTf.getTranslation() - viewParams.view.translation()).sqrlength();
             }
+        );
+    }
+    // Push to cpu draw list buffer
+    {
+        CBE_PROFILER_SCOPE(CBE_PROFILER_CHAR("WriteDrawListBufferCPU"));
+        for (SizeT compIdx : compIndices)
+        {
+            const ComponentRenderInfo &compRenderInfo = compsRenderInfo[compIdx];
+            debugAssert(
+                compRenderInfo.meshObjPath.isValid() && vertexBuffers[compRenderInfo.vertexType].meshes.contains(compRenderInfo.meshObjPath)
+                && compRenderInfo.materialIndex != 0 && compRenderInfo.tfIndex != 0
+            );
 
-            // Now issue copies
-            BatchCopyBufferData copyData{ .dst = bufferRes,
-                                          .dstOffset = 0,
-                                          .dataToCopy = cpuDrawList.data(),
-                                          .size = uint32(bufferRes->bufferStride() * cpuDrawList.size()) };
-            shaderMats.drawListCopies.emplace_back(copyData);
+            MaterialShaderParams &shaderMats = shaderToMaterials[compRenderInfo.shaderName];
+            const MeshVertexView &meshView = vertexBuffers[compRenderInfo.vertexType].meshes[compRenderInfo.meshObjPath];
+            DrawIndexedIndirectCommand indexedIndirectDraw{ .indexCount = uint32(meshView.idxCount),
+                                                            .instanceCount = 1,
+                                                            .firstIndex = uint32(meshView.idxOffset),
+                                                            .vertexOffset = int32(meshView.vertOffset),
+                                                            .firstInstance = uint32(compRenderInfo.tfIndex) };
+
+            shaderMats.cpuDrawListPerVertType[compRenderInfo.vertexType].emplace_back(std::move(indexedIndirectDraw));
+        }
+    }
+
+    // Now that all cpu draw lists are prepared
+    {
+        CBE_PROFILER_SCOPE(CBE_PROFILER_CHAR("IssueDrawListCopies"));
+        for (std::pair<const String, MaterialShaderParams> &shaderMatsPair : shaderToMaterials)
+        {
+            MaterialShaderParams &shaderMats = shaderMatsPair.second;
+            for (uint32 vertType = EVertexType::TypeStart; vertType != EVertexType::TypeEnd; ++vertType)
+            {
+                std::vector<DrawIndexedIndirectCommand> &cpuDrawList = shaderMats.cpuDrawListPerVertType[vertType];
+                if (cpuDrawList.empty())
+                {
+                    continue;
+                }
+
+                uint32 drawListIdx = vertType * BUFFER_COUNT + getBufferedWriteOffset();
+                // Resize GPU buffer if necessary
+                BufferResourceRef bufferRes = shaderMats.drawListPerVertType[drawListIdx];
+                shaderMats.drawListCounts[drawListIdx] = uint32(cpuDrawList.size());
+                if (!bufferRes.isValid() || !bufferRes->isValid() || bufferRes->bufferCount() < cpuDrawList.size())
+                {
+                    bufferRes = graphicsHelper->createReadOnlyIndirectBuffer(
+                        graphicsInstance, uint32(sizeof(DrawIndexedIndirectCommand)), uint32(cpuDrawList.size())
+                    );
+                    bufferRes->setResourceName(
+                        world.getObjectName()
+                        + TCHAR("_") + shaderMatsPair.first + EVertexType::toString(EVertexType::Type(vertType)) + TCHAR("_IdxIndirect"));
+                    bufferRes->init();
+
+                    shaderMats.drawListPerVertType[drawListIdx] = bufferRes;
+                    shaderMats.drawListCopied[drawListIdx] = false;
+                }
+
+                // Now issue copies
+                BatchCopyBufferData copyData{ .dst = bufferRes,
+                                              .dstOffset = 0,
+                                              .dataToCopy = cpuDrawList.data(),
+                                              .size = uint32(bufferRes->bufferStride() * cpuDrawList.size()) };
+                shaderMats.drawListCopies.emplace_back(copyData);
+            }
         }
     }
 }
@@ -1957,6 +1981,7 @@ void EngineRenderScene::renderTheSceneRenderThread(
 
         if (bHasAnyDraws)
         {
+            CBE_PROFILER_SCOPE(CBE_PROFILER_CHAR("IssueBarriers"));
             cmdList->cmdBarrierResources(cmdBuffer, resBarriers);
             cmdList->cmdBarrierVertices(cmdBuffer, vertexBarriers);
             cmdList->cmdBarrierIndices(cmdBuffer, indexBarriers);
