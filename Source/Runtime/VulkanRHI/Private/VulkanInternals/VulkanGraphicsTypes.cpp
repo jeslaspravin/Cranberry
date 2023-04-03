@@ -302,6 +302,164 @@ VkPipelineStageFlags2 vulkanPipelineStageFlags(uint64 pipelineStages)
     return retFlags;
 }
 
+VkPipelineStageFlags2 shaderToPipelineStageFlags(VkShaderStageFlags shaderStageFlags)
+{
+    static VkShaderStageFlagBits shaderStages[] = { VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT,
+                                                    VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
+                                                    VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
+                                                    VkShaderStageFlagBits::VK_SHADER_STAGE_GEOMETRY_BIT,
+                                                    VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT,
+                                                    VkShaderStageFlagBits::VK_SHADER_STAGE_COMPUTE_BIT,
+                                                    VkShaderStageFlagBits::VK_SHADER_STAGE_ALL_GRAPHICS,
+                                                    VkShaderStageFlagBits::VK_SHADER_STAGE_ALL,
+                                                    VkShaderStageFlagBits::VK_SHADER_STAGE_RAYGEN_BIT_KHR,
+                                                    VkShaderStageFlagBits::VK_SHADER_STAGE_ANY_HIT_BIT_KHR,
+                                                    VkShaderStageFlagBits::VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,
+                                                    VkShaderStageFlagBits::VK_SHADER_STAGE_MISS_BIT_KHR,
+                                                    VkShaderStageFlagBits::VK_SHADER_STAGE_INTERSECTION_BIT_KHR,
+                                                    VkShaderStageFlagBits::VK_SHADER_STAGE_CALLABLE_BIT_KHR,
+                                                    VkShaderStageFlagBits::VK_SHADER_STAGE_TASK_BIT_NV,
+                                                    VkShaderStageFlagBits::VK_SHADER_STAGE_MESH_BIT_NV };
+
+    if (shaderStageFlags == 0)
+    {
+        return 0;
+    }
+    VkShaderStageFlags temp = shaderStageFlags;
+
+    VkPipelineStageFlags2 pipelineStageFlags = 0;
+    for (VkShaderStageFlags shaderStage : shaderStages)
+    {
+        if (BIT_SET(shaderStageFlags, shaderStage))
+        {
+            switch (shaderStage)
+            {
+            case VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT:
+                pipelineStageFlags |= VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT;
+                break;
+            case VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:
+                pipelineStageFlags |= VK_PIPELINE_STAGE_2_TESSELLATION_CONTROL_SHADER_BIT;
+                break;
+            case VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
+                pipelineStageFlags |= VK_PIPELINE_STAGE_2_TESSELLATION_EVALUATION_SHADER_BIT;
+                break;
+            case VkShaderStageFlagBits::VK_SHADER_STAGE_GEOMETRY_BIT:
+                pipelineStageFlags |= VK_PIPELINE_STAGE_2_GEOMETRY_SHADER_BIT;
+                break;
+            case VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT:
+                pipelineStageFlags |= VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
+                break;
+            case VkShaderStageFlagBits::VK_SHADER_STAGE_COMPUTE_BIT:
+                pipelineStageFlags |= VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
+                break;
+            case VkShaderStageFlagBits::VK_SHADER_STAGE_ALL_GRAPHICS:
+                pipelineStageFlags |= VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT;
+                break;
+            case VkShaderStageFlagBits::VK_SHADER_STAGE_ALL:
+                pipelineStageFlags |= VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+                break;
+            case VkShaderStageFlagBits::VK_SHADER_STAGE_RAYGEN_BIT_KHR:
+            case VkShaderStageFlagBits::VK_SHADER_STAGE_ANY_HIT_BIT_KHR:
+            case VkShaderStageFlagBits::VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR:
+            case VkShaderStageFlagBits::VK_SHADER_STAGE_MISS_BIT_KHR:
+            case VkShaderStageFlagBits::VK_SHADER_STAGE_INTERSECTION_BIT_KHR:
+            case VkShaderStageFlagBits::VK_SHADER_STAGE_CALLABLE_BIT_KHR:
+                pipelineStageFlags |= VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR;
+                break;
+            case VkShaderStageFlagBits::VK_SHADER_STAGE_TASK_BIT_NV:
+                pipelineStageFlags |= VK_PIPELINE_STAGE_2_TASK_SHADER_BIT_NV;
+                break;
+            case VkShaderStageFlagBits::VK_SHADER_STAGE_MESH_BIT_NV:
+                pipelineStageFlags |= VK_PIPELINE_STAGE_2_MESH_SHADER_BIT_NV;
+                break;
+            }
+
+            temp &= ~shaderStage;
+            if (temp == 0)
+            {
+                break;
+            }
+        }
+    }
+    return pipelineStageFlags;
+}
+
+VkShaderStageFlags pipelineToShaderStageFlags(VkPipelineStageFlags2 pipelineStageFlags)
+{
+    VkPipelineStageFlagBits2 pipelineStages[] = { VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
+                                                  VK_PIPELINE_STAGE_2_TESSELLATION_CONTROL_SHADER_BIT,
+                                                  VK_PIPELINE_STAGE_2_TESSELLATION_EVALUATION_SHADER_BIT,
+                                                  VK_PIPELINE_STAGE_2_GEOMETRY_SHADER_BIT,
+                                                  VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                                                  VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                                                  VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT,
+                                                  VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                                                  VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR,
+                                                  VK_PIPELINE_STAGE_2_TASK_SHADER_BIT_NV,
+                                                  VK_PIPELINE_STAGE_2_MESH_SHADER_BIT_NV };
+    if (pipelineStageFlags == 0)
+    {
+        return 0;
+    }
+
+    VkPipelineStageFlags2 temp = pipelineStageFlags;
+
+    VkShaderStageFlags shaderStageFlags = 0;
+    for (VkPipelineStageFlagBits2 pipelineStage : pipelineStages)
+    {
+        if (BIT_SET(pipelineStageFlags, pipelineStage))
+        {
+            switch (pipelineStage)
+            {
+            case VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT:
+                shaderStageFlags |= VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT;
+                break;
+            case VK_PIPELINE_STAGE_2_TESSELLATION_CONTROL_SHADER_BIT:
+                shaderStageFlags |= VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+                break;
+            case VK_PIPELINE_STAGE_2_TESSELLATION_EVALUATION_SHADER_BIT:
+                shaderStageFlags |= VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+                break;
+            case VK_PIPELINE_STAGE_2_GEOMETRY_SHADER_BIT:
+                shaderStageFlags |= VkShaderStageFlagBits::VK_SHADER_STAGE_GEOMETRY_BIT;
+                break;
+            case VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT:
+                shaderStageFlags |= VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT;
+                break;
+            case VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT:
+                shaderStageFlags |= VkShaderStageFlagBits::VK_SHADER_STAGE_COMPUTE_BIT;
+                break;
+            case VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT:
+                shaderStageFlags |= VkShaderStageFlagBits::VK_SHADER_STAGE_ALL_GRAPHICS;
+                break;
+            case VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT:
+                shaderStageFlags |= VkShaderStageFlagBits::VK_SHADER_STAGE_ALL;
+                break;
+            case VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR:
+                shaderStageFlags
+                    |= (VkShaderStageFlagBits::VK_SHADER_STAGE_RAYGEN_BIT_KHR | VkShaderStageFlagBits::VK_SHADER_STAGE_ANY_HIT_BIT_KHR
+                        | VkShaderStageFlagBits::VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VkShaderStageFlagBits::VK_SHADER_STAGE_MISS_BIT_KHR
+                        | VkShaderStageFlagBits::VK_SHADER_STAGE_INTERSECTION_BIT_KHR
+                        | VkShaderStageFlagBits::VK_SHADER_STAGE_CALLABLE_BIT_KHR);
+                break;
+            case VK_PIPELINE_STAGE_2_TASK_SHADER_BIT_NV:
+                shaderStageFlags |= VkShaderStageFlagBits::VK_SHADER_STAGE_TASK_BIT_NV;
+                break;
+            case VK_PIPELINE_STAGE_2_MESH_SHADER_BIT_NV:
+                shaderStageFlags |= VkShaderStageFlagBits::VK_SHADER_STAGE_MESH_BIT_NV;
+                break;
+            }
+
+            temp &= ~pipelineStage;
+            if (temp == 0)
+            {
+                break;
+            }
+        }
+    }
+    return shaderStageFlags;
+}
+
 VkPipelineStageFlags2 pipelinesSupportedPerQueue(VkQueueFlags queueFlags)
 {
     // clang-format off

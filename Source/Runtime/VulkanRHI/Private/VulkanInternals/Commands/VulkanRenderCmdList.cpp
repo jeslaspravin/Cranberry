@@ -1455,7 +1455,7 @@ void VulkanCommandList::cmdBarrierResources(const GraphicsResource *cmdBuffer, A
             for (const auto &resource : resources)
             {
                 VkPipelineStageFlags2 stagesUsed
-                    = VulkanGraphicsHelper::shaderToPipelineStageFlags(resource.second->bufferEntryPtr->data.stagesUsed);
+                    = EngineToVulkanAPI::shaderToPipelineStageFlags(resource.second->bufferEntryPtr->data.stagesUsed);
 
                 BUFFER_MEMORY_BARRIER2(memBarrier);
                 memBarrier.buffer = resource.first.reference<VulkanBufferResource>()->buffer;
@@ -1521,7 +1521,7 @@ void VulkanCommandList::cmdBarrierResources(const GraphicsResource *cmdBuffer, A
             for (const auto &resource : resources)
             {
                 VkPipelineStageFlags2 stagesUsed
-                    = VulkanGraphicsHelper::shaderToPipelineStageFlags(resource.second->textureEntryPtr->data.stagesUsed);
+                    = EngineToVulkanAPI::shaderToPipelineStageFlags(resource.second->textureEntryPtr->data.stagesUsed);
 
                 IMAGE_MEMORY_BARRIER2(memBarrier);
                 memBarrier.image = resource.first.reference<VulkanImageResource>()->image;
@@ -1600,7 +1600,7 @@ void VulkanCommandList::cmdBarrierResources(const GraphicsResource *cmdBuffer, A
             for (const auto &resource : resources)
             {
                 VkPipelineStageFlags2 stagesUsed
-                    = VulkanGraphicsHelper::shaderToPipelineStageFlags(resource.second->bufferEntryPtr->data.stagesUsed);
+                    = EngineToVulkanAPI::shaderToPipelineStageFlags(resource.second->bufferEntryPtr->data.stagesUsed);
                 VkAccessFlags2 accessMask;
                 OptionalBarrierInfo barrierInfoVariant;
                 if (resource.second->bIsStorage)
@@ -1707,7 +1707,7 @@ void VulkanCommandList::cmdBarrierResources(const GraphicsResource *cmdBuffer, A
             {
                 // TODO(Jeslas) : Handle attachment images
                 VkPipelineStageFlags2 stagesUsed
-                    = VulkanGraphicsHelper::shaderToPipelineStageFlags(resource.second->textureEntryPtr->data.stagesUsed);
+                    = EngineToVulkanAPI::shaderToPipelineStageFlags(resource.second->textureEntryPtr->data.stagesUsed);
                 VkAccessFlags2 accessMask;
                 VkImageLayout imgLayout = determineImageLayout(resource.first);
                 OptionalBarrierInfo barrierInfoVariant;

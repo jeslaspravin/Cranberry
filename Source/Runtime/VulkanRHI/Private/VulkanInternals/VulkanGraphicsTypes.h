@@ -35,6 +35,9 @@ VkShaderStageFlags vulkanShaderStageFlags(uint32 shaderStages);
 
 VkPipelineStageFlagBits2 vulkanPipelineStage(EPipelineStages::Type pipelineStage);
 VkPipelineStageFlags2 vulkanPipelineStageFlags(uint64 pipelineStages);
+
+VkPipelineStageFlags2 shaderToPipelineStageFlags(VkShaderStageFlags shaderStageFlags);
+VkShaderStageFlags pipelineToShaderStageFlags(VkPipelineStageFlags2 pipelineStageFlags);
 VkPipelineStageFlags2 pipelinesSupportedPerQueue(VkQueueFlags queueFlags);
 VkAccessFlags2 accessMaskForStages(VkPipelineStageFlags2 pipelineStages);
 VkAccessFlags2 accessMaskPerQueue(VkQueueFlags queueFlags);

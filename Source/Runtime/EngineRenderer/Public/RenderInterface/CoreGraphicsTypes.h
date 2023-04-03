@@ -292,17 +292,53 @@ struct PixelFormatInfo
 };
 
 ENGINERENDERER_EXPORT const PixelFormatInfo *getFormatInfo(EPixelDataFormat::Type dataFormat);
-ENGINERENDERER_EXPORT bool isDepthFormat(EPixelDataFormat::Type dataFormat);
-ENGINERENDERER_EXPORT bool isStencilFormat(EPixelDataFormat::Type dataFormat);
+
+inline bool isDepthFormat(Type dataFormat)
+{
+    return EPixelDataFormat::DepthFormatBegin <= dataFormat && EPixelDataFormat::DepthFormatEnd >= dataFormat;
+}
+inline bool isStencilFormat(Type dataFormat)
+{
+    return EPixelDataFormat::StencilDepthEnd <= dataFormat && EPixelDataFormat::StencilDepthEnd >= dataFormat;
+}
+
 // Norm and scaled, float will be accessed as OpTypeFloat
-ENGINERENDERER_EXPORT bool isFloatingFormat(EPixelDataFormat::Type dataFormat);
-ENGINERENDERER_EXPORT bool isNormalizedFormat(EPixelDataFormat::Type dataFormat);
-ENGINERENDERER_EXPORT bool isScaledFormat(EPixelDataFormat::Type dataFormat);
+inline bool isFloatingFormat(Type dataFormat)
+{
+    return EPixelDataFormat::FloatFormatBegin <= dataFormat && EPixelDataFormat::FloatFormatEnd >= dataFormat;
+}
+inline bool isNormalizedFormat(Type dataFormat)
+{
+    return EPixelDataFormat::NormFormatBegin <= dataFormat && EPixelDataFormat::NormFormatEnd >= dataFormat;
+}
+inline bool isScaledFormat(Type dataFormat)
+{
+    return EPixelDataFormat::ScaledFormatEnd <= dataFormat && EPixelDataFormat::ScaledFormatBegin >= dataFormat;
+}
+
 // Formats that will be accessed as OpTypeInt in shader
-ENGINERENDERER_EXPORT bool isPureIntegralFormat(EPixelDataFormat::Type dataFormat);
-ENGINERENDERER_EXPORT bool isSignedFormat(EPixelDataFormat::Type dataFormat);
-ENGINERENDERER_EXPORT bool isUnsignedFormat(EPixelDataFormat::Type dataFormat);
-ENGINERENDERER_EXPORT bool isSrgbFormat(EPixelDataFormat::Type dataFormat);
+inline bool isPureIntegralFormat(Type dataFormat)
+{
+    return EPixelDataFormat::IntFormatBegin <= dataFormat && EPixelDataFormat::IntFormatEnd >= dataFormat;
+}
+inline bool isSignedFormat(Type dataFormat)
+{
+    return isFloatingFormat(dataFormat) || (EPixelDataFormat::SIntFormatBegin <= dataFormat && EPixelDataFormat::SIntFormatEnd >= dataFormat)
+           || (EPixelDataFormat::SNormFormatBegin <= dataFormat && EPixelDataFormat::SNormFormatEnd >= dataFormat)
+           || (EPixelDataFormat::SScaledFormatBegin <= dataFormat && EPixelDataFormat::SScaledFormatEnd >= dataFormat);
+}
+inline bool isUnsignedFormat(Type dataFormat)
+{
+    return (EPixelDataFormat::UIntFormatBegin <= dataFormat && EPixelDataFormat::UIntFormatEnd >= dataFormat)
+           || (EPixelDataFormat::UNormFormatBegin <= dataFormat && EPixelDataFormat::UNormFormatEnd >= dataFormat)
+           || (EPixelDataFormat::UScaledFormatBegin <= dataFormat && EPixelDataFormat::UScaledFormatEnd >= dataFormat);
+}
+
+inline bool isSrgbFormat(Type dataFormat)
+{
+    return (EPixelDataFormat::SRGBFormatBegin <= dataFormat && EPixelDataFormat::SRGBFormatEnd >= dataFormat);
+}
+
 } // namespace EPixelDataFormat
 
 namespace EPixelSampleCount
