@@ -152,6 +152,12 @@ LibHandle WindowsPlatformFunctions::getAddressModule(void *address)
     return hModule;
 }
 
+#if USING_WIDE_UNICODE
+#define FD_TEXT _O_U16TEXT
+#else // USING_WIDE_UNICODE
+#define FD_TEXT _O_U8TEXT
+#endif // USING_WIDE_UNICODE
+
 // From - https://stackoverflow.com/questions/311955/redirecting-cout-to-a-console-in-windows/
 void WindowsPlatformFunctions::bindCrtHandlesToStdHandles(bool bBindStdIn, bool bBindStdOut, bool bBindStdErr)
 {
@@ -165,35 +171,35 @@ void WindowsPlatformFunctions::bindCrtHandlesToStdHandles(bool bBindStdIn, bool 
     if (bBindStdIn)
     {
         FILE *dummyFile;
-        freopen_s(&dummyFile, "nul", "r", stdin);
+        ::freopen_s(&dummyFile, "nul", "r", stdin);
     }
     if (bBindStdOut)
     {
         FILE *dummyFile;
-        freopen_s(&dummyFile, "nul", "w", stdout);
+        ::freopen_s(&dummyFile, "nul", "w", stdout);
     }
     if (bBindStdErr)
     {
         FILE *dummyFile;
-        freopen_s(&dummyFile, "nul", "w", stderr);
+        ::freopen_s(&dummyFile, "nul", "w", stderr);
     }
 
     // Redirect unbuffered stdin from the current standard input handle
     if (bBindStdIn)
     {
-        HANDLE stdHandle = GetStdHandle(STD_INPUT_HANDLE);
+        HANDLE stdHandle = ::GetStdHandle(STD_INPUT_HANDLE);
         if (stdHandle != INVALID_HANDLE_VALUE)
         {
-            int fileDescriptor = ::_open_osfhandle((intptr_t)stdHandle, _O_TEXT);
+            int32 fileDescriptor = ::_open_osfhandle((intptr_t)stdHandle, FD_TEXT);
             if (fileDescriptor != -1)
             {
-                FILE *file = _fdopen(fileDescriptor, "r");
+                FILE *file = ::_fdopen(fileDescriptor, "r");
                 if (file != NULL)
                 {
-                    int dup2Result = _dup2(_fileno(file), _fileno(stdin));
-                    if (dup2Result == 0)
+                    int32 dup2Result = ::_dup2(::_fileno(file), ::_fileno(stdin));
+                    if (dup2Result == 0) // On Success
                     {
-                        setvbuf(stdin, NULL, _IONBF, 0);
+                        ::setvbuf(stdin, NULL, _IONBF, 0);
                     }
                 }
             }
@@ -203,19 +209,19 @@ void WindowsPlatformFunctions::bindCrtHandlesToStdHandles(bool bBindStdIn, bool 
     // Redirect unbuffered stdout to the current standard output handle
     if (bBindStdOut)
     {
-        HANDLE stdHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+        HANDLE stdHandle = ::GetStdHandle(STD_OUTPUT_HANDLE);
         if (stdHandle != INVALID_HANDLE_VALUE)
         {
-            int fileDescriptor = _open_osfhandle((intptr_t)stdHandle, _O_TEXT);
+            int32 fileDescriptor = ::_open_osfhandle((intptr_t)stdHandle, FD_TEXT);
             if (fileDescriptor != -1)
             {
-                FILE *file = _fdopen(fileDescriptor, "w");
+                FILE *file = ::_fdopen(fileDescriptor, "w");
                 if (file != NULL)
                 {
-                    int dup2Result = _dup2(_fileno(file), _fileno(stdout));
-                    if (dup2Result == 0)
+                    int32 dup2Result = ::_dup2(::_fileno(file), ::_fileno(stdout));
+                    if (dup2Result == 0) // On Success
                     {
-                        setvbuf(stdout, NULL, _IONBF, 0);
+                        ::setvbuf(stdout, NULL, _IONBF, 0);
                     }
                 }
             }
@@ -225,19 +231,19 @@ void WindowsPlatformFunctions::bindCrtHandlesToStdHandles(bool bBindStdIn, bool 
     // Redirect unbuffered stderr to the current standard error handle
     if (bBindStdErr)
     {
-        HANDLE stdHandle = GetStdHandle(STD_ERROR_HANDLE);
+        HANDLE stdHandle = ::GetStdHandle(STD_ERROR_HANDLE);
         if (stdHandle != INVALID_HANDLE_VALUE)
         {
-            int fileDescriptor = _open_osfhandle((intptr_t)stdHandle, _O_TEXT);
+            int32 fileDescriptor = ::_open_osfhandle((intptr_t)stdHandle, FD_TEXT);
             if (fileDescriptor != -1)
             {
-                FILE *file = _fdopen(fileDescriptor, "w");
+                FILE *file = ::_fdopen(fileDescriptor, "w");
                 if (file != NULL)
                 {
-                    int dup2Result = _dup2(_fileno(file), _fileno(stderr));
-                    if (dup2Result == 0)
+                    int32 dup2Result = ::_dup2(::_fileno(file), ::_fileno(stderr));
+                    if (dup2Result == 0) // On Success
                     {
-                        setvbuf(stderr, NULL, _IONBF, 0);
+                        ::setvbuf(stderr, NULL, _IONBF, 0);
                     }
                 }
             }
@@ -264,6 +270,8 @@ void WindowsPlatformFunctions::bindCrtHandlesToStdHandles(bool bBindStdIn, bool 
         std::cerr.clear();
     }
 }
+
+#undef FD_TEXT
 
 void WindowsPlatformFunctions::setConsoleForegroundColor(uint8 r, uint8 g, uint8 b)
 {
@@ -305,7 +313,6 @@ void WindowsPlatformFunctions::setupAvailableConsole()
     HANDLE errorHandle = ::GetStdHandle(STD_ERROR_HANDLE);
     // HANDLE inputHandle = ::GetStdHandle(STD_INPUT_HANDLE);
 
-    // TODO(Jeslas) : Find how to move the next command line to end of text after application ends in power shell, cmd prompt is fine
     dword outConsoleMode
         = ENABLE_VIRTUAL_TERMINAL_PROCESSING /* Enable virtual terminal escape char sequences */
           | ENABLE_WRAP_AT_EOL_OUTPUT        /* Wraps the line to next line if allowed end of line for current window's width is reached */
@@ -316,7 +323,7 @@ void WindowsPlatformFunctions::setupAvailableConsole()
 
     if (!modeSet)
     {
-        ::OutputDebugString(TCHAR("Failed to set console mode\n"));
+        outputToDebugger(TCHAR("Failed to set console mode\n"));
     }
 }
 
@@ -327,6 +334,21 @@ void WindowsPlatformFunctions::detachCosole()
         ::FreeConsole();
     }
 }
+
+bool WindowsPlatformFunctions::hasAttachedDebugger()
+{
+    HANDLE processHandle = ::GetCurrentProcess();
+    int32 bRemoteDebuggerAvailable = false;
+    bool bIsRunByDebugger = !!IsDebuggerPresent();
+    if (::CheckRemoteDebuggerPresent(processHandle, &bRemoteDebuggerAvailable) == 0)
+    {
+        LOG_ERROR("WindowsPlatformFunctions", "Unable to find remoter debugger state");
+    }
+
+    return !!bRemoteDebuggerAvailable || bIsRunByDebugger;
+}
+
+void WindowsPlatformFunctions::outputToDebugger(const TChar *msg) { ::OutputDebugString(msg); }
 
 String WindowsPlatformFunctions::getClipboard()
 {
@@ -373,7 +395,7 @@ bool WindowsPlatformFunctions::setClipboard(const String &text)
     }
 
 #if 0
-    const int wideCharLen = ::MultiByteToWideChar(CP_UTF8, 0, text.getChar(), -1, NULL, 0);
+    const int32 wideCharLen = ::MultiByteToWideChar(CP_UTF8, 0, text.getChar(), -1, NULL, 0);
     HGLOBAL clipboardHnd = ::GlobalAlloc(GMEM_MOVEABLE, (SIZE_T)wideCharLen * sizeof(WCHAR));
     if (clipboardHnd == NULL)
     {

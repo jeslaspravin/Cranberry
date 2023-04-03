@@ -76,6 +76,10 @@ public:
     FORCE_INLINE static void setupAvailableConsole() { PlatformClass::setupAvailableConsole(); }
     FORCE_INLINE static void detachCosole() { PlatformClass::detachCosole(); }
 
+    // Debugger related
+    FORCE_INLINE static bool hasAttachedDebugger() { return PlatformClass::hasAttachedDebugger(); }
+    FORCE_INLINE static void outputToDebugger(const TChar *msg) { PlatformClass::outputToDebugger(msg); }
+
     // Platform tools
 
     FORCE_INLINE static String getClipboard() { return PlatformClass::getClipboard(); }

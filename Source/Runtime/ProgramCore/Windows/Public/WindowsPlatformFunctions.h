@@ -36,6 +36,9 @@ public:
     static void setupAvailableConsole();
     static void detachCosole();
 
+    static bool hasAttachedDebugger();
+    static void outputToDebugger(const TChar *msg);
+
     static String getClipboard();
     static bool setClipboard(const String &text);
 

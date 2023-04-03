@@ -12,7 +12,7 @@
 #include "WindowsErrorHandler.h"
 #include "Logger/Logger.h"
 #include "Modules/ModuleManager.h"
-#include "Types/Platform/GenericPlatformFunctions.h"
+#include "Types/Platform/PlatformFunctions.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
 #include "WindowsCommonHeaders.h"
 
@@ -89,15 +89,7 @@ void WindowsUnexpectedErrorHandler::dumpCallStack(bool bShouldCrashApp) const
 
 void WindowsUnexpectedErrorHandler::debugBreak() const
 {
-    HANDLE processHandle = ::GetCurrentProcess();
-    int32 bRemoteDebuggerAvailable = false;
-    bool bIsRunByDebugger = !!IsDebuggerPresent();
-    if (::CheckRemoteDebuggerPresent(processHandle, &bRemoteDebuggerAvailable) == 0)
-    {
-        LOG_ERROR("WindowsUnexpectedErrorHandler", "Unable to find remoter debugger state");
-    }
-
-    if (!!bRemoteDebuggerAvailable || bIsRunByDebugger)
+    if (PlatformFunctions::hasAttachedDebugger())
     {
         ::DebugBreak();
     }

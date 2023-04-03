@@ -296,6 +296,7 @@ void LoggerImpl::flushStreamInternal()
 
             const std::string utf8str{ TCHAR_TO_UTF8(tempOutputBuffer.getChar()) };
             logFile.write(ArrayView<const uint8>(reinterpret_cast<const uint8 *>(utf8str.data()), uint32(utf8str.length())));
+            PlatformFunctions::outputToDebugger(tempOutputBuffer.getChar());
         }
     }
     allTlDataLock.unlock();
