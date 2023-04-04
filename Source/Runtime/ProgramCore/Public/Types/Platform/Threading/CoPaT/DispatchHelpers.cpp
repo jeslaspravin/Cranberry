@@ -18,12 +18,12 @@ COPAT_NS_INLINED
 namespace copat
 {
 // Just copying the callback so a copy exists inside dispatch
-DispatchAwaitableType dispatchOneTask(JobSystem &jobSys, DispatchFunctionType callback, u32 jobIdx)
+DispatchAwaitableType dispatchOneTask(JobSystem &jobSys, DispatchFunctionType callback, u32 jobIdx) noexcept
 {
     callback(jobIdx);
     co_return;
 }
-DispatchAwaitableType dispatchTaskGroup(JobSystem &jobSys, DispatchFunctionType callback, u32 fromJobIdx, u32 count)
+DispatchAwaitableType dispatchTaskGroup(JobSystem &jobSys, DispatchFunctionType callback, u32 fromJobIdx, u32 count) noexcept
 {
     const u32 endJobIdx = fromJobIdx + count;
     for (u32 jobIdx = fromJobIdx; jobIdx < endJobIdx; ++jobIdx)
@@ -33,7 +33,7 @@ DispatchAwaitableType dispatchTaskGroup(JobSystem &jobSys, DispatchFunctionType 
     co_return;
 }
 
-AwaitAllTasks<std::vector<DispatchAwaitableType>> dispatch(JobSystem *jobSys, const DispatchFunctionType &callback, u32 count)
+AwaitAllTasks<std::vector<DispatchAwaitableType>> dispatch(JobSystem *jobSys, const DispatchFunctionType &callback, u32 count) noexcept
 {
     if (count == 0)
     {

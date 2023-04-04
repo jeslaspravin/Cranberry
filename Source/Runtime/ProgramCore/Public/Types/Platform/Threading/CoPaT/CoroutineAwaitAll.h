@@ -38,14 +38,14 @@ public:
     AwaitAllTasksCounter &operator= (AwaitAllTasksCounter &&) = default;
     AwaitAllTasksCounter &operator= (const AwaitAllTasksCounter &) = default;
 
-    void reset(u32 newCount) { counter.store(newCount, std::memory_order::release); }
-    void setAwaitingCoroutine(std::coroutine_handle<> awaitingCoro)
+    void reset(u32 newCount) noexcept { counter.store(newCount, std::memory_order::release); }
+    void setAwaitingCoroutine(std::coroutine_handle<> awaitingCoro) noexcept
     {
         COPAT_ASSERT(!awaitingCoroutine);
         awaitingCoroutine = awaitingCoro;
     }
 
-    void release()
+    void release() noexcept
     {
         COPAT_ASSERT(counter.load(std::memory_order::acquire) > 0);
         if (counter.fetch_sub(1, std::memory_order::acq_rel) == 1 && awaitingCoroutine)
@@ -118,14 +118,14 @@ public:
     /**
      * Sets counter waiting on this awaitable and resumes from initial_suspend. Counter gets released when final_suspend gets awaited
      */
-    void setWaitCounter(impl::AwaitAllTasksCounter &counter) const
+    void setWaitCounter(impl::AwaitAllTasksCounter &counter) const noexcept
     {
         COPAT_ASSERT(ownerCoroutine && !ownerCoroutine.promise().waitCounter);
         ownerCoroutine.promise().waitCounter = &counter;
         ownerCoroutine.resume();
     }
 
-    void destroyOwnerCoroutine()
+    void destroyOwnerCoroutine() noexcept
     {
         if (ownerCoroutine)
         {
@@ -134,7 +134,7 @@ public:
         }
     }
 
-    constexpr RetTypeStorage::reference_type getReturnValue() const
+    constexpr RetTypeStorage::reference_type getReturnValue() const noexcept
     {
         if constexpr (!std::is_void_v<RetType>)
         {
@@ -200,23 +200,23 @@ public:
 
 private:
     template <size_t Idx>
-    void setAwaitWaitCounter()
+    void setAwaitWaitCounter() noexcept
     {
         std::get<Idx>(allAwaits).setWaitCounter(counter);
     }
     template <size_t... Indices>
-    void setAwaitsWaitCounter(std::index_sequence<Indices...>)
+    void setAwaitsWaitCounter(std::index_sequence<Indices...>) noexcept
     {
         (setAwaitWaitCounter<Indices>(), ...);
     }
 
     template <size_t Idx>
-    void destroyAwait()
+    void destroyAwait() noexcept
     {
         std::get<Idx>(allAwaits).destroyOwnerCoroutine();
     }
     template <size_t... Indices>
-    void destroyAllAwaits(std::index_sequence<Indices...>)
+    void destroyAllAwaits(std::index_sequence<Indices...>) noexcept
     {
         (destroyAwait<Indices>(), ...);
     }
@@ -294,7 +294,7 @@ namespace impl
 
 template <AwaitableTypeConcept Awaitable, typename RetType = AwaiterReturnType<GetAwaiterType_t<Awaitable>>>
 requires (!std::is_void_v<RetType>)
-AwaitOneTask<RetType> makeOneTaskAwaitable(Awaitable &&awaitable)
+AwaitOneTask<RetType> makeOneTaskAwaitable(Awaitable &&awaitable) noexcept
 {
     if constexpr (std::is_lvalue_reference_v<Awaitable>)
     {
@@ -314,7 +314,7 @@ AwaitOneTask<RetType> makeOneTaskAwaitable(Awaitable &&awaitable)
 }
 template <AwaitableTypeConcept Awaitable, typename RetType = AwaiterReturnType<GetAwaiterType_t<Awaitable>>>
 requires std::is_void_v<RetType>
-AwaitOneTask<void> makeOneTaskAwaitable(Awaitable &&awaitable)
+AwaitOneTask<void> makeOneTaskAwaitable(Awaitable &&awaitable) noexcept
 {
     if constexpr (std::is_lvalue_reference_v<Awaitable>)
     {
@@ -339,14 +339,14 @@ AwaitOneTask<void> makeOneTaskAwaitable(Awaitable &&awaitable)
  */
 
 template <AwaitableTypeConcept... Awaitables>
-AwaitAllTasks<std::tuple<Awaitables...>> awaitAllTasks(Awaitables &&...awaitables)
+AwaitAllTasks<std::tuple<Awaitables...>> awaitAllTasks(Awaitables &&...awaitables) noexcept
 {
     return AwaitAllTasks<std::tuple<Awaitables...>>{ std::tuple<AwaitOneTask<AwaiterReturnType<GetAwaiterType_t<Awaitables>>>...>{
         std::make_tuple(impl::makeOneTaskAwaitable<Awaitables>(std::forward<Awaitables>(awaitables))...) } };
 }
 
 template <AwaitableTypeConcept AwaitableType>
-AwaitAllTasks<std::vector<AwaitableType>> awaitAllTasks(std::vector<AwaitableType> &awaitables)
+AwaitAllTasks<std::vector<AwaitableType>> awaitAllTasks(std::vector<AwaitableType> &awaitables) noexcept
 {
     if (awaitables.empty())
     {
@@ -363,7 +363,7 @@ AwaitAllTasks<std::vector<AwaitableType>> awaitAllTasks(std::vector<AwaitableTyp
     return AwaitAllTasks<std::vector<AwaitableType>>{ std::move(allAwaits) };
 }
 template <AwaitableTypeConcept AwaitableType>
-AwaitAllTasks<std::vector<AwaitableType>> awaitAllTasks(std::vector<AwaitableType> &&awaitables)
+AwaitAllTasks<std::vector<AwaitableType>> awaitAllTasks(std::vector<AwaitableType> &&awaitables) noexcept
 {
     if (awaitables.empty())
     {

@@ -66,7 +66,7 @@ JobSystem::JobSystem(u32 inWorkerCount, u32 constraints)
     enqIndirection[u32(EJobThreadType::##ThreadType)]                                                                                          \
         = (threadingConstraints & NOSPECIALTHREAD_ENUM_TO_FLAGBIT(ThreadType)) ? EJobThreadType::MainThread : EJobThreadType::##ThreadType;
 
-void JobSystem::initialize(MainThreadTickFunc &&mainTick, void *inUserData)
+void JobSystem::initialize(MainThreadTickFunc &&mainTick, void *inUserData) noexcept
 {
     COPAT_PROFILER_SCOPE(COPAT_PROFILER_CHAR("CopatInit"));
 
@@ -113,7 +113,7 @@ void JobSystem::initialize(MainThreadTickFunc &&mainTick, void *inUserData)
 #undef NO_SPECIALTHREADS_INDIR_SETUP
 #undef SPECIALTHREAD_INDIR_SETUP
 
-void JobSystem::initializeWorkers()
+void JobSystem::initializeWorkers() noexcept
 {
     COPAT_PROFILER_SCOPE(COPAT_PROFILER_CHAR("CopatWorkerThreadsInit"));
 
@@ -150,7 +150,7 @@ void JobSystem::initializeWorkers()
     }
 }
 
-void JobSystem::shutdown()
+void JobSystem::shutdown() noexcept
 {
     COPAT_PROFILER_SCOPE(COPAT_PROFILER_CHAR("CopatShutdown"));
 
@@ -185,7 +185,7 @@ void JobSystem::shutdown()
     }
 }
 
-void JobSystem::enqueueJob(std::coroutine_handle<> coro, EJobThreadType enqueueToThread /*= EJobThreadType::WorkerThreads*/)
+void JobSystem::enqueueJob(std::coroutine_handle<> coro, EJobThreadType enqueueToThread /*= EJobThreadType::WorkerThreads*/) noexcept
 {
     PerThreadData *threadData = getPerThreadData();
     enqueueToThread = enqToThreadType(enqueueToThread);
@@ -239,7 +239,7 @@ void JobSystem::enqueueJob(std::coroutine_handle<> coro, EJobThreadType enqueueT
     }
 }
 
-copat::JobSystem::PerThreadData &JobSystem::getOrCreatePerThreadData()
+copat::JobSystem::PerThreadData &JobSystem::getOrCreatePerThreadData() noexcept
 {
     PerThreadData *threadData = (PerThreadData *)PlatformThreadingFuncs::getTlsSlotValue(tlsSlot);
     if (!threadData)
@@ -251,7 +251,7 @@ copat::JobSystem::PerThreadData &JobSystem::getOrCreatePerThreadData()
     return *threadData;
 }
 
-void JobSystem::runMain()
+void JobSystem::runMain() noexcept
 {
     // Main thread data gets created and destroy in initialize and shutdown resp.
     PerThreadData *tlData = getPerThreadData();
@@ -277,7 +277,7 @@ void JobSystem::runMain()
     }
 }
 
-void JobSystem::doWorkerJobs()
+void JobSystem::doWorkerJobs() noexcept
 {
     PerThreadData *tlData = &getOrCreatePerThreadData();
     tlData->threadType = EJobThreadType::WorkerThreads;
@@ -305,7 +305,7 @@ void JobSystem::doWorkerJobs()
     memDelete(tlData);
 }
 
-copat::u32 JobSystem::calculateWorkersCount() const
+copat::u32 JobSystem::calculateWorkersCount() const noexcept
 {
     u32 coreCount, logicalProcCount;
     getCoreCount(coreCount, logicalProcCount);
@@ -313,7 +313,7 @@ copat::u32 JobSystem::calculateWorkersCount() const
     return coreCount > MAX_SUPPORTED_WORKERS ? MAX_SUPPORTED_WORKERS : coreCount;
 }
 
-copat::JobSystem::PerThreadData *JobSystem::getPerThreadData() const
+copat::JobSystem::PerThreadData *JobSystem::getPerThreadData() const noexcept
 {
     return (PerThreadData *)PlatformThreadingFuncs::getTlsSlotValue(tlsSlot);
 }

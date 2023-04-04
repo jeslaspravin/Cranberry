@@ -31,10 +31,11 @@ struct NormalFuncAwaiter;
 using DispatchAwaitableType = JobSystemTaskType<void, JobSystemPromiseBase, true, EJobThreadType::WorkerThreads>;
 using DispatchFunctionType = FunctionType<void, u32>;
 
-COPAT_EXPORT_SYM AwaitAllTasks<std::vector<DispatchAwaitableType>> dispatch(JobSystem *jobSys, const DispatchFunctionType &callback, u32 count);
+COPAT_EXPORT_SYM AwaitAllTasks<std::vector<DispatchAwaitableType>>
+dispatch(JobSystem *jobSys, const DispatchFunctionType &callback, u32 count) noexcept;
 
 template <typename FuncType, typename... Args>
-NormalFuncAwaiter fireAndForget(FuncType &&func, Args &&...args)
+NormalFuncAwaiter fireAndForget(FuncType &&func, Args &&...args) noexcept
 {
     FuncType funcCopy = std::forward<FuncType>(func);
     co_await funcCopy(std::forward<Args>(args)...);

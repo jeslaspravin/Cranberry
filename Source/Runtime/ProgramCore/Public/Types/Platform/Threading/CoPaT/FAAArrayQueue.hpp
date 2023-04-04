@@ -68,13 +68,13 @@ struct FAAArrayQueueNode
         }
     }
 
-    bool casNext(FAAArrayQueueNode *cmp, FAAArrayQueueNode *val) { return next.compare_exchange_strong(cmp, val); }
+    bool casNext(FAAArrayQueueNode *cmp, FAAArrayQueueNode *val) noexcept { return next.compare_exchange_strong(cmp, val); }
 };
 
 #if COPAT_ENABLE_QUEUE_ALLOC_TRACKING
 
 struct QueueNodeAllocTracker;
-COPAT_EXPORT_SYM QueueNodeAllocTracker &getNodeAllocsTracker();
+COPAT_EXPORT_SYM QueueNodeAllocTracker &getNodeAllocsTracker() noexcept;
 
 #endif // COPAT_ENABLE_QUEUE_ALLOC_TRACKING
 
@@ -87,7 +87,7 @@ struct QueueNodeAllocTracker
     std::atomic<u64> newAllocsCount = 0;
     std::atomic<u64> reuseCount = 0;
 
-    inline static void pushActiveReuse()
+    inline static void pushActiveReuse() noexcept
     {
 #if COPAT_ENABLE_QUEUE_ALLOC_TRACKING
         getNodeAllocsTracker().reuseCount.fetch_add(1, std::memory_order::relaxed);
@@ -95,7 +95,7 @@ struct QueueNodeAllocTracker
         getNodeAllocsTracker().activeAllocs.fetch_add(1, std::memory_order::relaxed);
 #endif
     }
-    inline static void pushActiveNew()
+    inline static void pushActiveNew() noexcept
     {
 #if COPAT_ENABLE_QUEUE_ALLOC_TRACKING
         getNodeAllocsTracker().newAllocsCount.fetch_add(1, std::memory_order::relaxed);
@@ -103,7 +103,7 @@ struct QueueNodeAllocTracker
 #endif
     }
 
-    inline static void popActive()
+    inline static void popActive() noexcept
     {
 #if COPAT_ENABLE_QUEUE_ALLOC_TRACKING
         getNodeAllocsTracker().inDeleteQAllocs.fetch_add(1, std::memory_order::relaxed);
@@ -111,7 +111,7 @@ struct QueueNodeAllocTracker
 #endif
     }
 
-    inline static void onDelete()
+    inline static void onDelete() noexcept
     {
 #if COPAT_ENABLE_QUEUE_ALLOC_TRACKING
         getNodeAllocsTracker().inDeleteQAllocs.fetch_sub(1, std::memory_order::relaxed);
@@ -126,7 +126,7 @@ struct HazardPointerDeleter<FAAArrayQueueNode<T>>
 {
     using NodeType = FAAArrayQueueNode<T>;
 
-    void operator() (NodeType *ptr)
+    void operator() (NodeType *ptr) noexcept
     {
         QueueNodeAllocTracker::onDelete();
         memDelete(ptr);
@@ -188,11 +188,11 @@ private:
 
     using Node = FAAArrayQueueNode<T>;
 
-    bool casTail(Node *cmp, Node *val) { return tail.compare_exchange_strong(cmp, val); }
+    bool casTail(Node *cmp, Node *val) noexcept { return tail.compare_exchange_strong(cmp, val); }
 
-    bool casHead(Node *cmp, Node *val) { return head.compare_exchange_strong(cmp, val); }
+    bool casHead(Node *cmp, Node *val) noexcept { return head.compare_exchange_strong(cmp, val); }
 
-    static T *takenPtr() { return (T *)TAKEN_PTR; }
+    static T *takenPtr() noexcept { return (T *)TAKEN_PTR; }
 
     HazardPointersManager<Node> hazardsManager;
 
@@ -226,12 +226,12 @@ public:
 
     inline HazardToken getHazardToken() { return { hazardsManager }; }
 
-    void enqueue(T *item)
+    void enqueue(T *item) noexcept
     {
         HazardToken token{ hazardsManager };
         enqueue(item, token);
     }
-    void enqueue(T *item, HazardToken &hazardRecord)
+    void enqueue(T *item, HazardToken &hazardRecord) noexcept
     {
         if (item == nullptr)
         {
@@ -290,12 +290,12 @@ public:
         }
     }
 
-    T *dequeue()
+    T *dequeue() noexcept
     {
         HazardToken token{ hazardsManager };
         return dequeue(token);
     }
-    T *dequeue(HazardToken &hazardRecord)
+    T *dequeue(HazardToken &hazardRecord) noexcept
     {
         while (true)
         {
@@ -352,9 +352,9 @@ private:
 
     using Node = FAAArrayQueueNode<T>;
 
-    bool casTail(Node *cmp, Node *val) { return tail.compare_exchange_strong(cmp, val); }
+    bool casTail(Node *cmp, Node *val) noexcept { return tail.compare_exchange_strong(cmp, val); }
 
-    static T *takenPtr() { return (T *)TAKEN_PTR; }
+    static T *takenPtr() noexcept { return (T *)TAKEN_PTR; }
 
     /**
      * Needed as enqueue needs protection from dequeue delete
@@ -393,12 +393,12 @@ public:
 
     inline HazardToken getHazardToken() { return { hazardsManager }; }
 
-    void enqueue(T *item)
+    void enqueue(T *item) noexcept
     {
         HazardToken token{ hazardsManager };
         enqueue(item, token);
     }
-    void enqueue(T *item, HazardToken &hazardRecord)
+    void enqueue(T *item, HazardToken &hazardRecord) noexcept
     {
         if (item == nullptr)
         {
@@ -459,7 +459,7 @@ public:
         }
     }
 
-    T *dequeue()
+    T *dequeue() noexcept
     {
         while (true)
         {

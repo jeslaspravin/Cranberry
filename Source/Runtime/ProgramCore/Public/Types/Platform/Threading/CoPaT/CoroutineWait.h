@@ -105,7 +105,7 @@ public:
         constexpr void return_void() const noexcept {}
     };
 
-    void startWait(std::binary_semaphore &inWaitingSemaphore)
+    void startWait(std::binary_semaphore &inWaitingSemaphore) noexcept
     {
         COPAT_ASSERT(ownerCoroutine);
 
@@ -118,7 +118,7 @@ public:
         ownerCoroutine.resume();
     }
 
-    constexpr RetTypeStorage::reference_type getReturnValue() const
+    constexpr RetTypeStorage::reference_type getReturnValue() const noexcept
     {
         if constexpr (!std::is_void_v<RetType>)
         {
@@ -128,20 +128,20 @@ public:
 };
 
 template <AwaitableTypeConcept AwaitableType, typename RetType = AwaiterReturnType<GetAwaiterType_t<AwaitableType>>>
-WaitOnAwaitable<RetType> awaitOnAwaitable(AwaitableType &awaitable)
+WaitOnAwaitable<RetType> awaitOnAwaitable(AwaitableType &awaitable) noexcept
 {
     // Can we not yield on void? like promise_type::yield_value(void)?
     co_yield co_await awaitable;
 }
 template <AwaitableTypeConcept AwaitableType>
-WaitOnAwaitable<void> awaitOnVoidAwaitable(AwaitableType &awaitable)
+WaitOnAwaitable<void> awaitOnVoidAwaitable(AwaitableType &awaitable) noexcept
 {
     co_await awaitable;
 }
 
 template <AwaitableTypeConcept AwaitableType, typename RetType = AwaiterReturnType<GetAwaiterType_t<AwaitableType>>>
 requires (!std::is_void_v<RetType>)
-RetType waitOnAwaitable(AwaitableType &&awaitable)
+RetType waitOnAwaitable(AwaitableType &&awaitable) noexcept
 {
     impl::WaitOnAwaitable<RetType> waitingOnAwaitable = impl::awaitOnAwaitable<AwaitableType, RetType>(awaitable);
     std::binary_semaphore semaphore{ 0 };
@@ -153,7 +153,7 @@ RetType waitOnAwaitable(AwaitableType &&awaitable)
 
 template <AwaitableTypeConcept AwaitableType, typename RetType = AwaiterReturnType<GetAwaiterType_t<AwaitableType>>>
 requires std::is_void_v<RetType>
-RetType waitOnAwaitable(AwaitableType &&awaitable)
+RetType waitOnAwaitable(AwaitableType &&awaitable) noexcept
 {
     impl::WaitOnAwaitable<RetType> waitingOnAwaitable = impl::awaitOnVoidAwaitable(awaitable);
     std::binary_semaphore semaphore{ 0 };
@@ -164,7 +164,7 @@ RetType waitOnAwaitable(AwaitableType &&awaitable)
 } // namespace impl
 
 template <AwaitableTypeConcept AwaitableType>
-inline auto waitOnAwaitable(AwaitableType &&awaitable)
+inline auto waitOnAwaitable(AwaitableType &&awaitable) noexcept
 {
     return impl::waitOnAwaitable(std::forward<AwaitableType>(awaitable));
 }

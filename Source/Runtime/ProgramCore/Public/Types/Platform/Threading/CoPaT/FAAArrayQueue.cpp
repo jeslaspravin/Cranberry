@@ -16,7 +16,7 @@ namespace copat
 {
 
 #if COPAT_ENABLE_QUEUE_ALLOC_TRACKING
-QueueNodeAllocTracker &getNodeAllocsTracker()
+QueueNodeAllocTracker &getNodeAllocsTracker() noexcept
 {
     static QueueNodeAllocTracker tracker;
     return tracker;

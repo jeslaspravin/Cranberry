@@ -40,8 +40,8 @@ public:
     {}
 
     // Even if nothing is awaiting it is still better to suspend as something might await on it after it if finished
-    constexpr bool await_ready() const { return false; }
-    void await_suspend(std::coroutine_handle<> h) const
+    constexpr bool await_ready() const noexcept { return false; }
+    void await_suspend(std::coroutine_handle<> h) const noexcept
     {
         COPAT_ASSERT(enqToJobSystem);
         enqToJobSystem->enqueueJob(h, SwitchToThread);
@@ -75,7 +75,7 @@ public:
         constexpr void await_resume() const noexcept {}
     };
 
-    bool trySetContinuation(std::coroutine_handle<> newContinuation)
+    bool trySetContinuation(std::coroutine_handle<> newContinuation) noexcept
     {
         continuation = newContinuation;
         const bool bAlreadySetOrDone = bBlockContinuation.test_and_set(std::memory_order::acq_rel);
@@ -129,7 +129,7 @@ public:
     {
         // Even if nothing is awaiting it is still better to suspend as something might await on it after it if finished
         constexpr bool await_ready() const { return false; }
-        void await_suspend(std::coroutine_handle<JobSystemPromiseBaseMC> h) const
+        void await_suspend(std::coroutine_handle<JobSystemPromiseBaseMC> h) const noexcept
         {
             bool bAlreadySet = h.promise().bBlockContinuation.test_and_set(std::memory_order::release);
             COPAT_ASSERT(!bAlreadySet);
@@ -152,7 +152,7 @@ public:
         constexpr void await_resume() const noexcept {}
     };
 
-    bool trySetContinuation(std::coroutine_handle<> newContinuation)
+    bool trySetContinuation(std::coroutine_handle<> newContinuation) noexcept
     {
         std::coroutine_handle<JobSystemPromiseBaseMC> thisCoro = std::coroutine_handle<JobSystemPromiseBaseMC>::from_promise(*this);
 
@@ -299,7 +299,7 @@ public:
             }
         }
         template <std::convertible_to<RetType> Type>
-        void return_value(Type &&retVal)
+        void return_value(Type &&retVal) noexcept
         {
             returnStore = RetTypeStorage{ std::forward<Type>(retVal) };
         }
@@ -308,13 +308,13 @@ public:
     using promise_type = PromiseType;
 
     // If there is no coroutine then there is no need to wait as well
-    bool await_ready() const { return !ownerCoroutine || ownerCoroutine.done(); }
+    bool await_ready() const noexcept { return !ownerCoroutine || ownerCoroutine.done(); }
     template <typename PromiseT>
-    bool await_suspend(std::coroutine_handle<PromiseT> awaitingAtCoro)
+    bool await_suspend(std::coroutine_handle<PromiseT> awaitingAtCoro) noexcept
     {
         return ownerCoroutine.promise().trySetContinuation(awaitingAtCoro);
     }
-    RetTypeStorage::reference_type await_resume() const { return ownerCoroutine.promise().returnStore.get(); }
+    RetTypeStorage::reference_type await_resume() const noexcept { return ownerCoroutine.promise().returnStore.get(); }
 };
 
 /**
@@ -406,9 +406,9 @@ public:
     using promise_type = PromiseType;
 
     // If there is no coroutine then there is no need to wait as well
-    bool await_ready() const { return !ownerCoroutine || ownerCoroutine.done(); }
+    bool await_ready() const noexcept { return !ownerCoroutine || ownerCoroutine.done(); }
     template <typename PromiseT>
-    bool await_suspend(std::coroutine_handle<PromiseT> awaitingAtCoro)
+    bool await_suspend(std::coroutine_handle<PromiseT> awaitingAtCoro) noexcept
     {
         return ownerCoroutine.promise().trySetContinuation(awaitingAtCoro);
     }
@@ -487,7 +487,7 @@ public:
             }
         }
         template <std::convertible_to<RetType> Type>
-        void return_value(Type &&retVal)
+        void return_value(Type &&retVal) noexcept
         {
             returnStore = RetTypeStorage{ std::forward<Type>(retVal) };
         }
@@ -496,14 +496,14 @@ public:
     using promise_type = PromiseType;
 
     // If there is no coroutine then there is no need to wait as well
-    bool await_ready() const { return !ownerCoroutinePtr || std::coroutine_handle<>::from_address(ownerCoroutinePtr.get()).done(); }
+    bool await_ready() const noexcept { return !ownerCoroutinePtr || std::coroutine_handle<>::from_address(ownerCoroutinePtr.get()).done(); }
     template <typename PromiseT>
-    bool await_suspend(std::coroutine_handle<PromiseT> awaitingAtCoro)
+    bool await_suspend(std::coroutine_handle<PromiseT> awaitingAtCoro) noexcept
     {
         std::coroutine_handle<PromiseType> ownerCoroutine = std::coroutine_handle<>::from_address(ownerCoroutinePtr.get());
         return ownerCoroutine.promise().trySetContinuation(awaitingAtCoro);
     }
-    RetTypeStorage::reference_type await_resume() const { return ownerCoroutinePtr.promise().returnStore.get(); }
+    RetTypeStorage::reference_type await_resume() const noexcept { return ownerCoroutinePtr.promise().returnStore.get(); }
 };
 
 /**
@@ -576,9 +576,9 @@ public:
     using promise_type = PromiseType;
 
     // If there is no coroutine then there is no need to wait as well
-    bool await_ready() const { return !ownerCoroutinePtr || std::coroutine_handle<>::from_address(ownerCoroutinePtr.get()).done(); }
+    bool await_ready() const noexcept { return !ownerCoroutinePtr || std::coroutine_handle<>::from_address(ownerCoroutinePtr.get()).done(); }
     template <typename PromiseT>
-    bool await_suspend(std::coroutine_handle<PromiseT> awaitingAtCoro)
+    bool await_suspend(std::coroutine_handle<PromiseT> awaitingAtCoro) noexcept
     {
         std::coroutine_handle<PromiseType> ownerCoroutine = std::coroutine_handle<>::from_address(ownerCoroutinePtr.get());
         return ownerCoroutine.promise().trySetContinuation(awaitingAtCoro);

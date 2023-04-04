@@ -44,10 +44,10 @@ private:
     constexpr static const u32 ADDITIONAL_PAD = (OFFSET_NEED_2BYTES ? 2 : 1);
     using PadOffsetType = std::conditional_t<OFFSET_NEED_2BYTES, uint16_t, uint8_t>;
 
-    static uintptr_t alignByUnsafe(uintptr_t value, uintptr_t alignVal) { return (value + (alignVal - 1)) & ~(alignVal - 1); }
+    static uintptr_t alignByUnsafe(uintptr_t value, uintptr_t alignVal) noexcept { return (value + (alignVal - 1)) & ~(alignVal - 1); }
 
 public:
-    static void *memAlloc(size_t size, u32 alignment = 1)
+    static void *memAlloc(size_t size, u32 alignment = 1) noexcept
     {
         size_t paddedSize = size + (alignment - 1) + ADDITIONAL_PAD;
         void *ptr = ::malloc(paddedSize);
@@ -59,7 +59,7 @@ public:
         *offsetPtr = offset;
         return reinterpret_cast<void *>(dataStart);
     }
-    static void memFree(void *ptr)
+    static void memFree(void *ptr) noexcept
     {
         uintptr_t dataStart = reinterpret_cast<uintptr_t>(ptr);
         PadOffsetType *offsetPtr = reinterpret_cast<PadOffsetType *>(dataStart - sizeof(PadOffsetType));
@@ -76,20 +76,20 @@ using CoPaTMemAlloc = OVERRIDE_MEMORY_ALLOCATOR;
  */
 
 template <typename T, typename... Args>
-T *memNew(Args &&...args)
+T *memNew(Args &&...args) noexcept
 {
     return new (CoPaTMemAlloc::memAlloc(sizeof(T), alignof(T))) T(std::forward<Args>(args)...);
 }
 
 template <typename T>
 requires (std::is_fundamental_v<T> || std::is_trivially_destructible_v<T>)
-void memDelete(T *ptr)
+void memDelete(T *ptr) noexcept
 {
     CoPaTMemAlloc::memFree(ptr);
 }
 template <typename T>
 requires (!std::is_trivially_destructible_v<T>)
-void memDelete(T *ptr)
+void memDelete(T *ptr) noexcept
 {
     ptr->~T();
     CoPaTMemAlloc::memFree(ptr);

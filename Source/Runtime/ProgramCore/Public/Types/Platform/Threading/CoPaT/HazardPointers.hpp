@@ -215,7 +215,7 @@ public:
         }
     }
 
-    void enqueueDelete(HazardPointerType hazardPtr)
+    void enqueueDelete(HazardPointerType hazardPtr) noexcept
     {
         HazardPtrPerThreadData &threadData = getPerThreadData();
         threadData.deletingPtrs.emplace_back(hazardPtr);
@@ -228,7 +228,7 @@ public:
         }
     }
 
-    HazardPointerType dequeueDelete()
+    HazardPointerType dequeueDelete() noexcept
     {
         HazardPtrPerThreadData &threadData = getPerThreadData();
         if (threadData.deletingPtrs.empty())
@@ -242,7 +242,7 @@ public:
     }
 
 private:
-    HazardPtrPerThreadData *createPerThreadData()
+    HazardPtrPerThreadData *createPerThreadData() noexcept
     {
         HazardPtrPerThreadData *perThreadData = memNew<HazardPtrPerThreadData>();
         perThreadData->lastCollect = std::chrono::steady_clock::now();
@@ -251,7 +251,7 @@ private:
         allPerThreadData.emplace_back(perThreadData);
         return perThreadData;
     }
-    HazardPtrPerThreadData &getPerThreadData()
+    HazardPtrPerThreadData &getPerThreadData() noexcept
     {
         HazardPtrPerThreadData *perThreadDataPtr = (HazardPtrPerThreadData *)PlatformThreadingFuncs::getTlsSlotValue(perThreadSlot);
         if (!perThreadDataPtr)
@@ -262,7 +262,7 @@ private:
         return *perThreadDataPtr;
     }
 
-    HazardPointersChunk *addChunk(HazardPointersChunk *addTo)
+    HazardPointersChunk *addChunk(HazardPointersChunk *addTo) noexcept
     {
         HazardPointersChunk *newChunk = memNew<HazardPointersChunk>();
         HazardPointersChunk *expectedChunk = nullptr;
@@ -282,7 +282,7 @@ private:
      * - pNext load might not see latest and see nullptr. It is okay and gets corrected in addChunk
      * - addChunk might fail CAS but it is okay as that will get corrected in next spin using same chunk here
      */
-    HazardRecord *acquireRecord()
+    HazardRecord *acquireRecord() noexcept
     {
         HazardPointersChunk *chunk = &head;
         while (true)
@@ -315,7 +315,7 @@ private:
     /**
      * This will be read only on multi consumer data and RW on thread specific data
      */
-    void gcCollect()
+    void gcCollect() noexcept
     {
         COPAT_PROFILER_SCOPE(COPAT_PROFILER_CHAR("CopatGCPointers"));
 
