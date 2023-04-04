@@ -31,7 +31,9 @@ using WorkerQHazardToken = WorkerThreadQueueType::HazardToken;
  * Just to not leak thread include
  */
 using INTERNAL_SpecialThreadFuncType = void (JobSystem::*)();
-void INTERNAL_initializeAndRunSpecialThread(INTERNAL_SpecialThreadFuncType threadFunc, EJobThreadType threadType, JobSystem *jobSystem);
+void INTERNAL_initializeAndRunSpecialThread(
+    INTERNAL_SpecialThreadFuncType threadFunc, EJobThreadType threadType, u32 threadIdx, JobSystem *jobSystem
+);
 
 struct alignas(2 * CACHE_LINE_SIZE) SpecialJobReceivedEvent
 {
@@ -51,11 +53,17 @@ struct alignas(2 * CACHE_LINE_SIZE) SpecialJobReceivedEvent
     }
 };
 
+#define SPECIALTHREAD_NAME_FIRST(ThreadType) COPAT_TCHAR(#ThreadType)
+#define SPECIALTHREAD_NAME(ThreadType) , COPAT_TCHAR(#ThreadType)
+
 template <u32 SpecialThreadsCount>
 class SpecialThreadsPool
 {
 public:
     constexpr static const u32 COUNT = SpecialThreadsCount;
+    constexpr static const TChar *NAMES[]
+        = { FOR_EACH_UDTHREAD_TYPES_UNIQUE_FIRST_LAST(SPECIALTHREAD_NAME_FIRST, SPECIALTHREAD_NAME, SPECIALTHREAD_NAME) };
+
     JobSystem *ownerJobSystem = nullptr;
 
     // It is okay to have as array as each queue will be aligned 2x the Cache line size
@@ -132,6 +140,9 @@ private:
     void initializeSpecialThreads(std::integer_sequence<u32, Indices...>) noexcept;
 };
 
+#undef SPECIALTHREAD_NAME_FIRST
+#undef SPECIALTHREAD_NAME
+
 /**
  * For no special threads case
  */
@@ -140,6 +151,7 @@ class SpecialThreadsPool<0>
 {
 public:
     constexpr static const u32 COUNT = 0;
+    constexpr static const TChar *NAMES[] = { COPAT_TCHAR("Dummy") };
 
     void initialize(JobSystem *) {}
     void shutdown() {}
@@ -332,7 +344,7 @@ void SpecialThreadsPool<SpecialThreadsCount>::initializeSpecialThread() noexcept
 {
     constexpr static const EJobThreadType threadType = idxToThreadType(Idx);
     INTERNAL_SpecialThreadFuncType func = &JobSystem::doSpecialThreadJobs<Idx, threadType>;
-    INTERNAL_initializeAndRunSpecialThread(func, threadType, ownerJobSystem);
+    INTERNAL_initializeAndRunSpecialThread(func, threadType, Idx, ownerJobSystem);
 }
 
 template <u32 SpecialThreadsCount>

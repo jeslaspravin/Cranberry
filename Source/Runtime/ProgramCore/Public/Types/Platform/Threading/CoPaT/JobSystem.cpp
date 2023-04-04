@@ -318,7 +318,9 @@ copat::JobSystem::PerThreadData *JobSystem::getPerThreadData() const noexcept
     return (PerThreadData *)PlatformThreadingFuncs::getTlsSlotValue(tlsSlot);
 }
 
-void INTERNAL_initializeAndRunSpecialThread(INTERNAL_SpecialThreadFuncType threadFunc, EJobThreadType threadType, JobSystem *jobSystem)
+void INTERNAL_initializeAndRunSpecialThread(
+    INTERNAL_SpecialThreadFuncType threadFunc, EJobThreadType threadType, u32 threadIdx, JobSystem *jobSystem
+)
 {
     u32 coreCount, logicalProcCount;
     getCoreCount(coreCount, logicalProcCount);
@@ -327,9 +329,7 @@ void INTERNAL_initializeAndRunSpecialThread(INTERNAL_SpecialThreadFuncType threa
                                {
                                    (jobSystem->*threadFunc)();
                                } };
-    PlatformThreadingFuncs::setThreadName(
-        (COPAT_TCHAR("SpecialThread_") + COPAT_TOSTRING(u32(threadType))).c_str(), specialThread.native_handle()
-    );
+    PlatformThreadingFuncs::setThreadName(JobSystem::SpecialThreadsPoolType::NAMES[threadIdx], specialThread.native_handle());
     if (coreCount > u32(threadType))
     {
         // If not enough core just run as free thread
