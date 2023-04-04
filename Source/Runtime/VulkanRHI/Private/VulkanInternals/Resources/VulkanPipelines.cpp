@@ -35,7 +35,11 @@ void VulkanPipelineCache::reinitResources()
     release();
     BaseType::reinitResources();
 
-    pipelineCacheRead = VulkanGraphicsHelper::createPipelineCache(IVulkanRHIModule::get()->getGraphicsInstance(), getRawFromFile());
+    std::vector<uint8> cacheData = getRawFromFile();
+    if (!cacheData.empty())
+    {
+        pipelineCacheRead = VulkanGraphicsHelper::createPipelineCache(IVulkanRHIModule::get()->getGraphicsInstance(), cacheData);
+    }
     VulkanGraphicsHelper::debugGraphics(IVulkanRHIModule::get()->getGraphicsInstance())->markObject(this);
 }
 
@@ -62,7 +66,7 @@ std::vector<uint8> VulkanPipelineCache::getRawToWrite() const
 }
 
 void VulkanGraphicsHelper::getMergedCacheData(
-    class IGraphicsInstance *graphicsInstance, std::vector<uint8> &cacheData, const std::vector<const class PipelineBase *> &pipelines
+    class IGraphicsInstance *graphicsInstance, std::vector<uint8> &cacheData, const std::vector<const PipelineBase *> &pipelines
 )
 {
     std::vector<VkPipelineCache> cachesToMerge;
@@ -71,7 +75,17 @@ void VulkanGraphicsHelper::getMergedCacheData(
     {
         if (pipeline->getType()->isChildOf<VulkanGraphicsPipeline>())
         {
-            cachesToMerge.emplace_back(static_cast<const VulkanGraphicsPipeline *>(pipeline)->pipelineLocalCache);
+            if (VkPipelineCache pipelineCache = static_cast<const VulkanGraphicsPipeline *>(pipeline)->pipelineLocalCache)
+            {
+                cachesToMerge.emplace_back(pipelineCache);
+            }
+        }
+        else if (pipeline->getType()->isChildOf<VulkanComputePipeline>())
+        {
+            if (VkPipelineCache pipelineCache = static_cast<const VulkanComputePipeline *>(pipeline)->pipelineLocalCache)
+            {
+                cachesToMerge.emplace_back(pipelineCache);
+            }
         }
     }
 
@@ -462,13 +476,14 @@ void VulkanGraphicsPipeline::init()
     );
 
     BaseType::init();
+
     IGraphicsInstance *graphicsInstance = IVulkanRHIModule::get()->getGraphicsInstance();
+    // Must be created always for the cache to be captured when creating pipeline
     pipelineLocalCache = VulkanGraphicsHelper::createPipelineCache(graphicsInstance);
-    if (parentCache)
+    if (parentCache && static_cast<const VulkanPipelineCache *>(parentCache)->pipelineCacheRead != nullptr)
     {
-        VulkanGraphicsHelper::mergePipelineCaches(
-            graphicsInstance, pipelineLocalCache, { static_cast<const VulkanPipelineCache *>(parentCache)->pipelineCacheRead }
-        );
+        VkPipelineCache pipelineCaches[] = { static_cast<const VulkanPipelineCache *>(parentCache)->pipelineCacheRead };
+        VulkanGraphicsHelper::mergePipelineCaches(graphicsInstance, pipelineLocalCache, pipelineCaches);
     }
 
     reinitResources();
@@ -687,13 +702,15 @@ String VulkanComputePipeline::getObjectName() const { return getResourceName(); 
 void VulkanComputePipeline::init()
 {
     BaseType::init();
+
     IGraphicsInstance *graphicsInstance = IVulkanRHIModule::get()->getGraphicsInstance();
+
+    // Must be created always for the cache to be captured when creating pipeline
     pipelineLocalCache = VulkanGraphicsHelper::createPipelineCache(graphicsInstance);
-    if (parentCache)
+    if (parentCache && static_cast<const VulkanPipelineCache *>(parentCache)->pipelineCacheRead != nullptr)
     {
-        VulkanGraphicsHelper::mergePipelineCaches(
-            graphicsInstance, pipelineLocalCache, { static_cast<const VulkanPipelineCache *>(parentCache)->pipelineCacheRead }
-        );
+        VkPipelineCache pipelineCaches[] = { static_cast<const VulkanPipelineCache *>(parentCache)->pipelineCacheRead };
+        VulkanGraphicsHelper::mergePipelineCaches(graphicsInstance, pipelineLocalCache, pipelineCaches);
     }
 
     reinitResources();

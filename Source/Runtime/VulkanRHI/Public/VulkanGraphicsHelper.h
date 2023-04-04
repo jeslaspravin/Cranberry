@@ -169,11 +169,10 @@ public:
     static VkPipelineLayout createPipelineLayout(IGraphicsInstance *graphicsInstance, const PipelineBase *pipeline);
     static void destroyPipelineLayout(IGraphicsInstance *graphicsInstance, const VkPipelineLayout pipelineLayout);
 
-    static VkPipelineCache createPipelineCache(IGraphicsInstance *graphicsInstance, const std::vector<uint8> &cacheData);
+    static VkPipelineCache createPipelineCache(IGraphicsInstance *graphicsInstance, ArrayView<const uint8> cacheData);
     static VkPipelineCache createPipelineCache(IGraphicsInstance *graphicsInstance);
     static void destroyPipelineCache(IGraphicsInstance *graphicsInstance, VkPipelineCache pipelineCache);
-    static void
-    mergePipelineCaches(IGraphicsInstance *graphicsInstance, VkPipelineCache dstCache, const std::vector<VkPipelineCache> &srcCaches);
+    static void mergePipelineCaches(IGraphicsInstance *graphicsInstance, VkPipelineCache dstCache, ArrayView<const VkPipelineCache> srcCaches);
     static void getPipelineCacheData(IGraphicsInstance *graphicsInstance, VkPipelineCache pipelineCache, std::vector<uint8> &cacheData);
     static void
     getMergedCacheData(IGraphicsInstance *graphicsInstance, std::vector<uint8> &cacheData, const std::vector<const PipelineBase *> &pipelines);

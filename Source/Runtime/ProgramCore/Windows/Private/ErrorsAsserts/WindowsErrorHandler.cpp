@@ -106,6 +106,7 @@ void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT *context, bool bCl
     if (!::SymInitialize(processHandle, NULL, TRUE))
     {
         LOG_ERROR("WindowsUnexpectedErrorHandler", "Failed loading symbols for initializing stack trace symbols");
+        Logger::flushStream();
         return;
     }
     dword symOptions = ::SymGetOptions();

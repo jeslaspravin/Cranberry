@@ -138,13 +138,13 @@ public:
     }
     void unlockLoggerBuffer() { getOrCreatePerThreadData().streamRWLock.unlock(); }
 
-    void flushStream();
+    void flushStream() noexcept;
 
 private:
     bool openNewLogFile();
-    void flushStreamInternal();
+    void flushStreamInternal() noexcept;
 
-    LoggerWorkerTask flushInWorkerThread(LoggerWorkerTask execAfter)
+    LoggerWorkerTask flushInWorkerThread(LoggerWorkerTask execAfter) noexcept
     {
         co_await execAfter;
         // Frees old task
@@ -181,7 +181,7 @@ void LoggerImpl::shutdown()
     PlatformThreadingFunctions::releaseTlsSlot(tlsSlot);
 }
 
-void LoggerImpl::flushStream()
+void LoggerImpl::flushStream() noexcept
 {
     if (copat::JobSystem::get())
     {
@@ -193,7 +193,7 @@ void LoggerImpl::flushStream()
     }
 }
 
-void LoggerImpl::flushStreamInternal()
+void LoggerImpl::flushStreamInternal() noexcept
 {
     // The final flush happens after the profiler is shutdown
     CBE_PROFILER_SCOPE_DYN(CBE_PROFILER_CHAR("FlushLogStream"), CBEProfiler::profilerAvailable());
@@ -240,7 +240,7 @@ void LoggerImpl::flushStreamInternal()
                               + 3 + 5                                      /* 3 For [Filename:Line], 5 for 5 digit line count */
                               + 5                                          /* For Function name's "() : " */
                               + TCharStr::length(LINE_FEED_TCHAR);
-            outputLen = outputLen * tlPackets.size() + (tempOutputBuffer.length() - bufferOffset);
+            outputLen = outputLen * tlPackets.size() + (bufferStr.length() - bufferOffset);
             tempOutputBuffer.clear();
             tempOutputBuffer.reserve(outputLen);
 

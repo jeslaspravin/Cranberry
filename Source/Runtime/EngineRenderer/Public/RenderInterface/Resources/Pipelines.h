@@ -19,6 +19,7 @@
 class ShaderResource;
 class GraphicsHelperAPI;
 class IGraphicsInstance;
+class PipelineBase;
 
 class ENGINERENDERER_EXPORT PipelineCacheBase : public GraphicsResource
 {
@@ -28,7 +29,7 @@ private:
     String cacheFileName;
 
 protected:
-    std::vector<const class PipelineBase *> pipelinesToCache;
+    std::vector<const PipelineBase *> pipelinesToCache;
 
     // raw data of pipeline cache file to write out
     virtual std::vector<uint8> getRawToWrite() const { return {}; }
@@ -41,7 +42,7 @@ public:
 
     /* Override ends */
 
-    void addPipelineToCache(const class PipelineBase *pipeline);
+    void addPipelineToCache(const PipelineBase *pipeline);
     void writeCache() const;
 };
 

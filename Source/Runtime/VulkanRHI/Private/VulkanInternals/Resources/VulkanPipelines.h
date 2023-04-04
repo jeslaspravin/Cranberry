@@ -21,7 +21,7 @@ class VulkanPipelineCache
     DECLARE_VK_GRAPHICS_RESOURCE(VulkanPipelineCache, , PipelineCacheBase, )
 
 public:
-    VkPipelineCache pipelineCacheRead;
+    VkPipelineCache pipelineCacheRead = nullptr;
 
     /* IVulanResources overrides */
 public:
@@ -89,7 +89,7 @@ private:
     VkRenderPass compatibleRenderpass;
 
 public:
-    VkPipelineCache pipelineLocalCache;
+    VkPipelineCache pipelineLocalCache = nullptr;
 
     // Just copies original resource handled at GlobalRenderingContext
     VkPipelineLayout pipelineLayout;
@@ -146,7 +146,7 @@ private:
     VkPipeline pipeline;
 
 public:
-    VkPipelineCache pipelineLocalCache;
+    VkPipelineCache pipelineLocalCache = nullptr;
 
     // Just copies original resource handled at GlobalRenderingContext
     VkPipelineLayout pipelineLayout;

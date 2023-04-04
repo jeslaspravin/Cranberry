@@ -80,7 +80,7 @@ void GlobalRenderingContextBase::initShaderResources()
 {
     if (pipelinesCache)
     {
-        pipelinesCache->setResourceName(TCHAR("shaders"));
+        pipelinesCache->setResourceName(TCHAR("Shaders"));
         pipelinesCache->init();
     }
 

@@ -150,6 +150,10 @@ void ApplicationInstance::startApp()
     );
     onStart();
 
+    // Force start the first frame
+    // This is to force any pretick updates to be complete, Like Upload descriptor set's buffers
+    startNextFrame();
+
     timeData.tickStart();
     LOG("ApplicationInstance", "%s initialized in %0.3f seconds", applicationName, Time::asSeconds(timeData.initEndTick - timeData.startTick));
 }

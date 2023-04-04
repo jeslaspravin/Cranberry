@@ -22,6 +22,11 @@ concept ArrayViewVectorQualifierInternal = IndexableCompound<T> && (!std::same_a
 template <typename T>
 concept ArrayViewVectorQualifier = ArrayViewVectorQualifierInternal<std::remove_cvref_t<T>>;
 
+/**
+ * Currently, ArrayView does not support constant array to be passed inside it. 
+ * That is in understanding that ArrayView is a view into non const temporary array.
+ * TODO(Jeslas) : Probably find a solution to allow const arrays to be used with ArrayView?
+ */
 template <typename ElementType>
 class ArrayView
 {

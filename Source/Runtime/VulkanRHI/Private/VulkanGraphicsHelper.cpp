@@ -1058,18 +1058,34 @@ void VulkanGraphicsHelper::destroyPipelineLayout(IGraphicsInstance *graphicsInst
     device->vkDestroyPipelineLayout(device->logicalDevice, pipelineLayout, nullptr);
 }
 
-VkPipelineCache VulkanGraphicsHelper::createPipelineCache(IGraphicsInstance *graphicsInstance, const std::vector<uint8> &cacheData)
+VkPipelineCache VulkanGraphicsHelper::createPipelineCache(IGraphicsInstance *graphicsInstance, ArrayView<const uint8> cacheData)
 {
     const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
     const VulkanDevice *device = &gInstance->selectedDevice;
 
-    PIPELINE_CACHE_CREATE_INFO(cacheCreateInfo);
-    if (!cacheData.empty())
+    // Validate cacheData
+    static_assert(sizeof(VkPipelineCacheHeaderVersionOne) == 32, "Mismatching size of Cache header size");
+    const VkPipelineCacheHeaderVersionOne *cacheHeader = reinterpret_cast<const VkPipelineCacheHeaderVersionOne *>(cacheData.data());
+    if (cacheData.empty() || cacheData.size() < sizeof(VkPipelineCacheHeaderVersionOne) || cacheHeader->headerSize != 32)
     {
-        cacheCreateInfo.initialDataSize = cacheData.size();
-        cacheCreateInfo.pInitialData = cacheData.data();
+        LOG_ERROR(
+            "VulkanGraphicsHelper", "Invalid pipeline cache data, Pipeline cache cannot be created! Use "
+                                    "\"createPipelineCache(IGraphicsInstance *)\" to create an empty cache"
+        );
+        return nullptr;
+    }
+    else if (cacheHeader->deviceID != device->properties.deviceID 
+        || cacheHeader->vendorID != device->properties.vendorID 
+        || memcmp(cacheHeader->pipelineCacheUUID, device->properties.pipelineCacheUUID, VK_UUID_SIZE) != 0)
+    {
+        LOG("VulkanGraphicsHelper", "Pipelines cache mismatch, Cache is not created!");
+        return nullptr;
     }
 
+    // Create cache from cacheData
+    PIPELINE_CACHE_CREATE_INFO(cacheCreateInfo);
+    cacheCreateInfo.initialDataSize = cacheData.size();
+    cacheCreateInfo.pInitialData = cacheData.data();
     VkPipelineCache pipelineCache;
     if (device->vkCreatePipelineCache(device->logicalDevice, &cacheCreateInfo, nullptr, &pipelineCache) != VK_SUCCESS)
     {
@@ -1103,7 +1119,7 @@ void VulkanGraphicsHelper::destroyPipelineCache(IGraphicsInstance *graphicsInsta
 }
 
 void VulkanGraphicsHelper::mergePipelineCaches(
-    IGraphicsInstance *graphicsInstance, VkPipelineCache dstCache, const std::vector<VkPipelineCache> &srcCaches
+    IGraphicsInstance *graphicsInstance, VkPipelineCache dstCache, ArrayView<const VkPipelineCache> srcCaches
 )
 {
     const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
@@ -1122,9 +1138,12 @@ void VulkanGraphicsHelper::getPipelineCacheData(
     const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
     const VulkanDevice *device = &gInstance->selectedDevice;
 
+    // https://registry.khronos.org/vulkan/specs/1.3-extensions/html/vkspec.html#pipelines-cache-header
+    static_assert(sizeof(VkPipelineCacheHeaderVersionOne) == 32, "Mismatching size of Cache header size");
+
     uint64 cacheDataSize;
     device->vkGetPipelineCacheData(device->logicalDevice, pipelineCache, &cacheDataSize, nullptr);
-    if (cacheDataSize > 0)
+    if (cacheDataSize >= sizeof(VkPipelineCacheHeaderVersionOne))
     {
         cacheData.resize(cacheDataSize);
         device->vkGetPipelineCacheData(device->logicalDevice, pipelineCache, &cacheDataSize, cacheData.data());
