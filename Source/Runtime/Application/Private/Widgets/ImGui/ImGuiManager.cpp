@@ -537,7 +537,7 @@ void ImGuiManager::setupRendering()
     }
     else
     {
-        ENQUEUE_COMMAND(SetupImGui)
+        ENQUEUE_RENDER_COMMAND(SetupImGui)
         (
             [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
             {
@@ -549,7 +549,7 @@ void ImGuiManager::setupRendering()
 
 void ImGuiManager::releaseRendering()
 {
-    ENQUEUE_COMMAND(ReleaseImGui)
+    ENQUEUE_RENDER_COMMAND(ReleaseImGui)
     (
         [this](class IRenderCommandList * /*cmdList*/, IGraphicsInstance * /*graphicsInstance*/, const GraphicsHelperAPI * /*graphicsHelper*/)
         {

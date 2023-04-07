@@ -11,7 +11,7 @@
 
 #pragma once
 
-#include "String/TCharString.h"
+#include "String/StringLiteral.h"
 
 namespace ReflectToolCmdLineConst
 {

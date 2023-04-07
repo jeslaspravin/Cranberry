@@ -195,6 +195,26 @@ void CBEProfiler::sendMessageLC(const CBEProfilerChar *text, Color color)
     }
 }
 
+void CBEProfiler::enterFiber(const CBEProfilerChar *name)
+{
+#ifdef SECURE_PROFILING
+    if (profilerAvailable())
+#endif // SECURE_PROFILING
+    {
+        CBE_PROFILER_ENTERFIBER_internal(name);
+    }
+}
+
+void CBEProfiler::leaveFiber()
+{
+#ifdef SECURE_PROFILING
+    if (profilerAvailable())
+#endif // SECURE_PROFILING
+    {
+        CBE_PROFILER_LEAVEFIBER_internal();
+    }
+}
+
 #ifdef ENABLE_MEMORY_PROFILING
 void CBEProfiler::trackAlloc(void *ptr, SizeT size, const CBEProfilerChar *name)
 {
@@ -230,26 +250,6 @@ void CBEProfiler::trackFree(void *ptr)
 #endif // SECURE_PROFILING
     {
         CBE_PROFILER_FREE_internal(ptr);
-    }
-}
-
-void CBEProfiler::enterFiber(const CBEProfilerChar *name)
-{
-#ifdef SECURE_PROFILING
-    if (profilerAvailable())
-#endif // SECURE_PROFILING
-    {
-        CBE_PROFILER_ENTERFIBER_internal(name);
-    }
-}
-
-void CBEProfiler::leaveFiber()
-{
-#ifdef SECURE_PROFILING
-    if (profilerAvailable())
-#endif // SECURE_PROFILING
-    {
-        CBE_PROFILER_LEAVEFIBER_internal();
     }
 }
 

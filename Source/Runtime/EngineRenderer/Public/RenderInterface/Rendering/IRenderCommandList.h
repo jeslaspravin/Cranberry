@@ -273,13 +273,11 @@ public:
     ) = 0;
 
     virtual void cmdSetViewportAndScissors(
-        const GraphicsResource *cmdBuffer, ArrayView<const std::pair<IRect, IRect>> viewportAndScissors,
-        uint32 firstViewport = 0
+        const GraphicsResource *cmdBuffer, ArrayView<const std::pair<IRect, IRect>> viewportAndScissors, uint32 firstViewport = 0
     ) const
         = 0;
-    virtual void cmdSetViewportAndScissor(
-        const GraphicsResource *cmdBuffer, const IRect &viewport, const IRect &scissor, uint32 atViewport = 0
-    ) const
+    virtual void
+    cmdSetViewportAndScissor(const GraphicsResource *cmdBuffer, const IRect &viewport, const IRect &scissor, uint32 atViewport = 0) const
         = 0;
     // Usually you do one viewport and scissor set and several scissor set after that, So having separate scissor set cmd
     virtual void cmdSetScissor(const GraphicsResource *cmdBuffer, const IRect &scissor, uint32 atViewport = 0) const = 0;

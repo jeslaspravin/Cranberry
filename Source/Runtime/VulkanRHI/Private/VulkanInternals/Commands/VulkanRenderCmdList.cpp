@@ -2540,8 +2540,7 @@ void VulkanCommandList::cmdDrawIndirect(
 }
 
 void VulkanCommandList::cmdSetViewportAndScissors(
-    const GraphicsResource *cmdBuffer, ArrayView<const std::pair<IRect, IRect>> viewportAndScissors,
-    uint32 firstViewport /*= 0*/
+    const GraphicsResource *cmdBuffer, ArrayView<const std::pair<IRect, IRect>> viewportAndScissors, uint32 firstViewport /*= 0*/
 ) const
 {
     VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);

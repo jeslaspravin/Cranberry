@@ -55,7 +55,7 @@ CONST_EXPR uint64 hashString(const CharType *str, uint64 len, uint64 seed)
 
 FORCE_INLINE uint32 hashString(const String &str, uint32 seed)
 {
-    if CONST_EXPR (String::bIsWide)
+    if CONST_EXPR (IsTCharWide::value)
     {
         return hashString(TCHAR_TO_UTF8(str.getChar()), seed);
     }
@@ -66,7 +66,7 @@ FORCE_INLINE uint32 hashString(const String &str, uint32 seed)
 }
 FORCE_INLINE uint64 hashString(const String &str, uint64 seed)
 {
-    if CONST_EXPR (String::bIsWide)
+    if CONST_EXPR (IsTCharWide::value)
     {
         return hashString(TCHAR_TO_UTF8(str.getChar()), seed);
     }

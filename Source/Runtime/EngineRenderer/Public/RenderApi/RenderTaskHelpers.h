@@ -2,6 +2,8 @@
 
 #include "EngineRendererExports.h"
 #include "Types/Platform/Threading/CoPaT/JobSystemCoroutine.h"
+#include "Profiler/ProfilerTypes.h"
+#include "String/StringLiteral.h"
 
 class IRenderCommandList;
 class IGraphicsInstance;
@@ -28,11 +30,11 @@ public:
     /**
      * Executes the passed in lambda in render thread and terminates. Fire and forget tasks can be enqueued this way
      */
-    template <typename LambdaType>
+    template <CBE_PROFILER_STRLITERAL CommandName, typename LambdaType>
     FORCE_INLINE static void execInRenderingThread(LambdaType &&lambdaFunc)
     {
         // As purpose of enqueue is to execute in render thread not postpone execution if already in render thread.
-        execInRenderingThreadOrImmediate(std::forward<LambdaType>(lambdaFunc));
+        execInRenderingThreadOrImmediate(std::forward<LambdaType>(lambdaFunc), CommandName.value);
     }
 
     FORCE_INLINE static void flushWaitRenderThread()
@@ -41,18 +43,14 @@ public:
     }
 
 private:
-    static copat::NormalFuncAwaiter execInRenderingThreadOrImmediate(RenderEnqFuncType &&execFunc);
+    static copat::NormalFuncAwaiter execInRenderingThreadOrImmediate(RenderEnqFuncType &&execFunc, const CBEProfilerChar *commandName);
 };
 
-// CommandName is not used for now
-#define ENQUEUE_RENDER_COMMAND(CommandName) RenderThreadEnqueuer::execInRenderingThread
-#define ENQUEUE_COMMAND(CommandName) ENQUEUE_RENDER_COMMAND(CommandName)
+#define ENQUEUE_RENDER_COMMAND(CommandName) RenderThreadEnqueuer::execInRenderingThread<CBE_PROFILER_CHAR(#CommandName)>
 
 #define ENQUEUE_RENDER_COMMAND_NODEBUG(CommandName, LambdaBody, ...)                                                                           \
-    ENQUEUE_COMMAND(CommandName)                                                                                                               \
+    ENQUEUE_RENDER_COMMAND(CommandName)                                                                                                        \
     ([##__VA_ARGS__##](IRenderCommandList * cmdList, IGraphicsInstance * graphicsInstance, const GraphicsHelperAPI *graphicsHelper)##LambdaBody)
-
-#define ENQUEUE_COMMAND_NODEBUG(CommandName, LambdaBody, ...) ENQUEUE_RENDER_COMMAND_NODEBUG(CommandName, LambdaBody, __VA_ARGS__)
 
 #define ASSERT_INSIDE_RENDERTHREAD()                                                                                                           \
     debugAssertf(                                                                                                                              \

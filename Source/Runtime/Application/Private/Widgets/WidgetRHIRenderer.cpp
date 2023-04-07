@@ -34,7 +34,7 @@ WidgetRenderer *WidgetRenderer::createRenderer() { return new WidgetRHIRenderer(
 
 void WidgetRHIRenderer::initialize()
 {
-    ENQUEUE_COMMAND(WidgetRHIRendererInit)
+    ENQUEUE_RENDER_COMMAND(WidgetRHIRendererInit)
     (
         [this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
@@ -45,7 +45,7 @@ void WidgetRHIRenderer::initialize()
 
 void WidgetRHIRenderer::destroy()
 {
-    ENQUEUE_COMMAND(WidgetRHIRendererInit)
+    ENQUEUE_RENDER_COMMAND(WidgetRHIRendererInit)
     (
         [this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
@@ -175,7 +175,7 @@ void WidgetRHIRenderer::createVerticesAndIndices(
 void WidgetRHIRenderer::presentWindows(const std::vector<SharedPtr<WgWindow>> &windows, std::vector<WindowCanvasRef> swapchains)
 {
     debugAssert(swapchains.size() == windows.size());
-    ENQUEUE_COMMAND(PresentAllWindows)
+    ENQUEUE_RENDER_COMMAND(PresentAllWindows)
     (
         [swapchains, windows,
          this](IRenderCommandList *cmdList, IGraphicsInstance * /*graphicsInstance*/, const GraphicsHelperAPI * /*graphicsHelper*/)
@@ -202,7 +202,7 @@ void WidgetRHIRenderer::presentWindows(const std::vector<SharedPtr<WgWindow>> &w
 
 void WidgetRHIRenderer::drawWindowWidgets(std::vector<std::pair<SharedPtr<WgWindow>, WidgetDrawContext>> &&drawingContexts)
 {
-    ENQUEUE_COMMAND(DrawWindowWidgetsRHI)
+    ENQUEUE_RENDER_COMMAND(DrawWindowWidgetsRHI)
     (
         [allDrawCtxs = std::forward<std::vector<std::pair<SharedPtr<WgWindow>, WidgetDrawContext>>>(drawingContexts),
          this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)

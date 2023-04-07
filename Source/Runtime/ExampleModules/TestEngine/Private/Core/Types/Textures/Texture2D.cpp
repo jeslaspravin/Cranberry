@@ -104,7 +104,7 @@ void Texture2D::reinitResources()
 {
     TextureBase::reinitResources();
 
-    ENQUEUE_COMMAND(ReinitTexture2D)
+    ENQUEUE_RENDER_COMMAND(ReinitTexture2D)
     (
         [this](IRenderCommandList *cmdList, IGraphicsInstance *, const GraphicsHelperAPI *)
         {
@@ -137,7 +137,7 @@ void Texture2D::init(Texture2D *texture, bool bIsNormalMap, bool bIsSrgb, uint8 
         .imageFormat = dataFormat, .dimensions = texture->textureSize, .numOfMips = texture->mipCount, .layerCount = 1
     };
 
-    ENQUEUE_COMMAND(InitTexture2D)
+    ENQUEUE_RENDER_COMMAND(InitTexture2D)
     (
         [texture, bIsNormalMap,
          imageCI](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
@@ -163,7 +163,7 @@ void Texture2D::init(Texture2D *texture, bool bIsNormalMap, bool bIsSrgb, uint8 
 void Texture2D::destroy(Texture2D *texture)
 {
     ImageResourceRef textureResource = texture->textureResource;
-    ENQUEUE_COMMAND(DestroyTexture2D)
+    ENQUEUE_RENDER_COMMAND(DestroyTexture2D)
     (
         [textureResource](IRenderCommandList *, IGraphicsInstance *, const GraphicsHelperAPI *)
         {
@@ -181,7 +181,7 @@ void Texture2D::destroy(Texture2D *texture)
 void Texture2DRW::destroy(Texture2DRW *texture)
 {
     ImageResourceRef textureResource = texture->textureResource;
-    ENQUEUE_COMMAND(DestroyTexture2D)
+    ENQUEUE_RENDER_COMMAND(DestroyTexture2D)
     (
         [textureResource](IRenderCommandList *, IGraphicsInstance *, const GraphicsHelperAPI *)
         {
@@ -198,7 +198,7 @@ void Texture2DRW::init(Texture2DRW *texture)
         .imageFormat = texture->dataFormat, .dimensions = texture->textureSize, .numOfMips = texture->mipCount, .layerCount = 1
     };
 
-    ENQUEUE_COMMAND(InitTexture2D)
+    ENQUEUE_RENDER_COMMAND(InitTexture2D)
     (
         [texture, imageCI](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
@@ -224,7 +224,7 @@ void Texture2DRW::reinitResources()
 {
     TextureBase::reinitResources();
 
-    ENQUEUE_COMMAND(ReinitTexture2D)
+    ENQUEUE_RENDER_COMMAND(ReinitTexture2D)
     (
         [this](IRenderCommandList *cmdList, IGraphicsInstance *, const GraphicsHelperAPI *)
         {

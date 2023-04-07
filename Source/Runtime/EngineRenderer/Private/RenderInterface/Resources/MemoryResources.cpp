@@ -27,7 +27,7 @@ void MemoryResource::removeRef()
     uint32 count = refCounter.fetch_sub(1, std::memory_order::acq_rel);
     if (count == 1)
     {
-        ENQUEUE_COMMAND(DeleteMemoryResource)
+        ENQUEUE_RENDER_COMMAND(DeleteMemoryResource)
         (
             [this](class IRenderCommandList * /*cmdList*/, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
             {

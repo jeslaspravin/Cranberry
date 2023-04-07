@@ -201,7 +201,7 @@ void GlobalBuffers::generateTexture2Ds(
     cmdList->cmdBindComputePipeline(cmdBuffer, integrateBrdfContext);
     cmdList->cmdBindDescriptorsSets(cmdBuffer, integrateBrdfContext, { integrateBrdfParams });
     UInt3 subgrpSize = static_cast<const ComputeShaderConfig *>(integrateBrdfContext.getPipeline()->getShaderResource()->getShaderConfig())
-                            ->getSubGroupSize();
+                           ->getSubGroupSize();
     cmdList->cmdDispatch(cmdBuffer, integratedBRDF->getImageSize().x / subgrpSize.x, integratedBRDF->getImageSize().y / subgrpSize.y);
     cmdList->cmdTransitionLayouts(cmdBuffer, { &integratedBRDF, 1 });
     cmdList->endCmd(cmdBuffer);

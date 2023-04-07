@@ -16,34 +16,6 @@
 #include "Types/Platform/PlatformFunctions.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 
-//
-// Allows using character literals as template parameters like below
-// valPrint<"Test">();
-//
-// template <StringLiteral Val>
-// void valPrint();
-//
-template <String::size_type N>
-struct StringLiteral
-{
-    CONST_EXPR StringLiteral(const TChar (&str)[N]) { std::copy_n(str, N, value); }
-
-    TChar value[N];
-};
-
-template <StringLiteral StoreValue>
-struct StringLiteralStore
-{
-    using LiteralType = decltype(StoreValue);
-    CONST_EXPR static const LiteralType Literal = StoreValue;
-
-    CONST_EXPR const TChar *getChar() const { return StoreValue.value; }
-
-    operator String () const { return { StoreValue.value }; }
-
-    String toString() const { return { StoreValue.value }; }
-};
-
 template <typename CharType>
 using CharStringView = std::basic_string_view<CharType, std::char_traits<CharType>>;
 

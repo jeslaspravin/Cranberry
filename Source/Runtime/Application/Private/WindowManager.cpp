@@ -41,7 +41,7 @@ void WindowManager::init()
     appMainWindow->createWindow(appInstance);
     IApplicationModule::get()->windowCreated(appMainWindow);
 
-    ENQUEUE_COMMAND(MainWindowInit)
+    ENQUEUE_RENDER_COMMAND(MainWindowInit)
     (
         [this](IRenderCommandList * /*cmdList*/, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
@@ -92,7 +92,7 @@ GenericAppWindow *WindowManager::createWindow(UInt2 size, const TChar *name, Gen
     appWindow->createWindow(appInstance);
     IApplicationModule::get()->windowCreated(appWindow);
 
-    ENQUEUE_COMMAND(WindowInit)
+    ENQUEUE_RENDER_COMMAND(WindowInit)
     (
         [this, appWindow](IRenderCommandList * /*cmdList*/, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
@@ -171,7 +171,7 @@ GenericAppWindow *WindowManager::findNativeHandleWindow(WindowHandle wndHnd) con
 
 void WindowManager::postInitGraphicCore()
 {
-    ENQUEUE_COMMAND(InitWindowCanvas)
+    ENQUEUE_RENDER_COMMAND(InitWindowCanvas)
     (
         [this](class IRenderCommandList * /*cmdList*/, IGraphicsInstance * /*graphicsInstance*/, const GraphicsHelperAPI * /*graphicsHelper*/)
         {
@@ -188,7 +188,7 @@ void WindowManager::postInitGraphicCore()
 
 void WindowManager::updateWindowCanvas()
 {
-    ENQUEUE_COMMAND(UpdateWindowCanvas)
+    ENQUEUE_RENDER_COMMAND(UpdateWindowCanvas)
     (
         [this](class IRenderCommandList *cmdList, IGraphicsInstance * /*graphicsInstance*/, const GraphicsHelperAPI * /*graphicsHelper*/)
         {
@@ -256,7 +256,7 @@ void WindowManager::onWindowResize(uint32 width, uint32 height, GenericAppWindow
 {
     if (window->windowHeight != height || window->windowWidth != width)
     {
-        ENQUEUE_COMMAND(WindowResize)
+        ENQUEUE_RENDER_COMMAND(WindowResize)
         (
             [this, window, width,
              height](class IRenderCommandList *cmdList, IGraphicsInstance * /*graphicsInstance*/, const GraphicsHelperAPI * /*graphicsHelper*/)
@@ -346,7 +346,7 @@ void WindowManager::destroyPendingWindows()
     }
     if (!canvasesToDestroy.empty())
     {
-        ENQUEUE_COMMAND(WindowsCanvasDestroy)
+        ENQUEUE_RENDER_COMMAND(WindowsCanvasDestroy)
         (
             [canvasesToDestroy](
                 class IRenderCommandList *cmdList, IGraphicsInstance * /*graphicsInstance*/, const GraphicsHelperAPI * /*graphicsHelper*/

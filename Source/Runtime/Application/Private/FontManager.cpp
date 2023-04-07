@@ -492,7 +492,7 @@ void FontManagerContext::updatePendingGlyphs()
     }
 
     owner->broadcastPreTextureAtlasUpdate();
-    ENQUEUE_COMMAND(UpdateFontGlyphs)
+    ENQUEUE_RENDER_COMMAND(UpdateFontGlyphs)
     (
         [this, atlasTexels](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
@@ -630,7 +630,7 @@ void FontManager::flushUpdates() const { context->updatePendingGlyphs(); }
 
 void FontManager::setupTextureAtlas(ShaderParameters *shaderParams, const String &paramName)
 {
-    ENQUEUE_COMMAND(SetupTextureAtlas)
+    ENQUEUE_RENDER_COMMAND(SetupTextureAtlas)
     (
         [this, shaderParams, paramName](
             class IRenderCommandList * /*cmdList*/, IGraphicsInstance * /*graphicsInstance*/, const GraphicsHelperAPI * /*graphicsHelper*/

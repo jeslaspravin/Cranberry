@@ -10,6 +10,7 @@
  */
 
 #include "ApplicationModule.h"
+#include "String/StringLiteral.h"
 #include "Types/Platform/Threading/CoPaT/JobSystem.h"
 #include "Modules/ModuleManager.h"
 #include "CmdLine/CmdLine.h"
@@ -18,7 +19,6 @@
 #include "ApplicationInstance.h"
 #include "FontManager.h"
 #include "Profiler/ProgramProfiler.hpp"
-#include "String/TCharString.h"
 
 DECLARE_MODULE(Application, ApplicationModule)
 

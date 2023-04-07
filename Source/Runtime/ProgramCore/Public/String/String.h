@@ -44,9 +44,6 @@ using StringStream = std::basic_stringstream<BaseString::value_type, BaseString:
 class String : public BaseString
 {
 public:
-    CONST_EXPR static const bool bIsWide = std::is_same_v<TChar, WChar>;
-
-public:
     STRING_FUNCQUALIFIER String()
         : BaseString()
     {}

@@ -33,8 +33,8 @@ void WorldViewport::startSceneRender(Short2 viewportSize, const Camera &defaultC
 }
 
 void WorldViewport::drawBackBuffer(
-    ShortRect viewport, WgRenderTarget *rt, const GraphicsResource *cmdBuffer, IRenderCommandList *cmdList,
-    IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
+    ShortRect viewport, WgRenderTarget *rt, const GraphicsResource *cmdBuffer, IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
+    const GraphicsHelperAPI *graphicsHelper
 )
 {
     SharedPtr<EngineRenderScene> renderScene = world.isValid() ? gCBEEngine->worldManager()->getWorldRenderScene(world.get()) : nullptr;

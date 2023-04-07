@@ -108,7 +108,20 @@ IRenderInterfaceModule *IRenderInterfaceModule::get()
     return weakRiModule.expired() ? nullptr : static_cast<IRenderInterfaceModule *>(weakRiModule.lock().get());
 }
 
-RenderThreadEnqTask RenderThreadEnqueuer::execInRenderThreadAwaitable(RenderThreadEnqueuer::RenderEnqFuncType execFunc)
+RenderThreadEnqTask execInRenderThreadAwaitable(RenderThreadEnqueuer::RenderEnqFuncType execFunc, const CBEProfilerChar *commandName)
+{
+    // CBE_PROFILER_ENTERFIBER(commandName);
+    if (IRenderInterfaceModule *renderInterface = IRenderInterfaceModule::get())
+    {
+        execFunc(
+            renderInterface->getRenderManager()->getRenderCmds(), renderInterface->currentGraphicsInstance(),
+            renderInterface->currentGraphicsHelper()
+        );
+    }
+    co_return;
+}
+
+RenderThreadEnqTask RenderThreadEnqueuer::execInRenderThreadAwaitable(RenderEnqFuncType execFunc)
 {
     if (IRenderInterfaceModule *renderInterface = IRenderInterfaceModule::get())
     {
@@ -135,8 +148,13 @@ void RenderThreadEnqueuer::execInRenderThreadAndWait(RenderEnqFuncType &&execFun
     copat::waitOnAwaitable(execInRenderThreadAwaitable(std::forward<RenderEnqFuncType>(execFunc)));
 }
 
-copat::NormalFuncAwaiter RenderThreadEnqueuer::execInRenderingThreadOrImmediate(RenderEnqFuncType &&execFunc)
+copat::NormalFuncAwaiter
+RenderThreadEnqueuer::execInRenderingThreadOrImmediate(RenderEnqFuncType &&execFunc, const CBEProfilerChar *commandName)
 {
+    // TODO(Jeslas) : Fix FIBER marking issue
+    // CBE_PROFILER_SCOPE_FIBER(commandName);
+    // CBE_PROFILER_SCOPE_VAR(ExecInRenderThreadOrImmd, commandName, true);
+
     if (copat::JobSystem::get()->isInThread(copat::EJobThreadType::RenderThread))
     {
         IRenderInterfaceModule *renderInterface = IRenderInterfaceModule::get();
@@ -147,5 +165,6 @@ copat::NormalFuncAwaiter RenderThreadEnqueuer::execInRenderingThreadOrImmediate(
         );
         co_return;
     }
-    co_await execInRenderThreadAwaitable(std::forward<RenderEnqFuncType>(execFunc));
+    // CBE_PROFILER_LEAVEFIBER();
+    co_await ::execInRenderThreadAwaitable(std::forward<RenderEnqFuncType>(execFunc), commandName);
 }

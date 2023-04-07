@@ -68,8 +68,7 @@ protected:
 
 public:
     void
-    drawWidget(ShortRect /*clipBound*/, WidgetGeomId /*thisId*/, const WidgetGeomTree & /*geomTree*/, WidgetDrawContext & /*context*/)
-        override
+    drawWidget(ShortRect /*clipBound*/, WidgetGeomId /*thisId*/, const WidgetGeomTree & /*geomTree*/, WidgetDrawContext & /*context*/) override
     {}
     bool hasWidget(SharedPtr<WidgetBase> /*widget*/) const override { return false; }
 

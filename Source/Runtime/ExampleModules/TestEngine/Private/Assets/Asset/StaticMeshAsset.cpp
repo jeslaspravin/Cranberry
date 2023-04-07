@@ -18,7 +18,7 @@
 
 void StaticMeshAsset::initAsset()
 {
-    ENQUEUE_COMMAND(InitializeSMVertices)
+    ENQUEUE_RENDER_COMMAND(InitializeSMVertices)
     (
         [this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
@@ -37,7 +37,7 @@ void StaticMeshAsset::initAsset()
     );
 
 #if DEV_BUILD
-    ENQUEUE_COMMAND(InitializeSMTbnVertices)
+    ENQUEUE_RENDER_COMMAND(InitializeSMTbnVertices)
     (
         [this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
@@ -52,7 +52,7 @@ void StaticMeshAsset::initAsset()
 
 void StaticMeshAsset::clearAsset()
 {
-    ENQUEUE_COMMAND(ClearSMVertices)
+    ENQUEUE_RENDER_COMMAND(ClearSMVertices)
     (
         [this](IRenderCommandList *, IGraphicsInstance *, const GraphicsHelperAPI *)
         {
@@ -64,7 +64,7 @@ void StaticMeshAsset::clearAsset()
     );
 
 #if DEV_BUILD
-    ENQUEUE_COMMAND(InitializeSMTbnVertices)
+    ENQUEUE_RENDER_COMMAND(InitializeSMTbnVertices)
     (
         [this](IRenderCommandList *, IGraphicsInstance *, const GraphicsHelperAPI *)
         {

@@ -33,8 +33,7 @@ Transform3D::Transform3D(const Matrix4 &transformMatrix)
     // TODO(Jeslas) : fix cases when non uniform scaled matrix inverse creates invalid Rotation values(
     // May be quaternion will fix it )?
     transformTranslation = Vector3(transformMatrix[3].x, transformMatrix[3].y, transformMatrix[3].z);
-    transformScale
-        = Vector3(Vector3(transformMatrix[0]).length(), Vector3(transformMatrix[1]).length(), Vector3(transformMatrix[2]).length());
+    transformScale = Vector3(Vector3(transformMatrix[0]).length(), Vector3(transformMatrix[1]).length(), Vector3(transformMatrix[2]).length());
 
     Vector3 invScale(invScaleSafe());
     Matrix3 rotMatrix;
@@ -91,8 +90,7 @@ Transform3D &Transform3D::operator= (Transform3D &&otherTransform)
 Transform3D &Transform3D::operator= (const Matrix4 &transformMatrix)
 {
     transformTranslation = Vector3(transformMatrix[3].x, transformMatrix[3].y, transformMatrix[3].z);
-    transformScale
-        = Vector3(Vector3(transformMatrix[0]).length(), Vector3(transformMatrix[1]).length(), Vector3(transformMatrix[2]).length());
+    transformScale = Vector3(Vector3(transformMatrix[0]).length(), Vector3(transformMatrix[1]).length(), Vector3(transformMatrix[2]).length());
     transformRotation = RotationMatrix(transformMatrix / Matrix4(transformScale)).asRotation();
 
     return *this;

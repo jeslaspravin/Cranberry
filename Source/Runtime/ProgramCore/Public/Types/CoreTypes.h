@@ -124,3 +124,35 @@ enum EThreadSharing
     ThreadSharing_Exclusive,
     ThreadSharing_Shared
 };
+
+// Common type's traits
+
+namespace CoreTypeTraits
+{
+template <class T, T Value>
+struct IntegralType
+{
+    static constexpr T value = Value;
+
+    using value_type = T;
+    using type = IntegralType;
+
+    constexpr operator value_type () const noexcept { return value; }
+    constexpr value_type operator() () const noexcept { return value; }
+};
+
+template <bool Value>
+using BoolType = IntegralType<bool, Value>;
+using TrueType = BoolType<true>;
+using FalseType = BoolType<false>;
+template <typename T1, typename T2>
+struct IsSame : FalseType
+{};
+template <typename T>
+struct IsSame<T, T> : TrueType
+{};
+
+} // namespace CoreTypeTraits
+
+struct IsTCharWide : CoreTypeTraits::IsSame<TChar, WChar>
+{};

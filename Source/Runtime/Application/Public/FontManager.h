@@ -107,7 +107,6 @@ public:
      *
      * @return void
      */
-    APPLICATION_EXPORT void draw(
-        std::vector<FontVertex> &outVertices, IRect &outBB, const String &text, FontIndex font, uint32 height, int32 wrapWidth = -1
-    ) const;
+    APPLICATION_EXPORT void
+    draw(std::vector<FontVertex> &outVertices, IRect &outBB, const String &text, FontIndex font, uint32 height, int32 wrapWidth = -1) const;
 };

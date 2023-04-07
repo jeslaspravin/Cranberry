@@ -94,7 +94,7 @@ void TestGameEngine::quit()
     assetManager.unload();
     imguiManager->release();
     ApplicationSettings::surfaceSize.onConfigChanged().unbind(surfaceResizeHandle);
-    ENQUEUE_COMMAND(EngineQuit)
+    ENQUEUE_RENDER_COMMAND(EngineQuit)
     (
         [this](class IRenderCommandList *, IGraphicsInstance *, const GraphicsHelperAPI *)
         {
@@ -137,7 +137,7 @@ void TestGameEngine::engineLoop()
         ));
         imguiManager->mouseMoved(relMousePos, relMousePos, application->inputSystem);
 
-        ENQUEUE_COMMAND(Engineloop)
+        ENQUEUE_RENDER_COMMAND(Engineloop)
         (
             [this](class IRenderCommandList *, IGraphicsInstance *, const GraphicsHelperAPI *)
             {

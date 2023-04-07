@@ -45,10 +45,7 @@ public:
     {
         return Short2(int16(Math::round(pt.x * getWidgetScaling())), int16(Math::round(pt.y * getWidgetScaling())));
     }
-    FORCE_INLINE Short2 removeDpiScale(Short2 pt) const
-    {
-        return Short2(int16(pt.x / getWidgetScaling()), int16(pt.y / getWidgetScaling()));
-    }
+    FORCE_INLINE Short2 removeDpiScale(Short2 pt) const { return Short2(int16(pt.x / getWidgetScaling()), int16(pt.y / getWidgetScaling())); }
     Short2 screenToWgWindowSpace(Short2 screenPt) const;
     Short2 wgWindowToScreenSpace(Short2 windowPt) const;
 

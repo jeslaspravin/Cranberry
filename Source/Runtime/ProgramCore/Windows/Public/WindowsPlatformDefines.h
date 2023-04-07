@@ -12,12 +12,16 @@
 #pragma once
 
 // String defines
+// Right now using UTF-8 for windows as windows do not recommend UTF-16 anymore, If changing here also change TChar in CoreTypes.h
 #ifndef USING_WIDE_UNICODE
-#define USING_WIDE_UNICODE 0 // Right now using UTF-8 for windows as windows do not recommend UTF-16 anymore
+#define USING_WIDE_UNICODE 0
 #endif
 #ifndef TCHAR_inner
-// #define TCHAR_inner(x) L##x
+#if USING_WIDE_UNICODE
+#define TCHAR_inner(x) L##x
+#else // USING_WIDE_UNICODE
 #define TCHAR_inner(x) x
+#endif // USING_WIDE_UNICODE
 #endif
 
 // Other platform specific

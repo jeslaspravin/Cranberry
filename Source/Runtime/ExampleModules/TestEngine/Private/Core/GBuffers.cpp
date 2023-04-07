@@ -78,7 +78,7 @@ std::unordered_map<FramebufferFormat, std::vector<GbufferWrapper>> &GBuffers::gB
 
 void GBuffers::onSampleCountChanged(uint32 /*oldValue*/, uint32 newValue)
 {
-    ENQUEUE_COMMAND(GBufferSampleCountChange)
+    ENQUEUE_RENDER_COMMAND(GBufferSampleCountChange)
     (
         [newValue](class IRenderCommandList *cmdList, IGraphicsInstance *, const GraphicsHelperAPI *)
         {
@@ -128,7 +128,7 @@ void GBuffers::onSampleCountChanged(uint32 /*oldValue*/, uint32 newValue)
 
 void GBuffers::onScreenResized(UInt2 newSize)
 {
-    ENQUEUE_COMMAND(GBufferResize)
+    ENQUEUE_RENDER_COMMAND(GBufferResize)
     (
         [newSize](class IRenderCommandList *cmdList, IGraphicsInstance *, const GraphicsHelperAPI *)
         {

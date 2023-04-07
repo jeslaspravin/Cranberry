@@ -34,7 +34,7 @@ void TextureBase::markResourceDirty()
     if (!bNeedsUpdate && textureResource.isValid())
     {
         bNeedsUpdate = true;
-        ENQUEUE_COMMAND(UpdateTexture)
+        ENQUEUE_RENDER_COMMAND(UpdateTexture)
         (
             [this](
                 class IRenderCommandList * /*cmdList*/, IGraphicsInstance * /*graphicsInstance*/, const GraphicsHelperAPI * /*graphicsHelper*/

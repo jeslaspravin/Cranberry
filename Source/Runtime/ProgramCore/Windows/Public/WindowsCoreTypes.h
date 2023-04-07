@@ -18,7 +18,7 @@ private:
     WindowsCoreTypes() = default;
 
 public:
-    // Right now using UTF-8 for windows as windows do not recommend UTF-16 anymore
+    // Right now using UTF-8 for windows as windows do not recommend UTF-16 anymore, If changing here also change TCHAR in CoreDefines.h
     using TChar = AChar;
     using WCharEncodedType = Utf16;
     using EncodedType = Utf8;

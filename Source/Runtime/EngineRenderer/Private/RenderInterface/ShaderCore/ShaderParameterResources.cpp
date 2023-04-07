@@ -388,7 +388,7 @@ void ShaderParameters::removeRef()
     uint32 count = refCounter.fetch_sub(1, std::memory_order::acq_rel);
     if (count == 1)
     {
-        ENQUEUE_COMMAND(DeleteShaderParameter)
+        ENQUEUE_RENDER_COMMAND(DeleteShaderParameter)
         (
             [this](class IRenderCommandList *, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
             {
@@ -1269,20 +1269,14 @@ Vector2 ShaderParameters::getVector2Param(StringID paramName, StringID bufferNam
     return getFieldParam<Vector2>(paramName, bufferName, index);
 }
 
-Vector2 ShaderParameters::getVector2Param(StringID paramName, uint32 index /* = 0 */) const
-{
-    return getFieldParam<Vector2>(paramName, index);
-}
+Vector2 ShaderParameters::getVector2Param(StringID paramName, uint32 index /* = 0 */) const { return getFieldParam<Vector2>(paramName, index); }
 
 Vector4 ShaderParameters::getVector4Param(StringID paramName, StringID bufferName, uint32 index /* = 0 */) const
 {
     return getFieldParam<Vector4>(paramName, bufferName, index);
 }
 
-Vector4 ShaderParameters::getVector4Param(StringID paramName, uint32 index /* = 0 */) const
-{
-    return getFieldParam<Vector4>(paramName, index);
-}
+Vector4 ShaderParameters::getVector4Param(StringID paramName, uint32 index /* = 0 */) const { return getFieldParam<Vector4>(paramName, index); }
 
 Matrix4 ShaderParameters::getMatrixParam(StringID paramName, uint32 index /* = 0 */) const { return getFieldParam<Matrix4>(paramName, index); }
 
@@ -1527,7 +1521,7 @@ void ShaderParameters::resizeRuntimeBuffer(StringID bufferName, uint32 minCount)
                 bufferData, bufferData.descriptorInfo->bufferParamInfo, bufferData.cpuBuffer, StringID(EInitType::InitType_NoInit)
             );
 
-            ENQUEUE_COMMAND(ResizeRuntimeBuffer)
+            ENQUEUE_RENDER_COMMAND(ResizeRuntimeBuffer)
             (
                 [this, bufferName, bufferNameString, runtimeField,
                  &bufferData](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)

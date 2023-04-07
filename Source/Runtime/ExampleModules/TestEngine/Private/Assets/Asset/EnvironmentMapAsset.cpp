@@ -28,7 +28,7 @@ ICleanupAsset *EnvironmentMapAsset::cleanableAsset() { return this; }
 
 void EnvironmentMapAsset::initAsset()
 {
-    ENQUEUE_COMMAND(InitEnvironmentMap)
+    ENQUEUE_RENDER_COMMAND(InitEnvironmentMap)
     (
         [this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {

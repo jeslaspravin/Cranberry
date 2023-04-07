@@ -80,7 +80,7 @@ void RenderTargetTexture::reinitResources()
         textureResource->setNumOfMips(mipCount);
         textureResource->setResourceName(textureName);
         textureResource->setLayerCount(layerCount);
-        ENQUEUE_COMMAND(RtReinitTexture)
+        ENQUEUE_RENDER_COMMAND(RtReinitTexture)
         (
             [this](class IRenderCommandList *cmdList, IGraphicsInstance *, const GraphicsHelperAPI *)
             {
@@ -149,7 +149,7 @@ void RenderTargetTexture::init(RenderTargetTexture *texture)
                                      .numOfMips = texture->mipCount,
                                      .layerCount = texture->layerCount };
 
-    ENQUEUE_COMMAND(RtInitTexture)
+    ENQUEUE_RENDER_COMMAND(RtInitTexture)
     (
         [texture, imageCI](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
@@ -183,7 +183,7 @@ void RenderTargetTexture::release(RenderTargetTexture *texture)
 {
     ImageResourceRef rtResource = texture->rtResource;
     ImageResourceRef textureResource = texture->textureResource;
-    ENQUEUE_COMMAND(RtDestroyTexture)
+    ENQUEUE_RENDER_COMMAND(RtDestroyTexture)
     (
         [rtResource, textureResource](class IRenderCommandList *, IGraphicsInstance *, const GraphicsHelperAPI *)
         {
@@ -224,7 +224,7 @@ void RenderTargetTextureCube::init(RenderTargetTextureCube *texture)
 {
     ImageResourceCreateInfo imageCI{ .imageFormat = texture->dataFormat, .dimensions = texture->textureSize, .numOfMips = texture->mipCount };
 
-    ENQUEUE_COMMAND(RtInitTexture)
+    ENQUEUE_RENDER_COMMAND(RtInitTexture)
     (
         [texture, imageCI](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {

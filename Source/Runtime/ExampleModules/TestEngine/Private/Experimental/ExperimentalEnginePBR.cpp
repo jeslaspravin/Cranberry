@@ -691,7 +691,7 @@ void ExperimentalEnginePBR::createDrawCmdsBuffer(IGraphicsInstance *graphicsInst
         spotDrawCmds[i]->init();
 #endif
     }
-    ENQUEUE_COMMAND(CreateAllEntityDrawCmds)
+    ENQUEUE_RENDER_COMMAND(CreateAllEntityDrawCmds)
     (
         [drawCmds, this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *)
         {
@@ -1486,7 +1486,7 @@ void ExperimentalEnginePBR::createSceneRenderData(
 
 void ExperimentalEnginePBR::destroyScene()
 {
-    ENQUEUE_COMMAND(DestroyScene)
+    ENQUEUE_RENDER_COMMAND(DestroyScene)
     (
         [this](class IRenderCommandList *, IGraphicsInstance *, const GraphicsHelperAPI *)
         {
@@ -1655,8 +1655,7 @@ void SpotLight::update() const
         viewData.invProjection = viewData.projection.inverse();
         viewData.invView = viewData.view.inverse();
         Matrix4 ndcToTextureSpace(
-            Vector4(0.5f, 0.0f, 0.0f, 0.0f), Vector4(0.0f, 0.5f, 0.0f, 0.0f), Vector4(0.0f, 0.0f, 1.0f, 0.0f),
-            Vector4(0.5f, 0.5f, 0.0f, 1.0f)
+            Vector4(0.5f, 0.0f, 0.0f, 0.0f), Vector4(0.0f, 0.5f, 0.0f, 0.0f), Vector4(0.0f, 0.0f, 1.0f, 0.0f), Vector4(0.5f, 0.5f, 0.0f, 1.0f)
         );
 
         (*paramCollection)->setMatrixParam(TCHAR("sptLitsW2C"), ndcToTextureSpace * viewData.projection * viewData.invView, index);
@@ -1928,7 +1927,7 @@ void ExperimentalEnginePBR::reupdateTextureParamsOnResize()
 
 void ExperimentalEnginePBR::reupdateEnvMap()
 {
-    ENQUEUE_COMMAND(WaitEnvMapUpdate)
+    ENQUEUE_RENDER_COMMAND(WaitEnvMapUpdate)
     (
         [this](class IRenderCommandList *cmdList, IGraphicsInstance *, const GraphicsHelperAPI *)
         {
@@ -2348,7 +2347,7 @@ void ExperimentalEnginePBR::updateCameraParams()
     if (bCamRotated)
     {
         updateCamGizmoViewParams();
-        ENQUEUE_COMMAND(CameraGizmoUpdate)
+        ENQUEUE_RENDER_COMMAND(CameraGizmoUpdate)
         (
             [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *)
             {
@@ -2411,7 +2410,7 @@ void ExperimentalEnginePBR::onStartUp()
 
     tempTest();
 
-    ENQUEUE_COMMAND(RenderStartup)
+    ENQUEUE_RENDER_COMMAND(RenderStartup)
     (
         [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
@@ -2437,7 +2436,7 @@ void ExperimentalEnginePBR::startUpRenderInit(IGraphicsInstance *graphicsInstanc
 
 void ExperimentalEnginePBR::onQuit()
 {
-    ENQUEUE_COMMAND(EngineQuit)
+    ENQUEUE_RENDER_COMMAND(EngineQuit)
     (
         [this](class IRenderCommandList *cmdList, IGraphicsInstance *, const GraphicsHelperAPI *)
         {
@@ -2945,8 +2944,8 @@ void ExperimentalEnginePBR::debugFrameRender(
                 {        TCHAR("gridCellSize"),         gridCellSize},
                 {      TCHAR("gridExtendSize"),       gridExtendSize},
                                                            {TCHAR("cellMinPixelCoverage"), cellMinPixelCoverage},
-                                                             {           TCHAR("thinColor"),  Vector4(thinColor)},
-                                                               {          TCHAR("thickColor"), Vector4(thickColor)}
+                                                             {           TCHAR("thinColor"),   Vector4(thinColor)},
+                                                               {          TCHAR("thickColor"),  Vector4(thickColor)}
             };
             GraphicsPipelineState pipelineState;
             pipelineState.pipelineQuery = { EPolygonDrawMode::Fill, ECullingMode::None };
@@ -3024,10 +3023,10 @@ void ExperimentalEnginePBR::tickEngine()
         ShortRect windowArea = application->windowManager->getMainWindow()->windowClientRect();
         Vector2 windowOrigin{ float(windowArea.minBound.x), float(windowArea.minBound.y) };
         Vector2 mouseCoord = Vector2(
-                                  application->inputSystem->analogState(AnalogStates::AbsMouseX)->currentValue,
-                                  application->inputSystem->analogState(AnalogStates::AbsMouseY)->currentValue
-                              )
-                              - windowOrigin;
+                                 application->inputSystem->analogState(AnalogStates::AbsMouseX)->currentValue,
+                                 application->inputSystem->analogState(AnalogStates::AbsMouseY)->currentValue
+                             )
+                             - windowOrigin;
         mouseCoord /= Vector2(ApplicationSettings::surfaceSize.get());
         LOG_DEBUG("ExperimentalEnginePBR", "mouse coord (%f, %f)", mouseCoord.x(), mouseCoord.y());
         if (mouseCoord.x() >= 0 && mouseCoord.x() <= 1.0f && mouseCoord.y() >= 0 && mouseCoord.y() <= 1.0f)
@@ -3047,7 +3046,7 @@ void ExperimentalEnginePBR::tickEngine()
 
     if (!application->windowManager->getMainWindow()->isMinimized())
     {
-        ENQUEUE_COMMAND(TickFrame)
+        ENQUEUE_RENDER_COMMAND(TickFrame)
         (
             [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
             {
@@ -3063,7 +3062,7 @@ void ExperimentalEnginePBR::tickEngine()
     // Do the resize after frame rendering so next frame will be updated
     if (renderSize != ApplicationSettings::screenSize.get())
     {
-        ENQUEUE_COMMAND(WritingDescs)
+        ENQUEUE_RENDER_COMMAND(WritingDescs)
         (
             [this](class IRenderCommandList *, IGraphicsInstance *, const GraphicsHelperAPI *)
             {
@@ -3301,7 +3300,7 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface *drawInterface)
                 if (ImGui::DragFloat3("Rotation", reinterpret_cast<float *>(&cameraRotation), 1.f, 0.0f, 360.0f))
                 {
                     updateCamGizmoViewParams();
-                    ENQUEUE_COMMAND(CameraGizmoUpdate)
+                    ENQUEUE_RENDER_COMMAND(CameraGizmoUpdate)
                     (
                         [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *)
                         {

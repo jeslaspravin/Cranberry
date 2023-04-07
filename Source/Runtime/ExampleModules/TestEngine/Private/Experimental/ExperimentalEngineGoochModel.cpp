@@ -477,7 +477,7 @@ void ExperimentalEngineGoochModel::createDrawCmdsBuffer(IGraphicsInstance *graph
         }
     }
 
-    ENQUEUE_COMMAND(CreateAllEntityDrawCmds)
+    ENQUEUE_RENDER_COMMAND(CreateAllEntityDrawCmds)
     (
         [drawCmds, this](class IRenderCommandList *cmdList, IGraphicsInstance *, const GraphicsHelperAPI *)
         {
@@ -621,7 +621,7 @@ void ExperimentalEngineGoochModel::createSceneRenderData(
 
 void ExperimentalEngineGoochModel::destroyScene()
 {
-    ENQUEUE_COMMAND(DestroyScene)
+    ENQUEUE_RENDER_COMMAND(DestroyScene)
     (
         [this](class IRenderCommandList *, IGraphicsInstance *, const GraphicsHelperAPI *)
         {
@@ -1195,7 +1195,7 @@ void ExperimentalEngineGoochModel::onStartUp()
 {
     TestGameEngine::onStartUp();
 
-    ENQUEUE_COMMAND(EngineStartUp)
+    ENQUEUE_RENDER_COMMAND(EngineStartUp)
     (
         [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
@@ -1232,7 +1232,7 @@ void ExperimentalEngineGoochModel::onStartUp()
     };
     boxes.swap(bxs);
     std::vector<UShortRect *> boxPtrs{ boxes.data(),     boxes.data() + 1, boxes.data() + 2, boxes.data() + 3, boxes.data() + 4,
-                                           boxes.data() + 5, boxes.data() + 6, boxes.data() + 7, boxes.data() + 8 };
+                                       boxes.data() + 5, boxes.data() + 6, boxes.data() + 7, boxes.data() + 8 };
     std::vector<PackedRectsBin<UShortRect>> packedbins;
     UShort2 binSize{ 256 };
     bool bPacked = MathGeom::packRectangles(packedbins, binSize, boxPtrs);
@@ -1261,7 +1261,7 @@ void ExperimentalEngineGoochModel::startUpRenderInit(
 
 void ExperimentalEngineGoochModel::onQuit()
 {
-    ENQUEUE_COMMAND(EngineQuit)
+    ENQUEUE_RENDER_COMMAND(EngineQuit)
     (
         [this](class IRenderCommandList *cmdList, IGraphicsInstance *, const GraphicsHelperAPI *)
         {
@@ -1591,7 +1591,7 @@ void ExperimentalEngineGoochModel::tickEngine()
 
     if (!application->windowManager->getMainWindow()->isMinimized())
     {
-        ENQUEUE_COMMAND(TickFrame)
+        ENQUEUE_RENDER_COMMAND(TickFrame)
         (
             [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
             {
@@ -1602,7 +1602,7 @@ void ExperimentalEngineGoochModel::tickEngine()
 
     if (renderSize != ApplicationSettings::screenSize.get())
     {
-        ENQUEUE_COMMAND(WritingDescs)
+        ENQUEUE_RENDER_COMMAND(WritingDescs)
         (
             [this](class IRenderCommandList *, IGraphicsInstance *, const GraphicsHelperAPI *)
             {
@@ -1856,7 +1856,7 @@ void ExperimentalEngineGoochModel::draw(class ImGuiDrawInterface *drawInterface)
                 }
                 if (bAnyModified)
                 {
-                    ENQUEUE_COMMAND(UpdateTextData)
+                    ENQUEUE_RENDER_COMMAND(UpdateTextData)
                     (
                         [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
                         {

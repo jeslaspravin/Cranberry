@@ -21,7 +21,7 @@ void CubeTexture::reinitResources()
 {
     TextureBase::reinitResources();
 
-    ENQUEUE_COMMAND(ReinitCubeTexture)
+    ENQUEUE_RENDER_COMMAND(ReinitCubeTexture)
     (
         [this](IRenderCommandList *, IGraphicsInstance *, const GraphicsHelperAPI *)
         {
@@ -60,7 +60,7 @@ void CubeTexture::init(CubeTexture *texture)
 {
     ImageResourceCreateInfo imageCI{ .imageFormat = texture->dataFormat, .dimensions = texture->textureSize, .numOfMips = texture->mipCount };
 
-    ENQUEUE_COMMAND(InitCubeTexture)
+    ENQUEUE_RENDER_COMMAND(InitCubeTexture)
     (
         [texture, imageCI](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
@@ -80,7 +80,7 @@ void CubeTexture::destroy(CubeTexture *texture)
     ImageResourceRef textureResource = texture->textureResource;
     texture->textureResource.reset();
 
-    ENQUEUE_COMMAND(DestroyCubeTexture)
+    ENQUEUE_RENDER_COMMAND(DestroyCubeTexture)
     (
         [textureResource](IRenderCommandList *, IGraphicsInstance *, const GraphicsHelperAPI *)
         {
@@ -129,7 +129,7 @@ void CubeTextureRW::reinitResources()
 {
     TextureBase::reinitResources();
 
-    ENQUEUE_COMMAND(ReinitCubeTextureRW)
+    ENQUEUE_RENDER_COMMAND(ReinitCubeTextureRW)
     (
         [this](IRenderCommandList *cmdList, IGraphicsInstance *, const GraphicsHelperAPI *)
         {
@@ -150,7 +150,7 @@ void CubeTextureRW::init(CubeTextureRW *texture)
 {
     ImageResourceCreateInfo imageCI{ .imageFormat = texture->dataFormat, .dimensions = texture->textureSize, .numOfMips = texture->mipCount };
 
-    ENQUEUE_COMMAND(InitCubeTextureRW)
+    ENQUEUE_RENDER_COMMAND(InitCubeTextureRW)
     (
         [texture, imageCI](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {

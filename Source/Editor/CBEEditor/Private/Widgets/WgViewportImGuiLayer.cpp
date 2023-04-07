@@ -98,9 +98,7 @@ bool WgViewportImGuiLayer::drawDirect(const DrawDirectParams &params)
 
 void WgViewportImGuiLayer::drawOnImGui(WidgetDrawContext & /*context*/) {}
 
-void WgViewportImGuiLayer::drawWidget(
-    ShortRect /*clipBound*/, WidgetGeomId /*thisId*/, const WidgetGeomTree &, WidgetDrawContext &context
-)
+void WgViewportImGuiLayer::drawWidget(ShortRect /*clipBound*/, WidgetGeomId /*thisId*/, const WidgetGeomTree &, WidgetDrawContext &context)
 {
     if (bDrawingViewport && viewportRegion.isValidAABB())
     {

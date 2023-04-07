@@ -12,52 +12,9 @@
 #pragma once
 
 #include "ProgramCoreExports.h"
+#include "Profiler/ProfilerTypes.h"
 #include "String/String.h"
 #include "Types/Colors.h"
-
-#ifdef USE_TRACY_PROFILER
-
-using CBEProfilerChar = AChar;
-#define CBE_PROFILER_CHAR(str) str
-#define WCHAR_TO_PROFILERCHAR(WCharPtr) TCHAR_TO_UTF8(WCHAR_TO_TCHAR(WCharPtr))
-#define ACHAR_TO_PROFILERCHAR(ACharPtr) ACharPtr
-#define PROFILERCHAR_TO_TCHAR(CharPtr) UTF8_TO_TCHAR(CharPtr)
-
-#define CBE_PROFILER_COLOR(Colour) (Colour).bgra()
-
-// Copied directly from ___tracy_source_location_data in TracyC.h
-struct TracySrcLocDataType
-{
-    const CBEProfilerChar *name;
-    const CBEProfilerChar *function;
-    const CBEProfilerChar *file;
-    uint32 line;
-    uint32 color;
-};
-// Copied directly from ___tracy_c_zone_context in TracyC.h
-struct TracyCZoneCtxType
-{
-    uint32 id;
-    int32 active;
-};
-using CBEProfilerZoneCtx = TracyCZoneCtxType;
-using CBEProfilerSrcLoc = TracySrcLocDataType;
-using CBEProfilerTransientSrcLoc = uint64;
-
-#else
-
-using CBEProfilerZoneCtx = const void *;
-using CBEProfilerSrcLoc = NullType;
-using CBEProfilerTransientSrcLoc = CBEProfilerSrcLoc *;
-using CBEProfilerChar = TChar;
-#define CBE_PROFILER_CHAR(str) TCHAR(str)
-#define WCHAR_TO_PROFILERCHAR(WCharPtr) WCHAR_TO_TCHAR(WCharPtr)
-#define ACHAR_TO_PROFILERCHAR(ACharPtr) UTF8_TO_TCHAR(ACharPtr)
-#define PROFILERCHAR_TO_TCHAR(CharPtr) CharPtr
-
-#define CBE_PROFILER_COLOR(Colour) Colour
-
-#endif
 
 // Following Tracy's naming convention
 // Literals must have program wide lifetime at least
@@ -126,6 +83,13 @@ private:
     );
     static void setScopeTextPrivate(CBEProfilerZoneCtx ctx, const CBEProfilerChar *text);
     static void setScopeNamePrivate(CBEProfilerZoneCtx ctx, const CBEProfilerChar *name);
+};
+
+struct CBEProfilerFiberScope
+{
+    CBEProfilerFiberScope(const CBEProfilerChar *text) { CBEProfiler::enterFiber(text); }
+    MAKE_TYPE_NONCOPY_NONMOVE(CBEProfilerFiberScope)
+    ~CBEProfilerFiberScope() { CBEProfiler::leaveFiber(); }
 };
 
 struct CBEProfilerStaticScope
@@ -231,6 +195,8 @@ public:
 
 #if ENABLE_PROFILING
 
+#define zzzCBE_PROFILER_UNIQ_NAME(NamePrefix) COMBINE(NamePrefix, __LINE__)
+
 #define CBE_START_PROFILER() CBEProfiler::startProfiler()
 #define CBE_STOP_PROFILER() CBEProfiler::stopProfiler()
 
@@ -251,28 +217,30 @@ public:
 
 #define CBE_PROFILER_ENTERFIBER(Text) CBEProfiler::enterFiber(Text)
 #define CBE_PROFILER_LEAVEFIBER() CBEProfiler::leaveFiber()
+#define CBE_PROFILER_SCOPE_FIBER(Text)                                                                                                         \
+    CBEProfilerFiberScope zzzCBE_PROFILER_UNIQ_NAME(zzzFiberVar_) { Text }
 
-#define zzzCBE_PROFILER_UNIQ_NAME(NamePrefix) COMBINE(NamePrefix, __LINE__)
-
-// Following scoped macro's Name must have global lifetime, If name is temporary use TRANSIENT variants or use CBEProfiler::setScopeName
+// Following scoped macro's Name must have global lifetime,
+// If name is temporary(String is dynamic allocated) use TRANSIENT variants or use CBEProfiler::setScopeName
+// Following macros can also be used in non constexpr case for constexpr use non VAR variant of CBE_PROFILER_SCOPE_* macros
 #define CBE_PROFILER_SCOPE_VAR_FULL(VarName, Name, ControlVar, Text, Colour, Value)                                                            \
-    static constexpr const CBEProfilerSrcLoc zzzCBE_PROFILER_UNIQ_NAME(cbeProfilerSrcLoc_                                                      \
+    static const CBEProfilerSrcLoc zzzCBE_PROFILER_UNIQ_NAME(cbeProfilerSrcLoc_                                                                \
     ){ Name, CBE_PROFILER_CHAR(__func__), CBE_PROFILER_CHAR(__FILE__), __LINE__, CBE_PROFILER_COLOR(Colour) };                                 \
     CBEProfilerStaticScope VarName { zzzCBE_PROFILER_UNIQ_NAME(cbeProfilerSrcLoc_), ControlVar, Text, Value }
 #define CBE_PROFILER_SCOPE_VAR_VC(VarName, Name, ControlVar, Colour, Value)                                                                    \
-    static constexpr const CBEProfilerSrcLoc zzzCBE_PROFILER_UNIQ_NAME(cbeProfilerSrcLoc_                                                      \
+    static const CBEProfilerSrcLoc zzzCBE_PROFILER_UNIQ_NAME(cbeProfilerSrcLoc_                                                                \
     ){ Name, CBE_PROFILER_CHAR(__func__), CBE_PROFILER_CHAR(__FILE__), __LINE__, CBE_PROFILER_COLOR(Colour) };                                 \
     CBEProfilerStaticScope VarName { zzzCBE_PROFILER_UNIQ_NAME(cbeProfilerSrcLoc_), ControlVar, Value }
 #define CBE_PROFILER_SCOPE_VAR_TC(VarName, Name, ControlVar, Text, Colour)                                                                     \
-    static constexpr const CBEProfilerSrcLoc zzzCBE_PROFILER_UNIQ_NAME(cbeProfilerSrcLoc_                                                      \
+    static const CBEProfilerSrcLoc zzzCBE_PROFILER_UNIQ_NAME(cbeProfilerSrcLoc_                                                                \
     ){ Name, CBE_PROFILER_CHAR(__func__), CBE_PROFILER_CHAR(__FILE__), __LINE__, CBE_PROFILER_COLOR(Colour) };                                 \
     CBEProfilerStaticScope VarName { zzzCBE_PROFILER_UNIQ_NAME(cbeProfilerSrcLoc_), ControlVar, Text }
 #define CBE_PROFILER_SCOPE_VAR_C(VarName, Name, ControlVar, Colour)                                                                            \
-    static constexpr const CBEProfilerSrcLoc zzzCBE_PROFILER_UNIQ_NAME(cbeProfilerSrcLoc_                                                      \
+    static const CBEProfilerSrcLoc zzzCBE_PROFILER_UNIQ_NAME(cbeProfilerSrcLoc_                                                                \
     ){ Name, CBE_PROFILER_CHAR(__func__), CBE_PROFILER_CHAR(__FILE__), __LINE__, CBE_PROFILER_COLOR(Colour) };                                 \
     CBEProfilerStaticScope VarName { zzzCBE_PROFILER_UNIQ_NAME(cbeProfilerSrcLoc_), ControlVar }
 #define CBE_PROFILER_SCOPE_VAR(VarName, Name, ControlVar)                                                                                      \
-    static constexpr const CBEProfilerSrcLoc zzzCBE_PROFILER_UNIQ_NAME(cbeProfilerSrcLoc_                                                      \
+    static const CBEProfilerSrcLoc zzzCBE_PROFILER_UNIQ_NAME(cbeProfilerSrcLoc_                                                                \
     ){ Name, CBE_PROFILER_CHAR(__func__), CBE_PROFILER_CHAR(__FILE__), __LINE__, CBE_PROFILER_COLOR(ColorConst::BLACK_Transparent) };          \
     CBEProfilerStaticScope VarName { zzzCBE_PROFILER_UNIQ_NAME(cbeProfilerSrcLoc_), ControlVar }
 
@@ -316,6 +284,7 @@ public:
 
 #define CBE_PROFILER_ENTERFIBER(Text)
 #define CBE_PROFILER_LEAVEFIBER()
+#define CBE_PROFILER_SCOPE_FIBER(Text)
 
 // Below are for Persistent scopes
 #define CBE_PROFILER_SCOPE_VAR_FULL(VarName, Name, ControlVar, Text, Colour, Value)
@@ -332,15 +301,16 @@ public:
 #endif // ENABLE_PROFILING
 
 // For Persistent scope with Persistent lifetime for Names
-#define CBE_PROFILER_SCOPE_DYN(Name, ControlVar) CBE_PROFILER_SCOPE_VAR(UNIQ_VAR_NAME(cbeProfilerScope_), Name, ControlVar)
+#define CBE_PROFILER_SCOPE_DYN(Name, ControlVar) constexpr CBE_PROFILER_SCOPE_VAR(UNIQ_VAR_NAME(cbeProfilerScope_), Name, ControlVar)
 #define CBE_PROFILER_SCOPE(Name) CBE_PROFILER_SCOPE_DYN(Name, true)
-#define CBE_PROFILER_SCOPE_DYN_C(Name, ControlVar, Colour) CBE_PROFILER_SCOPE_VAR_C(UNIQ_VAR_NAME(cbeProfilerScope_), Name, ControlVar, Colour)
+#define CBE_PROFILER_SCOPE_DYN_C(Name, ControlVar, Colour)                                                                                     \
+    constexpr CBE_PROFILER_SCOPE_VAR_C(UNIQ_VAR_NAME(cbeProfilerScope_), Name, ControlVar, Colour)
 #define CBE_PROFILER_SCOPE_C(Name, Colour) CBE_PROFILER_SCOPE_DYN_C(Name, true, Colour)
 #define CBE_PROFILER_SCOPE_DYN_VC(Name, ControlVar, Colour, Value)                                                                             \
-    CBE_PROFILER_SCOPE_VAR_VC(UNIQ_VAR_NAME(cbeProfilerScope_), Name, ControlVar, Colour, Value)
+    constexpr CBE_PROFILER_SCOPE_VAR_VC(UNIQ_VAR_NAME(cbeProfilerScope_), Name, ControlVar, Colour, Value)
 #define CBE_PROFILER_SCOPE_VC(Name, Colour, Value) CBE_PROFILER_SCOPE_DYN_VC(Name, true, Colour, Value)
 #define CBE_PROFILER_SCOPE_DYN_TC(Name, ControlVar, Text, Colour)                                                                              \
-    CBE_PROFILER_SCOPE_VAR_TC(UNIQ_VAR_NAME(cbeProfilerScope_), Name, ControlVar, Text, Colour)
+    constexpr CBE_PROFILER_SCOPE_VAR_TC(UNIQ_VAR_NAME(cbeProfilerScope_), Name, ControlVar, Text, Colour)
 #define CBE_PROFILER_SCOPE_TC(Name, Text, Colour) CBE_PROFILER_SCOPE_DYN_TC(Name, true, Text, Colour)
 
 // For Transient scope
