@@ -20,7 +20,7 @@ GLM_HEADER_INCLUDES_BEGIN
 
 GLM_HEADER_INCLUDES_END
 
-class Vector2D;
+class Vector2;
 
 class PROGRAMCORE_EXPORT Matrix2
 {
@@ -32,8 +32,8 @@ public:
     Matrix2();
     Matrix2(float allValue);
     Matrix2(float c1x, float c1y, float c2x, float c2y);
-    Matrix2(const Vector2D &c1, const Vector2D &c2);
-    Matrix2(const Vector2D &scale);
+    Matrix2(const Vector2 &c1, const Vector2 &c2);
+    Matrix2(const Vector2 &scale);
     Matrix2(const Matrix2 &other);
     Matrix2(Matrix2 &&other);
     Matrix2 &operator= (const Matrix2 &other);
@@ -43,7 +43,7 @@ public:
     Matrix2Col operator[] (uint32 colIndex) const;
 
 public:
-    Vector2D operator* (const Vector2D &transformingVector) const;
+    Vector2 operator* (const Vector2 &transformingVector) const;
     Matrix2 operator* (const Matrix2 &b) const;
     Matrix2 &operator*= (const Matrix2 &b);
 

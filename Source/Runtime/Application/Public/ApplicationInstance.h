@@ -173,7 +173,7 @@ public:
     APPLICATION_EXPORT SharedPtr<WgWindow> getActiveWindow() const;
     FORCE_INLINE SharedPtr<WgWindow> getHoveringWindow() const { return lastHoverWnd; }
     APPLICATION_EXPORT bool hasActiveWindow() const;
-    APPLICATION_EXPORT SharedPtr<WgWindow> createWindow(Size2D size, const TChar *name, SharedPtr<WgWindow> parent);
+    APPLICATION_EXPORT SharedPtr<WgWindow> createWindow(UInt2 size, const TChar *name, SharedPtr<WgWindow> parent);
     APPLICATION_EXPORT void destroyWindow(SharedPtr<WgWindow> window);
     // Widget queries
     APPLICATION_EXPORT bool isAWindow(SharedPtr<WidgetBase> widget);

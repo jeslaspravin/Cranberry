@@ -10,7 +10,7 @@
  */
 
 #include "Math/Matrix3.h"
-#include "Math/Vector3D.h"
+#include "Math/Vector3.h"
 
 Matrix3::Matrix3(const glm::mat3 &matrix)
     : value(matrix)
@@ -24,7 +24,7 @@ Matrix3::Matrix3(float allValue)
     : value(allValue)
 {}
 
-Matrix3::Matrix3(const Vector3D &c1, const Vector3D &c2, const Vector3D &c3)
+Matrix3::Matrix3(const Vector3 &c1, const Vector3 &c2, const Vector3 &c3)
     : value(c1.x(), c1.y(), c1.z(), c2.x(), c2.y(), c2.z(), c3.x(), c3.y(), c3.z())
 {}
 
@@ -40,7 +40,7 @@ Matrix3::Matrix3(Matrix3 &&other)
     : value(std::move(other.value))
 {}
 
-Matrix3::Matrix3(const Vector3D &scale)
+Matrix3::Matrix3(const Vector3 &scale)
     : value(scale.x(), 0, 0, 0, scale.y(), 0, 0, 0, scale.z())
 {}
 
@@ -60,7 +60,7 @@ Matrix3Col &Matrix3::operator[] (uint32 colIndex) { return value[colIndex]; }
 
 Matrix3Col Matrix3::operator[] (uint32 colIndex) const { return value[colIndex]; }
 
-Vector3D Matrix3::operator* (const Vector3D &transformingVector) const { return Vector3D(value * transformingVector.value); }
+Vector3 Matrix3::operator* (const Vector3 &transformingVector) const { return Vector3(value * transformingVector.value); }
 
 Matrix3 Matrix3::operator* (const Matrix3 &b) const { return value * b.value; }
 
@@ -142,4 +142,4 @@ Matrix3 &Matrix3::operator+= (float scalar)
     return *this;
 }
 
-const Matrix3 Matrix3::IDENTITY{ Vector3D(1, 0), Vector3D(0, 1), Vector3D(0, 0, 1) };
+const Matrix3 Matrix3::IDENTITY{ Vector3(1, 0), Vector3(0, 1), Vector3(0, 0, 1) };

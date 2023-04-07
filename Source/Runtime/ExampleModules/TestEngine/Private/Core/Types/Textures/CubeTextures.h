@@ -24,7 +24,7 @@ enum class ECubeTextureFormat
 
 struct CubeTextureCreateParams : public TextureBaseCreateParams
 {
-    Size2D textureSize;
+    UInt2 textureSize;
     ECubeTextureFormat dataFormat;
     // If greater than acceptable it will be clamped, if 0 mips get auto calculated from size
     uint32 mipCount = 0;

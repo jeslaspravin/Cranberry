@@ -206,7 +206,7 @@ using BufferResourceRef = ReferenceCountPtr<BufferResource>;
 struct ImageResourceCreateInfo
 {
     EPixelDataFormat::Type imageFormat;
-    Size3D dimensions{ 256, 256, 1 };
+    UInt3 dimensions{ 256, 256, 1 };
     uint32 numOfMips{ 0 };
     uint32 layerCount{ 1 };
 };
@@ -216,7 +216,7 @@ class ENGINERENDERER_EXPORT ImageResource : public MemoryResource
     DECLARE_GRAPHICS_RESOURCE(ImageResource, , MemoryResource, )
 
 protected:
-    Size3D dimensions = { 256, 256, 1 };
+    UInt3 dimensions = { 256, 256, 1 };
     uint32 numOfMips = 0;
     uint32 layerCount = 1;
     EPixelSampleCount::Type sampleCounts = EPixelSampleCount::SampleCount1;
@@ -236,11 +236,11 @@ public:
     void setNumOfMips(uint32 mipCount);
 
     void setShaderUsage(uint32 usage);
-    void setImageSize(const Size3D &imageSize);
+    void setImageSize(const UInt3 &imageSize);
 
     FORCE_INLINE uint32 getLayerCount() const { return layerCount; }
     FORCE_INLINE uint32 getNumOfMips() const { return numOfMips; }
-    FORCE_INLINE const Size3D &getImageSize() const { return dimensions; }
+    FORCE_INLINE const UInt3 &getImageSize() const { return dimensions; }
     FORCE_INLINE EPixelDataFormat::Type imageFormat() const { return dataFormat; }
     FORCE_INLINE EPixelSampleCount::Type sampleCount() const { return sampleCounts; }
     FORCE_INLINE bool isShaderRead() const { return (shaderUsage & EImageShaderUsage::Sampling) > 0; }
@@ -274,9 +274,9 @@ struct BatchCopyBufferData
 struct CopyPixelsToImageInfo
 {
     // Offset and extent for MIP base rest will be calculated automatically
-    Size3D srcOffset{ 0 };
-    Size3D dstOffset{ 0 };
-    Size3D extent;
+    UInt3 srcOffset{ 0 };
+    UInt3 dstOffset{ 0 };
+    UInt3 extent;
 
     ImageSubresource subres;
 
@@ -288,8 +288,8 @@ struct CopyPixelsToImageInfo
 struct CopyImageInfo
 {
     // Offset and extent for MIP base, Rest will be calculated automatically
-    Size3D offset{ 0 };
-    Size3D extent;
+    UInt3 offset{ 0 };
+    UInt3 extent;
 
     ImageSubresource subres;
 

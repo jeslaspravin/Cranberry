@@ -60,7 +60,7 @@ void TransformComponent::invalidateComponent()
     }
 }
 
-const Vector3D &TransformComponent::setRelativeLocation(Vector3D location)
+const Vector3 &TransformComponent::setRelativeLocation(Vector3 location)
 {
     relativeTf.setTranslation(location);
     if (World *world = getWorld())
@@ -80,7 +80,7 @@ const Rotation &TransformComponent::setRelativeRotation(Rotation rotation)
     return relativeTf.getRotation();
 }
 
-const Vector3D &TransformComponent::setRelativeScale(Vector3D scale)
+const Vector3 &TransformComponent::setRelativeScale(Vector3 scale)
 {
     relativeTf.setScale(scale);
     if (World *world = getWorld())
@@ -100,7 +100,7 @@ const Transform3D &TransformComponent::setRelativeTransform(const Transform3D &n
     return relativeTf;
 }
 
-Vector3D TransformComponent::setWorldLocation(Vector3D location)
+Vector3 TransformComponent::setWorldLocation(Vector3 location)
 {
     World *world = getWorld();
     alertAlwaysf(world, "Setting transform in world space is valid only for components in world!");
@@ -150,7 +150,7 @@ Rotation TransformComponent::setWorldRotation(Rotation rotation)
     }
 }
 
-Vector3D TransformComponent::setWorldScale(Vector3D scale)
+Vector3 TransformComponent::setWorldScale(Vector3 scale)
 {
     World *world = getWorld();
     alertAlwaysf(world, "Setting transform in world space is valid only for components in world!");

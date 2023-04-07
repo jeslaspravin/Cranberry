@@ -180,7 +180,8 @@ public:
         {
             return false;
         }
-        if (Object *obj = cbe::get(StringID(objectPath), objectPath.toString().getChar()))
+        Object *obj = cbe::get(StringID(objectPath), objectPath.toString().getChar());
+        if (cbe::isValidFast(obj))
         {
             return INTERNAL_ObjectCoreAccessors::getAllocIdx(obj) == allocIdx;
         }
@@ -258,8 +259,8 @@ public:
     // Checks if set objectId is valid now, Without loading
     FORCE_INLINE bool isValid() const
     {
-        Object *obj = get(getFullPath().getChar());
-        if (cbe::isValid(obj))
+        Object *obj = cbe::get(getFullPath().getChar());
+        if (cbe::isValidFast(obj))
         {
             return INTERNAL_ObjectCoreAccessors::getAllocIdx(obj) == allocIdx;
         }

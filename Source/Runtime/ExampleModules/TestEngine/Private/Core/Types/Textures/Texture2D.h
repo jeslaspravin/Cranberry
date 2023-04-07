@@ -16,7 +16,7 @@
 
 struct Texture2DCreateParams : public TextureBaseCreateParams
 {
-    Size2D textureSize;
+    UInt2 textureSize;
     // If greater than acceptable it will be clamped, if 0 mips get auto calculated from size
     uint32 mipCount = 0;
     // Must be Size == textureSize.x * textureSize.y
@@ -64,7 +64,7 @@ private:
 
 struct Texture2DRWCreateParams : public TextureBaseCreateParams
 {
-    Size2D textureSize;
+    UInt2 textureSize;
     // If greater than acceptable it will be clamped, if 0 mips get auto calculated from size
     uint32 mipCount = 0;
     // Must be Size == textureSize.x * textureSize.y

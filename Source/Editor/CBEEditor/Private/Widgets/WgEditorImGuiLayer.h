@@ -35,7 +35,7 @@ public:
     virtual bool drawDirect(const DrawDirectParams & /*params*/) { return false; }
 
     /* WidgetBase overrides */
-    void drawWidget(QuantShortBox2D, WidgetGeomId /*thisId*/, const WidgetGeomTree &, WidgetDrawContext &) override {}
+    void drawWidget(ShortRect, WidgetGeomId /*thisId*/, const WidgetGeomTree &, WidgetDrawContext &) override {}
     bool hasWidget(SharedPtr<WidgetBase> /*widget*/) const override { return false; }
     void tick(float /*timeDelta*/) override {}
 

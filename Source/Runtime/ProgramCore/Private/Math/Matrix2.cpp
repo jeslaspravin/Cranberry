@@ -10,7 +10,7 @@
  */
 
 #include "Math/Matrix2.h"
-#include "Math/Vector2D.h"
+#include "Math/Vector2.h"
 
 Matrix2::Matrix2(const glm::mat2 &matrix)
     : value(matrix)
@@ -28,7 +28,7 @@ Matrix2::Matrix2(float c1x, float c1y, float c2x, float c2y)
     : value(c1x, c1y, c2x, c2y)
 {}
 
-Matrix2::Matrix2(const Vector2D &c1, const Vector2D &c2)
+Matrix2::Matrix2(const Vector2 &c1, const Vector2 &c2)
     : value(c1.x(), c1.y(), c2.x(), c2.y())
 {}
 
@@ -40,7 +40,7 @@ Matrix2::Matrix2(Matrix2 &&other)
     : value(std::move(other.value))
 {}
 
-Matrix2::Matrix2(const Vector2D &scale)
+Matrix2::Matrix2(const Vector2 &scale)
     : value(scale.x(), 0, 0, scale.y())
 {}
 
@@ -60,7 +60,7 @@ Matrix2Col &Matrix2::operator[] (uint32 colIndex) { return value[colIndex]; }
 
 Matrix2Col Matrix2::operator[] (uint32 colIndex) const { return value[colIndex]; }
 
-Vector2D Matrix2::operator* (const Vector2D &transformingVector) const { return Vector2D(value * transformingVector.value); }
+Vector2 Matrix2::operator* (const Vector2 &transformingVector) const { return Vector2(value * transformingVector.value); }
 
 Matrix2 Matrix2::operator* (const Matrix2 &b) const { return value * b.value; }
 

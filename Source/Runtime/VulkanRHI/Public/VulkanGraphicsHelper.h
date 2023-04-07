@@ -201,7 +201,7 @@ public:
     ) const final;
 
     Framebuffer *createFbInstance() const final;
-    void initializeFb(IGraphicsInstance *graphicsInstance, Framebuffer *fb, const Size2D &frameSize) const final;
+    void initializeFb(IGraphicsInstance *graphicsInstance, Framebuffer *fb, const UInt2 &frameSize) const final;
     void initializeSwapchainFb(IGraphicsInstance *graphicsInstance, Framebuffer *fb, WindowCanvasRef canvas, uint32 swapchainIdx) const final;
 
     const GraphicsResourceType *readOnlyBufferType() const final;

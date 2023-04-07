@@ -22,7 +22,7 @@
 struct SwapchainInfo
 {
     VkFormat format;
-    Size2D size;
+    UInt2 size;
 };
 
 class VulkanWindowCanvas final

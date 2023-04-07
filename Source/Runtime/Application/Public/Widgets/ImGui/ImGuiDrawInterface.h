@@ -14,7 +14,7 @@
 #include "ApplicationExports.h"
 #include "ImGuiLib/imgui.h"
 #include "Math/Box.h"
-#include "Math/Vector2D.h"
+#include "Math/Vector2.h"
 #include "Types/Colors.h"
 
 class TextureBase;
@@ -26,13 +26,13 @@ private:
 
 private:
     void drawQuadFilled(
-        const Vector2D &min, const Vector2D &max, const Vector2D &offset, float rotInDeg, Color color = ColorConst::WHITE,
+        const Vector2 &min, const Vector2 &max, const Vector2 &offset, float rotInDeg, Color color = ColorConst::WHITE,
         TextureBase *texture = nullptr
     );
-    void drawQuad(const Vector2D &min, const Vector2D &max, const Vector2D &offset, float rotInDeg, Color color = ColorConst::WHITE);
+    void drawQuad(const Vector2 &min, const Vector2 &max, const Vector2 &offset, float rotInDeg, Color color = ColorConst::WHITE);
 
 public:
-    template <Box2DType BoxType>
+    template <Box2Dim BoxType>
     void drawPackedRectangles(
         const BoxType *packedRects, const Color *colors, uint32 rectsCount, const typename BoxType::PointType &packedIn,
         const Color &packedInRectCol
@@ -50,7 +50,7 @@ public:
     );
 };
 
-template <Box2DType BoxType>
+template <Box2Dim BoxType>
 void ImGuiDrawInterface::drawPackedRectangles(
     const BoxType *packedRects, const Color *colors, uint32 rectsCount, const typename BoxType::PointType &packedIn,
     const Color &packedInRectCol
@@ -60,10 +60,10 @@ void ImGuiDrawInterface::drawPackedRectangles(
     {
         drawQuadFilled(
             { (float)packedRects[i].minBound.x, (float)packedRects[i].minBound.y },
-            { (float)packedRects[i].maxBound.x, (float)packedRects[i].maxBound.y }, Vector2D::ZERO, 0.0f, colors[i]
+            { (float)packedRects[i].maxBound.x, (float)packedRects[i].maxBound.y }, Vector2::ZERO, 0.0f, colors[i]
         );
     }
-    Vector2D packedInRectSize = Vector2D{ (float)packedIn.x, (float)packedIn.y };
-    drawQuad(Vector2D::ZERO, packedInRectSize, Vector2D::ZERO, 0.0f, packedInRectCol);
+    Vector2 packedInRectSize = Vector2{ (float)packedIn.x, (float)packedIn.y };
+    drawQuad(Vector2::ZERO, packedInRectSize, Vector2::ZERO, 0.0f, packedInRectCol);
     ImGui::Dummy(packedInRectSize);
 }

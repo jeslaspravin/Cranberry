@@ -20,7 +20,7 @@ GLM_HEADER_INCLUDES_BEGIN
 
 GLM_HEADER_INCLUDES_END
 
-class Vector3D;
+class Vector3;
 
 class PROGRAMCORE_EXPORT Matrix3
 {
@@ -31,11 +31,11 @@ private:
 public:
     Matrix3();
     explicit Matrix3(float allValue);
-    Matrix3(const Vector3D &c1, const Vector3D &c2, const Vector3D &c3);
+    Matrix3(const Vector3 &c1, const Vector3 &c2, const Vector3 &c3);
     Matrix3(float c1x, float c1y, float c1z, float c2x, float c2y, float c2z, float c3x, float c3y, float c3z);
     Matrix3(const Matrix3 &other);
     Matrix3(Matrix3 &&other);
-    Matrix3(const Vector3D &scale);
+    Matrix3(const Vector3 &scale);
     Matrix3 &operator= (const Matrix3 &other);
     Matrix3 &operator= (Matrix3 &&other);
 
@@ -43,7 +43,7 @@ public:
     Matrix3Col operator[] (uint32 colIndex) const;
 
 public:
-    Vector3D operator* (const Vector3D &transformingVector) const;
+    Vector3 operator* (const Vector3 &transformingVector) const;
     Matrix3 operator* (const Matrix3 &b) const;
     Matrix3 &operator*= (const Matrix3 &b);
 

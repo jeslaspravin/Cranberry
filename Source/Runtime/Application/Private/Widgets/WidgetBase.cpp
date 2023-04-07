@@ -13,7 +13,7 @@
 #include "Widgets/WidgetDrawContext.h"
 
 void WidgetDrawContext::drawBox(
-    ArrayView<Size2D> verts, ArrayView<Vector2D> coords, ArrayView<Color> colors, ImageResourceRef texture, QuantShortBox2D clip
+    ArrayView<UInt2> verts, ArrayView<Vector2> coords, ArrayView<Color> colors, ImageResourceRef texture, ShortRect clip
 )
 {
     debugAssert(verts.size() == 4 && canAddMoreVerts(4));
@@ -26,37 +26,37 @@ void WidgetDrawContext::drawBox(
     instanceClip.emplace_back(clip);
 }
 
-void WidgetDrawContext::drawBox(ArrayView<Size2D> verts, ArrayView<Color> colors, QuantShortBox2D clip)
+void WidgetDrawContext::drawBox(ArrayView<UInt2> verts, ArrayView<Color> colors, ShortRect clip)
 {
     debugAssert(verts.size() == 4 && canAddMoreVerts(4));
 
     vertexColor.insert(vertexColor.end(), colors.cbegin(), colors.cend());
-    vertexCoord.insert(vertexCoord.end(), 4, Vector2D::ZERO);
+    vertexCoord.insert(vertexCoord.end(), 4, Vector2::ZERO);
     vertices.insert(vertices.end(), verts.cbegin(), verts.cend());
 
     instanceTexture.emplace_back(nullptr);
     instanceClip.emplace_back(clip);
 }
 
-void WidgetDrawContext::drawBox(ArrayView<Size2D> verts, QuantShortBox2D clip)
+void WidgetDrawContext::drawBox(ArrayView<UInt2> verts, ShortRect clip)
 {
     debugAssert(verts.size() == 4 && canAddMoreVerts(4));
 
     vertexColor.insert(vertexColor.end(), 4, ColorConst::WHITE);
-    vertexCoord.insert(vertexCoord.end(), 4, Vector2D::ZERO);
+    vertexCoord.insert(vertexCoord.end(), 4, Vector2::ZERO);
     vertices.insert(vertices.end(), verts.cbegin(), verts.cend());
 
     instanceTexture.emplace_back(nullptr);
     instanceClip.emplace_back(clip);
 }
 
-void WidgetDrawContext::drawBox(QuantShortBox2D box, ImageResourceRef texture, QuantShortBox2D clip, Color color /*= ColorConst::WHITE*/)
+void WidgetDrawContext::drawBox(ShortRect box, ImageResourceRef texture, ShortRect clip, Color color /*= ColorConst::WHITE*/)
 {
-    Size2D verts[4] = {
+    UInt2 verts[4] = {
         box.minBound, {box.maxBound.x, box.minBound.y},
          box.maxBound, {box.minBound.x, box.maxBound.y}
     };
-    Vector2D vertCoords[4] = {
+    Vector2 vertCoords[4] = {
         {0.0f, 0.0f},
         {1.0f, 0.0f},
         {1.0f, 1.0f},
@@ -67,13 +67,13 @@ void WidgetDrawContext::drawBox(QuantShortBox2D box, ImageResourceRef texture, Q
     drawBox(verts, vertCoords, colors, texture, clip);
 }
 
-void WidgetDrawContext::drawBox(QuantShortBox2D box, ImageResourceRef texture, QuantShortBox2D clip, ArrayView<Color> colors)
+void WidgetDrawContext::drawBox(ShortRect box, ImageResourceRef texture, ShortRect clip, ArrayView<Color> colors)
 {
-    Size2D verts[4] = {
+    UInt2 verts[4] = {
         box.minBound, {box.maxBound.x, box.minBound.y},
          box.maxBound, {box.minBound.x, box.maxBound.y}
     };
-    Vector2D vertCoords[4] = {
+    Vector2 vertCoords[4] = {
         {0.0f, 0.0f},
         {1.0f, 0.0f},
         {1.0f, 1.0f},

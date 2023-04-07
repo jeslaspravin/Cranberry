@@ -68,4 +68,4 @@ void ImageResource::setNumOfMips(uint32 mipCount) { numOfMips = mipCount; }
 
 void ImageResource::setShaderUsage(uint32 usage) { shaderUsage = usage; }
 
-void ImageResource::setImageSize(const Size3D &imageSize) { dimensions = imageSize; }
+void ImageResource::setImageSize(const UInt3 &imageSize) { dimensions = imageSize; }

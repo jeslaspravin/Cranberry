@@ -12,8 +12,8 @@
 #include <unordered_set>
 
 #include "Math/Matrix4.h"
-#include "Math/Vector2D.h"
-#include "Math/Vector4D.h"
+#include "Math/Vector2.h"
+#include "Math/Vector4.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 #include "RenderApi/RenderTaskHelpers.h"
 #include "IRenderInterfaceModule.h"
@@ -1119,22 +1119,22 @@ bool ShaderParameters::setFloatParam(StringID paramName, StringID bufferName, fl
 
 bool ShaderParameters::setFloatParam(StringID paramName, float value, uint32 index /* = 0 */) { return setFieldParam(paramName, value, index); }
 
-bool ShaderParameters::setVector2Param(StringID paramName, StringID bufferName, const Vector2D &value, uint32 index /* = 0 */)
+bool ShaderParameters::setVector2Param(StringID paramName, StringID bufferName, const Vector2 &value, uint32 index /* = 0 */)
 {
     return setFieldParam(paramName, bufferName, value, index);
 }
 
-bool ShaderParameters::setVector2Param(StringID paramName, const Vector2D &value, uint32 index /* = 0 */)
+bool ShaderParameters::setVector2Param(StringID paramName, const Vector2 &value, uint32 index /* = 0 */)
 {
     return setFieldParam(paramName, value, index);
 }
 
-bool ShaderParameters::setVector4Param(StringID paramName, StringID bufferName, const Vector4D &value, uint32 index /* = 0 */)
+bool ShaderParameters::setVector4Param(StringID paramName, StringID bufferName, const Vector4 &value, uint32 index /* = 0 */)
 {
     return setFieldParam(paramName, bufferName, value, index);
 }
 
-bool ShaderParameters::setVector4Param(StringID paramName, const Vector4D &value, uint32 index /* = 0 */)
+bool ShaderParameters::setVector4Param(StringID paramName, const Vector4 &value, uint32 index /* = 0 */)
 {
     return setFieldParam(paramName, value, index);
 }
@@ -1164,12 +1164,12 @@ bool ShaderParameters::setFloatAtPath(ArrayView<const StringID> pathNames, Array
     return setFieldAtPath(pathNames, indices, value);
 }
 
-bool ShaderParameters::setVector2AtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices, const Vector2D &value)
+bool ShaderParameters::setVector2AtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices, const Vector2 &value)
 {
     return setFieldAtPath(pathNames, indices, value);
 }
 
-bool ShaderParameters::setVector4AtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices, const Vector4D &value)
+bool ShaderParameters::setVector4AtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices, const Vector4 &value)
 {
     return setFieldAtPath(pathNames, indices, value);
 }
@@ -1264,24 +1264,24 @@ float ShaderParameters::getFloatParam(StringID paramName, StringID bufferName, u
 
 float ShaderParameters::getFloatParam(StringID paramName, uint32 index /* = 0 */) const { return getFieldParam<float>(paramName, index); }
 
-Vector2D ShaderParameters::getVector2Param(StringID paramName, StringID bufferName, uint32 index /* = 0 */) const
+Vector2 ShaderParameters::getVector2Param(StringID paramName, StringID bufferName, uint32 index /* = 0 */) const
 {
-    return getFieldParam<Vector2D>(paramName, bufferName, index);
+    return getFieldParam<Vector2>(paramName, bufferName, index);
 }
 
-Vector2D ShaderParameters::getVector2Param(StringID paramName, uint32 index /* = 0 */) const
+Vector2 ShaderParameters::getVector2Param(StringID paramName, uint32 index /* = 0 */) const
 {
-    return getFieldParam<Vector2D>(paramName, index);
+    return getFieldParam<Vector2>(paramName, index);
 }
 
-Vector4D ShaderParameters::getVector4Param(StringID paramName, StringID bufferName, uint32 index /* = 0 */) const
+Vector4 ShaderParameters::getVector4Param(StringID paramName, StringID bufferName, uint32 index /* = 0 */) const
 {
-    return getFieldParam<Vector4D>(paramName, bufferName, index);
+    return getFieldParam<Vector4>(paramName, bufferName, index);
 }
 
-Vector4D ShaderParameters::getVector4Param(StringID paramName, uint32 index /* = 0 */) const
+Vector4 ShaderParameters::getVector4Param(StringID paramName, uint32 index /* = 0 */) const
 {
-    return getFieldParam<Vector4D>(paramName, index);
+    return getFieldParam<Vector4>(paramName, index);
 }
 
 Matrix4 ShaderParameters::getMatrixParam(StringID paramName, uint32 index /* = 0 */) const { return getFieldParam<Matrix4>(paramName, index); }
@@ -1306,14 +1306,14 @@ float ShaderParameters::getFloatAtPath(ArrayView<const StringID> pathNames, Arra
     return getFieldAtPath<float>(pathNames, indices);
 }
 
-Vector2D ShaderParameters::getVector2AtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const
+Vector2 ShaderParameters::getVector2AtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const
 {
-    return getFieldAtPath<Vector2D>(pathNames, indices);
+    return getFieldAtPath<Vector2>(pathNames, indices);
 }
 
-Vector4D ShaderParameters::getVector4AtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const
+Vector4 ShaderParameters::getVector4AtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const
 {
-    return getFieldAtPath<Vector4D>(pathNames, indices);
+    return getFieldAtPath<Vector4>(pathNames, indices);
 }
 
 Matrix4 ShaderParameters::getMatrixAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const

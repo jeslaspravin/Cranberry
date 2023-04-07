@@ -14,13 +14,13 @@
 #include "Serialization/ArchiveTypes.h"
 #include "Math/Matrix4.h"
 #include "Math/Rotation.h"
-#include "Math/Vector3D.h"
+#include "Math/Vector3.h"
 
 class PROGRAMCORE_EXPORT Transform3D
 {
 private:
-    Vector3D transformTranslation;
-    Vector3D transformScale;
+    Vector3 transformTranslation;
+    Vector3 transformScale;
     Rotation transformRotation;
 
     template <ArchiveTypeName ArchiveType>
@@ -31,7 +31,7 @@ public:
 
 public:
     Transform3D();
-    Transform3D(const Vector3D &translation, const Rotation &rotation, const Vector3D &scale);
+    Transform3D(const Vector3 &translation, const Rotation &rotation, const Vector3 &scale);
     Transform3D(const Rotation &rotation);
     // Matrix should be proper orthogonal matrix, Some non uniform scaled matrices won't create proper
     // transform, In those cases use raw Matrix
@@ -43,21 +43,21 @@ public:
     Transform3D &operator= (const Matrix4 &transformMatrix);
     bool isSame(const Transform3D &b, float epsilon = SMALL_EPSILON) const;
 
-    const Vector3D &getTranslation() const;
+    const Vector3 &getTranslation() const;
     const Rotation &getRotation() const;
-    const Vector3D &getScale() const;
-    Vector3D &getTranslation();
+    const Vector3 &getScale() const;
+    Vector3 &getTranslation();
     Rotation &getRotation();
-    Vector3D &getScale();
-    void setTranslation(const Vector3D &newTranslation);
+    Vector3 &getScale();
+    void setTranslation(const Vector3 &newTranslation);
     void setRotation(const Rotation &newRotation);
-    void setScale(const Vector3D &newScale);
+    void setScale(const Vector3 &newScale);
 
     Matrix4 getTransformMatrix() const;
-    Vector3D transformNormal(const Vector3D &normal) const;
-    Vector3D invTransformNormal(const Vector3D &normal) const;
-    Vector3D transformPoint(const Vector3D &point) const;
-    Vector3D invTransformPoint(const Vector3D &point) const;
+    Vector3 transformNormal(const Vector3 &normal) const;
+    Vector3 invTransformNormal(const Vector3 &normal) const;
+    Vector3 transformPoint(const Vector3 &point) const;
+    Vector3 invTransformPoint(const Vector3 &point) const;
     Transform3D transform(const Transform3D &other) const;
     Transform3D invTransform(const Transform3D &other) const;
     Transform3D inverseNonUniformScaled() const;
@@ -69,8 +69,8 @@ public:
 private:
     Matrix4 normalTransformMatrix() const;
 
-    Vector3D invScaleSafe() const;
-    Vector3D invTranslation() const;
+    Vector3 invScaleSafe() const;
+    Vector3 invTranslation() const;
 
     Matrix4 inverseNonUniformScaledMatrix() const;
 };

@@ -83,7 +83,7 @@ public:
     ) final;
 
     void cmdBeginRenderPass(
-        const GraphicsResource *cmdBuffer, const LocalPipelineContext &contextPipeline, const QuantizedBox2D &renderArea,
+        const GraphicsResource *cmdBuffer, const LocalPipelineContext &contextPipeline, const IRect &renderArea,
         const RenderPassAdditionalProps &renderpassAdditionalProps, const RenderPassClearValue &clearColor
     ) final;
     void cmdEndRenderPass(const GraphicsResource *cmdBuffer) final;
@@ -125,13 +125,13 @@ public:
     ) final;
 
     void cmdSetViewportAndScissors(
-        const GraphicsResource *cmdBuffer, ArrayView<const std::pair<QuantizedBox2D, QuantizedBox2D>> viewportAndScissors,
+        const GraphicsResource *cmdBuffer, ArrayView<const std::pair<IRect, IRect>> viewportAndScissors,
         uint32 firstViewport = 0
     ) const final;
     void cmdSetViewportAndScissor(
-        const GraphicsResource *cmdBuffer, const QuantizedBox2D &viewport, const QuantizedBox2D &scissor, uint32 atViewport = 0
+        const GraphicsResource *cmdBuffer, const IRect &viewport, const IRect &scissor, uint32 atViewport = 0
     ) const final;
-    void cmdSetScissor(const GraphicsResource *cmdBuffer, const QuantizedBox2D &scissor, uint32 atViewport = 0) const final;
+    void cmdSetScissor(const GraphicsResource *cmdBuffer, const IRect &scissor, uint32 atViewport = 0) const final;
     void cmdSetLineWidth(const GraphicsResource *cmdBuffer, float lineWidth) const final;
     void cmdSetDepthBias(const GraphicsResource *cmdBuffer, float constantBias, float slopeFactor, float clampValue) const final;
 
@@ -437,7 +437,7 @@ void RenderCommandList::cmdReleaseQueueResources(
 }
 
 void RenderCommandList::cmdBeginRenderPass(
-    const GraphicsResource *cmdBuffer, const LocalPipelineContext &contextPipeline, const QuantizedBox2D &renderArea,
+    const GraphicsResource *cmdBuffer, const LocalPipelineContext &contextPipeline, const IRect &renderArea,
     const RenderPassAdditionalProps &renderpassAdditionalProps, const RenderPassClearValue &clearColor
 )
 {
@@ -459,7 +459,7 @@ void RenderCommandList::cmdBindComputePipeline(const GraphicsResource *cmdBuffer
 }
 
 void RenderCommandList::cmdSetViewportAndScissors(
-    const GraphicsResource *cmdBuffer, ArrayView<const std::pair<QuantizedBox2D, QuantizedBox2D>> viewportAndScissors,
+    const GraphicsResource *cmdBuffer, ArrayView<const std::pair<IRect, IRect>> viewportAndScissors,
     uint32 firstViewport /*= 0*/
 ) const
 {
@@ -467,13 +467,13 @@ void RenderCommandList::cmdSetViewportAndScissors(
 }
 
 void RenderCommandList::cmdSetViewportAndScissor(
-    const GraphicsResource *cmdBuffer, const QuantizedBox2D &viewport, const QuantizedBox2D &scissor, uint32 atViewport /*= 0*/
+    const GraphicsResource *cmdBuffer, const IRect &viewport, const IRect &scissor, uint32 atViewport /*= 0*/
 ) const
 {
     cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor, atViewport);
 }
 
-void RenderCommandList::cmdSetScissor(const GraphicsResource *cmdBuffer, const QuantizedBox2D &scissor, uint32 atViewport /*= 0*/) const
+void RenderCommandList::cmdSetScissor(const GraphicsResource *cmdBuffer, const IRect &scissor, uint32 atViewport /*= 0*/) const
 {
     cmdList->cmdSetScissor(cmdBuffer, scissor, atViewport);
 }
@@ -915,49 +915,49 @@ void IRenderCommandList::cmdPushConstants(
             PushConstCopier<float>{ data }(copies.emplace_back(), pushConst.second, itr->second);
             break;
         case EShaderInputAttribFormat::Float2:
-            PushConstCopier<Vector2D>{ data }(copies.emplace_back(), pushConst.second, itr->second);
+            PushConstCopier<Vector2>{ data }(copies.emplace_back(), pushConst.second, itr->second);
             break;
         case EShaderInputAttribFormat::Float3:
-            PushConstCopier<Vector3D>{ data }(copies.emplace_back(), pushConst.second, itr->second);
+            PushConstCopier<Vector3>{ data }(copies.emplace_back(), pushConst.second, itr->second);
             break;
         case EShaderInputAttribFormat::Float4:
-            PushConstCopier<Vector4D>{ data }(copies.emplace_back(), pushConst.second, itr->second);
+            PushConstCopier<Vector4>{ data }(copies.emplace_back(), pushConst.second, itr->second);
             break;
         case EShaderInputAttribFormat::Int:
             PushConstCopier<int32>{ data }(copies.emplace_back(), pushConst.second, itr->second);
             break;
         case EShaderInputAttribFormat::Int2:
-            PushConstCopier<Int2D>{ data }(copies.emplace_back(), pushConst.second, itr->second);
+            PushConstCopier<Int2>{ data }(copies.emplace_back(), pushConst.second, itr->second);
             break;
         case EShaderInputAttribFormat::Int3:
-            PushConstCopier<Int3D>{ data }(copies.emplace_back(), pushConst.second, itr->second);
+            PushConstCopier<Int3>{ data }(copies.emplace_back(), pushConst.second, itr->second);
             break;
         case EShaderInputAttribFormat::Int4:
-            PushConstCopier<Int4D>{ data }(copies.emplace_back(), pushConst.second, itr->second);
+            PushConstCopier<Int4>{ data }(copies.emplace_back(), pushConst.second, itr->second);
             break;
         case EShaderInputAttribFormat::UInt:
             PushConstCopier<uint32>{ data }(copies.emplace_back(), pushConst.second, itr->second);
             break;
         case EShaderInputAttribFormat::UInt2:
-            PushConstCopier<Size2D>{ data }(copies.emplace_back(), pushConst.second, itr->second);
+            PushConstCopier<UInt2>{ data }(copies.emplace_back(), pushConst.second, itr->second);
             break;
         case EShaderInputAttribFormat::UInt3:
-            PushConstCopier<Size3D>{ data }(copies.emplace_back(), pushConst.second, itr->second);
+            PushConstCopier<UInt3>{ data }(copies.emplace_back(), pushConst.second, itr->second);
             break;
         case EShaderInputAttribFormat::UInt4:
-            PushConstCopier<Size4D>{ data }(copies.emplace_back(), pushConst.second, itr->second);
+            PushConstCopier<UInt4>{ data }(copies.emplace_back(), pushConst.second, itr->second);
             break;
         case EShaderInputAttribFormat::UByte:
             PushConstCopier<uint8>{ data }(copies.emplace_back(), pushConst.second, itr->second);
             break;
         case EShaderInputAttribFormat::UByte2:
-            PushConstCopier<Byte2D>{ data }(copies.emplace_back(), pushConst.second, itr->second);
+            PushConstCopier<Byte2>{ data }(copies.emplace_back(), pushConst.second, itr->second);
             break;
         case EShaderInputAttribFormat::UByte3:
-            PushConstCopier<Byte3D>{ data }(copies.emplace_back(), pushConst.second, itr->second);
+            PushConstCopier<Byte3>{ data }(copies.emplace_back(), pushConst.second, itr->second);
             break;
         case EShaderInputAttribFormat::UByte4:
-            PushConstCopier<Byte4D>{ data }(copies.emplace_back(), pushConst.second, itr->second);
+            PushConstCopier<Byte4>{ data }(copies.emplace_back(), pushConst.second, itr->second);
             break;
         case EShaderInputAttribFormat::Matrix2x2:
             PushConstCopier<Matrix2>{ data }(copies.emplace_back(), pushConst.second, itr->second);

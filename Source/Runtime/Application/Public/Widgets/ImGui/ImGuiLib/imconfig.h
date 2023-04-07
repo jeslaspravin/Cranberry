@@ -16,8 +16,8 @@
 
 #include "ApplicationExports.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
-#include "Math/Vector2D.h"
-#include "Math/Vector4D.h"
+#include "Math/Vector2.h"
+#include "Math/Vector4.h"
 #include "Types/Colors.h"
 
 //---- Define assertion handler. Defaults to calling assert().
@@ -115,13 +115,13 @@
         operator MyVec4() const { return MyVec4(x,y,z,w); }
 */
 #define IM_VEC2_CLASS_EXTRA                                 \
-        ImVec2(const Vector2D& f) : x(f.x()), y(f.y()) {}   \
-        explicit ImVec2(const Size2D& f) : x(float(f.x)), y(float(f.y)) {}\
-        operator Vector2D() const { return Vector2D(x,y); }
+        ImVec2(const Vector2& f) : x(f.x()), y(f.y()) {}   \
+        explicit ImVec2(const UInt2& f) : x(float(f.x)), y(float(f.y)) {}\
+        operator Vector2() const { return Vector2(x,y); }
 
 #define IM_VEC4_CLASS_EXTRA                                                                             \
-        ImVec4(const Vector4D& f) : x(f.x()), y(f.y()), z(f.z()), w(f.w()) {}                           \
-        operator Vector4D() const { return Vector4D(x,y,z,w); }                                         \
+        ImVec4(const Vector4& f) : x(f.x()), y(f.y()), z(f.z()), w(f.w()) {}                           \
+        operator Vector4() const { return Vector4(x,y,z,w); }                                         \
         ImVec4(const LinearColor& color) : x(color.r()), y(color.g()), z(color.b()), w(color.a()) {}    \
         operator LinearColor() const { return LinearColor(x,y,z,w); }                                         
         

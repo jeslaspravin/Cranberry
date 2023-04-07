@@ -15,13 +15,13 @@ More information at: https://docs.microsoft.com/en-us/visualstudio/debugger/crea
 
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
 
-  <Type Name="Vector2D" Priority="High">
+  <Type Name="Vector2" Priority="High">
     <DisplayString>{value}</DisplayString>
   </Type>
-  <Type Name="Vector3D" Priority="High">
+  <Type Name="Vector3" Priority="High">
     <DisplayString>{value}</DisplayString>
   </Type>
-  <Type Name="Vector4D" Priority="High">
+  <Type Name="Vector4" Priority="High">
     <DisplayString>{value}</DisplayString>
   </Type>
 

@@ -20,7 +20,7 @@ GLM_HEADER_INCLUDES_BEGIN
 
 GLM_HEADER_INCLUDES_END
 
-class Vector3D;
+class Vector3;
 
 class PROGRAMCORE_EXPORT Rotation
 {
@@ -45,9 +45,9 @@ public:
     float pitch() const;
     float yaw() const;
 
-    Vector3D fwdVector() const;
-    Vector3D rightVector() const;
-    Vector3D upVector() const;
+    Vector3 fwdVector() const;
+    Vector3 rightVector() const;
+    Vector3 upVector() const;
 
 public:
     bool operator== (const Rotation &b) const;

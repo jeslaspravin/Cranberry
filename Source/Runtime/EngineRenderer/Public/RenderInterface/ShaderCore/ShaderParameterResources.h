@@ -28,8 +28,8 @@
 class ShaderResource;
 class IRenderCommandList;
 class IGraphicsInstance;
-class Vector2D;
-class Vector4D;
+class Vector2;
+class Vector4;
 class Matrix4;
 
 /**
@@ -312,14 +312,14 @@ public:
     bool setIntParam(StringID paramName, int32 value, uint32 index = 0);
     bool setIntParam(StringID paramName, uint32 value, uint32 index = 0);
     bool setFloatParam(StringID paramName, float value, uint32 index = 0);
-    bool setVector2Param(StringID paramName, const Vector2D &value, uint32 index = 0);
-    bool setVector4Param(StringID paramName, const Vector4D &value, uint32 index = 0);
+    bool setVector2Param(StringID paramName, const Vector2 &value, uint32 index = 0);
+    bool setVector4Param(StringID paramName, const Vector4 &value, uint32 index = 0);
     bool setMatrixParam(StringID paramName, const Matrix4 &value, uint32 index = 0);
     bool setIntParam(StringID paramName, StringID bufferName, int32 value, uint32 index = 0);
     bool setIntParam(StringID paramName, StringID bufferName, uint32 value, uint32 index = 0);
     bool setFloatParam(StringID paramName, StringID bufferName, float value, uint32 index = 0);
-    bool setVector2Param(StringID paramName, StringID bufferName, const Vector2D &value, uint32 index = 0);
-    bool setVector4Param(StringID paramName, StringID bufferName, const Vector4D &value, uint32 index = 0);
+    bool setVector2Param(StringID paramName, StringID bufferName, const Vector2 &value, uint32 index = 0);
+    bool setVector4Param(StringID paramName, StringID bufferName, const Vector4 &value, uint32 index = 0);
     bool setMatrixParam(StringID paramName, StringID bufferName, const Matrix4 &value, uint32 index = 0);
     template <typename BufferType>
     bool setBuffer(StringID paramName, const BufferType &bufferValue, uint32 index = 0);
@@ -329,8 +329,8 @@ public:
     bool setIntAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices, int32 value);
     bool setIntAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices, uint32 value);
     bool setFloatAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices, float value);
-    bool setVector2AtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices, const Vector2D &value);
-    bool setVector4AtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices, const Vector4D &value);
+    bool setVector2AtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices, const Vector2 &value);
+    bool setVector4AtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices, const Vector4 &value);
     bool setMatrixAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices, const Matrix4 &value);
 
     bool setTexelParam(StringID paramName, BufferResourceRef texelBuffer, uint32 index = 0);
@@ -343,22 +343,22 @@ public:
     int32 getIntParam(StringID paramName, uint32 index = 0) const;
     uint32 getUintParam(StringID paramName, uint32 index = 0) const;
     float getFloatParam(StringID paramName, uint32 index = 0) const;
-    Vector2D getVector2Param(StringID paramName, uint32 index = 0) const;
-    Vector4D getVector4Param(StringID paramName, uint32 index = 0) const;
+    Vector2 getVector2Param(StringID paramName, uint32 index = 0) const;
+    Vector4 getVector4Param(StringID paramName, uint32 index = 0) const;
     Matrix4 getMatrixParam(StringID paramName, uint32 index = 0) const;
     int32 getIntParam(StringID paramName, StringID bufferName, uint32 index = 0) const;
     uint32 getUintParam(StringID paramName, StringID bufferName, uint32 index = 0) const;
     float getFloatParam(StringID paramName, StringID bufferName, uint32 index = 0) const;
-    Vector2D getVector2Param(StringID paramName, StringID bufferName, uint32 index = 0) const;
-    Vector4D getVector4Param(StringID paramName, StringID bufferName, uint32 index = 0) const;
+    Vector2 getVector2Param(StringID paramName, StringID bufferName, uint32 index = 0) const;
+    Vector4 getVector4Param(StringID paramName, StringID bufferName, uint32 index = 0) const;
     Matrix4 getMatrixParam(StringID paramName, StringID bufferName, uint32 index = 0) const;
     // Below get*AtPath can be used to get parameters in buffer deeper than above gets can.
     // 0th must be bound buffer's name, (n-1)th must be the param name to get
     int32 getIntAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const;
     uint32 getUintAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const;
     float getFloatAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const;
-    Vector2D getVector2AtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const;
-    Vector4D getVector4AtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const;
+    Vector2 getVector2AtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const;
+    Vector4 getVector4AtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const;
     Matrix4 getMatrixAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const;
 
     BufferResourceRef getTexelParam(StringID paramName, uint32 index = 0) const;

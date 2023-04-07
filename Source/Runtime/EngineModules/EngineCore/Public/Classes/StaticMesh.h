@@ -34,7 +34,7 @@ struct SMBatchView
 
 struct SMTbnLinePoint
 {
-    Vector3D position;
+    Vector3 position;
     Color color;
 };
 

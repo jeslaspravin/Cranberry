@@ -34,11 +34,11 @@ public:
 
     void orthogonalize();
 
-    static RotationMatrix fromX(const Vector3D &x);
-    static RotationMatrix fromY(const Vector3D &y);
-    static RotationMatrix fromZ(const Vector3D &z);
-    static RotationMatrix fromXY(const Vector3D &x, const Vector3D &y);
-    static RotationMatrix fromYZ(const Vector3D &y, const Vector3D &z);
-    static RotationMatrix fromZX(const Vector3D &z, const Vector3D &x);
-    static RotationMatrix fromXYZ(const Vector3D &x, const Vector3D &y, const Vector3D &z);
+    static RotationMatrix fromX(const Vector3 &x);
+    static RotationMatrix fromY(const Vector3 &y);
+    static RotationMatrix fromZ(const Vector3 &z);
+    static RotationMatrix fromXY(const Vector3 &x, const Vector3 &y);
+    static RotationMatrix fromYZ(const Vector3 &y, const Vector3 &z);
+    static RotationMatrix fromZX(const Vector3 &z, const Vector3 &x);
+    static RotationMatrix fromXYZ(const Vector3 &x, const Vector3 &y, const Vector3 &z);
 };

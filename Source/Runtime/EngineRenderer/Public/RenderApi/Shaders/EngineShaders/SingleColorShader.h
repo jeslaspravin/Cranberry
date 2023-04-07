@@ -10,11 +10,11 @@
  */
 
 #pragma once
-#include "Math/Vector4D.h"
+#include "Math/Vector4.h"
 
 struct SingleColorMeshData
 {
-    Vector4D meshColor;
+    Vector4 meshColor;
     float roughness;
     float metallic;
 };

@@ -49,7 +49,7 @@ public:
 
     static bool isBuiltinType(CXType clangType);
     /*
-     * Returns true if type is one of specialized types like Vector3D, Rotation ...
+     * Returns true if type is one of specialized types like Vector3, Rotation ...
      * Cursor must be one that has possible type reference
      */
     static bool isSpecializedType(CXType clangType, CXCursor typeRefCursor);

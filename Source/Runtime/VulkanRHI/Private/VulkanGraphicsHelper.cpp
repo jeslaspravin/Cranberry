@@ -154,7 +154,7 @@ VkSwapchainKHR VulkanGraphicsHelper::createSwapchain(
         surfaceSize.width = Math::clamp<uint32>(
             ApplicationSettings::screenSize.get().y, swapchainCapabilities.minImageExtent.width, swapchainCapabilities.maxImageExtent.width
         );
-        ApplicationSettings::screenSize.set(Size2D(surfaceSize.width, surfaceSize.height));
+        ApplicationSettings::screenSize.set(UInt2(surfaceSize.width, surfaceSize.height));
     }
     swapchainCreateInfo.imageExtent = surfaceSize;
     VkSwapchainKHR swapchain;
@@ -163,7 +163,7 @@ VkSwapchainKHR VulkanGraphicsHelper::createSwapchain(
     if (swapchainInfo)
     {
         swapchainInfo->format = device->swapchainFormat.format;
-        swapchainInfo->size = Size2D(surfaceSize.width, surfaceSize.height);
+        swapchainInfo->size = UInt2(surfaceSize.width, surfaceSize.height);
     }
 
     return swapchain;

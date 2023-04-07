@@ -25,7 +25,7 @@ class WidgetDrawContext;
 struct WidgetGeom
 {
     SharedPtr<WidgetBase> widget = nullptr;
-    QuantShortBox2D box;
+    ShortRect box;
 };
 using WidgetGeomTree = FlatTree<WidgetGeom, uint32>;
 using WidgetGeomId = WidgetGeomTree::NodeIdx;
@@ -53,7 +53,7 @@ protected:
     virtual void rebuildGeometry(WidgetGeomId thisId, WidgetGeomTree &geomTree) = 0;
 
 public:
-    virtual void drawWidget(QuantShortBox2D clipBound, WidgetGeomId thisId, const WidgetGeomTree &geomTree, WidgetDrawContext &context) = 0;
+    virtual void drawWidget(ShortRect clipBound, WidgetGeomId thisId, const WidgetGeomTree &geomTree, WidgetDrawContext &context) = 0;
     virtual bool hasWidget(SharedPtr<WidgetBase> widget) const = 0;
 
     // below virtual functions are non recursive. Overrides do not have to call its child as children will be processed before parent
@@ -61,9 +61,9 @@ public:
     virtual EInputHandleState inputKey(Keys::StateKeyType key, Keys::StateInfoType state, const InputSystem *inputSystem) = 0;
     virtual EInputHandleState analogKey(AnalogStates::StateKeyType key, AnalogStates::StateInfoType state, const InputSystem *inputSystem) = 0;
     // absPos are not screen position but position relative to widget's window and widgetRelPos is this widget relative position
-    virtual void mouseEnter(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) = 0;
-    virtual void mouseMoved(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) = 0;
-    virtual void mouseLeave(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) = 0;
+    virtual void mouseEnter(Short2 absPos, Short2 widgetRelPos, const InputSystem *inputSystem) = 0;
+    virtual void mouseMoved(Short2 absPos, Short2 widgetRelPos, const InputSystem *inputSystem) = 0;
+    virtual void mouseLeave(Short2 absPos, Short2 widgetRelPos, const InputSystem *inputSystem) = 0;
 
     /**
      * Searches through parentWidget chain, If not found will use ApplicationInstance::findWidgetParentWindow

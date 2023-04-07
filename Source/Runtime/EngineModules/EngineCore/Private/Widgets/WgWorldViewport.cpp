@@ -29,7 +29,7 @@ void WgWorldViewport::rebuildGeometry(WidgetGeomId thisId, WidgetGeomTree &geomT
 }
 
 void WgWorldViewport::
-    drawWidget(QuantShortBox2D /*clipBound*/, WidgetGeomId /*thisId*/, const WidgetGeomTree & /*geomTree*/, WidgetDrawContext & /*context*/)
+    drawWidget(ShortRect /*clipBound*/, WidgetGeomId /*thisId*/, const WidgetGeomTree & /*geomTree*/, WidgetDrawContext & /*context*/)
 {
     // TODO(Jeslas) :
 }
@@ -49,8 +49,8 @@ WgWorldViewport::analogKey(AnalogStates::StateKeyType /*key*/, AnalogStates::Sta
     return EInputHandleState::NotHandled;
 }
 
-void WgWorldViewport::mouseEnter(Short2D /*absPos*/, Short2D /*widgetRelPos*/, const InputSystem * /*inputSystem*/) {}
+void WgWorldViewport::mouseEnter(Short2 /*absPos*/, Short2 /*widgetRelPos*/, const InputSystem * /*inputSystem*/) {}
 
-void WgWorldViewport::mouseMoved(Short2D /*absPos*/, Short2D /*widgetRelPos*/, const InputSystem * /*inputSystem*/) {}
+void WgWorldViewport::mouseMoved(Short2 /*absPos*/, Short2 /*widgetRelPos*/, const InputSystem * /*inputSystem*/) {}
 
-void WgWorldViewport::mouseLeave(Short2D /*absPos*/, Short2D /*widgetRelPos*/, const InputSystem * /*inputSystem*/) {}
+void WgWorldViewport::mouseLeave(Short2 /*absPos*/, Short2 /*widgetRelPos*/, const InputSystem * /*inputSystem*/) {}

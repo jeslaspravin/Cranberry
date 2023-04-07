@@ -30,7 +30,7 @@ private:
 
 protected:
     ImageResourceRef textureResource = nullptr;
-    Size3D textureSize;
+    UInt3 textureSize;
     uint32 mipCount;
     EPixelDataFormat::Type dataFormat;
     String textureName;
@@ -46,7 +46,7 @@ public:
     ImageResourceRef getTextureResource() const { return textureResource; }
     EPixelSampleCount::Type getSampleCount() const { return sampleCount; }
     EPixelDataFormat::Type getFormat() const { return dataFormat; }
-    Size2D getTextureSize() const { return textureSize; }
+    UInt2 getTextureSize() const { return textureSize; }
     ESamplerFiltering::Type filteringMode() const { return sampleFiltering; }
     const String &getTextureName() const { return textureName; }
 

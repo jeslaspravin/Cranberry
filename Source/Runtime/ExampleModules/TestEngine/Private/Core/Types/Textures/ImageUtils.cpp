@@ -11,7 +11,7 @@
 
 #include "ImageUtils.h"
 #include "Math/Math.h"
-#include "Math/Vector3D.h"
+#include "Math/Vector3.h"
 
 void ImageUtils::calcHistogramRGB(
     float *outHistogramR, float *outHistogramG, float *outHistogramB, uint32 binCount, const uint8 *texels, uint32 sizeX, uint32 sizeY,
@@ -30,8 +30,8 @@ void ImageUtils::calcHistogramRGB(
     {
         const uint32 pixelStart = i * channelNum;
 
-        Vector3D binIndices
-            = Math::floor(Vector3D(texels[pixelStart] / perBinDelta, texels[pixelStart + 1] / perBinDelta, texels[pixelStart + 2] / perBinDelta)
+        Vector3 binIndices
+            = Math::floor(Vector3(texels[pixelStart] / perBinDelta, texels[pixelStart + 1] / perBinDelta, texels[pixelStart + 2] / perBinDelta)
             );
         outHistogramR[uint32(binIndices.x())] += perTexelWeight;
         outHistogramG[uint32(binIndices.y())] += perTexelWeight;

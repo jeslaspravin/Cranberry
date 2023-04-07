@@ -118,7 +118,7 @@ public:
     struct GlyphCoords
     {
         // Texture coordinate in texture atlas, In texels including border
-        ShortSizeBox2D texCoords;
+        UShortRect texCoords;
         GlyphIndex contextGlyphIdx;
     };
 
@@ -128,7 +128,7 @@ public:
     std::vector<GlyphCoords> allGlyphCoords;
     // We support maximum 2 atlas, now
     ImageResourceRef textureAtlases[2];
-    Size2D atlasSizes[ARRAY_LENGTH(textureAtlases)];
+    UInt2 atlasSizes[ARRAY_LENGTH(textureAtlases)];
     std::vector<uint8> bitmapCache;
 
     std::unordered_set<GlyphIndex> glyphsPending;
@@ -141,9 +141,9 @@ public:
         : owner(inOwner)
         , defaultFont(0){};
 
-    FORCE_INLINE static ShortSizeBox2D clipBorder(const ShortSizeBox2D &inTexCoord)
+    FORCE_INLINE static UShortRect clipBorder(const UShortRect &inTexCoord)
     {
-        return ShortSizeBox2D(inTexCoord.minBound + BORDER_SIZE, inTexCoord.maxBound - BORDER_SIZE);
+        return UShortRect(inTexCoord.minBound + BORDER_SIZE, inTexCoord.maxBound - BORDER_SIZE);
     }
 
     FORCE_INLINE static FontHeight pixelsToHeight(uint32 heightInPixels)
@@ -388,11 +388,11 @@ void FontManagerContext::updatePendingGlyphs()
         glyph.advance = int32(glyph.advance * fontToGlyphScale);
         glyph.lsb = int32(glyph.lsb * fontToGlyphScale);
 
-        QuantizedBox2D bitmapBox;
+        IRect bitmapBox;
         glyphBitmapBoxSubPixel(
             font, glyph, fontToGlyphScale, 0, 0, bitmapBox.minBound.x, bitmapBox.minBound.y, bitmapBox.maxBound.x, bitmapBox.maxBound.y
         );
-        Int2D bitmapSize = bitmapBox.size();
+        Int2 bitmapSize = bitmapBox.size();
         int32 texelsCount = bitmapSize.x * bitmapSize.y;
         // Will be 0 for space characters
         if (texelsCount != 0)
@@ -407,7 +407,7 @@ void FontManagerContext::updatePendingGlyphs()
             glyphCoords.contextGlyphIdx = contextGlyphIdx;
             // Add border texels to size
             glyphCoords.texCoords
-                = ShortSizeBox2D{ ShortSize2D(0), ShortSize2D(bitmapSize.x, bitmapSize.y) + ShortSizeBox2D::PointElementType(2 * BORDER_SIZE) };
+                = UShortRect{ UShort2(0), UShort2(bitmapSize.x, bitmapSize.y) + UShortRect::PointElementType(2 * BORDER_SIZE) };
 
             bitmapCache.resize(bitmapCache.size() + texelsCount);
             glyphBitmapSubPixel(
@@ -417,7 +417,7 @@ void FontManagerContext::updatePendingGlyphs()
     }
     glyphsPending.clear();
 
-    std::vector<ShortSizeBox2D *> packRects;
+    std::vector<UShortRect *> packRects;
     packRects.reserve(allGlyphs.size());
     // Convert each of rectangles to be placed at origin
     for (std::pair<const GlyphIndex, FontGlyph> &glyphPair : allGlyphs)
@@ -427,16 +427,16 @@ void FontManagerContext::updatePendingGlyphs()
             continue;
         }
         GlyphCoords &glyphCoords = allGlyphCoords[glyphPair.second.texCoordIdx];
-        ShortSizeBox2D::PointType rectSize = glyphCoords.texCoords.size();
-        glyphCoords.texCoords.minBound = ShortSizeBox2D::PointType(0);
+        UShortRect::PointType rectSize = glyphCoords.texCoords.size();
+        glyphCoords.texCoords.minBound = UShortRect::PointType(0);
         glyphCoords.texCoords.maxBound = rectSize;
 
         packRects.emplace_back(&glyphCoords.texCoords);
     }
 
-    std::vector<PackedRectsBin<ShortSizeBox2D>> packedBins;
+    std::vector<PackedRectsBin<UShortRect>> packedBins;
     std::vector<std::vector<Color>> atlasTexels;
-    if (MathGeom::packRectangles(packedBins, ShortSizeBox2D::PointType(ATLAS_MAX_SIZE), packRects))
+    if (MathGeom::packRectangles(packedBins, UShortRect::PointType(ATLAS_MAX_SIZE), packRects))
     {
         alertAlwaysf(
             packedBins.size() <= ARRAY_LENGTH(textureAtlases),
@@ -449,20 +449,20 @@ void FontManagerContext::updatePendingGlyphs()
 
         for (uint8 i = 0; i < ARRAY_LENGTH(textureAtlases) && i < packedBins.size(); ++i)
         {
-            const ShortSize2D &atlasSize = packedBins[i].binSize;
+            const UShort2 &atlasSize = packedBins[i].binSize;
 
             atlasSizes[i] = atlasSize;
             std::vector<Color> &atlasTexs = atlasTexels.emplace_back();
             atlasTexs.resize(atlasSize.x * atlasSize.y);
-            for (ShortSizeBox2D *glyphBox : packedBins[i].rects)
+            for (UShortRect *glyphBox : packedBins[i].rects)
             {
                 GlyphCoords &glyphCoords = *reinterpret_cast<GlyphCoords *>(glyphBox);
                 FontGlyph &glyph = allGlyphs[glyphCoords.contextGlyphIdx];
                 glyph.texAtlasIdx = i;
 
                 // Offset border so we copy only to glyph
-                ShortSizeBox2D bound = clipBorder(glyphCoords.texCoords);
-                ShortSize2D boundSize = bound.size();
+                UShortRect bound = clipBorder(glyphCoords.texCoords);
+                UShort2 boundSize = bound.size();
 
                 // Copy all rows in glyph from bitmap to pixels
                 for (uint32 y = bound.minBound.y; y < bound.maxBound.y; ++y)
@@ -782,7 +782,7 @@ uint32 FontManager::calculateRenderHeight(const String &text, FontIndex font, ui
 }
 
 void FontManager::draw(
-    std::vector<FontVertex> &outVertices, QuantizedBox2D &outBB, const String &text, FontIndex font, uint32 height, int32 wrapWidth /*= -1*/
+    std::vector<FontVertex> &outVertices, IRect &outBB, const String &text, FontIndex font, uint32 height, int32 wrapWidth /*= -1*/
 ) const
 {
     if (context->allFonts.size() <= font)
@@ -802,8 +802,8 @@ void FontManager::draw(
     alertAlwaysf(spaceGlyph, "Invalid space glyph! Add glyphs to fontmanager for font, height combination");
 
     outBB.reset(
-        QuantizedBox2D::PointType{ std::numeric_limits<QuantizedBox2D::PointElementType>::max() },
-        QuantizedBox2D::PointType{ std::numeric_limits<QuantizedBox2D::PointElementType>::min() }
+        IRect::PointType{ std::numeric_limits<IRect::PointElementType>::max() },
+        IRect::PointType{ std::numeric_limits<IRect::PointElementType>::min() }
     );
 
     // Pixels to shift for each new line
@@ -901,7 +901,7 @@ void FontManager::draw(
             }
             // Add vertices
             // Glyph related caches
-            ShortSizeBox2D glyphTexCoordClipped = context->clipBorder(context->allGlyphCoords[codeGlyph->texCoordIdx].texCoords);
+            UShortRect glyphTexCoordClipped = context->clipBorder(context->allGlyphCoords[codeGlyph->texCoordIdx].texCoords);
             const auto &texSize = context->atlasSizes[codeGlyph->texAtlasIdx];
 
             // Width of this glyph's quad for given height scale

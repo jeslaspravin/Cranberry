@@ -23,7 +23,7 @@
 #include "RenderInterface/Resources/Pipelines.h"
 #include "RenderInterface/Rendering/IRenderCommandList.h"
 
-void WorldViewport::startSceneRender(Short2D viewportSize, const Camera &defaultCamera)
+void WorldViewport::startSceneRender(Short2 viewportSize, const Camera &defaultCamera)
 {
     SharedPtr<EngineRenderScene> renderScene = world.isValid() ? gCBEEngine->worldManager()->getWorldRenderScene(world.get()) : nullptr;
     if (renderScene)
@@ -33,7 +33,7 @@ void WorldViewport::startSceneRender(Short2D viewportSize, const Camera &default
 }
 
 void WorldViewport::drawBackBuffer(
-    QuantShortBox2D viewport, WgRenderTarget *rt, const GraphicsResource *cmdBuffer, IRenderCommandList *cmdList,
+    ShortRect viewport, WgRenderTarget *rt, const GraphicsResource *cmdBuffer, IRenderCommandList *cmdList,
     IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
 )
 {
@@ -67,7 +67,7 @@ void WorldViewport::drawBackBuffer(
         pipelineCntxt.materialName = TCHAR("DrawQuadFromTexture");
         const IRenderTargetTexture *rtPtr = rt;
         renderModule->getRenderManager()->preparePipelineContext(&pipelineCntxt, { &rtPtr, 1 });
-        Int2D rtSize{ static_cast<ImageResourceRef>(rt->renderTargetResource())->getImageSize() };
+        Int2 rtSize{ static_cast<ImageResourceRef>(rt->renderTargetResource())->getImageSize() };
 
         if (!paramRef.isValid())
         {
@@ -90,11 +90,11 @@ void WorldViewport::drawBackBuffer(
             pipelineState.pipelineQuery.drawMode = EPolygonDrawMode::Fill;
             pipelineState.pipelineQuery.cullingMode = ECullingMode::BackFace;
 
-            QuantizedBox2D viewportArea{
+            IRect viewportArea{
                 {viewport.minBound.x, viewport.minBound.y},
                 {viewport.maxBound.x, viewport.maxBound.y}
             };
-            QuantizedBox2D renderArea{
+            IRect renderArea{
                 {0, 0},
                 rtSize
             };

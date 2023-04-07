@@ -110,7 +110,7 @@ public:
     ) final;
 
     void cmdBeginRenderPass(
-        const GraphicsResource *cmdBuffer, const LocalPipelineContext &contextPipeline, const QuantizedBox2D &renderArea,
+        const GraphicsResource *cmdBuffer, const LocalPipelineContext &contextPipeline, const IRect &renderArea,
         const RenderPassAdditionalProps &renderpassAdditionalProps, const RenderPassClearValue &clearColor
     ) final;
     void cmdEndRenderPass(const GraphicsResource *cmdBuffer) final;
@@ -152,13 +152,13 @@ public:
     ) final;
 
     void cmdSetViewportAndScissors(
-        const GraphicsResource *cmdBuffer, ArrayView<const std::pair<QuantizedBox2D, QuantizedBox2D>> viewportAndScissors,
+        const GraphicsResource *cmdBuffer, ArrayView<const std::pair<IRect, IRect>> viewportAndScissors,
         uint32 firstViewport = 0
     ) const final;
     void cmdSetViewportAndScissor(
-        const GraphicsResource *cmdBuffer, const QuantizedBox2D &viewport, const QuantizedBox2D &scissor, uint32 atViewport = 0
+        const GraphicsResource *cmdBuffer, const IRect &viewport, const IRect &scissor, uint32 atViewport = 0
     ) const final;
-    void cmdSetScissor(const GraphicsResource *cmdBuffer, const QuantizedBox2D &scissor, uint32 atViewport = 0) const final;
+    void cmdSetScissor(const GraphicsResource *cmdBuffer, const IRect &scissor, uint32 atViewport = 0) const final;
     void cmdSetLineWidth(const GraphicsResource *cmdBuffer, float lineWidth) const final;
     void cmdSetDepthBias(const GraphicsResource *cmdBuffer, float constantBias, float slopeFactor, float clampValue) const final;
 

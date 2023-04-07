@@ -73,7 +73,7 @@ void WgImGui::rebuildGeometry(WidgetGeomId thisId, WidgetGeomTree &geomTree)
     }
 }
 
-void WgImGui::drawWidget(QuantShortBox2D clipBound, WidgetGeomId thisId, const WidgetGeomTree &geomTree, WidgetDrawContext &context)
+void WgImGui::drawWidget(ShortRect clipBound, WidgetGeomId thisId, const WidgetGeomTree &geomTree, WidgetDrawContext &context)
 {
     if (!imgui)
     {
@@ -85,8 +85,8 @@ void WgImGui::drawWidget(QuantShortBox2D clipBound, WidgetGeomId thisId, const W
     SharedPtr<WgWindow> window = findWidgetParentWindow(shared_from_this());
     debugAssertf(window, "Invalid window for WgImGui!");
 
-    Short2D widgetSize = geomTree[thisId].box.size();
-    Short2D textureSize = window->applyDpiScale(widgetSize);
+    Short2 widgetSize = geomTree[thisId].box.size();
+    Short2 textureSize = window->applyDpiScale(widgetSize);
     debugAssertf(widgetSize.x >= 0 && widgetSize.y >= 0, "Widget size is invalid [%d, %d]", widgetSize.x, widgetSize.y);
     bool bRegenRt = false;
     bool bFlushCmdBuffers = false;
@@ -289,21 +289,21 @@ EInputHandleState WgImGui::analogKey(AnalogStates::StateKeyType key, AnalogState
     return EInputHandleState::NotHandled;
 }
 
-void WgImGui::mouseEnter(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem)
+void WgImGui::mouseEnter(Short2 absPos, Short2 widgetRelPos, const InputSystem *inputSystem)
 {
     if (imgui)
     {
         imgui->mouseEnter(absPos, widgetRelPos, inputSystem);
     }
 }
-void WgImGui::mouseMoved(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem)
+void WgImGui::mouseMoved(Short2 absPos, Short2 widgetRelPos, const InputSystem *inputSystem)
 {
     if (imgui)
     {
         imgui->mouseMoved(absPos, widgetRelPos, inputSystem);
     }
 }
-void WgImGui::mouseLeave(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem)
+void WgImGui::mouseLeave(Short2 absPos, Short2 widgetRelPos, const InputSystem *inputSystem)
 {
     if (imgui)
     {
@@ -377,7 +377,7 @@ void WgImGui::clearResources()
     imgui = nullptr;
 }
 
-void WgImGui::regenerateFrameRt(Short2D widgetSize, Short2D textureSize)
+void WgImGui::regenerateFrameRt(Short2 widgetSize, Short2 textureSize)
 {
     FrameBufferedData &perFrameData = swapchainBuffered[imageIdx];
     WgRenderTarget rtToClear = perFrameData.rt;

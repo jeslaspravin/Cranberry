@@ -146,7 +146,7 @@ const FramebufferFormat::AttachmentsFormatList &GlobalBuffers::getGBufferAttachm
 void GlobalBuffers::createTexture2Ds(IRenderCommandList *, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
 {
     ImageResourceCreateInfo imageCI;
-    imageCI.dimensions = Size3D(1, 1, 1);
+    imageCI.dimensions = UInt3(1, 1, 1);
     imageCI.imageFormat = EPixelDataFormat::BGRA_U8_Norm;
     imageCI.layerCount = imageCI.numOfMips = 1;
     dummyBlackTexture = graphicsHelper->createImage(graphicsInstance, imageCI);
@@ -166,7 +166,7 @@ void GlobalBuffers::createTexture2Ds(IRenderCommandList *, IGraphicsInstance *gr
     {
         // TODO(Jeslas) : Create better read only LUT
         imageCI.imageFormat = EPixelDataFormat::RG_SF16;
-        imageCI.dimensions = Size3D(GlobalRenderVariables::MAX_ENV_MAP_SIZE / 2u, GlobalRenderVariables::MAX_ENV_MAP_SIZE / 2u, 1);
+        imageCI.dimensions = UInt3(GlobalRenderVariables::MAX_ENV_MAP_SIZE / 2u, GlobalRenderVariables::MAX_ENV_MAP_SIZE / 2u, 1);
         integratedBRDF = graphicsHelper->createImage(graphicsInstance, imageCI);
         integratedBRDF->setShaderUsage(EImageShaderUsage::Sampling | EImageShaderUsage::Writing);
         integratedBRDF->setResourceName(TCHAR("LUT_IntegratedBRDF"));
@@ -200,7 +200,7 @@ void GlobalBuffers::generateTexture2Ds(
     const GraphicsResource *cmdBuffer = cmdList->startCmd(TCHAR("IntegrateBRDF"), EQueueFunction::Graphics, false);
     cmdList->cmdBindComputePipeline(cmdBuffer, integrateBrdfContext);
     cmdList->cmdBindDescriptorsSets(cmdBuffer, integrateBrdfContext, { integrateBrdfParams });
-    Size3D subgrpSize = static_cast<const ComputeShaderConfig *>(integrateBrdfContext.getPipeline()->getShaderResource()->getShaderConfig())
+    UInt3 subgrpSize = static_cast<const ComputeShaderConfig *>(integrateBrdfContext.getPipeline()->getShaderResource()->getShaderConfig())
                             ->getSubGroupSize();
     cmdList->cmdDispatch(cmdBuffer, integratedBRDF->getImageSize().x / subgrpSize.x, integratedBRDF->getImageSize().y / subgrpSize.y);
     cmdList->cmdTransitionLayouts(cmdBuffer, { &integratedBRDF, 1 });
@@ -278,7 +278,7 @@ void GlobalBuffers::destroySamplers()
 void GlobalBuffers::createTextureCubes(IRenderCommandList *, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
 {
     ImageResourceCreateInfo imageCI;
-    imageCI.dimensions = Size3D(1, 1, 1);
+    imageCI.dimensions = UInt3(1, 1, 1);
     imageCI.imageFormat = EPixelDataFormat::BGRA_U8_Norm;
     imageCI.layerCount = 6;
     imageCI.numOfMips = 1;

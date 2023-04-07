@@ -49,7 +49,7 @@ VkFramebuffer VulkanGraphicsHelper::getFramebuffer(const struct Framebuffer *app
 
 Framebuffer *VulkanGraphicsHelper::createFbInstance() const { return new VulkanFrameBuffer(); }
 
-void VulkanGraphicsHelper::initializeFb(class IGraphicsInstance *graphicsInstance, Framebuffer *fb, const Size2D &frameSize) const
+void VulkanGraphicsHelper::initializeFb(class IGraphicsInstance *graphicsInstance, Framebuffer *fb, const UInt2 &frameSize) const
 {
     auto *vulkanFb = static_cast<VulkanFrameBuffer *>(fb);
     VkRenderPass dummyRenderPass = VulkanGraphicsHelper::createDummyRenderPass(graphicsInstance, fb);

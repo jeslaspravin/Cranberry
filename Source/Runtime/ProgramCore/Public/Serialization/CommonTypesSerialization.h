@@ -42,19 +42,19 @@ ArchiveType &operator<< (ArchiveType &archive, glm::vec<Count, ElementType, Qual
 }
 
 template <ArchiveTypeName ArchiveType>
-ArchiveType &operator<< (ArchiveType &archive, Vector2D &value)
+ArchiveType &operator<< (ArchiveType &archive, Vector2 &value)
 {
     return archive << value.x() << value.y();
 }
 
 template <ArchiveTypeName ArchiveType>
-ArchiveType &operator<< (ArchiveType &archive, Vector3D &value)
+ArchiveType &operator<< (ArchiveType &archive, Vector3 &value)
 {
     return archive << value.x() << value.y() << value.z();
 }
 
 template <ArchiveTypeName ArchiveType>
-ArchiveType &operator<< (ArchiveType &archive, Vector4D &value)
+ArchiveType &operator<< (ArchiveType &archive, Vector4 &value)
 {
     return archive << value.x() << value.y() << value.z() << value.w();
 }

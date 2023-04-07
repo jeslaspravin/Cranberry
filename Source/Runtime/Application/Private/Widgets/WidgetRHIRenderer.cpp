@@ -229,7 +229,7 @@ void WidgetRHIRenderer::drawWindowWidgetsRenderThread(
         uint64 indicesOffset;
         uint64 indicesCount;
         uint32 textureDescIdx;
-        QuantShortBox2D scissor;
+        ShortRect scissor;
     };
     // 1:1 to windows, Request next image for all windows
     std::vector<SemaphoreRef, CBEStlStackAllocatorExclusive<SemaphoreRef>> swapchainSemaphores(
@@ -289,10 +289,10 @@ void WidgetRHIRenderer::drawWindowWidgetsRenderThread(
             renderManager->preparePipelineContext(&pipelineCntxPerWnd[i]);
 
             // Fill window parameters to shader, This will be Uploaded in next frame. 0th frame params will be invalid
-            Short2D windowSize = drawingContexts[i].first->getWidgetSize();
-            Vector2D scale = 2.0f / Vector2D(windowSize);
+            Short2 windowSize = drawingContexts[i].first->getWidgetSize();
+            Vector2 scale = 2.0f / Vector2(windowSize);
             // -1.0f - Offset * scale, So that vertices gets translated to viewport, but in our case we always stay within the window
-            Vector2D translate = Vector2D(-1.0f);
+            Vector2 translate = Vector2(-1.0f);
             statePerWnd[i]->windowTransformParam->setVector2Param(STRID("scale"), scale);
             statePerWnd[i]->windowTransformParam->setVector2Param(STRID("translate"), translate);
 
@@ -361,7 +361,7 @@ void WidgetRHIRenderer::drawWindowWidgetsRenderThread(
                     {
                         uint32 quadIdx = vertIdx / 4;
                         // Only if quad is big enough
-                        if (drawingCtx.perQuadClipping()[quadIdx].size() == Short2D(0))
+                        if (drawingCtx.perQuadClipping()[quadIdx].size() == Short2(0))
                         {
                             continue;
                         }
@@ -407,7 +407,7 @@ void WidgetRHIRenderer::drawWindowWidgetsRenderThread(
                     uint32 inBaseVertIdx = quadIdx * 4;
                     for (uint32 vertIdx = 0; vertIdx < 4; ++vertIdx)
                     {
-                        verticesView[outBaseVertIdx + vertIdx].position = Vector2D(
+                        verticesView[outBaseVertIdx + vertIdx].position = Vector2(
                             float(drawingCtx.perVertexPos()[inBaseVertIdx + vertIdx].x),
                             float(drawingCtx.perVertexPos()[inBaseVertIdx + vertIdx].y)
                         );
@@ -443,7 +443,7 @@ void WidgetRHIRenderer::drawWindowWidgetsRenderThread(
     {
         uint32 width, height;
         drawingContexts[i].first->getAppWindow()->windowSize(width, height);
-        QuantizedBox2D renderArea{ Int2D(0), Int2D(width, height) };
+        IRect renderArea{ Int2(0), Int2(width, height) };
 
         LocalPipelineContext &pipelineContext = pipelineCntxPerWnd[i];
         WindowState *windowState = statePerWnd[i];
@@ -465,9 +465,9 @@ void WidgetRHIRenderer::drawWindowWidgetsRenderThread(
         cmdList->cmdBindDescriptorsSets(cmdBuffer, pipelineContext, windowState->windowTransformParam);
         for (const WgDrawCmd &drawCmd : drawCmdsPerWnd[i])
         {
-            QuantizedBox2D scissor{
-                Int2D{drawCmd.scissor.minBound.x, drawCmd.scissor.minBound.y},
-                Int2D{drawCmd.scissor.maxBound.x, drawCmd.scissor.maxBound.y}
+            IRect scissor{
+                Int2{drawCmd.scissor.minBound.x, drawCmd.scissor.minBound.y},
+                Int2{drawCmd.scissor.maxBound.x, drawCmd.scissor.maxBound.y}
             };
             cmdList->cmdSetScissor(cmdBuffer, scissor);
             cmdList->cmdBindDescriptorsSets(cmdBuffer, pipelineContext, textureParams[drawCmd.textureDescIdx].first);

@@ -46,9 +46,8 @@ public:
         {                                                                                                                                      \
             LOG_ASSERTION(Expr, "DebugAssertion");                                                                                             \
             UnexpectedErrorHandler::getHandler()->dumpCallStack(false);                                                                        \
+            assert(!#Expr); /* Using assert macro to make use of assert window to crash or debug */                                            \
         }                                                                                                                                      \
-        /* Using assert macro to make use of assert window to crash or debug */                                                                \
-        assert((Expr));                                                                                                                        \
     }                                                                                                                                          \
     while (0)
 #endif // #ifndef debugAssert
@@ -62,9 +61,8 @@ public:
         {                                                                                                                                      \
             LOG_ASSERTION_FORMATTED(Expr, "DebugAssertion", Message, __VA_ARGS__);                                                             \
             UnexpectedErrorHandler::getHandler()->dumpCallStack(false);                                                                        \
+            assert(!#Expr); /* Using assert macro to make use of assert window to crash or debug */                                            \
         }                                                                                                                                      \
-        /* Using assert macro to make use of assert window to crash or debug */                                                                \
-        assert((Expr));                                                                                                                        \
     }                                                                                                                                          \
     while (0)
 #endif // #ifndef debugAssertf
@@ -134,21 +132,19 @@ public:
     while (0)
 #endif
 
+#define ALERT_ONCE_DEBUG_BREAK_internal(...)                                                                                                   \
+    CALL_ONCE(                                                                                                                                 \
+        [&]()                                                                                                                                  \
+        {                                                                                                                                      \
+            EXPAND_ARGS(__VA_ARGS__);                                                                                                          \
+        }                                                                                                                                      \
+    )
 #ifndef alertOnce
 #define alertOnce(Expr)                                                                                                                        \
     do                                                                                                                                         \
     {                                                                                                                                          \
         /* We have to dump any way */                                                                                                          \
-        ALERT_internal(Expr, IGNORE_ARGS);                                                                                                     \
-        CALL_ONCE(                                                                                                                             \
-            [&]()                                                                                                                              \
-            {                                                                                                                                  \
-                if (!(Expr)) [[unlikely]]                                                                                                      \
-                {                                                                                                                              \
-                    UnexpectedErrorHandler::getHandler()->debugBreak();                                                                        \
-                }                                                                                                                              \
-            }                                                                                                                                  \
-        );                                                                                                                                     \
+        ALERT_internal(Expr, ALERT_ONCE_DEBUG_BREAK_internal);                                                                                 \
     }                                                                                                                                          \
     while (0)
 #endif
@@ -157,16 +153,7 @@ public:
     do                                                                                                                                         \
     {                                                                                                                                          \
         /* We have to dump any way */                                                                                                          \
-        ALERT_FORMATTED_internal(Expr, IGNORE_ARGS, Message, __VA_ARGS__);                                                                     \
-        CALL_ONCE(                                                                                                                             \
-            [&]()                                                                                                                              \
-            {                                                                                                                                  \
-                if (!(Expr)) [[unlikely]]                                                                                                      \
-                {                                                                                                                              \
-                    UnexpectedErrorHandler::getHandler()->debugBreak();                                                                        \
-                }                                                                                                                              \
-            }                                                                                                                                  \
-        );                                                                                                                                     \
+        ALERT_FORMATTED_internal(Expr, ALERT_ONCE_DEBUG_BREAK_internal, Message, __VA_ARGS__);                                                 \
     }                                                                                                                                          \
     while (0)
 #endif

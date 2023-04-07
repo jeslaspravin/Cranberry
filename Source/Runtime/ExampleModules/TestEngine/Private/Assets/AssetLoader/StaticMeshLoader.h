@@ -18,8 +18,8 @@
 
 class String;
 class StaticMeshAsset;
-class Vector3D;
-class Vector4D;
+class Vector3;
+class Vector4;
 struct StaticMeshVertex;
 
 namespace tinyobj
@@ -51,9 +51,9 @@ private:
 
     std::map<String, struct MeshLoaderData> loadedMeshes;
 
-    Vector3D getFaceNormal(uint32 index0, uint32 index1, uint32 index2, const std::vector<StaticMeshVertex> &verticesData) const;
-    void addNormal(StaticMeshVertex &vertex, Vector3D &normal) const;
-    void normalize(Vector4D &normal) const;
+    Vector3 getFaceNormal(uint32 index0, uint32 index1, uint32 index2, const std::vector<StaticMeshVertex> &verticesData) const;
+    void addNormal(StaticMeshVertex &vertex, Vector3 &normal) const;
+    void normalize(Vector4 &normal) const;
 
     void load(const tinyobj::shape_t &mesh, const tinyobj::attrib_t &attrib, const std::vector<tinyobj::material_t> &materials);
     void smoothAndLoad(const tinyobj::shape_t &mesh, const tinyobj::attrib_t &attrib, const std::vector<tinyobj::material_t> &materials);

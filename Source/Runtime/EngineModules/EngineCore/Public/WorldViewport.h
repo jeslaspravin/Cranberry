@@ -39,12 +39,12 @@ public:
     {}
     MAKE_TYPE_NONCOPY_NONMOVE(WorldViewport)
 
-    void startSceneRender(Short2D viewportSize, const Camera &defaultCamera);
+    void startSceneRender(Short2 viewportSize, const Camera &defaultCamera);
     /**
      * Clears and draws to widget back buffer, the necessary frame texture
      */
     void drawBackBuffer(
-        QuantShortBox2D viewport, WgRenderTarget *rt, const GraphicsResource *cmdBuffer, IRenderCommandList *cmdList,
+        ShortRect viewport, WgRenderTarget *rt, const GraphicsResource *cmdBuffer, IRenderCommandList *cmdList,
         IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
     );
 

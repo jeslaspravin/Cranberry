@@ -32,7 +32,7 @@ EPixelDataFormat::Type rtFormatToPixelFormatSrgb(ERenderTargetFormat::Type rtFor
 
 struct RenderTextureCreateParams : public TextureBaseCreateParams
 {
-    Size2D textureSize;
+    UInt2 textureSize;
     EPixelSampleCount::Type sampleCount;
     // If greater than acceptable it will be clamped, if 0 mips get auto calculated from size
     uint32 mipCount = 1;
@@ -66,7 +66,7 @@ public:
     ImageResourceRef getRtTexture() const { return rtResource; }
     bool isSameReadWriteTexture() const { return bSameReadWriteTexture; }
 
-    void setTextureSize(Size2D newSize);
+    void setTextureSize(UInt2 newSize);
 
     static RenderTargetTexture *createTexture(const RenderTextureCreateParams &createParams);
     static void destroyTexture(RenderTargetTexture *texture);

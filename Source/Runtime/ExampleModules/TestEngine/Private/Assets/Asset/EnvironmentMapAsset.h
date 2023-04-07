@@ -23,7 +23,7 @@ class EnvironmentMapAsset
 {
 private:
     std::vector<LinearColor> tempPixelData;
-    Size2D textureDimension;
+    UInt2 textureDimension;
 
     TextureBase *envMap;
     TextureBase *diffuseIrradMap;
@@ -38,7 +38,7 @@ public:
     /* Overrides ends */
 
     void setTempPixelData(const std::vector<LinearColor> &pixelData);
-    void setTextureSize(const Size2D &dimension);
+    void setTextureSize(const UInt2 &dimension);
     TextureBase *getEnvironmentMap() const;
     TextureBase *getSpecularIrradianceMap() const;
     TextureBase *getDiffuseIrradianceMap() const;

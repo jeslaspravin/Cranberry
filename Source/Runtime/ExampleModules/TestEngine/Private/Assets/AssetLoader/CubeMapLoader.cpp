@@ -33,7 +33,7 @@ private:
     constexpr static uint32 CHANNEL_NUM = 4;
 
     String textureName;
-    Size2D textureDimension;
+    UInt2 textureDimension;
     std::vector<LinearColor> textureTexelData;
 
     bool bLoaded;

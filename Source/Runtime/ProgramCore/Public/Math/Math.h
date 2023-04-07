@@ -26,9 +26,9 @@ GLM_HEADER_INCLUDES_BEGIN
 
 GLM_HEADER_INCLUDES_END
 
-class Vector3D;
-class Vector2D;
-class Vector4D;
+class Vector3;
+class Vector2;
+class Vector4;
 class Rotation;
 class Quat;
 namespace std
@@ -38,13 +38,13 @@ class random_device;
 
 template <typename Type>
 concept CustomMathTypes = std::disjunction_v<
-    std::is_same<Type, Vector2D>, std::is_same<Type, Vector3D>, std::is_same<Type, Vector4D>, std::is_same<Type, Rotation>,
+    std::is_same<Type, Vector2>, std::is_same<Type, Vector3>, std::is_same<Type, Vector4>, std::is_same<Type, Rotation>,
     std::is_same<Type, Quat>>;
 
 // Types that can be a vector in certain coordinate system
 template <typename Type>
 concept VectorTypes
-    = std::disjunction_v<std::is_same<Type, Vector2D>, std::is_same<Type, Vector3D>, std::is_same<Type, Vector4D>, std::is_same<Type, Quat>>;
+    = std::disjunction_v<std::is_same<Type, Vector2>, std::is_same<Type, Vector3>, std::is_same<Type, Vector4>, std::is_same<Type, Quat>>;
 
 template <typename Type, typename Enable = void>
 class MathHelper;

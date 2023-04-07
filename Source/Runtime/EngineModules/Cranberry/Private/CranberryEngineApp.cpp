@@ -238,7 +238,7 @@ void tempTest()
                 }
 #else
                 cbe::SMCreateInfo createInfo;
-                createInfo.bounds = { Vector3D(-50, -50, -50), Vector3D(50, 50, 50) };
+                createInfo.bounds = { Vector3(-50, -50, -50), Vector3(50, 50, 50) };
 
                 for (int32 f = 0; f < 6; ++f)
                 {
@@ -315,13 +315,13 @@ void tempTest()
                 smComp->mesh = cubeMesh;
 
                 const float scale = 0.25f, scalex2 = 0.5f;
-                Vector3D pos;
+                Vector3 pos;
                 // 100 is size of cube
                 pos.x() = (i % xCount) * scalex2 * 100 - ((xCount - 1) * scale * 100);
                 pos.y() = ((i / xCount) % yCount) * scalex2 * 100 - ((yCount - 1) * scale * 100);
                 pos.z() = (i / (xCount * yCount)) * scalex2 * 100 - ((zCount - 1) * scale * 100);
                 smComp->setRelativeLocation(pos);
-                smComp->setRelativeScale(Vector3D{ scale });
+                smComp->setRelativeScale(Vector3{ scale });
 
                 // Reset root and remove default root component
                 cbe::TransformComponent *defaultRoot = smActorPrefab->getRootComponent();

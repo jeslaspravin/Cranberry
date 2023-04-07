@@ -24,12 +24,12 @@ WgViewportImGuiLayer::WgViewportImGuiLayer()
     defaultCamera.cameraProjection = ECameraProjection::Perspective;
     defaultCamera.setClippingPlane(0.1f, 6000.f);
 
-    // Vector3D camTranslation = Vector3D(0.f, 1.f, 0.0f).safeNormalized() * (500);
-    Vector3D camTranslation;
+    // Vector3 camTranslation = Vector3(0.f, 1.f, 0.0f).safeNormalized() * (500);
+    Vector3 camTranslation;
     camTranslation.z() += 200;
 
     defaultCamera.setTranslation(camTranslation);
-    // defaultCamera.lookAt(Vector3D::ZERO);
+    // defaultCamera.lookAt(Vector3::ZERO);
 }
 
 void WgViewportImGuiLayer::draw(ImGuiDrawInterface * /*drawInterface*/)
@@ -88,7 +88,7 @@ bool WgViewportImGuiLayer::drawDirect(const DrawDirectParams &params)
     if (bDrawingViewport && viewportRegion.isValidAABB() && worldViewport)
     {
         SharedPtr<WgWindow> wndw = findWidgetParentWindow(shared_from_this());
-        QuantShortBox2D drawRegion{ wndw->applyDpiScale(viewportRegion.minBound), wndw->applyDpiScale(viewportRegion.maxBound) };
+        ShortRect drawRegion{ wndw->applyDpiScale(viewportRegion.minBound), wndw->applyDpiScale(viewportRegion.maxBound) };
         worldViewport->drawBackBuffer(drawRegion, params.rt, params.cmdBuffer, params.cmdList, params.graphicsInstance, params.graphicsHelper);
         params.inOutClearRt = false;
         return true;
@@ -99,7 +99,7 @@ bool WgViewportImGuiLayer::drawDirect(const DrawDirectParams &params)
 void WgViewportImGuiLayer::drawOnImGui(WidgetDrawContext & /*context*/) {}
 
 void WgViewportImGuiLayer::drawWidget(
-    QuantShortBox2D /*clipBound*/, WidgetGeomId /*thisId*/, const WidgetGeomTree &, WidgetDrawContext &context
+    ShortRect /*clipBound*/, WidgetGeomId /*thisId*/, const WidgetGeomTree &, WidgetDrawContext &context
 )
 {
     if (bDrawingViewport && viewportRegion.isValidAABB())
@@ -107,7 +107,7 @@ void WgViewportImGuiLayer::drawWidget(
         if (worldViewport)
         {
             SharedPtr<WgWindow> wndw = findWidgetParentWindow(shared_from_this());
-            Short2D viewportSize = viewportRegion.size();
+            Short2 viewportSize = viewportRegion.size();
             defaultCamera.setFOV((110.f * viewportSize.x) / (viewportSize.y * 1.78f), 90.f);
             worldViewport->startSceneRender(wndw->applyDpiScale(viewportSize), defaultCamera);
         }
@@ -122,7 +122,7 @@ void WgViewportImGuiLayer::navigateScene()
 {
     ApplicationInstance *application = IApplicationModule::get()->getApplication();
     Rotation cameraRotation = defaultCamera.rotation();
-    Vector3D cameraTranslation = defaultCamera.translation();
+    Vector3 cameraTranslation = defaultCamera.translation();
 
     cameraRotation.yaw() += application->inputSystem->analogState(AnalogStates::RelMouseX)->currentValue * 0.25f;
     cameraRotation.pitch() += application->inputSystem->analogState(AnalogStates::RelMouseY)->currentValue * 0.25f;
@@ -150,15 +150,15 @@ void WgViewportImGuiLayer::navigateScene()
     }
     if (application->inputSystem->isKeyPressed(Keys::Q))
     {
-        cameraTranslation -= Vector3D::UP * ImGui::GetIO().DeltaTime * camSpeedModifier * 150.f;
+        cameraTranslation -= Vector3::UP * ImGui::GetIO().DeltaTime * camSpeedModifier * 150.f;
     }
     if (application->inputSystem->isKeyPressed(Keys::E))
     {
-        cameraTranslation += Vector3D::UP * ImGui::GetIO().DeltaTime * camSpeedModifier * 150.f;
+        cameraTranslation += Vector3::UP * ImGui::GetIO().DeltaTime * camSpeedModifier * 150.f;
     }
     if (application->inputSystem->keyState(Keys::R)->keyWentUp)
     {
-        cameraRotation = RotationMatrix::fromZX(Vector3D::UP, cameraRotation.fwdVector()).asRotation();
+        cameraRotation = RotationMatrix::fromZX(Vector3::UP, cameraRotation.fwdVector()).asRotation();
     }
 
     defaultCamera.setRotation(cameraRotation);

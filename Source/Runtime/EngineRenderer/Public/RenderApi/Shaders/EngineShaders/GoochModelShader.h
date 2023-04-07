@@ -10,7 +10,7 @@
  */
 
 #pragma once
-#include "Math/Vector4D.h"
+#include "Math/Vector4.h"
 
 struct GoochModelLightCommon
 {
@@ -20,10 +20,10 @@ struct GoochModelLightCommon
 
 struct GoochModelLightData
 {
-    Vector4D warmOffsetAndPosX;
-    Vector4D coolOffsetAndPosY;
-    Vector4D highlightColorAndPosZ;
-    Vector4D lightColorAndRadius;
+    Vector4 warmOffsetAndPosX;
+    Vector4 coolOffsetAndPosY;
+    Vector4 highlightColorAndPosZ;
+    Vector4 lightColorAndRadius;
 };
 
 struct GoochModelLightArray

@@ -20,8 +20,8 @@ GLM_HEADER_INCLUDES_BEGIN
 
 GLM_HEADER_INCLUDES_END
 
-class Vector3D;
-class Vector4D;
+class Vector3;
+class Vector4;
 
 class PROGRAMCORE_EXPORT Matrix4
 {
@@ -43,10 +43,10 @@ public:
         float c1x, float c1y, float c1z, float c1w, float c2x, float c2y, float c2z, float c2w, float c3x, float c3y, float c3z, float c3w,
         float c4x, float c4y, float c4z, float c4w
     );
-    Matrix4(const Vector3D &c1, const Vector3D &c2, const Vector3D &c3, const Vector3D &c4, float c4w = 1.0f);
-    Matrix4(const Vector4D &c1, const Vector4D &c2, const Vector4D &c3, const Vector4D &c4);
+    Matrix4(const Vector3 &c1, const Vector3 &c2, const Vector3 &c3, const Vector3 &c4, float c4w = 1.0f);
+    Matrix4(const Vector4 &c1, const Vector4 &c2, const Vector4 &c3, const Vector4 &c4);
     // Scaling matrix should always be applied before rotation or translation to preserve volume
-    Matrix4(const Vector3D &scale);
+    Matrix4(const Vector3 &scale);
     Matrix4(const Matrix4 &other);
     Matrix4(Matrix4 &&other);
     Matrix4 &operator= (const Matrix4 &other);
@@ -56,8 +56,8 @@ public:
     Matrix4Col operator[] (uint32 colIndex) const;
 
 public:
-    Vector4D operator* (const Vector4D &transformingVector) const;
-    Vector3D operator* (const Vector3D &transformingVector) const;
+    Vector4 operator* (const Vector4 &transformingVector) const;
+    Vector3 operator* (const Vector3 &transformingVector) const;
     Matrix4 operator* (const Matrix4 &b) const;
     Matrix4 &operator*= (const Matrix4 &b);
 

@@ -60,21 +60,21 @@ protected:
     void rebuildGeometry(WidgetGeomId thisId, WidgetGeomTree &geomTree) override;
 
 public:
-    void drawWidget(QuantShortBox2D clipBound, WidgetGeomId thisId, const WidgetGeomTree &geomTree, WidgetDrawContext &context) override;
+    void drawWidget(ShortRect clipBound, WidgetGeomId thisId, const WidgetGeomTree &geomTree, WidgetDrawContext &context) override;
     bool hasWidget(SharedPtr<WidgetBase> widget) const override;
 
     void tick(float timeDelta) override;
     EInputHandleState inputKey(Keys::StateKeyType key, Keys::StateInfoType state, const InputSystem *inputSystem) override;
     EInputHandleState analogKey(AnalogStates::StateKeyType key, AnalogStates::StateInfoType state, const InputSystem *inputSystem) override;
-    void mouseEnter(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) override;
-    void mouseMoved(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) override;
-    void mouseLeave(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) override;
+    void mouseEnter(Short2 absPos, Short2 widgetRelPos, const InputSystem *inputSystem) override;
+    void mouseMoved(Short2 absPos, Short2 widgetRelPos, const InputSystem *inputSystem) override;
+    void mouseLeave(Short2 absPos, Short2 widgetRelPos, const InputSystem *inputSystem) override;
 
     /* Overrides ends */
 private:
     FORCE_INLINE String getCmdBufferBaseName() const;
     void flushFreeResources(const String &cmdBufferBaseName, bool bClearRtFbs) const;
     void clearResources();
-    void regenerateFrameRt(Short2D widgetSize, Short2D textureSize);
+    void regenerateFrameRt(Short2 widgetSize, Short2 textureSize);
     static void deleteRTDeferred(WgRenderTarget rt, RenderManager *renderMan);
 };

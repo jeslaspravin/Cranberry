@@ -97,7 +97,7 @@ const TChar *toString(Type textureType)
 //////////////////////////////////////////////////////////////////////////
 
 const RendererIntermTexture &
-SceneRenderTexturePool::getTexture(IRenderCommandList *cmdList, ERendererIntermTexture::Type rtType, Size3D size, PoolTextureDesc textureDesc)
+SceneRenderTexturePool::getTexture(IRenderCommandList *cmdList, ERendererIntermTexture::Type rtType, UInt3 size, PoolTextureDesc textureDesc)
 {
     ASSERT_INSIDE_RENDERTHREAD();
 
@@ -149,13 +149,13 @@ SceneRenderTexturePool::getTexture(IRenderCommandList *cmdList, ERendererIntermT
 }
 
 const RendererIntermTexture &
-SceneRenderTexturePool::getTexture(IRenderCommandList *cmdList, ERendererIntermTexture::Type rtType, Size2D size, PoolTextureDesc textureDesc)
+SceneRenderTexturePool::getTexture(IRenderCommandList *cmdList, ERendererIntermTexture::Type rtType, UInt2 size, PoolTextureDesc textureDesc)
 {
     ASSERT_INSIDE_RENDERTHREAD();
-    return getTexture(cmdList, rtType, Size3D(size, 1), textureDesc);
+    return getTexture(cmdList, rtType, UInt3(size, 1), textureDesc);
 }
 
-const RendererIntermTexture *SceneRenderTexturePool::getTexture(IRenderCommandList *cmdList, ERendererIntermTexture::Type rtType, Size3D size)
+const RendererIntermTexture *SceneRenderTexturePool::getTexture(IRenderCommandList *cmdList, ERendererIntermTexture::Type rtType, UInt3 size)
 {
     ASSERT_INSIDE_RENDERTHREAD();
 
@@ -181,10 +181,10 @@ const RendererIntermTexture *SceneRenderTexturePool::getTexture(IRenderCommandLi
     return nullptr;
 }
 
-const RendererIntermTexture *SceneRenderTexturePool::getTexture(IRenderCommandList *cmdList, ERendererIntermTexture::Type rtType, Size2D size)
+const RendererIntermTexture *SceneRenderTexturePool::getTexture(IRenderCommandList *cmdList, ERendererIntermTexture::Type rtType, UInt2 size)
 {
     ASSERT_INSIDE_RENDERTHREAD();
-    return getTexture(cmdList, rtType, Size3D(size, 1));
+    return getTexture(cmdList, rtType, UInt3(size, 1));
 }
 
 void SceneRenderTexturePool::clearUnused(IRenderCommandList *cmdList)
@@ -280,7 +280,7 @@ void SceneRenderTexturePool::clearPool(IRenderCommandList *cmdList)
 STRINGID_CONSTEXPR static const StringID MATERIAL_BUFFER_NAME = STRID("materials");
 STRINGID_CONSTEXPR static const StringID INSTANCES_BUFFER_NAME = STRID("instancesWrapper");
 
-const RendererIntermTexture &EngineRenderScene::getFinalColor(IRenderCommandList *cmdList, Short2D size)
+const RendererIntermTexture &EngineRenderScene::getFinalColor(IRenderCommandList *cmdList, Short2 size)
 {
     debugAssert(GlobalRenderVariables::GBUFFER_SAMPLE_COUNT.get() == EPixelSampleCount::SampleCount1);
 
@@ -857,7 +857,7 @@ void EngineRenderScene::updateTfComponents(
             // TODO(Jeslas) : Getting world tf here is safe?
             compRenderInfo.worldTf = updateTf->getWorldTransform();
             compRenderInfo.worldBound = AABB();
-            Vector3D aabbCorners[8];
+            Vector3 aabbCorners[8];
             renderComp->getLocalBound().boundCorners(aabbCorners);
             for (uint32 i = 0; i != ARRAY_LENGTH(aabbCorners); ++i)
             {
@@ -1070,12 +1070,12 @@ void EngineRenderScene::updateVisibility(const RenderSceneViewParams &viewParams
                         return;
                     }
 
-                    Vector3D aabbCorners[8];
+                    Vector3 aabbCorners[8];
                     compRenderInfo.worldBound.boundCorners(aabbCorners);
 
                     for (uint32 i = 0; i != ARRAY_LENGTH(aabbCorners); ++i)
                     {
-                        Vector4D projectedPt = w2clip * Vector4D(aabbCorners[i], 1.0f);
+                        Vector4 projectedPt = w2clip * Vector4(aabbCorners[i], 1.0f);
                         projectedPt.x() = Math::abs(projectedPt.x());
                         projectedPt.y() = Math::abs(projectedPt.y());
                         projectedPt.z() /= projectedPt.w();
@@ -1953,11 +1953,11 @@ void EngineRenderScene::renderTheSceneRenderThread(
     );
     frameColorResolveParam->updateParams(cmdList, graphicsInstance);
 
-    QuantizedBox2D viewport{
+    IRect viewport{
         {                        0,                         0},
         {viewParams.viewportSize.x, viewParams.viewportSize.y}
     };
-    QuantizedBox2D scissor{
+    IRect scissor{
         {                        0,                         0},
         {viewParams.viewportSize.x, viewParams.viewportSize.y}
     };
@@ -1993,7 +1993,7 @@ void EngineRenderScene::renderTheSceneRenderThread(
         if (bHasAnyDraws)
         {
             // This has to be upside down along y
-            QuantizedBox2D drawViewport{
+            IRect drawViewport{
                 {                        0, viewParams.viewportSize.y},
                 {viewParams.viewportSize.x,                         0}
             };

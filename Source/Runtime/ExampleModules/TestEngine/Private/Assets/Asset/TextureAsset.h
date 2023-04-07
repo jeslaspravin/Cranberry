@@ -22,7 +22,7 @@ class TextureAsset
 {
 private:
     std::vector<Color> tempPixelData;
-    Size2D textureDimension;
+    UInt2 textureDimension;
     uint8 componentsCount;
     bool bIsNormalMap;
     TextureBase *texture;
@@ -36,7 +36,7 @@ public:
     /* Overrides ends */
 
     void setTempPixelData(const std::vector<Color> &pixelData);
-    void setTextureSize(const Size2D &dimension);
+    void setTextureSize(const UInt2 &dimension);
     void setNormalMap(bool bIsNormal);
     void setChannelCount(uint8 count);
     TextureBase *getTexture() const;

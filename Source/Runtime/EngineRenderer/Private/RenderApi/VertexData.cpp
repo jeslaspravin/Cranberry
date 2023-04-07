@@ -11,9 +11,9 @@
 
 #include <array>
 
-#include "Math/Vector2D.h"
-#include "Math/Vector3D.h"
-#include "Math/Vector4D.h"
+#include "Math/Vector2.h"
+#include "Math/Vector3.h"
+#include "Math/Vector4.h"
 #include "RenderApi/GBuffersAndTextures.h"
 #include "RenderApi/VertexData.h"
 #include "RenderInterface/GraphicsHelper.h"
@@ -31,26 +31,26 @@ END_VERTEX_DEFINITION();
 // plain VectorND
 struct VertexSimple2D
 {
-    Vector2D position;
+    Vector2 position;
 };
 
 struct VertexSimple3D
 {
-    Vector3D position;
+    Vector3 position;
 };
 
 struct VertexSimple3DColor
 {
-    Vector3D position;
+    Vector3 position;
     uint32 color;
 };
 
 struct VertexInstancedSimple3DColor
 {
     uint32 color;
-    Vector3D x;
-    Vector3D y;
-    Vector3D translation;
+    Vector3 x;
+    Vector3 y;
+    Vector3 translation;
 };
 
 BEGIN_VERTEX_DEFINITION(VertexSimple2D, EShaderInputFrequency::PerVertex)
@@ -259,10 +259,10 @@ void GlobalBuffers::createVertIndBuffers(
     class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
 )
 {
-    const std::array<Vector3D, 3> quadTriVerts = { Vector3D(-1, -1, 0), Vector3D(3, -1, 0), Vector3D(-1, 3, 0) };
+    const std::array<Vector3, 3> quadTriVerts = { Vector3(-1, -1, 0), Vector3(3, -1, 0), Vector3(-1, 3, 0) };
     // const std::array<uint32, 3> quadTriIndices = { 0,1,2 };// 3 Per tri of quad
 
-    const std::array<Vector3D, 4> quadRectVerts = { Vector3D(-1, -1, 0), Vector3D(1, -1, 0), Vector3D(-1, 1, 0), Vector3D(1, 1, 0) };
+    const std::array<Vector3, 4> quadRectVerts = { Vector3(-1, -1, 0), Vector3(1, -1, 0), Vector3(-1, 1, 0), Vector3(1, 1, 0) };
     const std::array<uint32, 6> quadRectIndices = { 0, 1, 2, 2, 1, 3 };
 
     // 0-17(18) for axis arrows 18-29(12) for letters
@@ -273,38 +273,38 @@ void GlobalBuffers::createVertIndBuffers(
     const uint32 vertPerAxis = 10;
     for (uint32 axis = 0; axis < 3; ++axis)
     {
-        Vector3D axisVector;
-        Vector3D otheAxis1;
-        Vector3D otheAxis2;
+        Vector3 axisVector;
+        Vector3 otheAxis1;
+        Vector3 otheAxis2;
         Color color;
         switch (axis)
         {
         case 0:
         {
-            axisVector = Vector3D::FWD;
-            otheAxis1 = Vector3D::RIGHT;
-            otheAxis2 = Vector3D::UP;
+            axisVector = Vector3::FWD;
+            otheAxis1 = Vector3::RIGHT;
+            otheAxis2 = Vector3::UP;
             color = ColorConst::RED;
 
             // Letter X
             const uint32 startVert = 18;
             const uint32 startIdx = 30;
-            gizmoVerts[startVert + 0] = { (axisVector * 120) + (Vector3D::UP * 10) + (Vector3D::RIGHT * 8), color };
-            gizmoVerts[startVert + 1] = { (axisVector * 120) - (Vector3D::UP * 10) - (Vector3D::RIGHT * 8), color };
+            gizmoVerts[startVert + 0] = { (axisVector * 120) + (Vector3::UP * 10) + (Vector3::RIGHT * 8), color };
+            gizmoVerts[startVert + 1] = { (axisVector * 120) - (Vector3::UP * 10) - (Vector3::RIGHT * 8), color };
             gizmoIndices[startIdx + 0] = startVert;
             gizmoIndices[startIdx + 1] = startVert + 1;
 
-            gizmoVerts[startVert + 2] = { (axisVector * 120) + (Vector3D::UP * 10) - (Vector3D::RIGHT * 8), color };
-            gizmoVerts[startVert + 3] = { (axisVector * 120) - (Vector3D::UP * 10) + (Vector3D::RIGHT * 8), color };
+            gizmoVerts[startVert + 2] = { (axisVector * 120) + (Vector3::UP * 10) - (Vector3::RIGHT * 8), color };
+            gizmoVerts[startVert + 3] = { (axisVector * 120) - (Vector3::UP * 10) + (Vector3::RIGHT * 8), color };
             gizmoIndices[startIdx + 2] = startVert + 2;
             gizmoIndices[startIdx + 3] = startVert + 3;
             break;
         }
         case 1:
         {
-            axisVector = Vector3D::RIGHT;
-            otheAxis1 = Vector3D::UP;
-            otheAxis2 = Vector3D::FWD;
+            axisVector = Vector3::RIGHT;
+            otheAxis1 = Vector3::UP;
+            otheAxis2 = Vector3::FWD;
             color = ColorConst::GREEN;
 
             // Letter Y
@@ -312,9 +312,9 @@ void GlobalBuffers::createVertIndBuffers(
             const uint32 startIdx = 34;
             gizmoVerts[startVert] = { (axisVector * 120), color };
 
-            gizmoVerts[startVert + 1] = { (axisVector * 120) + (Vector3D::UP * 10) + (Vector3D::FWD * 8), color };
-            gizmoVerts[startVert + 2] = { (axisVector * 120) + (Vector3D::UP * 10) - (Vector3D::FWD * 8), color };
-            gizmoVerts[startVert + 3] = { (axisVector * 120) - (Vector3D::UP * 8), color };
+            gizmoVerts[startVert + 1] = { (axisVector * 120) + (Vector3::UP * 10) + (Vector3::FWD * 8), color };
+            gizmoVerts[startVert + 2] = { (axisVector * 120) + (Vector3::UP * 10) - (Vector3::FWD * 8), color };
+            gizmoVerts[startVert + 3] = { (axisVector * 120) - (Vector3::UP * 8), color };
 
             gizmoIndices[startIdx + 0] = startVert;
             gizmoIndices[startIdx + 1] = startVert + 1;
@@ -326,19 +326,19 @@ void GlobalBuffers::createVertIndBuffers(
         }
         case 2:
         {
-            axisVector = Vector3D::UP;
-            otheAxis1 = Vector3D::FWD;
-            otheAxis2 = Vector3D::RIGHT;
+            axisVector = Vector3::UP;
+            otheAxis1 = Vector3::FWD;
+            otheAxis2 = Vector3::RIGHT;
             color = ColorConst::BLUE;
 
             // Letter Z
             const uint32 startVert = 26;
             const uint32 startIdx = 40;
 
-            gizmoVerts[startVert + 0] = { (axisVector * 130) + (Vector3D::UP * 9) + (Vector3D::RIGHT * 7), color };
-            gizmoVerts[startVert + 1] = { (axisVector * 130) + (Vector3D::UP * 9) - (Vector3D::RIGHT * 7), color };
-            gizmoVerts[startVert + 2] = { (axisVector * 130) - (Vector3D::UP * 9) + (Vector3D::RIGHT * 7), color };
-            gizmoVerts[startVert + 3] = { (axisVector * 130) - (Vector3D::UP * 9) - (Vector3D::RIGHT * 7), color };
+            gizmoVerts[startVert + 0] = { (axisVector * 130) + (Vector3::UP * 9) + (Vector3::RIGHT * 7), color };
+            gizmoVerts[startVert + 1] = { (axisVector * 130) + (Vector3::UP * 9) - (Vector3::RIGHT * 7), color };
+            gizmoVerts[startVert + 2] = { (axisVector * 130) - (Vector3::UP * 9) + (Vector3::RIGHT * 7), color };
+            gizmoVerts[startVert + 3] = { (axisVector * 130) - (Vector3::UP * 9) - (Vector3::RIGHT * 7), color };
 
             gizmoIndices[startIdx + 0] = startVert;
             gizmoIndices[startIdx + 1] = startVert + 1;
@@ -352,7 +352,7 @@ void GlobalBuffers::createVertIndBuffers(
 
         // Axis line
         uint32 idx = axis * idxPerAxis + 0;
-        gizmoVerts[idx] = { Vector3D::ZERO, color };
+        gizmoVerts[idx] = { Vector3::ZERO, color };
         gizmoIndices[axis * vertPerAxis + 0] = idx;
 
         idx = axis * idxPerAxis + 1;
@@ -364,7 +364,7 @@ void GlobalBuffers::createVertIndBuffers(
         gizmoIndices[axis * vertPerAxis + 2] = gizmoIndices[axis * vertPerAxis + 4] = gizmoIndices[axis * vertPerAxis + 6]
             = gizmoIndices[axis * vertPerAxis + 8] = idx;
 
-        const Vector3D &startPos = gizmoVerts[idx].position;
+        const Vector3 &startPos = gizmoVerts[idx].position;
         idx = axis * idxPerAxis + 2;
         gizmoVerts[idx] = { startPos + (otheAxis1 + otheAxis2 - axisVector).normalized() * 10, color };
         gizmoIndices[axis * vertPerAxis + 3] = idx;
@@ -393,14 +393,14 @@ void GlobalBuffers::createVertIndBuffers(
     GlobalBuffers::lineGizmoVertsInds.second = lineGizmoIndicesBuffer;
 
     BufferResourceRef quadTriVertexBuffer
-        = graphicsHelper->createReadOnlyVertexBuffer(graphicsInstance, sizeof(Vector3D), static_cast<uint32>(quadTriVerts.size()));
+        = graphicsHelper->createReadOnlyVertexBuffer(graphicsInstance, sizeof(Vector3), static_cast<uint32>(quadTriVerts.size()));
     quadTriVertexBuffer->setResourceName(TCHAR("ScreenQuadTriVertices"));
     quadTriVertexBuffer->init();
 
     GlobalBuffers::quadTriVertsBuffer = quadTriVertexBuffer;
 
     BufferResourceRef quadRectVertexBuffer
-        = graphicsHelper->createReadOnlyVertexBuffer(graphicsInstance, sizeof(Vector3D), static_cast<uint32>(quadRectVerts.size()));
+        = graphicsHelper->createReadOnlyVertexBuffer(graphicsInstance, sizeof(Vector3), static_cast<uint32>(quadRectVerts.size()));
     quadRectVertexBuffer->setResourceName(TCHAR("ScreenQuadRectVertices"));
     quadRectVertexBuffer->init();
 

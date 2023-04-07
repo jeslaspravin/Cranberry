@@ -66,7 +66,7 @@ struct ScopedRenderPass
 
     FORCE_INLINE ScopedRenderPass(
         IRenderCommandList *commandList, const GraphicsResource *commandBuffer, const LocalPipelineContext &contextPipeline,
-        const QuantizedBox2D &renderArea, const RenderPassAdditionalProps &renderpassAdditionalProps, const RenderPassClearValue &clearColor
+        const IRect &renderArea, const RenderPassAdditionalProps &renderpassAdditionalProps, const RenderPassClearValue &clearColor
     );
 
     FORCE_INLINE ~ScopedRenderPass();
@@ -212,7 +212,7 @@ public:
     ) = 0;
 
     virtual void cmdBeginRenderPass(
-        const GraphicsResource *cmdBuffer, const LocalPipelineContext &contextPipeline, const QuantizedBox2D &renderArea,
+        const GraphicsResource *cmdBuffer, const LocalPipelineContext &contextPipeline, const IRect &renderArea,
         const RenderPassAdditionalProps &renderpassAdditionalProps, const RenderPassClearValue &clearColor
     ) = 0;
     virtual void cmdEndRenderPass(const GraphicsResource *cmdBuffer) = 0;
@@ -273,16 +273,16 @@ public:
     ) = 0;
 
     virtual void cmdSetViewportAndScissors(
-        const GraphicsResource *cmdBuffer, ArrayView<const std::pair<QuantizedBox2D, QuantizedBox2D>> viewportAndScissors,
+        const GraphicsResource *cmdBuffer, ArrayView<const std::pair<IRect, IRect>> viewportAndScissors,
         uint32 firstViewport = 0
     ) const
         = 0;
     virtual void cmdSetViewportAndScissor(
-        const GraphicsResource *cmdBuffer, const QuantizedBox2D &viewport, const QuantizedBox2D &scissor, uint32 atViewport = 0
+        const GraphicsResource *cmdBuffer, const IRect &viewport, const IRect &scissor, uint32 atViewport = 0
     ) const
         = 0;
     // Usually you do one viewport and scissor set and several scissor set after that, So having separate scissor set cmd
-    virtual void cmdSetScissor(const GraphicsResource *cmdBuffer, const QuantizedBox2D &scissor, uint32 atViewport = 0) const = 0;
+    virtual void cmdSetScissor(const GraphicsResource *cmdBuffer, const IRect &scissor, uint32 atViewport = 0) const = 0;
     virtual void cmdSetLineWidth(const GraphicsResource *cmdBuffer, float lineWidth) const = 0;
     virtual void cmdSetDepthBias(const GraphicsResource *cmdBuffer, float constantBias, float slopeFactor, float clampValue) const = 0;
 
@@ -464,7 +464,7 @@ FORCE_INLINE ScopedCommandMarker::~ScopedCommandMarker() { cmdList->cmdEndBuffer
 
 FORCE_INLINE ScopedRenderPass::ScopedRenderPass(
     IRenderCommandList *commandList, const GraphicsResource *commandBuffer, const LocalPipelineContext &contextPipeline,
-    const QuantizedBox2D &renderArea, const RenderPassAdditionalProps &renderpassAdditionalProps, const RenderPassClearValue &clearColor
+    const IRect &renderArea, const RenderPassAdditionalProps &renderpassAdditionalProps, const RenderPassClearValue &clearColor
 )
     : cmdList(commandList)
     , cmdBuffer(commandBuffer)

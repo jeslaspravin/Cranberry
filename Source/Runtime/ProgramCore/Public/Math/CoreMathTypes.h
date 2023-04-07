@@ -11,9 +11,9 @@
 
 #pragma once
 
-#include "Math/Vector2D.h"
-#include "Math/Vector3D.h"
-#include "Math/Vector4D.h"
+#include "Math/Vector2.h"
+#include "Math/Vector3.h"
+#include "Math/Vector4.h"
 
 #include "Math/Matrix2.h"
 #include "Math/Matrix3.h"

@@ -102,7 +102,7 @@ CubeTexture *CubeTexture::createTexture(const CubeTextureCreateParams &createPar
             createParams.mipCount
         );
     }
-    texture->textureSize = Size3D(createParams.textureSize.x, createParams.textureSize.y, 1);
+    texture->textureSize = UInt3(createParams.textureSize.x, createParams.textureSize.y, 1);
     texture->textureName = createParams.textureName;
     // Dependent values
     texture->setSampleCount(EPixelSampleCount::SampleCount1); // MS not possible for read only textures
@@ -178,7 +178,7 @@ CubeTextureRW *CubeTextureRW::createTexture(const CubeTextureRWCreateParams &cre
             createParams.mipCount
         );
     }
-    texture->textureSize = Size3D(createParams.textureSize.x, createParams.textureSize.y, 1);
+    texture->textureSize = UInt3(createParams.textureSize.x, createParams.textureSize.y, 1);
     texture->textureName = createParams.textureName;
     // Dependent values
     texture->setSampleCount(EPixelSampleCount::SampleCount1); // MS not possible for read only textures

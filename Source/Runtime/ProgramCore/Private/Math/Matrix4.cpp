@@ -10,8 +10,8 @@
  */
 
 #include "Math/Matrix4.h"
-#include "Math/Vector3D.h"
-#include "Math/Vector4D.h"
+#include "Math/Vector3.h"
+#include "Math/Vector4.h"
 
 Matrix4::Matrix4(const glm::mat4 &matrix)
     : value(matrix)
@@ -25,7 +25,7 @@ Matrix4::Matrix4(float allValue)
     : value(allValue)
 {}
 
-Matrix4::Matrix4(const Vector3D &c1, const Vector3D &c2, const Vector3D &c3, const Vector3D &c4, float c4w /*=1.0f*/)
+Matrix4::Matrix4(const Vector3 &c1, const Vector3 &c2, const Vector3 &c3, const Vector3 &c4, float c4w /*=1.0f*/)
     : value(c1.x(), c1.y(), c1.z(), 0, c2.x(), c2.y(), c2.z(), 0, c3.x(), c3.y(), c3.z(), 0, c4.x(), c4.y(), c4.z(), c4w)
 {}
 
@@ -37,7 +37,7 @@ Matrix4::Matrix4(Matrix4 &&other)
     : value(std::move(other.value))
 {}
 
-Matrix4::Matrix4(const Vector4D &c1, const Vector4D &c2, const Vector4D &c3, const Vector4D &c4)
+Matrix4::Matrix4(const Vector4 &c1, const Vector4 &c2, const Vector4 &c3, const Vector4 &c4)
     : value(c1.x(), c1.y(), c1.z(), c1.w(), c2.x(), c2.y(), c2.z(), c2.w(), c3.x(), c3.y(), c3.z(), c3.w(), c4.x(), c4.y(), c4.z(), c4.w())
 {}
 
@@ -48,7 +48,7 @@ Matrix4::Matrix4(
     : value(c1x, c1y, c1z, c1w, c2x, c2y, c2z, c2w, c3x, c3y, c3z, c3w, c4x, c4y, c4z, c4w)
 {}
 
-Matrix4::Matrix4(const Vector3D &scale)
+Matrix4::Matrix4(const Vector3 &scale)
     : value(scale.x(), 0, 0, 0, 0, scale.y(), 0, 0, 0, 0, scale.z(), 0, 0, 0, 0, 1)
 {}
 
@@ -68,13 +68,13 @@ Matrix4Col &Matrix4::operator[] (uint32 colIndex) { return value[colIndex]; }
 
 Matrix4Col Matrix4::operator[] (uint32 colIndex) const { return value[colIndex]; }
 
-Vector4D Matrix4::operator* (const Vector4D &transformingVector) const { return Vector4D(value * transformingVector.value); }
+Vector4 Matrix4::operator* (const Vector4 &transformingVector) const { return Vector4(value * transformingVector.value); }
 
-Vector3D Matrix4::operator* (const Vector3D &transformingVector) const
+Vector3 Matrix4::operator* (const Vector3 &transformingVector) const
 {
-    Vector4D vector4D(transformingVector.x(), transformingVector.y(), transformingVector.z(), 1.0f);
-    vector4D = (*this) * vector4D;
-    return Vector3D(vector4D.x(), vector4D.y(), vector4D.z()) / vector4D.w();
+    Vector4 Vector4(transformingVector.x(), transformingVector.y(), transformingVector.z(), 1.0f);
+    Vector4 = (*this) * Vector4;
+    return Vector3(Vector4.x(), Vector4.y(), Vector4.z()) / Vector4.w();
 }
 
 Matrix4 Matrix4::operator* (const Matrix4 &b) const { return value * b.value; }
@@ -155,4 +155,4 @@ Matrix4 &Matrix4::operator+= (float scalar)
     return *this;
 }
 
-const Matrix4 Matrix4::IDENTITY{ Vector3D(1, 0), Vector3D(0, 1), Vector3D(0, 0, 1), Vector3D(0) };
+const Matrix4 Matrix4::IDENTITY{ Vector3(1, 0), Vector3(0, 1), Vector3(0, 0, 1), Vector3(0) };

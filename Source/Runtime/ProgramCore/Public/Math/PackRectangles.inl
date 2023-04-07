@@ -13,7 +13,7 @@
 
 #include "Reflections/Functions.h"
 
-template <Box2DType RectType>
+template <Box2Dim RectType>
 struct PackedRectsBin
 {
     std::vector<RectType *> rects;
@@ -27,7 +27,7 @@ struct PackedRectsBin
 // Based on https://blackpawn.com/texts/lightmaps/default.html
 // and inspiration from
 // https://github.com/turanszkij/WickedEngine/blob/master/WickedEngine/wiRectPacker.cpp#L48
-template <Box2DType RectType>
+template <Box2Dim RectType>
 class RectPacker
 {
 public:
@@ -97,7 +97,7 @@ public:
     );
 };
 
-template <typename Type, Box2DType RectType /*= Box<Type, 2>*/>
+template <typename Type, Box2Dim RectType /*= Box<Type, 2>*/>
 bool MathGeom::packRectangles(
     std::vector<PackedRectsBin<RectType>> &outPackedBins, const Type &maxBinRect, const std::vector<RectType *> &packRects
 )
@@ -143,7 +143,7 @@ bool MathGeom::packRectangles(
 // insert flow and fragmentations
 #define RECT_PACKER_INSERT_TOPDOWN 1
 
-template <Box2DType RectType>
+template <Box2Dim RectType>
 const typename RectPacker<RectType>::Node *RectPacker<RectType>::Node::insert(const RectPointType &inRectSize)
 {
     // Children are present try inserting to them instead
@@ -241,7 +241,7 @@ const typename RectPacker<RectType>::Node *RectPacker<RectType>::Node::insert(co
 
 #undef RECT_PACKER_INSERT_TOPDOWN
 
-template <Box2DType RectType>
+template <Box2Dim RectType>
 void RectPacker<RectType>::pack(
     PackedRectsBin<RectType> &outBin, std::vector<RectType *> &failedRects, std::vector<RectType *> &inRects, const RectPointType &maxBinRect
 )
@@ -331,7 +331,7 @@ void RectPacker<RectType>::pack(
     delete[] bestSortedRects;
 }
 
-template <Box2DType RectType>
+template <Box2Dim RectType>
 bool RectPacker<RectType>::getBestPackProps(
     RectPointType &outBestBinRect, RectCompType &outMaxPackedArea, const ArrayView<RectType *> &inRects, const RectPointType &maxBinRect
 )

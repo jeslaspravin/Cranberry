@@ -21,10 +21,10 @@ class WindowManager;
 namespace ApplicationSettings
 {
 // Rendering resolution and will be used to create window in windowed mode
-extern APPLICATION_EXPORT ProgramGlobalVar<Size2D> screenSize;
+extern APPLICATION_EXPORT ProgramGlobalVar<UInt2> screenSize;
 // Size of surface created for window by operating system, This will be updated with values while
 // creating main window
-extern APPLICATION_EXPORT ProgramOwnedVar<Size2D, WindowManager> surfaceSize;
+extern APPLICATION_EXPORT ProgramOwnedVar<UInt2, WindowManager> surfaceSize;
 
 extern APPLICATION_EXPORT ProgramOwnedVar<bool, ApplicationInstance> fullscreenMode;
 

@@ -22,7 +22,7 @@ void WgWindow::construct(const WgArguments &args)
     // Insert root
     WidgetGeom windowGeom;
     windowGeom.widget = shared_from_this();
-    windowGeom.box = QuantShortBox2D(Short2D(0), getWidgetSize());
+    windowGeom.box = ShortRect(Short2(0), getWidgetSize());
     allWidgetGeoms.add(windowGeom);
 }
 
@@ -35,7 +35,7 @@ void WgWindow::drawWidget(WidgetDrawContext &context)
     debugAssert(roots.size() == 1 && roots[0] == 0);
 #endif
 
-    drawWidget(QuantShortBox2D(Short2D(0), getWidgetSize()), 0, allWidgetGeoms, context);
+    drawWidget(ShortRect(Short2(0), getWidgetSize()), 0, allWidgetGeoms, context);
 }
 
 bool WgWindow::hasWidget(SharedPtr<WidgetBase> widget) const
@@ -48,7 +48,7 @@ void WgWindow::rebuildWindowGeoms()
     allWidgetGeoms.clear();
     WidgetGeom windowGeom;
     windowGeom.widget = shared_from_this();
-    windowGeom.box = QuantShortBox2D(Short2D(0), getWidgetSize());
+    windowGeom.box = ShortRect(Short2(0), getWidgetSize());
     rebuildWidgetGeometry(allWidgetGeoms.add(windowGeom), allWidgetGeoms);
 }
 
@@ -117,7 +117,7 @@ void WgWindow::rebuildGeometry(WidgetGeomId /*thisId*/, WidgetGeomTree &geomTree
     }
 }
 
-void WgWindow::drawWidget(QuantShortBox2D clipBound, WidgetGeomId thisId, const WidgetGeomTree &geomTree, WidgetDrawContext &context)
+void WgWindow::drawWidget(ShortRect clipBound, WidgetGeomId thisId, const WidgetGeomTree &geomTree, WidgetDrawContext &context)
 {
     if (!content)
     {
@@ -190,9 +190,9 @@ EInputHandleState WgWindow::analogKey(AnalogStates::StateKeyType key, AnalogStat
     return EInputHandleState::NotHandled;
 }
 
-void WgWindow::mouseEnter(Short2D /*absPos*/, Short2D /*widgetRelPos*/, const InputSystem * /*inputSystem*/) {}
+void WgWindow::mouseEnter(Short2 /*absPos*/, Short2 /*widgetRelPos*/, const InputSystem * /*inputSystem*/) {}
 
-void WgWindow::mouseMoved(Short2D absPos, Short2D /*widgetRelPos*/, const InputSystem *inputSystem)
+void WgWindow::mouseMoved(Short2 absPos, Short2 /*widgetRelPos*/, const InputSystem *inputSystem)
 {
     // All inner most children will be at last
     std::vector<WidgetGeomTree::NodeIdx> children;
@@ -232,7 +232,7 @@ void WgWindow::mouseMoved(Short2D absPos, Short2D /*widgetRelPos*/, const InputS
     }
 }
 
-void WgWindow::mouseLeave(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem)
+void WgWindow::mouseLeave(Short2 absPos, Short2 widgetRelPos, const InputSystem *inputSystem)
 {
     if (hoveringWidget)
     {

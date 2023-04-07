@@ -17,7 +17,7 @@
 #include "Math/Math.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 
-template <Box2DType RectType>
+template <Box2Dim RectType>
 struct PackedRectsBin;
 
 class PROGRAMCORE_EXPORT MathGeom
@@ -26,7 +26,7 @@ private:
     MathGeom() = default;
 
 public:
-    static Vector2D transform2d(const Vector2D &pt, const Vector2D &offset, float rotInDeg);
+    static Vector2 transform2d(const Vector2 &pt, const Vector2 &offset, float rotInDeg);
 
     /**
      * MathGeom::packRectangles - Packs the given packRects into one or more packed bins, Each bins can
@@ -42,7 +42,7 @@ public:
      *
      * @return NODISCARD bool
      */
-    template <typename Type, Box2DType RectType = Box<Type, 2>>
+    template <typename Type, Box2Dim RectType = Box<Type, 2>>
     NODISCARD static bool
     packRectangles(std::vector<PackedRectsBin<RectType>> &outPackedBins, const Type &maxBinRect, const std::vector<RectType *> &packRects);
 };

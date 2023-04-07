@@ -35,7 +35,7 @@ void EnvironmentMapAsset::initAsset()
             RenderManager *renderMan = IRenderInterfaceModule::get()->getRenderManager();
 
             ImageResourceCreateInfo hdrImageCreateInfo{
-                .imageFormat = EPixelDataFormat::RGBA_SF32, .dimensions = Size3D(textureDimension, 1), .numOfMips = 0, .layerCount = 1
+                .imageFormat = EPixelDataFormat::RGBA_SF32, .dimensions = UInt3(textureDimension, 1), .numOfMips = 0, .layerCount = 1
             };
             ImageResourceRef hdrImage = graphicsHelper->createImage(graphicsInstance, hdrImageCreateInfo);
             hdrImage->setResourceName(TCHAR("HDR_temp_image"));
@@ -47,7 +47,7 @@ void EnvironmentMapAsset::initAsset()
                 CopyPixelsToImageInfo copyInfo;
                 copyInfo.bGenerateMips = true;
                 copyInfo.mipFiltering = ESamplerFiltering::Linear;
-                copyInfo.dstOffset = copyInfo.srcOffset = Size3D(0);
+                copyInfo.dstOffset = copyInfo.srcOffset = UInt3(0);
                 copyInfo.extent = hdrImage->getImageSize();
                 copyInfo.subres.layersCount = 1;
                 copyInfo.subres.baseMip = copyInfo.subres.baseLayer = 0;
@@ -58,26 +58,26 @@ void EnvironmentMapAsset::initAsset()
             CubeTextureCreateParams createParams;
             createParams.dataFormat = ECubeTextureFormat::CT_F16;
             createParams.mipCount = 1;
-            createParams.textureSize = Size2D(GlobalRenderVariables::MAX_ENV_MAP_SIZE);
+            createParams.textureSize = UInt2(GlobalRenderVariables::MAX_ENV_MAP_SIZE);
             createParams.textureName = assetName() + TCHAR("_EnvMap");
             envMap = TextureBase::createTexture<CubeTexture>(createParams);
 
             // Diffuse Irradiance
             createParams.dataFormat = ECubeTextureFormat::CT_F32;
             // 1024/16 = 64, Scaled in this ratio
-            createParams.textureSize = Size2D(GlobalRenderVariables::MAX_ENV_MAP_SIZE / 16u);
+            createParams.textureSize = UInt2(GlobalRenderVariables::MAX_ENV_MAP_SIZE / 16u);
             createParams.textureName = assetName() + TCHAR("_DifIrrad");
             diffuseIrradMap = TextureBase::createTexture<CubeTexture>(createParams);
 
             // Pre-filtered specular map
             createParams.dataFormat = ECubeTextureFormat::CT_F16;
-            createParams.textureSize = Size2D(GlobalRenderVariables::MAX_ENV_MAP_SIZE / 2u);
+            createParams.textureSize = UInt2(GlobalRenderVariables::MAX_ENV_MAP_SIZE / 2u);
             createParams.mipCount = GlobalRenderVariables::MAX_PREFILTERED_CUBE_MIPS;
             createParams.textureName = assetName() + TCHAR("_FilteredSpec");
             specularIrradMap = TextureBase::createTexture<CubeTexture>(createParams);
 
             {
-                Size3D subgrpSize{ 16, 16, 1 };
+                UInt3 subgrpSize{ 16, 16, 1 };
 
                 // Create intermediates
                 CubeTextureRWCreateParams rwCreateParams;
@@ -163,7 +163,7 @@ void EnvironmentMapAsset::initAsset()
                 );
 
                 CopyImageInfo copyInfo;
-                copyInfo.extent = Size3D(writeIntermediate->getTextureSize(), 1);
+                copyInfo.extent = UInt3(writeIntermediate->getTextureSize(), 1);
                 cmdList->cmdCopyOrResolveImage(
                     createEnvCmdBuffer, writeIntermediate->getTextureResource(), envMap->getTextureResource(), copyInfo, copyInfo
                 );
@@ -180,7 +180,7 @@ void EnvironmentMapAsset::initAsset()
                     diffIrradIntermediate->getTextureSize().y / subgrpSize.y
                 );
 
-                copyInfo.extent = Size3D(diffIrradIntermediate->getTextureSize(), 1);
+                copyInfo.extent = UInt3(diffIrradIntermediate->getTextureSize(), 1);
                 cmdList->cmdCopyOrResolveImage(
                     createEnvCmdBuffer, diffIrradIntermediate->getTextureResource(), diffuseIrradMap->getTextureResource(), copyInfo, copyInfo
                 );
@@ -200,7 +200,7 @@ void EnvironmentMapAsset::initAsset()
                     specIrradIntermediate->getTextureSize().y / subgrpSize.y
                 );
 
-                copyInfo.extent = Size3D(specIrradIntermediate->getTextureSize(), 1);
+                copyInfo.extent = UInt3(specIrradIntermediate->getTextureSize(), 1);
                 cmdList->cmdCopyOrResolveImage(
                     createEnvCmdBuffer, specIrradIntermediate->getTextureResource(), specularIrradMap->getTextureResource(), copyInfo, copyInfo
                 );
@@ -262,7 +262,7 @@ void EnvironmentMapAsset::clearAsset()
 
 void EnvironmentMapAsset::setTempPixelData(const std::vector<LinearColor> &pixelData) { tempPixelData = pixelData; }
 
-void EnvironmentMapAsset::setTextureSize(const Size2D &dimension) { textureDimension = dimension; }
+void EnvironmentMapAsset::setTextureSize(const UInt2 &dimension) { textureDimension = dimension; }
 
 TextureBase *EnvironmentMapAsset::getEnvironmentMap() const { return envMap; }
 

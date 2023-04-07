@@ -11,28 +11,28 @@
 
 #pragma once
 #include "Math/Matrix4.h"
-#include "Math/Vector2D.h"
-#include "Math/Vector3D.h"
-#include "Math/Vector4D.h"
+#include "Math/Vector2.h"
+#include "Math/Vector3.h"
+#include "Math/Vector4.h"
 
 struct PbrSpotLight
 {
-    Vector4D sptLightColor_lumen; // Color and lumen
-    Vector4D sptPos_radius;       // Position and radius
-    Vector4D sptDirection;        // empty w
-    Vector2D sptCone;             // inner, outer cone
+    Vector4 sptLightColor_lumen; // Color and lumen
+    Vector4 sptPos_radius;       // Position and radius
+    Vector4 sptDirection;        // empty w
+    Vector2 sptCone;             // inner, outer cone
 };
 
 struct PbrPointLight
 {
-    Vector4D ptLightColor_lumen; // Color and lumen
-    Vector4D ptPos_radius;       // Position and radius
+    Vector4 ptLightColor_lumen; // Color and lumen
+    Vector4 ptPos_radius;       // Position and radius
 };
 
 struct PbrDirectionalLight
 {
-    Vector4D lightColor_lumen;
-    Vector3D direction;
+    Vector4 lightColor_lumen;
+    Vector3 direction;
 };
 
 struct PBRLightArray

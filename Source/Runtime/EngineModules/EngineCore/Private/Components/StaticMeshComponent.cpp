@@ -29,7 +29,7 @@ void StaticMeshComponent::setupRenderInfo(ComponentRenderInfo &compRenderInfo) c
         compRenderInfo.worldTf = getWorldTransform();
         compRenderInfo.worldBound = AABB();
 
-        Vector3D aabbCorners[8];
+        Vector3 aabbCorners[8];
         getLocalBound().boundCorners(aabbCorners);
         for (uint32 i = 0; i != ARRAY_LENGTH(aabbCorners); ++i)
         {

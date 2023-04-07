@@ -22,7 +22,7 @@ private:
     constexpr static uint32 CHANNEL_NUM = 4;
 
     String textureName;
-    Size2D textureDimension;
+    UInt2 textureDimension;
     int32 channelsCount;
     bool bIsNormal;
     std::vector<Color> textureTexelData;

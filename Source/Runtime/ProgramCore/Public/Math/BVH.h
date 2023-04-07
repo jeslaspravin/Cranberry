@@ -13,7 +13,7 @@
 
 #include "Math/Box.h"
 #include "Math/Grid.h"
-#include "Math/VectorND.h"
+#include "Math/VectorN.h"
 #include "Types/Containers/BitArray.h"
 #include "Types/Containers/SparseVector.h"
 #include "Types/CoreDefines.h"
@@ -31,8 +31,8 @@ private:
     using ObjectIdxType = ObjectStorageType::size_type;
     using GridCellStorage = std::vector<ObjectIdxType>;
 
-    UniformGrid<Vector3D, 3> volumeGrid;
-    VectorND<GridCellStorage, 3> grid;
+    UniformGrid<Vector3, 3> volumeGrid;
+    VectorN<GridCellStorage, 3> grid;
 
     ObjectStorageType allObjects;
     FORCE_INLINE void addObject(ObjectIdxType objIdx, const GridCellIndex &atIdx);
@@ -43,12 +43,12 @@ private:
 
 public:
     BoundingVolume() = default;
-    BoundingVolume(std::vector<StorageType> &&objectList, const Vector3D &cellSize);
-    BoundingVolume(const std::vector<StorageType> &objectList, const Vector3D &cellSize);
+    BoundingVolume(std::vector<StorageType> &&objectList, const Vector3 &cellSize);
+    BoundingVolume(const std::vector<StorageType> &objectList, const Vector3 &cellSize);
     ~BoundingVolume();
 
-    void reinitialize(const Vector3D &cellSize);
-    void reinitialize(const std::vector<StorageType> &newObjectList, const Vector3D &cellSize);
+    void reinitialize(const Vector3 &cellSize);
+    void reinitialize(const std::vector<StorageType> &newObjectList, const Vector3 &cellSize);
 
     void addedNewObject(const StorageType &object);
     void removeAnObject(const StorageType &object);
@@ -153,7 +153,7 @@ public:
         }
     }
 
-    bool raycast(std::vector<StorageType> &result, const Vector3D &start, const Vector3D &dir, float length, bool bExistOnHit = true);
+    bool raycast(std::vector<StorageType> &result, const Vector3 &start, const Vector3 &dir, float length, bool bExistOnHit = true);
 
     void updateBounds(const StorageType &object, const AABB &oldBox, const AABB &newBox);
     bool isSameBounds(const AABB &boxOne, const AABB &boxTwo);
@@ -228,7 +228,7 @@ bool BoundingVolume<StorageType>::isValidBoundIdxs(const GridCellIndex &minBound
 {
     // if any dimension is clamped because of being outside the volume bound
     bool bIsAnyDimensionClamped = false;
-    Vector3D boxExtend = box.size();
+    Vector3 boxExtend = box.size();
     for (int32 i = 0; i < 3; ++i)
     {
         uint32 cellExtend = maxBoundIdx[i] - minBoundIdx[i];
@@ -247,14 +247,14 @@ AABB BoundingVolume<StorageType>::getBounds() const
 }
 
 template <typename StorageType>
-BoundingVolume<StorageType>::BoundingVolume(std::vector<StorageType> &&objectList, const Vector3D &cellSize)
+BoundingVolume<StorageType>::BoundingVolume(std::vector<StorageType> &&objectList, const Vector3 &cellSize)
 {
     allObjects = std::move(objectList);
     reinitialize(cellSize);
 }
 
 template <typename StorageType>
-BoundingVolume<StorageType>::BoundingVolume(const std::vector<StorageType> &objectList, const Vector3D &cellSize)
+BoundingVolume<StorageType>::BoundingVolume(const std::vector<StorageType> &objectList, const Vector3 &cellSize)
 {
     allObjects = objectList;
     reinitialize(cellSize);
@@ -268,7 +268,7 @@ BoundingVolume<StorageType>::~BoundingVolume()
 }
 
 template <typename StorageType>
-void BoundingVolume<StorageType>::reinitialize(const Vector3D &cellSize)
+void BoundingVolume<StorageType>::reinitialize(const Vector3 &cellSize)
 {
     if (allObjects.size() <= 0)
     {
@@ -297,7 +297,7 @@ void BoundingVolume<StorageType>::reinitialize(const Vector3D &cellSize)
     );
 
     GridCellIndex cellCount = volumeGrid.cellCount();
-    grid = VectorND<GridCellStorage, 3>(cellCount);
+    grid = VectorN<GridCellStorage, 3>(cellCount);
 
     for (ObjectIdxType objIdx = 0; objIdx < allObjects.totalCount(); ++objIdx)
     {
@@ -330,7 +330,7 @@ void BoundingVolume<StorageType>::reinitialize(const Vector3D &cellSize)
 }
 
 template <typename StorageType>
-void BoundingVolume<StorageType>::reinitialize(const std::vector<StorageType> &newObjectList, const Vector3D &cellSize)
+void BoundingVolume<StorageType>::reinitialize(const std::vector<StorageType> &newObjectList, const Vector3 &cellSize)
 {
     allObjects = newObjectList;
     reinitialize(cellSize);
@@ -344,11 +344,11 @@ void BoundingVolume<StorageType>::addedNewObject(const StorageType &object)
 
     {
         GridCellIndex newCellCount = volumeGrid.cellCount();
-        Vector3D newMinCorner;
-        Vector3D newMaxCorner;
+        Vector3 newMinCorner;
+        Vector3 newMaxCorner;
         volumeGrid.getBound(newMinCorner, newMaxCorner);
-        Vector3D currMinCorner = newMinCorner;
-        Vector3D currMaxCorner = newMaxCorner;
+        Vector3 currMinCorner = newMinCorner;
+        Vector3 currMaxCorner = newMaxCorner;
 
         bool bChanged = false;
         for (uint32 axis = 0; axis < 3; ++axis)
@@ -370,8 +370,8 @@ void BoundingVolume<StorageType>::addedNewObject(const StorageType &object)
         }
         if (bChanged)
         {
-            VectorND<GridCellStorage, 3> newElements(newCellCount);
-            UniformGrid<Vector3D, 3> newGrid;
+            VectorN<GridCellStorage, 3> newElements(newCellCount);
+            UniformGrid<Vector3, 3> newGrid;
             newGrid.InitWithCount(newMinCorner, newMaxCorner, newCellCount);
             for (uint32 i = 0; i < volumeGrid.cellCount().size(); ++i)
             {
@@ -444,13 +444,13 @@ void BoundingVolume<StorageType>::removeAnObject(const StorageType &object)
 
 template <typename StorageType>
 bool BoundingVolume<StorageType>::raycast(
-    std::vector<StorageType> &result, const Vector3D &start, const Vector3D &dir, float length, bool bExitOnHit /* = true */
+    std::vector<StorageType> &result, const Vector3 &start, const Vector3 &dir, float length, bool bExitOnHit /* = true */
 )
 {
     AABB globalBound;
     volumeGrid.getBound(globalBound.minBound, globalBound.maxBound);
 
-    Vector3D invDir;
+    Vector3 invDir;
     float invLength = 1.0f / length;
 
     bool parallel[3];
@@ -461,9 +461,9 @@ bool BoundingVolume<StorageType>::raycast(
     }
 
     float enterAtLengthFrac, exitAtLengthFrac;
-    Vector3D nextStart, nextExit;
+    Vector3 nextStart, nextExit;
 
-    Vector3D tmpPos;
+    Vector3 tmpPos;
 
     bool cellsInPath = globalBound.raycastFast(
         start, dir, invDir, length, invLength, &parallel[0], enterAtLengthFrac, nextStart, exitAtLengthFrac, nextExit
@@ -475,7 +475,7 @@ bool BoundingVolume<StorageType>::raycast(
     {
         BitArray<uint64> resultIdxAdded(allObjects.totalCount());
 
-        Vector3D halfCellSize = volumeGrid.cellSize() * 0.5f;
+        Vector3 halfCellSize = volumeGrid.cellSize() * 0.5f;
         GridCellIndex nextCellIdx = volumeGrid.cell(nextStart);
         nextCellIdx = volumeGrid.clampCellIndex(nextCellIdx);
         float leftLength = length;
@@ -508,7 +508,7 @@ bool BoundingVolume<StorageType>::raycast(
                 break;
             }
 
-            Vector3D cellCenter = volumeGrid.location(nextCellIdx);
+            Vector3 cellCenter = volumeGrid.location(nextCellIdx);
 
             float timesPerAxis[3];
             float bestTime = leftLength;

@@ -20,9 +20,9 @@
     MacroName(NameString)           \
     MacroName(Color)                \
     MacroName(LinearColor)          \
-    MacroName(Vector2D)             \
-    MacroName(Vector3D)             \
-    MacroName(Vector4D)             \
+    MacroName(Vector2)              \
+    MacroName(Vector3)              \
+    MacroName(Vector4)              \
     MacroName(Matrix2)              \
     MacroName(Matrix3)              \
     MacroName(Matrix4)              \

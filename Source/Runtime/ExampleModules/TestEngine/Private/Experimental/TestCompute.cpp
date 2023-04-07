@@ -9,8 +9,8 @@
  *  License can be read in LICENSE file at this repository's root
  */
 
-#include "Math/Vector2D.h"
-#include "Math/Vector4D.h"
+#include "Math/Vector2.h"
+#include "Math/Vector4.h"
 #include "RenderInterface/Resources/Pipelines.h"
 #include "RenderInterface/ShaderCore/ShaderParameterResources.h"
 #include "RenderApi/Rendering/PipelineRegistration.h"
@@ -21,14 +21,14 @@
 
 struct AOS
 {
-    Vector4D a;
-    Vector2D b;
-    Vector2D c[4];
+    Vector4 a;
+    Vector2 b;
+    Vector2 c[4];
 };
 
 struct TestAOS
 {
-    Vector4D test1;
+    Vector4 test1;
     AOS *data;
 };
 
@@ -49,7 +49,7 @@ class TestComputeShader : public ComputeShaderConfig
 
 public:
     TestComputeShader()
-        : BaseType(Byte3D(16, 16, 1), TESTCOMPUTE_SHADER_NAME)
+        : BaseType(Byte3(16, 16, 1), TESTCOMPUTE_SHADER_NAME)
     {}
 
     void bindBufferParamInfo(std::map<StringID, struct ShaderBufferDescriptorType *> &bindingBuffers) const override

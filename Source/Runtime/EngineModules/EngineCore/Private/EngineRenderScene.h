@@ -60,7 +60,7 @@ public:
 
 struct TexturePoolListKey
 {
-    Size3D textureSize;
+    UInt3 textureSize;
     // Sample count is not needed as it will most likely will be wait clearing everything on change
     // Layer count is not needed as that will probably same per type of textures in pool
 
@@ -105,12 +105,12 @@ public:
 
     // Call getTexture after finishing any command that previously used the texture
     const RendererIntermTexture &
-    getTexture(IRenderCommandList *cmdList, ERendererIntermTexture::Type rtType, Size3D size, PoolTextureDesc textureDesc);
+    getTexture(IRenderCommandList *cmdList, ERendererIntermTexture::Type rtType, UInt3 size, PoolTextureDesc textureDesc);
     const RendererIntermTexture &
-    getTexture(IRenderCommandList *cmdList, ERendererIntermTexture::Type rtType, Size2D size, PoolTextureDesc textureDesc);
+    getTexture(IRenderCommandList *cmdList, ERendererIntermTexture::Type rtType, UInt2 size, PoolTextureDesc textureDesc);
     // Below function will query existing and return null if nothing found that is use able
-    const RendererIntermTexture *getTexture(IRenderCommandList *cmdList, ERendererIntermTexture::Type rtType, Size3D size);
-    const RendererIntermTexture *getTexture(IRenderCommandList *cmdList, ERendererIntermTexture::Type rtType, Size2D size);
+    const RendererIntermTexture *getTexture(IRenderCommandList *cmdList, ERendererIntermTexture::Type rtType, UInt3 size);
+    const RendererIntermTexture *getTexture(IRenderCommandList *cmdList, ERendererIntermTexture::Type rtType, UInt2 size);
 
     void clearUnused(IRenderCommandList *cmdList);
 
@@ -146,7 +146,7 @@ struct ComponentRenderInfo
 struct RenderSceneViewParams
 {
     Camera view;
-    Short2D viewportSize;
+    Short2 viewportSize;
 
     ERendererIntermTexture::Type outBuffer = ERendererIntermTexture::FinalColor;
 };
@@ -262,7 +262,7 @@ private:
     RingBufferedResource<ShaderParametersRef, BUFFER_COUNT> colorResolveParams;
     RingBufferedResource<ShaderParametersRef, BUFFER_COUNT> depthResolveParams;
     RendererIntermTexture frameTextures[ERendererIntermTexture::MaxCount];
-    const RendererIntermTexture &getFinalColor(IRenderCommandList *cmdList, Short2D size);
+    const RendererIntermTexture &getFinalColor(IRenderCommandList *cmdList, Short2 size);
 
 public:
     EngineRenderScene(cbe::World *inWorld);

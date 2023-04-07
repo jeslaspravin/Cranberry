@@ -14,7 +14,7 @@
 #include "ApplicationExports.h"
 #include "Math/Box.h"
 #include "Types/Colors.h"
-#include "Math/Vector2D.h"
+#include "Math/Vector2.h"
 #include "RenderInterface/Resources/MemoryResources.h"
 #include "RenderInterface/Resources/GraphicsSyncResource.h"
 
@@ -22,11 +22,11 @@ class WidgetDrawContext
 {
 private:
     std::vector<Color> vertexColor;
-    std::vector<Vector2D> vertexCoord;
-    std::vector<Short2D> vertices;
+    std::vector<Vector2> vertexCoord;
+    std::vector<Short2> vertices;
     // Below two maps one per quad(4 vertices)
     std::vector<ImageResourceRef> instanceTexture;
-    std::vector<QuantShortBox2D> instanceClip;
+    std::vector<ShortRect> instanceClip;
 
     std::vector<SemaphoreRef> waitOnSemaphores;
     /**
@@ -46,11 +46,11 @@ public:
      *  v4------v3
      */
     APPLICATION_EXPORT void
-    drawBox(ArrayView<Size2D> verts, ArrayView<Vector2D> coords, ArrayView<Color> colors, ImageResourceRef texture, QuantShortBox2D clip);
-    APPLICATION_EXPORT void drawBox(ArrayView<Size2D> verts, ArrayView<Color> colors, QuantShortBox2D clip);
-    APPLICATION_EXPORT void drawBox(ArrayView<Size2D> verts, QuantShortBox2D clip);
-    APPLICATION_EXPORT void drawBox(QuantShortBox2D box, ImageResourceRef texture, QuantShortBox2D clip, Color color = ColorConst::WHITE);
-    APPLICATION_EXPORT void drawBox(QuantShortBox2D box, ImageResourceRef texture, QuantShortBox2D clip, ArrayView<Color> colors);
+    drawBox(ArrayView<UInt2> verts, ArrayView<Vector2> coords, ArrayView<Color> colors, ImageResourceRef texture, ShortRect clip);
+    APPLICATION_EXPORT void drawBox(ArrayView<UInt2> verts, ArrayView<Color> colors, ShortRect clip);
+    APPLICATION_EXPORT void drawBox(ArrayView<UInt2> verts, ShortRect clip);
+    APPLICATION_EXPORT void drawBox(ShortRect box, ImageResourceRef texture, ShortRect clip, Color color = ColorConst::WHITE);
+    APPLICATION_EXPORT void drawBox(ShortRect box, ImageResourceRef texture, ShortRect clip, ArrayView<Color> colors);
 
     APPLICATION_EXPORT void addWaitCondition(SemaphoreRef semaphore);
 
@@ -58,11 +58,11 @@ public:
     APPLICATION_EXPORT void endLayer();
 
     FORCE_INLINE const std::vector<Color> &perVertexColor() const { return vertexColor; }
-    FORCE_INLINE const std::vector<Short2D> &perVertexPos() const { return vertices; }
-    FORCE_INLINE const std::vector<Vector2D> &perVertexUV() const { return vertexCoord; }
+    FORCE_INLINE const std::vector<Short2> &perVertexPos() const { return vertices; }
+    FORCE_INLINE const std::vector<Vector2> &perVertexUV() const { return vertexCoord; }
 
     FORCE_INLINE const std::vector<ImageResourceRef> &perQuadTexture() const { return instanceTexture; }
-    FORCE_INLINE const std::vector<QuantShortBox2D> &perQuadClipping() const { return instanceClip; }
+    FORCE_INLINE const std::vector<ShortRect> &perQuadClipping() const { return instanceClip; }
 
     FORCE_INLINE const std::vector<SemaphoreRef> &allWaitOnSemaphores() const { return waitOnSemaphores; }
 

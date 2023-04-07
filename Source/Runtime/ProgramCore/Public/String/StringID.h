@@ -46,7 +46,7 @@ public:
     using IDType = uint32;
 
 private:
-    IDType id;
+    IDType id = 0;
 
     friend STRINGID_FUNCQUALIFIER StringID Literals::operator"" _sid (const TChar *str, SizeT len) noexcept;
     template <ArchiveTypeName ArchiveType>

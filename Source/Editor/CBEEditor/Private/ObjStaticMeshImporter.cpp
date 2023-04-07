@@ -124,15 +124,15 @@ void calcTangent(
     const StaticMeshVertex &other2
 )
 {
-    const Vector2D uv10{ other1.position.w() - vertexData.position.w(), other1.normal.w() - vertexData.normal.w() };
-    const Vector2D uv20{ other2.position.w() - vertexData.position.w(), other2.normal.w() - vertexData.normal.w() };
+    const Vector2 uv10{ other1.position.w() - vertexData.position.w(), other1.normal.w() - vertexData.normal.w() };
+    const Vector2 uv20{ other2.position.w() - vertexData.position.w(), other2.normal.w() - vertexData.normal.w() };
 
-    const Vector3D p10 = Vector3D(other1.position) - Vector3D(vertexData.position);
-    const Vector3D p20 = Vector3D(other2.position) - Vector3D(vertexData.position);
+    const Vector3 p10 = Vector3(other1.position) - Vector3(vertexData.position);
+    const Vector3 p20 = Vector3(other2.position) - Vector3(vertexData.position);
 
-    const Vector3D normal{ vertexData.normal };
-    Vector3D tangent;
-    Vector3D bitangent;
+    const Vector3 normal{ vertexData.normal };
+    Vector3 tangent;
+    Vector3 bitangent;
 
     float invDet = uv10.x() * uv20.y() - uv20.x() * uv10.y();
     if (invDet == 0.0f)
@@ -164,12 +164,12 @@ void calcTangent(
         }
     }
 
-    // vertexData.bitangent = Vector4D(bitangent, 0);
-    vertexData.tangent = Vector4D(tangent, 0);
+    // vertexData.bitangent = Vector4(bitangent, 0);
+    vertexData.tangent = Vector4(tangent, 0);
 
     const float drawLen = 10;
     cbe::SMTbnLinePoint pt1;
-    pt1.position = Vector3D(vertexData.position);
+    pt1.position = Vector3(vertexData.position);
     cbe::SMTbnLinePoint pt2;
 
     // Normal
@@ -201,13 +201,13 @@ void rotateVertices(tinyobj::attrib_t &attrib, const StaticMeshImportOptions &op
         return;
     }
 
-    static const Quat ROTATION_Y2Z_UP = Quat(90.f, Vector3D::FWD);
+    static const Quat ROTATION_Y2Z_UP = Quat(90.f, Vector3::FWD);
 
     const uint64 vertEndIdx = attrib.vertices.size() / 3;
     for (uint64 vertIdx = 0; vertIdx != vertEndIdx; ++vertIdx)
     {
         const uint64 vertXIdx = vertIdx * 3;
-        Vector3D v{ attrib.vertices[vertXIdx + 0], attrib.vertices[vertXIdx + 1], attrib.vertices[vertXIdx + 2] };
+        Vector3 v{ attrib.vertices[vertXIdx + 0], attrib.vertices[vertXIdx + 1], attrib.vertices[vertXIdx + 2] };
         v = ROTATION_Y2Z_UP.rotateVector(v);
         attrib.vertices[vertXIdx + 0] = v.x();
         attrib.vertices[vertXIdx + 1] = v.y();
@@ -218,7 +218,7 @@ void rotateVertices(tinyobj::attrib_t &attrib, const StaticMeshImportOptions &op
     for (uint64 normIdx = 0; normIdx != normEndIdx; ++normIdx)
     {
         const uint64 normXIdx = normIdx * 3;
-        Vector3D n{ attrib.normals[normXIdx + 0], attrib.normals[normXIdx + 1], attrib.normals[normXIdx + 2] };
+        Vector3 n{ attrib.normals[normXIdx + 0], attrib.normals[normXIdx + 1], attrib.normals[normXIdx + 2] };
         n = ROTATION_Y2Z_UP.rotateVector(n).normalized();
         attrib.normals[normXIdx + 0] = n.x();
         attrib.normals[normXIdx + 1] = n.y();
@@ -229,48 +229,48 @@ void rotateVertices(tinyobj::attrib_t &attrib, const StaticMeshImportOptions &op
 void fillVertexInfo(StaticMeshVertex &vertexData, const tinyobj::attrib_t &attrib, const tinyobj::index_t &index)
 {
     // Inverting Y since UV origin is at left bottom of image and Graphics API's UV origin is at left top
-    Vector2D uvCoord{ attrib.texcoords[index.texcoord_index * 2 + 0], (1.0f - attrib.texcoords[index.texcoord_index * 2 + 1]) };
-    uvCoord = Math::clamp(uvCoord, Vector2D::ZERO, Vector2D::ONE);
+    Vector2 uvCoord{ attrib.texcoords[index.texcoord_index * 2 + 0], (1.0f - attrib.texcoords[index.texcoord_index * 2 + 1]) };
+    uvCoord = Math::clamp(uvCoord, Vector2::ZERO, Vector2::ONE);
 
-    vertexData.position = Vector4D(
+    vertexData.position = Vector4(
         attrib.vertices[index.vertex_index * 3], attrib.vertices[index.vertex_index * 3 + 1], attrib.vertices[index.vertex_index * 3 + 2],
         uvCoord.x()
     );
-    Vector3D normal{ attrib.normals[index.normal_index * 3], attrib.normals[index.normal_index * 3 + 1],
+    Vector3 normal{ attrib.normals[index.normal_index * 3], attrib.normals[index.normal_index * 3 + 1],
                      attrib.normals[index.normal_index * 3 + 2] };
 
-    vertexData.normal = Vector4D(normal.safeNormalized(), uvCoord.y());
-    // vertexData.vertexColor = Vector4D(attrib.colors[index.vertex_index * 3], attrib.colors[index.vertex_index * 3 + 1],
+    vertexData.normal = Vector4(normal.safeNormalized(), uvCoord.y());
+    // vertexData.vertexColor = Vector4(attrib.colors[index.vertex_index * 3], attrib.colors[index.vertex_index * 3 + 1],
     // attrib.colors[index.vertex_index * 2 + 2], 1.0f);
 }
 
 bool isDegenerateTri(uint32 index0, uint32 index1, uint32 index2, const std::vector<StaticMeshVertex> &verticesData)
 {
-    Vector3D dir1 = Vector3D(verticesData[index1].position) - Vector3D(verticesData[index0].position);
-    Vector3D dir2 = Vector3D(verticesData[index2].position) - Vector3D(verticesData[index0].position);
+    Vector3 dir1 = Vector3(verticesData[index1].position) - Vector3(verticesData[index0].position);
+    Vector3 dir2 = Vector3(verticesData[index2].position) - Vector3(verticesData[index0].position);
 
     return (dir1 ^ dir2).sqrlength() < SLIGHTLY_SMALL_EPSILON;
 }
-Vector3D getFaceNormal(uint32 index0, uint32 index1, uint32 index2, const std::vector<StaticMeshVertex> &verticesData)
+Vector3 getFaceNormal(uint32 index0, uint32 index1, uint32 index2, const std::vector<StaticMeshVertex> &verticesData)
 {
     debugAssert(!isDegenerateTri(index0, index1, index2, verticesData));
 
-    Vector3D dir1 = Vector3D(verticesData[index1].position) - Vector3D(verticesData[index0].position);
-    Vector3D dir2 = Vector3D(verticesData[index2].position) - Vector3D(verticesData[index0].position);
+    Vector3 dir1 = Vector3(verticesData[index1].position) - Vector3(verticesData[index0].position);
+    Vector3 dir2 = Vector3(verticesData[index2].position) - Vector3(verticesData[index0].position);
 
     return (dir1 ^ dir2).normalized();
 }
 
-void addNormal(StaticMeshVertex &vertex, Vector3D &normal)
+void addNormal(StaticMeshVertex &vertex, Vector3 &normal)
 {
-    Vector4D &encodedNormal = vertex.normal;
+    Vector4 &encodedNormal = vertex.normal;
     encodedNormal.x() += normal.x();
     encodedNormal.y() += normal.y();
     encodedNormal.z() += normal.z();
 }
-void normalize(Vector4D &normal)
+void normalize(Vector4 &normal)
 {
-    Vector3D newNormal(normal);
+    Vector3 newNormal(normal);
     newNormal = newNormal.normalized();
     normal.x() = newNormal.x();
     normal.y() = newNormal.y();
@@ -397,16 +397,16 @@ void load(
             }
 
             // Fixing triangle and vertex discrepancies
-            Vector3D faceNormal = getFaceNormal(newVertIdxs[0], newVertIdxs[1], newVertIdxs[2], outImportData.vertices);
+            Vector3 faceNormal = getFaceNormal(newVertIdxs[0], newVertIdxs[1], newVertIdxs[2], outImportData.vertices);
             for (uint32 i = 0; i != FACE_MAX_VERTS; ++i)
             {
                 if (bIsNewlyAdded[i])
                 {
-                    meshImportData.bound.grow(Vector3D(outImportData.vertices[newVertIdxs[i]].position));
+                    meshImportData.bound.grow(Vector3(outImportData.vertices[newVertIdxs[i]].position));
                     // Invalid normal, use faceNormal. It will not be invalid as degenerate case is handled already
                     if (outImportData.vertices[newVertIdxs[i]].normal.sqrlength() < SLIGHTLY_SMALL_EPSILON)
                     {
-                        outImportData.vertices[newVertIdxs[i]].normal = Vector4D(faceNormal, outImportData.vertices[newVertIdxs[i]].normal.w());
+                        outImportData.vertices[newVertIdxs[i]].normal = Vector4(faceNormal, outImportData.vertices[newVertIdxs[i]].normal.w());
                         outImportData.errorsCounter[EImportErrorCodes::DegenerateNormals]++;
                     }
                 }
@@ -452,7 +452,7 @@ void smoothAndLoad(
         std::unordered_map<tinyobj::index_t, uint32> &indexToNewVert = outImportData.indexToNewVert;
         // maps an edge formed per vertex and all connected vertices to all faces sharing the edge
         std::unordered_map<uint32, std::unordered_map<uint32, std::vector<uint32>>> vertexFaceAdjacency;
-        std::vector<Vector3D> faceNormals(faceCount);
+        std::vector<Vector3> faceNormals(faceCount);
         std::vector<uint32> faceSmoothingId(faceCount);
 
         for (uint32 faceIdx = 0; faceIdx < faceCount; ++faceIdx)
@@ -512,16 +512,16 @@ void smoothAndLoad(
             }
 
             // Fixing triangle and vertex discrepancies
-            Vector3D faceNormal = getFaceNormal(newVertIdxs[0], newVertIdxs[1], newVertIdxs[2], outImportData.vertices);
+            Vector3 faceNormal = getFaceNormal(newVertIdxs[0], newVertIdxs[1], newVertIdxs[2], outImportData.vertices);
             for (uint32 i = 0; i != FACE_MAX_VERTS; ++i)
             {
                 if (bIsNewlyAdded[i])
                 {
-                    meshImportData.bound.grow(Vector3D(outImportData.vertices[newVertIdxs[i]].position));
+                    meshImportData.bound.grow(Vector3(outImportData.vertices[newVertIdxs[i]].position));
                     // Invalid normal, use faceNormal. It will not be invalid as degenerate case is handled already
                     if (outImportData.vertices[newVertIdxs[i]].normal.sqrlength() < SLIGHTLY_SMALL_EPSILON)
                     {
-                        outImportData.vertices[newVertIdxs[i]].normal = Vector4D(faceNormal, outImportData.vertices[newVertIdxs[i]].normal.w());
+                        outImportData.vertices[newVertIdxs[i]].normal = Vector4(faceNormal, outImportData.vertices[newVertIdxs[i]].normal.w());
                         outImportData.errorsCounter[EImportErrorCodes::DegenerateNormals]++;
                     }
                 }

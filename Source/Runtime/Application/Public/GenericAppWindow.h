@@ -72,8 +72,8 @@ public:
     virtual void updateWindow();
     virtual void destroyWindow();
     // All Rect or positions are in unscaled desktop screen space
-    virtual QuantShortBox2D windowClientRect() const = 0;
-    virtual QuantShortBox2D windowRect() const = 0;
+    virtual ShortRect windowClientRect() const = 0;
+    virtual ShortRect windowRect() const = 0;
     virtual bool isValidWindow() const = 0;
     virtual WindowHandle getWindowHandle() const = 0;
 
@@ -81,5 +81,5 @@ public:
 
 public:
     // Helpers
-    static WindowHandle getWindowUnderPoint(Short2D) { return nullptr; }
+    static WindowHandle getWindowUnderPoint(Short2) { return nullptr; }
 };

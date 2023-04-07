@@ -21,7 +21,7 @@ class WgViewportImGuiLayer : public IImGuiLayer
 {
 private:
     bool bDrawingViewport = false;
-    QuantShortBox2D viewportRegion;
+    ShortRect viewportRegion;
 
     Camera defaultCamera;
     SharedPtr<WorldViewport> worldViewport;
@@ -39,7 +39,7 @@ public:
     void drawOnImGui(WidgetDrawContext &context) override;
 
     /* WidgetBase overrides */
-    void drawWidget(QuantShortBox2D clipBound, WidgetGeomId thisId, const WidgetGeomTree &geomTree, WidgetDrawContext &context) override;
+    void drawWidget(ShortRect clipBound, WidgetGeomId thisId, const WidgetGeomTree &geomTree, WidgetDrawContext &context) override;
     bool hasWidget(SharedPtr<WidgetBase>) const override { return false; }
     void tick(float /*timeDelta*/) override {}
     /* Overrides ends */

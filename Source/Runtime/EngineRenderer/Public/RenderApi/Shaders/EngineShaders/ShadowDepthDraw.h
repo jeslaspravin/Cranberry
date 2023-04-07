@@ -13,7 +13,7 @@
 #include "EngineRendererExports.h"
 #include "Math/Matrix4.h"
 #include "Math/Rotation.h"
-#include "Math/Vector4D.h"
+#include "Math/Vector4.h"
 #include "RenderInterface/ShaderCore/ShaderParameters.h"
 
 // 0, 1 are matrices for view along +y and -y(Since they are internally considered X axis and it is Y
@@ -23,7 +23,7 @@
 struct PointShadowDepthViews
 {
     Matrix4 w2Clip[6];
-    Vector4D lightPosFarPlane;
+    Vector4 lightPosFarPlane;
 
     ENGINERENDERER_EXPORT static ShaderBufferParamInfo *paramInfo();
     ENGINERENDERER_EXPORT static Rotation VIEW_DIRECTIONS[6];

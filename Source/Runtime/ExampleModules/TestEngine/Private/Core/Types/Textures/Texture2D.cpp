@@ -82,7 +82,7 @@ Texture2D *Texture2D::createTexture(const Texture2DCreateParams &createParams)
             createParams.mipCount
         );
     }
-    texture->textureSize = Size3D(createParams.textureSize.x, createParams.textureSize.y, 1);
+    texture->textureSize = UInt3(createParams.textureSize.x, createParams.textureSize.y, 1);
     texture->textureName = createParams.textureName;
     texture->setData(createParams.colorData, createParams.defaultColor);
     // Dependent values
@@ -267,7 +267,7 @@ Texture2DRW *Texture2DRW::createTexture(const Texture2DRWCreateParams &createPar
             createParams.mipCount
         );
     }
-    texture->textureSize = Size3D(createParams.textureSize.x, createParams.textureSize.y, 1);
+    texture->textureSize = UInt3(createParams.textureSize.x, createParams.textureSize.y, 1);
     texture->textureName = createParams.textureName;
     texture->bIsWriteOnly = createParams.bIsWriteOnly;
     texture->setData(createParams.colorData, createParams.defaultColor, false);

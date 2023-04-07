@@ -11,12 +11,12 @@
 
 #pragma once
 
-#include "Math/Vector4D.h"
+#include "Math/Vector4.h"
 
 struct TexturedMeshData
 {
-    Vector4D meshColor;
-    Vector4D rm_uvScale;
+    Vector4 meshColor;
+    Vector4 rm_uvScale;
     uint32 diffuseMapIdx;
     uint32 normalMapIdx;
     uint32 armMapIdx;

@@ -717,7 +717,7 @@ bool ParserHelper::isValidFieldType(CXType clangType, CXCursor fieldCursor)
             {
                 CXCursor typeDecl = clang_getTypeDeclaration(clangType);
                 // Either reflected struct or specialized struct or class templates like
-                // std::vector or class decl like Matrix3 or Vector3D
+                // std::vector or class decl like Matrix3 or Vector3
                 bIsValid = (clang_getCursorKind(typeDecl) == CXCursor_StructDecl || clang_getCursorKind(typeDecl) == CXCursor_ClassDecl
                             || clang_getCursorKind(typeDecl) == CXCursor_ClassTemplate)
                            && (isReflectedClass(typeDecl) || isSpecializedType(clangType, fieldCursor) || isCustomType(clangType, fieldCursor));

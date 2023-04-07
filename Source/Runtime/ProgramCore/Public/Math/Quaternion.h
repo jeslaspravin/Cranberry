@@ -12,7 +12,7 @@
 #pragma once
 #include "Math/Rotation.h"
 #include "Math/RotationMatrix.h"
-#include "Math/Vector3D.h"
+#include "Math/Vector3.h"
 
 class PROGRAMCORE_EXPORT Quat
 {
@@ -22,7 +22,7 @@ public:
 private:
     void fromRotationImpl(Rotation rotation);
     void fromRotationMatImpl(const RotationMatrix &rotationMatrix);
-    void fromAngleAxisImpl(float angle, Vector3D axis);
+    void fromAngleAxisImpl(float angle, Vector3 axis);
 
 public:
     Quat() = default;
@@ -34,7 +34,7 @@ public:
         , z(inZ)
         , w(inW)
     {}
-    FORCE_INLINE Quat(float angle, const Vector3D &axis) { fromAngleAxisImpl(angle, axis); }
+    FORCE_INLINE Quat(float angle, const Vector3 &axis) { fromAngleAxisImpl(angle, axis); }
     FORCE_INLINE Quat(const Rotation &rotation) { fromRotationImpl(rotation); }
     FORCE_INLINE Quat(const RotationMatrix &rotationMatrix) { fromRotationMatImpl(rotationMatrix); }
 
@@ -82,9 +82,9 @@ public:
     Rotation toRotation() const;
     RotationMatrix toRotationMatrix() const;
 
-    Vector3D rotateVector(const Vector3D &vector) const
+    Vector3 rotateVector(const Vector3 &vector) const
     {
-        Vector3D q{ x, y, z };
+        Vector3 q{ x, y, z };
         return (w * w - q.sqrlength()) * vector + 2 * ((q | vector) * q + w * (q ^ vector));
     }
 
@@ -94,7 +94,7 @@ public:
         ret.fromRotationImpl(rotation);
         return ret;
     }
-    FORCE_INLINE static Quat fromAngleAxis(float angle, const Vector3D &axis)
+    FORCE_INLINE static Quat fromAngleAxis(float angle, const Vector3 &axis)
     {
         Quat ret;
         ret.fromAngleAxisImpl(angle, axis);

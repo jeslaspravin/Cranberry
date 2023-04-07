@@ -15,7 +15,7 @@
 #include "EngineRendererExports.h"
 #include "Types/CoreTypes.h"
 
-class Vector2D;
+class Vector2;
 
 namespace GlobalRenderVariables
 {

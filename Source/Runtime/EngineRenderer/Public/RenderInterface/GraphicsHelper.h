@@ -158,7 +158,7 @@ public:
         = 0;
 
     virtual Framebuffer *createFbInstance() const = 0;
-    virtual void initializeFb(IGraphicsInstance *graphicsInstance, Framebuffer *fb, const Size2D &frameSize) const = 0;
+    virtual void initializeFb(IGraphicsInstance *graphicsInstance, Framebuffer *fb, const UInt2 &frameSize) const = 0;
     virtual void initializeSwapchainFb(IGraphicsInstance *graphicsInstance, Framebuffer *fb, WindowCanvasRef canvas, uint32 swapchainIdx) const
         = 0;
 

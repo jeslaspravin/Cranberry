@@ -9,7 +9,7 @@
  *  License can be read in LICENSE file at this repository's root
  */
 
-#include "Math/Vector2D.h"
+#include "Math/Vector2.h"
 #include "RenderInterface/Resources/Pipelines.h"
 #include "RenderInterface/ShaderCore/ShaderParameterResources.h"
 #include "RenderInterface/ShaderCore/ShaderParameters.h"
@@ -20,8 +20,8 @@
 
 struct UiTransform
 {
-    Vector2D scale;
-    Vector2D translate;
+    Vector2 scale;
+    Vector2 translate;
 };
 
 BEGIN_BUFFER_DEFINITION(UiTransform)

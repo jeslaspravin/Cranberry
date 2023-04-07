@@ -33,7 +33,7 @@ public:
     static void initialize(uint32 swapchainCount);
     static void destroy();
 
-    static void onScreenResized(Size2D newSize);
+    static void onScreenResized(UInt2 newSize);
 
     static std::vector<const IRenderTargetTexture *> getGbufferRts(ERenderPassFormat::Type renderpassFormat, uint32 frameIdx);
     static std::vector<ImageResourceRef> getGbufferAttachments(ERenderPassFormat::Type renderpassFormat, uint32 frameIdx);

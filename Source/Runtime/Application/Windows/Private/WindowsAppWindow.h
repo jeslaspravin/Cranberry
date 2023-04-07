@@ -35,11 +35,11 @@ public:
     void windowResizing(uint32 width, uint32 height) const;
     void windowDpiChanged(uint32 newDpi);
     void windowDestroyRequested() const;
-    QuantShortBox2D windowClientRect() const override;
-    QuantShortBox2D windowRect() const override;
+    ShortRect windowClientRect() const override;
+    ShortRect windowRect() const override;
 
 public:
-    static WindowHandle getWindowUnderPoint(Short2D point);
+    static WindowHandle getWindowUnderPoint(Short2 point);
 };
 
 namespace GPlatformInstances

@@ -21,7 +21,7 @@
 
 struct ClearRTClearInfo
 {
-    Vector4D clearColor;
+    Vector4 clearColor;
 };
 
 BEGIN_BUFFER_DEFINITION(ClearRTClearInfo)

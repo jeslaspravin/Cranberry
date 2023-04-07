@@ -69,15 +69,15 @@ void TestGameEngine::startup(ApplicationInstance *appInst)
     // Moved out surface resize feeding from ImGuiManager to here
     // Using surface size
     float dpiScaleFactor = IApplicationModule::get()->getApplication()->windowManager->getMainWindow()->dpiScale();
-    Vector2D displaySize
-        = Vector2D(float(ApplicationSettings::surfaceSize.get().x), float(ApplicationSettings::surfaceSize.get().y)) / dpiScaleFactor;
-    imguiManager->setDisplaySize(Short2D(int16(displaySize.x()), int16(displaySize.y())));
+    Vector2 displaySize
+        = Vector2(float(ApplicationSettings::surfaceSize.get().x), float(ApplicationSettings::surfaceSize.get().y)) / dpiScaleFactor;
+    imguiManager->setDisplaySize(Short2(int16(displaySize.x()), int16(displaySize.y())));
     surfaceResizeHandle = ApplicationSettings::surfaceSize.onConfigChanged().bindLambda(
-        [this](Size2D /*oldSize*/, Size2D newSize)
+        [this](UInt2 /*oldSize*/, UInt2 newSize)
         {
             float dpiScaleFactor = IApplicationModule::get()->getApplication()->windowManager->getMainWindow()->dpiScale();
-            Vector2D displaySize = Vector2D(float(newSize.x), float(newSize.y)) / dpiScaleFactor;
-            imguiManager->setDisplaySize(Short2D(int16(displaySize.x()), int16(displaySize.y())));
+            Vector2 displaySize = Vector2(float(newSize.x), float(newSize.y)) / dpiScaleFactor;
+            imguiManager->setDisplaySize(Short2(int16(displaySize.x()), int16(displaySize.y())));
         }
     );
 
@@ -131,7 +131,7 @@ void TestGameEngine::engineLoop()
                 imguiManager->analogKey(key, *state, application->inputSystem);
             }
         }
-        Short2D relMousePos = application->getMainWindow()->screenToWgWindowSpace(Short2D(
+        Short2 relMousePos = application->getMainWindow()->screenToWgWindowSpace(Short2(
             int16(application->inputSystem->analogState(AnalogStates::AbsMouseX)->currentValue),
             int16(application->inputSystem->analogState(AnalogStates::AbsMouseY)->currentValue)
         ));

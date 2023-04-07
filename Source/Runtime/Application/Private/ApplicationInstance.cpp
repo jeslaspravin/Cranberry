@@ -22,10 +22,10 @@
 namespace ApplicationSettings
 {
 // Rendering resolution and will be used to create window in windowed mode
-ProgramGlobalVar<Size2D> screenSize{ Size2D(1280, 720) };
+ProgramGlobalVar<UInt2> screenSize{ UInt2(1280, 720) };
 // Size of surface created for window by operating system, This will be updated with values while
 // creating main window
-ProgramOwnedVar<Size2D, WindowManager> surfaceSize;
+ProgramOwnedVar<UInt2, WindowManager> surfaceSize;
 
 ProgramOwnedVar<bool, ApplicationInstance> fullscreenMode{ false };
 

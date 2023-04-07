@@ -129,7 +129,7 @@ bool TextureLoader::isNormalTexture(const uint8 *texels) const
     {
         const uint32 texelStart = i * CHANNEL_NUM;
 
-        auto texel = Vector3D(texels[texelStart], texels[texelStart + 1], texels[texelStart + 2]) * 2 / 255.0f;
+        auto texel = Vector3(texels[texelStart], texels[texelStart + 1], texels[texelStart + 2]) * 2 / 255.0f;
         texel -= 1.f;
         const float pixelLen = texel.length();
         // for normal map the pixels must always have value greater than zero for Zs

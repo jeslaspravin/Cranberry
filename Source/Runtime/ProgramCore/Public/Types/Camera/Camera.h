@@ -12,7 +12,7 @@
 #pragma once
 #include "Math/Matrix4.h"
 #include "Math/Rotation.h"
-#include "Math/Vector3D.h"
+#include "Math/Vector3.h"
 #include "ProgramCoreExports.h"
 
 #include <optional>
@@ -30,12 +30,12 @@ private:
     float hFov;
     float vFov;
     // For orthographic
-    Size2D orthoSize;
+    UInt2 orthoSize;
     float nearClip;
     float farClip;
     std::optional<Matrix4> customProjMatrix;
 
-    Vector3D camTranslation;
+    Vector3 camTranslation;
     Rotation camRotation;
 
     static const float MAX_FOV;
@@ -56,29 +56,29 @@ private:
 
 public:
     void setFOV(float horizontal, float vertical);
-    void setOrthoSize(const Size2D &orthographicSize);
+    void setOrthoSize(const UInt2 &orthographicSize);
     void setClippingPlane(float near, float far);
 
     void setCustomProjection(Matrix4 projMatrix);
     void clearCustomProjection();
 
-    void setTranslation(const Vector3D &newLocation);
-    Vector3D translation() const { return camTranslation; }
+    void setTranslation(const Vector3 &newLocation);
+    Vector3 translation() const { return camTranslation; }
     void setRotation(const Rotation &newRotation);
     Rotation rotation() const { return camRotation; }
     float farPlane() const { return farClip; }
     float nearPlane() const { return nearClip; }
-    void frustumCorners(Vector3D *corners, Vector3D *center = nullptr) const;
+    void frustumCorners(Vector3 *corners, Vector3 *center = nullptr) const;
 
-    void lookAt(const Vector3D &lookAtTarget);
+    void lookAt(const Vector3 &lookAtTarget);
     // Expected pos input
     // (0,0) ----------------
     //      |                |
     //      |                |
     //      |                |
     //       ----------------  (1, 1)
-    Vector3D screenToWorld(const Vector2D &screenPos) const;
-    Vector3D screenToWorldFwd(const Vector2D &screenPos) const;
+    Vector3 screenToWorld(const Vector2 &screenPos) const;
+    Vector3 screenToWorldFwd(const Vector2 &screenPos) const;
 
     Matrix4 viewMatrix() const;
     Matrix4 viewMatrix(Matrix4 &outInvView) const;

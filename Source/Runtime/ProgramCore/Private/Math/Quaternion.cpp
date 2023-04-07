@@ -137,7 +137,7 @@ RotationMatrix Quat::toRotationMatrix() const
     return RotationMatrix(rotMat);
 }
 
-void Quat::fromAngleAxisImpl(float angle, Vector3D axis)
+void Quat::fromAngleAxisImpl(float angle, Vector3 axis)
 {
     const float hAngleRad = Math::deg2Rad(angle) * 0.5f;
     const float hAngleSin = Math::sin(hAngleRad);

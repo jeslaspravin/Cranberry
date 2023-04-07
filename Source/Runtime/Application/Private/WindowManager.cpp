@@ -72,7 +72,7 @@ void WindowManager::destroy()
     windowsOpened.clear();
 }
 
-GenericAppWindow *WindowManager::createWindow(Size2D size, const TChar *name, GenericAppWindow *parent)
+GenericAppWindow *WindowManager::createWindow(UInt2 size, const TChar *name, GenericAppWindow *parent)
 {
     const ApplicationInstance *appInstance = IApplicationModule::get()->getApplication();
     GenericAppWindow *appWindow = new PlatformAppWindow();
@@ -131,7 +131,7 @@ std::vector<GenericAppWindow *> WindowManager::getArrangedWindows() const
     return arrangedWindows;
 }
 
-GenericAppWindow *WindowManager::findWindowUnder(Short2D screenPos) const
+GenericAppWindow *WindowManager::findWindowUnder(Short2 screenPos) const
 {
     // First find using native API
     WindowHandle wndHnd = PlatformAppWindow::getWindowUnderPoint(screenPos);
@@ -181,7 +181,7 @@ void WindowManager::postInitGraphicCore()
                 // And we do not need to free window canvas frame here as it is first init
                 windowData.second.windowCanvas->reinitResources();
             }
-            ApplicationSettings::surfaceSize.set(Size2D(appMainWindow->windowWidth, appMainWindow->windowHeight));
+            ApplicationSettings::surfaceSize.set(UInt2(appMainWindow->windowWidth, appMainWindow->windowHeight));
         }
     );
 }
@@ -280,7 +280,7 @@ void WindowManager::onWindowResize(uint32 width, uint32 height, GenericAppWindow
                 appModule->windowSurfaceUpdated(window);
                 if (window == appMainWindow)
                 {
-                    Size2D newSize{ window->windowWidth, window->windowHeight };
+                    UInt2 newSize{ window->windowWidth, window->windowHeight };
                     ApplicationSettings::surfaceSize.set(newSize);
                 }
             }
@@ -367,7 +367,7 @@ void WindowManager::destroyPendingWindows()
     windowsToDestroy.clear();
 }
 
-GenericAppWindow *WindowManager::findChildWindowUnder(GenericAppWindow *window, Short2D screenPos) const
+GenericAppWindow *WindowManager::findChildWindowUnder(GenericAppWindow *window, Short2 screenPos) const
 {
     for (GenericAppWindow *childWnd : window->childWindows)
     {

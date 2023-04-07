@@ -32,23 +32,23 @@
 
 float WgWindow::getWidgetScaling() const { return ownerWindow->dpiScale() * scaling; }
 
-Short2D WgWindow::getWidgetSize() const
+Short2 WgWindow::getWidgetSize() const
 {
     uint32 width, height;
     ownerWindow->windowSize(width, height);
-    return removeDpiScale(Short2D(width, height));
+    return removeDpiScale(Short2(width, height));
 }
 
-Short2D WgWindow::screenToWgWindowSpace(Short2D screenPt) const
+Short2 WgWindow::screenToWgWindowSpace(Short2 screenPt) const
 {
-    Short2D windowOrigin = ownerWindow->windowClientRect().minBound;
-    Short2D windowSpace = screenPt - windowOrigin;
+    Short2 windowOrigin = ownerWindow->windowClientRect().minBound;
+    Short2 windowSpace = screenPt - windowOrigin;
     return removeDpiScale(windowSpace);
 }
 
-Short2D WgWindow::wgWindowToScreenSpace(Short2D windowPt) const
+Short2 WgWindow::wgWindowToScreenSpace(Short2 windowPt) const
 {
-    Short2D screenSpace = applyDpiScale(windowPt);
+    Short2 screenSpace = applyDpiScale(windowPt);
     return screenSpace + ownerWindow->windowClientRect().minBound;
 }
 
@@ -152,7 +152,7 @@ SharedPtr<WgWindow> ApplicationInstance::getActiveWindow() const
 
 bool ApplicationInstance::hasActiveWindow() const { return ApplicationSettings::renderingOffscreen || windowManager->hasActiveWindow(); }
 
-SharedPtr<WgWindow> ApplicationInstance::createWindow(Size2D size, const TChar *name, SharedPtr<WgWindow> parent)
+SharedPtr<WgWindow> ApplicationInstance::createWindow(UInt2 size, const TChar *name, SharedPtr<WgWindow> parent)
 {
     if (ApplicationSettings::renderingOffscreen || ApplicationSettings::computeOnly)
     {
@@ -271,26 +271,26 @@ void ApplicationInstance::tickWindowWidgets()
 
         const AnalogStates::StateInfoType *screenMouseX = inputSystem->analogState(AnalogStates::AbsMouseX);
         const AnalogStates::StateInfoType *screenMouseY = inputSystem->analogState(AnalogStates::AbsMouseY);
-        Short2D mouseScreenPos(int16(screenMouseX->currentValue), int16(screenMouseY->currentValue));
+        Short2 mouseScreenPos(int16(screenMouseX->currentValue), int16(screenMouseY->currentValue));
         GenericAppWindow *appWnd = windowManager->findWindowUnder(mouseScreenPos);
         SharedPtr<WgWindow> wndWidget = appWnd ? windowWidgets[appWnd] : nullptr;
         if (lastHoverWnd != wndWidget)
         {
             if (lastHoverWnd)
             {
-                Short2D mouseAbsPos = lastHoverWnd->screenToWgWindowSpace(mouseScreenPos);
+                Short2 mouseAbsPos = lastHoverWnd->screenToWgWindowSpace(mouseScreenPos);
                 lastHoverWnd->mouseLeave(mouseAbsPos, mouseAbsPos, inputSystem);
             }
             lastHoverWnd = wndWidget;
             if (lastHoverWnd)
             {
-                Short2D mouseAbsPos = lastHoverWnd->screenToWgWindowSpace(mouseScreenPos);
+                Short2 mouseAbsPos = lastHoverWnd->screenToWgWindowSpace(mouseScreenPos);
                 lastHoverWnd->mouseEnter(mouseAbsPos, mouseAbsPos, inputSystem);
             }
         }
         if (lastHoverWnd && (screenMouseX->acceleration != 0.0f || screenMouseY->acceleration != 0.0f))
         {
-            Short2D mouseAbsPos = lastHoverWnd->screenToWgWindowSpace(mouseScreenPos);
+            Short2 mouseAbsPos = lastHoverWnd->screenToWgWindowSpace(mouseScreenPos);
             lastHoverWnd->mouseMoved(mouseAbsPos, mouseAbsPos, inputSystem);
         }
     }

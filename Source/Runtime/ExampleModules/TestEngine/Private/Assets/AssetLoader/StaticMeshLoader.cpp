@@ -15,8 +15,8 @@
 #include "Logger/Logger.h"
 #include "Math/Box.h"
 #include "Math/Math.h"
-#include "Math/Vector2D.h"
-#include "Math/Vector3D.h"
+#include "Math/Vector2.h"
+#include "Math/Vector3.h"
 #include "String/String.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
 
@@ -89,15 +89,15 @@ bool hasSmoothedNormals(const tinyobj::shape_t &mesh)
 //
 void calcTangent(MeshLoaderData &loaderData, StaticMeshVertex &vertexData, const StaticMeshVertex &other1, const StaticMeshVertex &other2)
 {
-    const Vector2D uv10{ other1.position.w() - vertexData.position.w(), other1.normal.w() - vertexData.normal.w() };
-    const Vector2D uv20{ other2.position.w() - vertexData.position.w(), other2.normal.w() - vertexData.normal.w() };
+    const Vector2 uv10{ other1.position.w() - vertexData.position.w(), other1.normal.w() - vertexData.normal.w() };
+    const Vector2 uv20{ other2.position.w() - vertexData.position.w(), other2.normal.w() - vertexData.normal.w() };
 
-    const Vector3D p10 = Vector3D(other1.position) - Vector3D(vertexData.position);
-    const Vector3D p20 = Vector3D(other2.position) - Vector3D(vertexData.position);
+    const Vector3 p10 = Vector3(other1.position) - Vector3(vertexData.position);
+    const Vector3 p20 = Vector3(other2.position) - Vector3(vertexData.position);
 
-    const Vector3D normal{ vertexData.normal };
-    Vector3D tangent;
-    Vector3D bitangent;
+    const Vector3 normal{ vertexData.normal };
+    Vector3 tangent;
+    Vector3 bitangent;
 
     float invDet = uv10.x() * uv20.y() - uv20.x() * uv10.y();
     if (invDet == 0.0f)
@@ -129,13 +129,13 @@ void calcTangent(MeshLoaderData &loaderData, StaticMeshVertex &vertexData, const
         }
     }
 
-    // vertexData.bitangent = Vector4D(bitangent, 0);
-    vertexData.tangent = Vector4D(tangent, 0);
+    // vertexData.bitangent = Vector4(bitangent, 0);
+    vertexData.tangent = Vector4(tangent, 0);
 
 #if DEV_BUILD
     const float drawLen = 10;
     TbnLinePoint pt1;
-    pt1.position = Vector3D(vertexData.position);
+    pt1.position = Vector3(vertexData.position);
     TbnLinePoint pt2;
 
     // Normal
@@ -166,44 +166,44 @@ void calcTangent(MeshLoaderData &loaderData, StaticMeshVertex &vertexData, const
 void fillVertexInfo(StaticMeshVertex &vertexData, const tinyobj::attrib_t &attrib, const tinyobj::index_t &index)
 {
     // Inverting Y since UV origin is at left bottom of image and Graphics API's UV origin is at left top
-    Vector2D uvCoord{ attrib.texcoords[index.texcoord_index * 2 + 0], (1.0f - attrib.texcoords[index.texcoord_index * 2 + 1]) };
-    uvCoord = Math::clamp(uvCoord, Vector2D::ZERO, Vector2D::ONE);
+    Vector2 uvCoord{ attrib.texcoords[index.texcoord_index * 2 + 0], (1.0f - attrib.texcoords[index.texcoord_index * 2 + 1]) };
+    uvCoord = Math::clamp(uvCoord, Vector2::ZERO, Vector2::ONE);
 
-    vertexData.position = Vector4D(
+    vertexData.position = Vector4(
         attrib.vertices[index.vertex_index * 3], attrib.vertices[index.vertex_index * 3 + 1], attrib.vertices[index.vertex_index * 3 + 2],
         uvCoord.x()
     );
-    Vector3D normal{ attrib.normals[index.normal_index * 3], attrib.normals[index.normal_index * 3 + 1],
+    Vector3 normal{ attrib.normals[index.normal_index * 3], attrib.normals[index.normal_index * 3 + 1],
                      attrib.normals[index.normal_index * 3 + 2] };
 
-    vertexData.normal = Vector4D(normal.normalized(), uvCoord.y());
-    // vertexData.vertexColor = Vector4D(attrib.colors[index.vertex_index * 3],
+    vertexData.normal = Vector4(normal.normalized(), uvCoord.y());
+    // vertexData.vertexColor = Vector4(attrib.colors[index.vertex_index * 3],
     // attrib.colors[index.vertex_index * 3 + 1]
     //     , attrib.colors[index.vertex_index * 3 + 2], 1.0f);
 }
 
-Vector3D StaticMeshLoader::getFaceNormal(uint32 index0, uint32 index1, uint32 index2, const std::vector<StaticMeshVertex> &verticesData) const
+Vector3 StaticMeshLoader::getFaceNormal(uint32 index0, uint32 index1, uint32 index2, const std::vector<StaticMeshVertex> &verticesData) const
 {
-    Vector4D temp1 = verticesData[index1].position - verticesData[index0].position;
-    Vector4D temp2 = verticesData[index2].position - verticesData[index0].position;
+    Vector4 temp1 = verticesData[index1].position - verticesData[index0].position;
+    Vector4 temp2 = verticesData[index2].position - verticesData[index0].position;
 
-    Vector3D dir1(temp1.x(), temp1.y(), temp1.z());
-    Vector3D dir2(temp2.x(), temp2.y(), temp2.z());
+    Vector3 dir1(temp1.x(), temp1.y(), temp1.z());
+    Vector3 dir2(temp2.x(), temp2.y(), temp2.z());
 
     return (dir1 ^ dir2).normalized();
 }
 
-void StaticMeshLoader::addNormal(StaticMeshVertex &vertex, Vector3D &normal) const
+void StaticMeshLoader::addNormal(StaticMeshVertex &vertex, Vector3 &normal) const
 {
-    Vector4D &encodedNormal = vertex.normal;
+    Vector4 &encodedNormal = vertex.normal;
     encodedNormal.x() += normal.x();
     encodedNormal.y() += normal.y();
     encodedNormal.z() += normal.z();
 }
 
-void StaticMeshLoader::normalize(Vector4D &normal) const
+void StaticMeshLoader::normalize(Vector4 &normal) const
 {
-    Vector3D newNormal(normal);
+    Vector3 newNormal(normal);
     newNormal = newNormal.normalized();
     normal.x() = newNormal.x();
     normal.y() = newNormal.y();
@@ -248,7 +248,7 @@ void StaticMeshLoader::load(const tinyobj::shape_t &mesh, const tinyobj::attrib_
                     newVertIdxs[i] = vertexIdx;
                     meshLoaderData.vertices.push_back(StaticMeshVertex());
                     fillVertexInfo(meshLoaderData.vertices[vertexIdx], attrib, idxs[i]);
-                    meshLoaderData.bound.grow(Vector3D(meshLoaderData.vertices[vertexIdx].position));
+                    meshLoaderData.bound.grow(Vector3(meshLoaderData.vertices[vertexIdx].position));
                     generateTbn[i] = true;
                 }
                 else
@@ -303,7 +303,7 @@ void StaticMeshLoader::smoothAndLoad(
         std::unordered_map<tinyobj::index_t, uint32> indexToNewVert;
         // maps an edge formed per vertex and all connected vertices to all faces sharing the edge
         std::unordered_map<uint32, std::unordered_map<uint32, std::vector<uint32>>> vertexFaceAdjacency;
-        std::vector<Vector3D> faceNormals(faceCount);
+        std::vector<Vector3> faceNormals(faceCount);
         std::vector<uint32> faceSmoothingId(faceCount);
 
         for (uint32 faceIdx = 0; faceIdx < faceCount; ++faceIdx)
@@ -333,7 +333,7 @@ void StaticMeshLoader::smoothAndLoad(
                     newVertIdxs[i] = vertexIdx;
                     meshLoaderData.vertices.push_back(StaticMeshVertex());
                     fillVertexInfo(meshLoaderData.vertices[vertexIdx], attrib, idxs[i]);
-                    meshLoaderData.bound.grow(Vector3D(meshLoaderData.vertices[vertexIdx].position));
+                    meshLoaderData.bound.grow(Vector3(meshLoaderData.vertices[vertexIdx].position));
                     generateTbn[i] = true;
                 }
                 else

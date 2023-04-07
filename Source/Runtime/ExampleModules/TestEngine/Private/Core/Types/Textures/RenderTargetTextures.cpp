@@ -96,9 +96,9 @@ void RenderTargetTexture::reinitResources()
     }
 }
 
-void RenderTargetTexture::setTextureSize(Size2D newSize)
+void RenderTargetTexture::setTextureSize(UInt2 newSize)
 {
-    textureSize = Size3D(newSize.x, newSize.y, 1);
+    textureSize = UInt3(newSize.x, newSize.y, 1);
     markResourceDirty();
 }
 
@@ -114,7 +114,7 @@ RenderTargetTexture *RenderTargetTexture::createTexture(const RenderTextureCreat
             createParams.mipCount
         );
     }
-    texture->textureSize = Size3D(createParams.textureSize.x, createParams.textureSize.y, 1);
+    texture->textureSize = UInt3(createParams.textureSize.x, createParams.textureSize.y, 1);
     texture->textureName = createParams.textureName;
     texture->bIsSrgb = createParams.bIsSrgb;
     texture->bSameReadWriteTexture = createParams.bSameReadWriteTexture;
@@ -267,7 +267,7 @@ RenderTargetTextureCube *RenderTargetTextureCube::createTexture(const RenderText
             createParams.mipCount
         );
     }
-    texture->textureSize = Size3D(createParams.textureSize.x, createParams.textureSize.y, 1);
+    texture->textureSize = UInt3(createParams.textureSize.x, createParams.textureSize.y, 1);
     texture->textureName = createParams.textureName;
     texture->bIsSrgb = createParams.bIsSrgb;
     texture->bSameReadWriteTexture = createParams.bSameReadWriteTexture;
@@ -319,7 +319,7 @@ RenderTargetTextureArray *RenderTargetTextureArray::createTexture(const RenderTe
             createParams.mipCount
         );
     }
-    texture->textureSize = Size3D(createParams.textureSize.x, createParams.textureSize.y, 1);
+    texture->textureSize = UInt3(createParams.textureSize.x, createParams.textureSize.y, 1);
     texture->textureName = createParams.textureName;
     texture->bIsSrgb = createParams.bIsSrgb;
     texture->bSameReadWriteTexture = createParams.bSameReadWriteTexture;

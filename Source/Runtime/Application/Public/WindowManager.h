@@ -46,11 +46,11 @@ public:
     FORCE_INLINE bool hasActiveWindow() const { return getActiveWindow() != nullptr; }
     std::vector<GenericAppWindow *> getArrangedWindows() const;
     GenericAppWindow *findNativeHandleWindow(WindowHandle wndHnd) const;
-    GenericAppWindow *findWindowUnder(Short2D screenPos) const;
+    GenericAppWindow *findWindowUnder(Short2 screenPos) const;
 
     void init();
     void destroy();
-    GenericAppWindow *createWindow(Size2D size, const TChar *name, GenericAppWindow *parent);
+    GenericAppWindow *createWindow(UInt2 size, const TChar *name, GenericAppWindow *parent);
     void destroyWindow(GenericAppWindow *window);
     void updateWindowCanvas();
     /*
@@ -69,5 +69,5 @@ private:
     void destroyPendingWindows();
 
     // If any child window is present under the point then returns that window else returns this window, Recurses through childs
-    GenericAppWindow *findChildWindowUnder(GenericAppWindow *window, Short2D screenPos) const;
+    GenericAppWindow *findChildWindowUnder(GenericAppWindow *window, Short2 screenPos) const;
 };

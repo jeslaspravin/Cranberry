@@ -22,7 +22,7 @@ Color::Color(const LinearColor &linearColor, bool bAsSrgb /*= false*/)
     }
     else
     {
-        colorValue = Byte4D(
+        colorValue = Byte4(
             Math::clamp<uint8>(uint8(Math::round(linearColor.r() * 255)), 0u, 255u),
             Math::clamp<uint8>(uint8(Math::round(linearColor.g() * 255)), 0u, 255u),
             Math::clamp<uint8>(uint8(Math::round(linearColor.b() * 255)), 0u, 255u),
@@ -76,16 +76,16 @@ LinearColor::LinearColor(float r, float g, float b, float a /*= 1.0f*/)
     : colorValue(r, g, b, a)
 {}
 
-LinearColor::LinearColor(const Vector4D &value)
+LinearColor::LinearColor(const Vector4 &value)
     : colorValue(value.x(), value.y(), value.z(), value.w())
 {}
 
 float LinearColor::operator[] (uint32 idx) const { return colorValue[idx]; }
 
 // http://en.wikipedia.org/wiki/HSL_color_space
-Vector3D LinearColor::toHsl() const
+Vector3 LinearColor::toHsl() const
 {
-    Vector3D hsl;
+    Vector3 hsl;
     float &h = hsl[0];
     float &s = hsl[1];
     float &l = hsl[2];
@@ -125,9 +125,9 @@ Vector3D LinearColor::toHsl() const
 }
 
 // http://en.wikipedia.org/wiki/HSL_color_space
-Vector3D LinearColor::toHsv() const
+Vector3 LinearColor::toHsv() const
 {
-    Vector3D hsv;
+    Vector3 hsv;
     float &h = hsv[0];
     float &s = hsv[1];
     float &v = hsv[2];
@@ -208,7 +208,7 @@ float hue2rgb(float p, float q, float t)
 }
 
 // http://en.wikipedia.org/wiki/HSL_color_space
-LinearColor LinearColor::fromHsl(const Vector3D& hsl)
+LinearColor LinearColor::fromHsl(const Vector3& hsl)
 {
     const float& h = hsl[0];
     const float& s = hsl[1];
@@ -233,7 +233,7 @@ LinearColor LinearColor::fromHsl(const Vector3D& hsl)
 
 #else
 // http://en.wikipedia.org/wiki/HSL_color_space
-LinearColor LinearColor::fromHsl(const Vector3D &hsl, float alpha /*= 1.0f*/)
+LinearColor LinearColor::fromHsl(const Vector3 &hsl, float alpha /*= 1.0f*/)
 {
     const float &h = hsl[0];
     const float &s = hsl[1];
@@ -273,7 +273,7 @@ LinearColor LinearColor::fromHsl(const Vector3D &hsl, float alpha /*= 1.0f*/)
 #endif
 
 // http://en.wikipedia.org/wiki/HSL_color_space
-LinearColor LinearColor::fromHsv(const Vector3D &hsv, float alpha /*= 1.0f*/)
+LinearColor LinearColor::fromHsv(const Vector3 &hsv, float alpha /*= 1.0f*/)
 {
     const float &h = hsv[0];
     const float &s = hsv[1];
@@ -317,8 +317,8 @@ LinearColor random(float alpha /*= 1.0f*/)
     float h = Math::random();
     h += goldenRatioConjugate;
     h = Math::frac(h);
-    // return LinearColor::fromHsl(Vector3D(h, 0.5f, 0.5f));
-    return LinearColor::fromHsv(Vector3D(h, 0.5f, 1.0f), alpha);
+    // return LinearColor::fromHsl(Vector3(h, 0.5f, 0.5f));
+    return LinearColor::fromHsv(Vector3(h, 0.5f, 1.0f), alpha);
 }
 
 } // namespace LinearColorConst

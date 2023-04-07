@@ -59,19 +59,19 @@ GLM_HEADER_INCLUDES_BEGIN
 #define DBL_MIN 2.2250738585072014e-308
 #endif
 
-typedef glm::vec<4, uint32, glm::defaultp> Size4D;
-typedef glm::vec<3, uint32, glm::defaultp> Size3D;
-typedef glm::vec<2, uint32, glm::defaultp> Size2D;
-typedef glm::vec<2, uint16, glm::defaultp> ShortSize2D;
+typedef glm::vec<4, uint32, glm::defaultp> UInt4;
+typedef glm::vec<3, uint32, glm::defaultp> UInt3;
+typedef glm::vec<2, uint32, glm::defaultp> UInt2;
+typedef glm::vec<2, uint16, glm::defaultp> UShort2;
 
-typedef glm::vec<4, int32, glm::defaultp> Int4D;
-typedef glm::vec<3, int32, glm::defaultp> Int3D;
-typedef glm::vec<2, int32, glm::defaultp> Int2D;
-typedef glm::vec<2, int16, glm::defaultp> Short2D;
+typedef glm::vec<4, int32, glm::defaultp> Int4;
+typedef glm::vec<3, int32, glm::defaultp> Int3;
+typedef glm::vec<2, int32, glm::defaultp> Int2;
+typedef glm::vec<2, int16, glm::defaultp> Short2;
 
-typedef glm::vec<3, uint8, glm::defaultp> Byte2D;
-typedef glm::vec<3, uint8, glm::defaultp> Byte3D;
-typedef glm::vec<4, uint8, glm::defaultp> Byte4D;
+typedef glm::vec<3, uint8, glm::defaultp> Byte2;
+typedef glm::vec<3, uint8, glm::defaultp> Byte3;
+typedef glm::vec<4, uint8, glm::defaultp> Byte4;
 
 typedef glm::vec<2, float, glm::defaultp> Matrix2Col;
 typedef glm::vec<3, float, glm::defaultp> Matrix3Col;

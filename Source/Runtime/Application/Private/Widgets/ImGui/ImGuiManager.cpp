@@ -269,8 +269,8 @@ void ImGuiManager::setShaderData()
     ImDrawData *drawData = ImGui::GetDrawData();
     if (drawData && drawData->Valid && imguiTransformParams.isValid())
     {
-        Vector2D scale = 2.0f / Vector2D(drawData->DisplaySize);
-        Vector2D translate = -1.0f - Vector2D(drawData->DisplayPos) * scale;
+        Vector2 scale = 2.0f / Vector2(drawData->DisplaySize);
+        Vector2 translate = -1.0f - Vector2(drawData->DisplayPos) * scale;
         imguiTransformParams->setVector2Param(TCHAR("scale"), scale);
         imguiTransformParams->setVector2Param(TCHAR("translate"), translate);
     }
@@ -292,7 +292,7 @@ void ImGuiManager::recreateFontAtlas(
     }
 
     ImageResourceCreateInfo imageCI{ .imageFormat = EPixelDataFormat::R_U8_Norm,
-                                     .dimensions = Size3D(textureSizeX, textureSizeY, 1),
+                                     .dimensions = UInt3(textureSizeX, textureSizeY, 1),
                                      .numOfMips = 1 };
     textureAtlas = graphicsHelper->createImage(graphicsInstance, imageCI);
     textureAtlas->setResourceName(UTF8_TO_TCHAR((name + "FontAtlas").c_str()));
@@ -614,15 +614,15 @@ void ImGuiManager::draw(
     //////////////////////////////////////////////////////////////////////////
 
     ImageResource *rtTexture = static_cast<ImageResource *>(drawingContext.rtTexture->renderTargetResource().get());
-    QuantizedBox2D viewport = drawingContext.viewport;
+    IRect viewport = drawingContext.viewport;
     if (!viewport.isValidAABB())
     {
-        viewport.minBound = Int2D(0, 0);
+        viewport.minBound = Int2(0, 0);
         // doing like this because even if ImGui size is different from framebuffer we can still draw
-        viewport.maxBound = Int2D(rtTexture->getImageSize().x, rtTexture->getImageSize().y);
+        viewport.maxBound = Int2(rtTexture->getImageSize().x, rtTexture->getImageSize().y);
     }
 
-    Vector2D uiToFbDispScale = Vector2D(float(viewport.maxBound.x), float(viewport.maxBound.y)) / Vector2D(drawData->DisplaySize);
+    Vector2 uiToFbDispScale = Vector2(float(viewport.maxBound.x), float(viewport.maxBound.y)) / Vector2(drawData->DisplaySize);
 
     // Render UI
     RenderPassAdditionalProps additionalProps;
@@ -667,12 +667,12 @@ void ImGuiManager::draw(
                 }
                 // All vertex, clip data is in display texel coordinates + Display pos(in case of
                 // multi monitor setup)
-                QuantizedBox2D scissor(
-                    /*.minBound = */ Int2D(
+                IRect scissor(
+                    /*.minBound = */ Int2(
                         int32((drawCmd.ClipRect.x - drawData->DisplayPos.x) * uiToFbDispScale.x()),
                         int32((drawCmd.ClipRect.y - drawData->DisplayPos.y) * uiToFbDispScale.y())
                     ),
-                    /*.maxBound = */ Int2D(
+                    /*.maxBound = */ Int2(
                         int32((drawCmd.ClipRect.z - drawData->DisplayPos.x) * uiToFbDispScale.x()),
                         int32((drawCmd.ClipRect.w - drawData->DisplayPos.y) * uiToFbDispScale.y())
                     )
@@ -726,7 +726,7 @@ void ImGuiManager::updateFrame(float deltaTime)
     setShaderData();
 }
 
-void ImGuiManager::setDisplaySize(Short2D newSize)
+void ImGuiManager::setDisplaySize(Short2 newSize)
 {
     setCurrentContext();
     GetIO().DisplaySize = ImVec2(newSize.x, newSize.y);
@@ -847,7 +847,7 @@ bool ImGuiManager::analogKey(AnalogStates::StateKeyType key, AnalogStates::State
     return io.WantCaptureMouse;
 }
 
-void ImGuiManager::updateMouse(Short2D /*absPos*/, Short2D widgetRelPos, const InputSystem * /*inputSystem*/)
+void ImGuiManager::updateMouse(Short2 /*absPos*/, Short2 widgetRelPos, const InputSystem * /*inputSystem*/)
 {
     setCurrentContext();
     ImGuiIO &io = GetIO();
@@ -855,17 +855,17 @@ void ImGuiManager::updateMouse(Short2D /*absPos*/, Short2D widgetRelPos, const I
     io.AddMousePosEvent(widgetRelPos.x, widgetRelPos.y);
 }
 
-void ImGuiManager::mouseEnter(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem)
+void ImGuiManager::mouseEnter(Short2 absPos, Short2 widgetRelPos, const InputSystem *inputSystem)
 {
     updateMouse(absPos, widgetRelPos, inputSystem);
 }
 
-void ImGuiManager::mouseMoved(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem)
+void ImGuiManager::mouseMoved(Short2 absPos, Short2 widgetRelPos, const InputSystem *inputSystem)
 {
     updateMouse(absPos, widgetRelPos, inputSystem);
 }
 
-void ImGuiManager::mouseLeave(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem)
+void ImGuiManager::mouseLeave(Short2 absPos, Short2 widgetRelPos, const InputSystem *inputSystem)
 {
     updateMouse(absPos, widgetRelPos, inputSystem);
 }

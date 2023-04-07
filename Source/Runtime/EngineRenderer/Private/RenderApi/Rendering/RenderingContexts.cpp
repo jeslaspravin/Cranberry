@@ -469,13 +469,13 @@ const Framebuffer *GlobalRenderingContextBase::createNewFramebuffer(
 
     if (frameAttachments.empty())
     {
-        graphicsHelperCache->initializeFb(graphicsInstanceCache, fb, Size2D());
+        graphicsHelperCache->initializeFb(graphicsInstanceCache, fb, UInt2());
     }
     else
     {
         fb->textures.insert(fb->textures.begin(), frameAttachments.cbegin(), frameAttachments.cend());
         graphicsHelperCache->initializeFb(
-            graphicsInstanceCache, fb, Size2D(frameAttachments[0]->getImageSize().x, frameAttachments[0]->getImageSize().y)
+            graphicsInstanceCache, fb, UInt2(frameAttachments[0]->getImageSize().x, frameAttachments[0]->getImageSize().y)
         );
     }
 

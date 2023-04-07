@@ -32,7 +32,7 @@ private:
     SharedPtr<WidgetBase> content;
     float scaling;
 
-    Short2D mousePos;
+    Short2 mousePos;
     SharedPtr<WidgetBase> hoveringWidget;
 
 public:
@@ -40,17 +40,17 @@ public:
 
     FORCE_INLINE GenericAppWindow *getAppWindow() const { return ownerWindow; }
     float getWidgetScaling() const;
-    Short2D getWidgetSize() const;
-    FORCE_INLINE Short2D applyDpiScale(Short2D pt) const
+    Short2 getWidgetSize() const;
+    FORCE_INLINE Short2 applyDpiScale(Short2 pt) const
     {
-        return Short2D(int16(Math::round(pt.x * getWidgetScaling())), int16(Math::round(pt.y * getWidgetScaling())));
+        return Short2(int16(Math::round(pt.x * getWidgetScaling())), int16(Math::round(pt.y * getWidgetScaling())));
     }
-    FORCE_INLINE Short2D removeDpiScale(Short2D pt) const
+    FORCE_INLINE Short2 removeDpiScale(Short2 pt) const
     {
-        return Short2D(int16(pt.x / getWidgetScaling()), int16(pt.y / getWidgetScaling()));
+        return Short2(int16(pt.x / getWidgetScaling()), int16(pt.y / getWidgetScaling()));
     }
-    Short2D screenToWgWindowSpace(Short2D screenPt) const;
-    Short2D wgWindowToScreenSpace(Short2D windowPt) const;
+    Short2 screenToWgWindowSpace(Short2 screenPt) const;
+    Short2 wgWindowToScreenSpace(Short2 windowPt) const;
 
     void setContent(SharedPtr<WidgetBase> widget);
     SharedPtr<WidgetBase> getContent() const { return content; }
@@ -68,14 +68,14 @@ protected:
     void rebuildGeometry(WidgetGeomId thisId, WidgetGeomTree &geomTree) override;
 
 public:
-    void drawWidget(QuantShortBox2D clipBound, WidgetGeomId thisId, const WidgetGeomTree &geomTree, WidgetDrawContext &context) override;
+    void drawWidget(ShortRect clipBound, WidgetGeomId thisId, const WidgetGeomTree &geomTree, WidgetDrawContext &context) override;
     bool hasWidget(SharedPtr<WidgetBase> widget) const override;
 
     void tick(float timeDelta) override;
     EInputHandleState inputKey(Keys::StateKeyType key, Keys::StateInfoType state, const InputSystem *inputSystem) override;
     EInputHandleState analogKey(AnalogStates::StateKeyType key, AnalogStates::StateInfoType state, const InputSystem *inputSystem) override;
-    void mouseEnter(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) override;
-    void mouseMoved(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) override;
-    void mouseLeave(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) override;
+    void mouseEnter(Short2 absPos, Short2 widgetRelPos, const InputSystem *inputSystem) override;
+    void mouseMoved(Short2 absPos, Short2 widgetRelPos, const InputSystem *inputSystem) override;
+    void mouseLeave(Short2 absPos, Short2 widgetRelPos, const InputSystem *inputSystem) override;
     /* override ends */
 };

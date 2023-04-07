@@ -15,7 +15,7 @@
 #include "ApplicationModule.h"
 #include "PlatformAppInstanceBase.h"
 #include "Logger/Logger.h"
-#include "Math/Vector2D.h"
+#include "Math/Vector2.h"
 #include "Types/CompilerDefines.h"
 
 #include <set>
@@ -152,9 +152,9 @@ void WindowsAppWindow::windowDestroyRequested() const
     }
 }
 
-QuantShortBox2D WindowsAppWindow::windowClientRect() const
+ShortRect WindowsAppWindow::windowClientRect() const
 {
-    QuantShortBox2D retVal(Short2D(0), Short2D(0));
+    ShortRect retVal(Short2(0), Short2(0));
     RECT clientArea;
     POINT clientOrigin{ 0, 0 };
     if (::GetClientRect((HWND)windowHandle, &clientArea) && ::ClientToScreen((HWND)windowHandle, &clientOrigin))
@@ -168,15 +168,15 @@ QuantShortBox2D WindowsAppWindow::windowClientRect() const
             "Window client area(lefttop=[%d %d] rightbottom=[%d %d]) exceeded capacity of int16 change to int32 rectangle", clientBox.left,
             clientBox.top, clientBox.right, clientBox.bottom
         );
-        retVal.minBound = Short2D(int16(clientBox.left), int16(clientBox.top));
-        retVal.maxBound = Short2D(int16(clientBox.right), int16(clientBox.bottom));
+        retVal.minBound = Short2(int16(clientBox.left), int16(clientBox.top));
+        retVal.maxBound = Short2(int16(clientBox.right), int16(clientBox.bottom));
     }
     return retVal;
 }
 
-QuantShortBox2D WindowsAppWindow::windowRect() const
+ShortRect WindowsAppWindow::windowRect() const
 {
-    QuantShortBox2D retVal(Short2D(0), Short2D(0));
+    ShortRect retVal(Short2(0), Short2(0));
     RECT windowRect;
     if (::GetWindowRect((HWND)windowHandle, &windowRect))
     {
@@ -186,8 +186,8 @@ QuantShortBox2D WindowsAppWindow::windowRect() const
             windowRect.top, windowRect.right, windowRect.bottom
         );
 
-        retVal.minBound = Short2D(int16(windowRect.left), int16(windowRect.top));
-        retVal.maxBound = Short2D(int16(windowRect.right), int16(windowRect.bottom));
+        retVal.minBound = Short2(int16(windowRect.left), int16(windowRect.top));
+        retVal.maxBound = Short2(int16(windowRect.right), int16(windowRect.bottom));
     }
     return retVal;
 }
@@ -298,7 +298,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     return DefWindowProcA(hwnd, uMsg, wParam, lParam);
 }
 
-WindowHandle WindowsAppWindow::getWindowUnderPoint(Short2D point)
+WindowHandle WindowsAppWindow::getWindowUnderPoint(Short2 point)
 {
     ::POINT pt;
     pt.x = point.x;

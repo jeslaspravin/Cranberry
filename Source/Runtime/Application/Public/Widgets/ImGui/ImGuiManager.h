@@ -46,7 +46,7 @@ struct ImGuiDrawingContext
 {
     const GraphicsResource *cmdBuffer;
     const IRenderTargetTexture *rtTexture;
-    QuantizedBox2D viewport;
+    IRect viewport;
     bool bClearRt = false;
 };
 
@@ -113,12 +113,12 @@ public:
         const ImGuiDrawingContext &drawingContext
     );
     void updateFrame(float deltaTime);
-    void setDisplaySize(Short2D newSize);
+    void setDisplaySize(Short2 newSize);
     bool inputKey(Keys::StateKeyType key, Keys::StateInfoType state, const InputSystem *inputSystem);
     bool analogKey(AnalogStates::StateKeyType key, AnalogStates::StateInfoType state, const InputSystem *inputSystem);
-    void mouseEnter(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem);
-    void mouseMoved(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem);
-    void mouseLeave(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem);
+    void mouseEnter(Short2 absPos, Short2 widgetRelPos, const InputSystem *inputSystem);
+    void mouseMoved(Short2 absPos, Short2 widgetRelPos, const InputSystem *inputSystem);
+    void mouseLeave(Short2 absPos, Short2 widgetRelPos, const InputSystem *inputSystem);
 
     void addFont(const String &fontAssetPath, float fontSize);
     void addLayer(SharedPtr<IImGuiLayer> layer);
@@ -134,7 +134,7 @@ private:
 
     // Main thread functions
     void setupInputs();
-    void updateMouse(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem);
+    void updateMouse(Short2 absPos, Short2 widgetRelPos, const InputSystem *inputSystem);
     void updateTextureParameters();
     void setCurrentContext();
 

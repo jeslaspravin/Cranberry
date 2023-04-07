@@ -24,7 +24,7 @@
  * Here we are printing type info of each types in typelist without writing additional codes and using
  * both runtime and static polymorphisms
  *
- * using TestTL = TL::CreateFrom<ExperimentalEnginePBR, Vector2D, Vector3D, Vector4D, Matrix2, Matrix3,
+ * using TestTL = TL::CreateFrom<ExperimentalEnginePBR, Vector2, Vector3, Vector4, Matrix2, Matrix3,
  * Matrix4>::type;
  *
  * template <typename PrintType>
@@ -88,16 +88,16 @@
  *
  * Output(Not exact but similar) :
  * [ScatterGenTest] Type info[Name:class ExperimentalEnginePBR, Hash : xxyy, Qualifiers :( )]
- * [ScatterGenTest] Type info[Name:class Vector2D, Hash : xxyy, Qualifiers :( )]
- * [ScatterGenTest] Type info[Name:class Vector3D, Hash : xxyy, Qualifiers :( )]
- * [ScatterGenTest] Type info[Name:class Vector4D, Hash : xxyy, Qualifiers :( )]
+ * [ScatterGenTest] Type info[Name:class Vector2, Hash : xxyy, Qualifiers :( )]
+ * [ScatterGenTest] Type info[Name:class Vector3, Hash : xxyy, Qualifiers :( )]
+ * [ScatterGenTest] Type info[Name:class Vector4, Hash : xxyy, Qualifiers :( )]
  * [ScatterGenTest] Type info[Name:class Matrix2, Hash : xxyy, Qualifiers :( )]
  * [ScatterGenTest] Type info[Name:class Matrix3, Hash : xxyy, Qualifiers :( )]
  * [ScatterGenTest] Type info[Name:class Matrix4, Hash : xxyy, Qualifiers :( )]
  * [LinearGenTest] Type info[Name:class ExperimentalEnginePBR,  Hash : xxyy, Qualifiers :( )]
- * [LinearGenTest] Type info[Name:class Vector2D, Hash : xxyy, Qualifiers :( )]
- * [LinearGenTest] Type info[Name:class Vector3D, Hash : xxyy, Qualifiers :( )]
- * [LinearGenTest] Type info[Name:class Vector4D, Hash : xxyy, Qualifiers :( )]
+ * [LinearGenTest] Type info[Name:class Vector2, Hash : xxyy, Qualifiers :( )]
+ * [LinearGenTest] Type info[Name:class Vector3, Hash : xxyy, Qualifiers :( )]
+ * [LinearGenTest] Type info[Name:class Vector4, Hash : xxyy, Qualifiers :( )]
  * [LinearGenTest] Type info[Name:class Matrix2, Hash : xxyy, Qualifiers :( )]
  * [LinearGenTest] Type info[Name:class Matrix3, Hash : xxyy, Qualifiers :( )]
  * [LinearGenTest] Type info[Name:class Matrix4, Hash : xxyy, Qualifiers :( )]

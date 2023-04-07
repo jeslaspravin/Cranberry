@@ -29,7 +29,7 @@
 #include "InputSystem/Keys.h"
 #include "Math/Math.h"
 #include "Math/RotationMatrix.h"
-#include "Math/Vector3D.h"
+#include "Math/Vector3.h"
 #include "RenderApi/GBuffersAndTextures.h"
 #include "RenderApi/Material/MaterialCommonUniforms.h"
 #include "RenderApi/RenderManager.h"
@@ -72,9 +72,9 @@
 
 struct AOS
 {
-    Vector4D a;
-    Vector2D b;
-    Vector2D c[4];
+    Vector4 a;
+    Vector2 b;
+    Vector2 c[4];
 };
 
 struct TestBitonicSortIndices
@@ -245,7 +245,7 @@ class ExperimentalEngineGoochModel
 
     // Camera parameters
     Camera camera;
-    Vector3D cameraTranslation;
+    Vector3 cameraTranslation;
     Rotation cameraRotation;
     void updateCameraParams();
 
@@ -259,7 +259,7 @@ class ExperimentalEngineGoochModel
     void setupShaderParameterParams(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
     void destroyShaderParameters();
 
-    void resizeLightingRts(const Size2D &size);
+    void resizeLightingRts(const UInt2 &size);
     void reupdateTextureParamsOnResize();
 
     // Shader pipeline resources
@@ -300,13 +300,13 @@ class ExperimentalEngineGoochModel
     uint32 texturesCount;
     uint32 testBindlessTextureIdx;
 
-    std::vector<ShortSizeBox2D> boxes;
+    std::vector<UShortRect> boxes;
 
     String textToRender;
     LinearColor textCol = LinearColorConst::BLUE;
     int32 wrapSize = 60;
     int32 textHeight = 32;
-    QuantizedBox2D textBB;
+    IRect textBB;
     LocalPipelineContext imguiShaderCntxt;
     ShaderParametersRef textRenderParams;
     uint32 textVertCount, textIdxCount;
@@ -318,7 +318,7 @@ class ExperimentalEngineGoochModel
     void updateTextRenderData(class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
 
     int32 frameVisualizeId = 0; // 0 color 1 normal 2 depth
-    Size2D renderSize{ 1280, 720 };
+    UInt2 renderSize{ 1280, 720 };
     ECameraProjection projection = ECameraProjection::Perspective;
 
 protected:
@@ -362,7 +362,7 @@ void ExperimentalEngineGoochModel::createImages(IGraphicsInstance *graphicsInsta
     linearFiltering->init();
 
     Texture2DRWCreateParams createParam;
-    createParam.textureSize = Size2D(512);
+    createParam.textureSize = UInt2(512);
     createParam.mipCount = 1;
     createParam.textureName = TCHAR("Compute Write");
     createParam.format = EPixelDataFormat::RGBA_U8_Norm;
@@ -503,29 +503,29 @@ void ExperimentalEngineGoochModel::createScene()
     {
         for (int32 j = 0; j < 3; j++)
         {
-            Vector3D offset = Vector3D(i * 1200.0f, j * 1200.0f, 0);
+            Vector3 offset = Vector3(i * 1200.0f, j * 1200.0f, 0);
             SceneEntity sceneFloor;
             sceneFloor.meshAsset = cube;
-            sceneFloor.transform.setScale(Vector3D(10, 10, 1));
-            sceneFloor.transform.setTranslation(offset + Vector3D(0, 0, -50));
+            sceneFloor.transform.setScale(Vector3(10, 10, 1));
+            sceneFloor.transform.setTranslation(offset + Vector3(0, 0, -50));
             sceneFloor.meshBatchColors.emplace_back(LinearColorConst::random());
 
             sceneData.emplace_back(sceneFloor);
 
             // Ceiling
-            sceneFloor.transform.setTranslation(offset + Vector3D(0, 0, 550));
+            sceneFloor.transform.setTranslation(offset + Vector3(0, 0, 550));
             sceneData.emplace_back(sceneFloor);
 
             // Pillars
             sceneFloor.meshAsset = cylinder;
-            sceneFloor.transform.setScale(Vector3D(1, 1, 5));
-            sceneFloor.transform.setTranslation(offset + Vector3D(450, 450, 250));
+            sceneFloor.transform.setScale(Vector3(1, 1, 5));
+            sceneFloor.transform.setTranslation(offset + Vector3(450, 450, 250));
             sceneData.emplace_back(sceneFloor);
-            sceneFloor.transform.setTranslation(offset + Vector3D(-450, 450, 250));
+            sceneFloor.transform.setTranslation(offset + Vector3(-450, 450, 250));
             sceneData.emplace_back(sceneFloor);
-            sceneFloor.transform.setTranslation(offset + Vector3D(450, -450, 250));
+            sceneFloor.transform.setTranslation(offset + Vector3(450, -450, 250));
             sceneData.emplace_back(sceneFloor);
-            sceneFloor.transform.setTranslation(offset + Vector3D(-450, -450, 250));
+            sceneFloor.transform.setTranslation(offset + Vector3(-450, -450, 250));
             sceneData.emplace_back(sceneFloor);
 
             for (uint32 idx = 0; idx < 5; ++idx)
@@ -533,7 +533,7 @@ void ExperimentalEngineGoochModel::createScene()
                 SceneEntity entity;
                 entity.meshAsset = assets[std::rand() % assets.size()];
                 entity.transform.setTranslation(
-                    offset + Vector3D(distribution(generator) * 400, distribution(generator) * 400, distribution1(generator) * 100 + 50)
+                    offset + Vector3(distribution(generator) * 400, distribution(generator) * 400, distribution1(generator) * 100 + 50)
                 );
                 entity.transform.setRotation(Rotation(0, 0, distribution(generator) * 45));
 
@@ -542,20 +542,20 @@ void ExperimentalEngineGoochModel::createScene()
             }
 
             GoochModelLightData light;
-            light.warmOffsetAndPosX = Vector4D(0.3f, 0.3f, 0.0f, offset.x() + 0);
-            light.coolOffsetAndPosY = Vector4D(0.0f, 0.0f, 0.55f, offset.y() + 0);
+            light.warmOffsetAndPosX = Vector4(0.3f, 0.3f, 0.0f, offset.x() + 0);
+            light.coolOffsetAndPosY = Vector4(0.0f, 0.0f, 0.55f, offset.y() + 0);
 
             // Near floor
             float height = 150;
 
             // Middle light
-            light.highlightColorAndPosZ = Vector4D(1.f, 1.f, 1.f, offset.z() + height);
-            light.lightColorAndRadius = Vector4D(1.f, 1.f, 1.f, 0);
+            light.highlightColorAndPosZ = Vector4(1.f, 1.f, 1.f, offset.z() + height);
+            light.lightColorAndRadius = Vector4(1.f, 1.f, 1.f, 0);
             sceneLightData.emplace_back(light);
 
             // Light 1
-            light.highlightColorAndPosZ = Vector4D(0.49f, 0.66f, 0.75f, offset.z() + height);
-            light.lightColorAndRadius = Vector4D(0.45f, 0.58f, 0.80f, 0);
+            light.highlightColorAndPosZ = Vector4(0.49f, 0.66f, 0.75f, offset.z() + height);
+            light.lightColorAndRadius = Vector4(0.45f, 0.58f, 0.80f, 0);
 
             light.warmOffsetAndPosX.w() = offset.x() + 400;
             light.coolOffsetAndPosY.w() = offset.y() + 400;
@@ -784,7 +784,7 @@ void ExperimentalEngineGoochModel::setupShaderParameterParams(IGraphicsInstance 
     drawQuadDepthDescs.init();
     drawLitColorsDescs.init();
 
-    clearInfoParams->setVector4Param(TCHAR("clearColor"), Vector4D(0, 0, 0, 0));
+    clearInfoParams->setVector4Param(TCHAR("clearColor"), Vector4(0, 0, 0, 0));
     clearInfoParams->init();
 
     testComputeParams->setTextureParam(TCHAR("resultImage"), writeTexture->getTextureResource());
@@ -797,12 +797,12 @@ void ExperimentalEngineGoochModel::setupShaderParameterParams(IGraphicsInstance 
         testComputeParams->setTextureParam(TCHAR("srcImages"), textures[i]->getTexture()->getTextureResource(), linearFiltering, i);
     }
     AOS testRuntime;
-    testRuntime.a = Vector4D(1, 0, 1, 0);
-    testRuntime.b = Vector2D::FWD;
-    testRuntime.c[0] = Vector2D::RIGHT;
-    testRuntime.c[1] = Vector2D::FWD;
-    testRuntime.c[2] = Vector2D::RIGHT;
-    testRuntime.c[3] = Vector2D::FWD;
+    testRuntime.a = Vector4(1, 0, 1, 0);
+    testRuntime.b = Vector2::FWD;
+    testRuntime.c[0] = Vector2::RIGHT;
+    testRuntime.c[1] = Vector2::FWD;
+    testRuntime.c[2] = Vector2::RIGHT;
+    testRuntime.c[3] = Vector2::FWD;
     testComputeParams->setVector4Param(TCHAR("test1"), testRuntime.a);
     testComputeParams->setBuffer(TCHAR("data"), testRuntime, 0);
     testComputeParams->setBuffer(TCHAR("data"), testRuntime, 1);
@@ -882,7 +882,7 @@ void ExperimentalEngineGoochModel::destroyShaderParameters()
     destroyTextRenderResources();
 }
 
-void ExperimentalEngineGoochModel::resizeLightingRts(const Size2D &size)
+void ExperimentalEngineGoochModel::resizeLightingRts(const UInt2 &size)
 {
     WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(application->windowManager->getMainWindow());
 
@@ -1110,11 +1110,11 @@ void ExperimentalEngineGoochModel::updateTextRenderData(
     copies[1] = BatchCopyBufferData{ textVertsBuffer, 0, verts.data(), uint32(verts.size() * sizeof(ImDrawVert)) };
     cmdList->copyToBuffer(copies);
 
-    Int2D textSize = textBB.size();
-    Vector2D scale = 2.0f / Vector2D(float(textSize.x), float(textSize.y));
-    Vector2D translate{ -1.0f - Vector2D(textBB.minBound) * scale };
+    Int2 textSize = textBB.size();
+    Vector2 scale = 2.0f / Vector2(float(textSize.x), float(textSize.y));
+    Vector2 translate{ -1.0f - Vector2(textBB.minBound) * scale };
     // Now offset transforms so that text will be centered in middle of screen
-    textBB += (Int2D(ApplicationSettings::screenSize.get()) - textSize) / 2;
+    textBB += (Int2(ApplicationSettings::screenSize.get()) - textSize) / 2;
 
     textRenderParams->setVector2Param(TCHAR("scale"), scale);
     textRenderParams->setVector2Param(TCHAR("translate"), translate);
@@ -1150,15 +1150,15 @@ void ExperimentalEngineGoochModel::updateCameraParams()
     }
     if (application->inputSystem->isKeyPressed(Keys::Q))
     {
-        cameraTranslation -= Vector3D::UP * timeData.deltaTime * timeData.activeTimeDilation * 100.f;
+        cameraTranslation -= Vector3::UP * timeData.deltaTime * timeData.activeTimeDilation * 100.f;
     }
     if (application->inputSystem->isKeyPressed(Keys::E))
     {
-        cameraTranslation += Vector3D::UP * timeData.deltaTime * timeData.activeTimeDilation * 100.f;
+        cameraTranslation += Vector3::UP * timeData.deltaTime * timeData.activeTimeDilation * 100.f;
     }
     if (application->inputSystem->keyState(Keys::R)->keyWentUp)
     {
-        cameraRotation = RotationMatrix::fromZX(Vector3D::UP, cameraRotation.fwdVector()).asRotation();
+        cameraRotation = RotationMatrix::fromZX(Vector3::UP, cameraRotation.fwdVector()).asRotation();
     }
 
     if (camera.cameraProjection != projection)
@@ -1209,32 +1209,32 @@ void ExperimentalEngineGoochModel::onStartUp()
     camera.setClippingPlane(0.1f, 6000.f);
     camera.setFOV(110.f, 90.f);
 
-    cameraTranslation = Vector3D(0.f, -1.f, 0.0f).safeNormalized() * (500);
+    cameraTranslation = Vector3(0.f, -1.f, 0.0f).safeNormalized() * (500);
     cameraTranslation.z() += 200;
 
     camera.setTranslation(cameraTranslation);
-    camera.lookAt(Vector3D::ZERO);
+    camera.lookAt(Vector3::ZERO);
     cameraRotation = camera.rotation();
 
     getImGuiManager().addLayer(std::static_pointer_cast<IImGuiLayer>(shared_from_this()));
     createScene();
 
-    std::vector<ShortSizeBox2D> bxs{
-        ShortSizeBox2D{ShortSize2D{ 0 },  ShortSize2D{ 64, 80 }},
-        ShortSizeBox2D{ShortSize2D{ 0 }, ShortSize2D{ 128, 48 }},
-        ShortSizeBox2D{ShortSize2D{ 0 },  ShortSize2D{ 48, 56 }},
-        ShortSizeBox2D{ShortSize2D{ 0 }, ShortSize2D{ 64, 128 }},
-        ShortSizeBox2D{ShortSize2D{ 0 },      ShortSize2D{ 32 }},
-        ShortSizeBox2D{ShortSize2D{ 0 },  ShortSize2D{ 61, 35 }},
-        ShortSizeBox2D{ShortSize2D{ 0 },  ShortSize2D{ 45, 51 }},
-        ShortSizeBox2D{ShortSize2D{ 0 },  ShortSize2D{ 33, 37 }},
-        ShortSizeBox2D{ShortSize2D{ 0 },  ShortSize2D{ 70, 21 }}
+    std::vector<UShortRect> bxs{
+        UShortRect{UShort2{ 0 },  UShort2{ 64, 80 }},
+        UShortRect{UShort2{ 0 }, UShort2{ 128, 48 }},
+        UShortRect{UShort2{ 0 },  UShort2{ 48, 56 }},
+        UShortRect{UShort2{ 0 }, UShort2{ 64, 128 }},
+        UShortRect{UShort2{ 0 },      UShort2{ 32 }},
+        UShortRect{UShort2{ 0 },  UShort2{ 61, 35 }},
+        UShortRect{UShort2{ 0 },  UShort2{ 45, 51 }},
+        UShortRect{UShort2{ 0 },  UShort2{ 33, 37 }},
+        UShortRect{UShort2{ 0 },  UShort2{ 70, 21 }}
     };
     boxes.swap(bxs);
-    std::vector<ShortSizeBox2D *> boxPtrs{ boxes.data(),     boxes.data() + 1, boxes.data() + 2, boxes.data() + 3, boxes.data() + 4,
+    std::vector<UShortRect *> boxPtrs{ boxes.data(),     boxes.data() + 1, boxes.data() + 2, boxes.data() + 3, boxes.data() + 4,
                                            boxes.data() + 5, boxes.data() + 6, boxes.data() + 7, boxes.data() + 8 };
-    std::vector<PackedRectsBin<ShortSizeBox2D>> packedbins;
-    ShortSize2D binSize{ 256 };
+    std::vector<PackedRectsBin<UShortRect>> packedbins;
+    UShort2 binSize{ 256 };
     bool bPacked = MathGeom::packRectangles(packedbins, binSize, boxPtrs);
     if (!bPacked)
     {
@@ -1310,14 +1310,14 @@ void ExperimentalEngineGoochModel::frameRender(
     queryParam.cullingMode = ECullingMode::BackFace;
     queryParam.drawMode = EPolygonDrawMode::Fill;
 
-    QuantizedBox2D viewport;
+    IRect viewport;
     // Since view matrix positive y is along up while vulkan positive y in view is down
     viewport.minBound.x = 0;
     viewport.minBound.y = ApplicationSettings::screenSize.get().y;
     viewport.maxBound.x = ApplicationSettings::screenSize.get().x;
     viewport.maxBound.y = 0;
 
-    QuantizedBox2D scissor;
+    IRect scissor;
     scissor.minBound = { 0, 0 };
     scissor.maxBound = ApplicationSettings::screenSize.get();
 
@@ -1406,7 +1406,7 @@ void ExperimentalEngineGoochModel::frameRender(
         cmdList->cmdEndRenderPass(cmdBuffer);
 
         // Drawing lighting quads
-        viewport.minBound = Int2D(0, 0);
+        viewport.minBound = Int2(0, 0);
         viewport.maxBound = ApplicationSettings::screenSize.get();
 
         cmdList->cmdBindVertexBuffer(cmdBuffer, 0, GlobalBuffers::getQuadTriVertexBuffer(), 0);
@@ -1512,9 +1512,9 @@ void ExperimentalEngineGoochModel::frameRender(
             additionalProps.depthLoadOp = EAttachmentOp::LoadOp::Load;
             additionalProps.stencilLoadOp = EAttachmentOp::LoadOp::Load;
 
-            QuantizedBox2D textScissor = QuantizedBox2D(
-                Math::clamp(textBB.minBound, Int2D(0), frameResources[index].lightingPassRt->getTextureSize()),
-                Math::clamp(textBB.maxBound, Int2D(0), frameResources[index].lightingPassRt->getTextureSize())
+            IRect textScissor = IRect(
+                Math::clamp(textBB.minBound, Int2(0), frameResources[index].lightingPassRt->getTextureSize()),
+                Math::clamp(textBB.maxBound, Int2(0), frameResources[index].lightingPassRt->getTextureSize())
             );
             cmdList->cmdSetViewportAndScissor(cmdBuffer, textBB, textScissor);
             cmdList->cmdBeginRenderPass(cmdBuffer, imguiShaderCntxt, textScissor, additionalProps, clearValues);
@@ -1690,16 +1690,16 @@ void ExperimentalEngineGoochModel::draw(class ImGuiDrawInterface *drawInterface)
                     switch (currRes)
                     {
                     case 0:
-                        renderSize = Size2D(1280, 720);
+                        renderSize = UInt2(1280, 720);
                         break;
                     case 1:
-                        renderSize = Size2D(1920, 1080);
+                        renderSize = UInt2(1920, 1080);
                         break;
                     case 2:
-                        renderSize = Size2D(2560, 1440);
+                        renderSize = UInt2(2560, 1440);
                         break;
                     case 3:
-                        renderSize = Size2D(3840, 2160);
+                        renderSize = UInt2(3840, 2160);
                         break;
                     }
                 }
@@ -1815,7 +1815,7 @@ void ExperimentalEngineGoochModel::draw(class ImGuiDrawInterface *drawInterface)
                     }
                 }
                 drawInterface->drawPackedRectangles(
-                    boxes.data(), col.data(), (uint32)(boxes.size()), ShortSizeBox2D::PointType(256), ColorConst::RED
+                    boxes.data(), col.data(), (uint32)(boxes.size()), UShortRect::PointType(256), ColorConst::RED
                 );
             }
 

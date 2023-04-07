@@ -11,8 +11,8 @@
 
 #pragma once
 #include "EngineRendererExports.h"
-#include "Math/Vector4D.h"
-#include "Math/Vector2D.h"
+#include "Math/Vector4.h"
+#include "Math/Vector2.h"
 #include "RenderInterface/ShaderCore/ShaderParameters.h"
 #include "RenderInterface/Resources/ShaderResources.h"
 
@@ -20,16 +20,16 @@ struct SpecializationConstantEntry;
 
 struct StaticMeshVertex
 {
-    Vector4D position; // xyz position, w texture coord's U
-    Vector4D normal;   // xyz normal, w texture coord's V
-    Vector4D tangent;
+    Vector4 position; // xyz position, w texture coord's U
+    Vector4 normal;   // xyz normal, w texture coord's V
+    Vector4 tangent;
 };
 
 // IMGui compatible vertex, Needs one draw call per texture per layer
 struct VertexUI
 {
-    Vector2D position;
-    Vector2D uv;
+    Vector2 position;
+    Vector2 uv;
     uint32 color;
 };
 

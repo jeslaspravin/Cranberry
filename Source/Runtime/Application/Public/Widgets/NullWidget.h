@@ -16,11 +16,11 @@
 class WgNullWidget final : public WidgetBase
 {
 protected:
-    void rebuildGeometry(WidgetGeomId thisId, WidgetGeomTree &geomTree) override { geomTree[thisId].box = QuantShortBox2D{ Short2D{ 0 } }; }
+    void rebuildGeometry(WidgetGeomId thisId, WidgetGeomTree &geomTree) override { geomTree[thisId].box = ShortRect{ Short2{ 0 } }; }
 
 public:
     void
-    drawWidget(QuantShortBox2D /*clipBound*/, WidgetGeomId /*thisId*/, const WidgetGeomTree & /*geomTree*/, WidgetDrawContext & /*context*/)
+    drawWidget(ShortRect /*clipBound*/, WidgetGeomId /*thisId*/, const WidgetGeomTree & /*geomTree*/, WidgetDrawContext & /*context*/)
         override
     {}
     bool hasWidget(SharedPtr<WidgetBase> /*widget*/) const override { return false; }
@@ -33,9 +33,9 @@ public:
     {
         return EInputHandleState::NotHandled;
     }
-    void mouseEnter(Short2D /*absPos*/, Short2D /*widgetRelPos*/, const InputSystem * /*inputSystem*/) override {}
-    void mouseMoved(Short2D /*absPos*/, Short2D /*widgetRelPos*/, const InputSystem * /*inputSystem*/) override {}
-    void mouseLeave(Short2D /*absPos*/, Short2D /*widgetRelPos*/, const InputSystem * /*inputSystem*/) override {}
+    void mouseEnter(Short2 /*absPos*/, Short2 /*widgetRelPos*/, const InputSystem * /*inputSystem*/) override {}
+    void mouseMoved(Short2 /*absPos*/, Short2 /*widgetRelPos*/, const InputSystem * /*inputSystem*/) override {}
+    void mouseLeave(Short2 /*absPos*/, Short2 /*widgetRelPos*/, const InputSystem * /*inputSystem*/) override {}
 
     APPLICATION_EXPORT static SharedPtr<WgNullWidget> nullWidget;
 };

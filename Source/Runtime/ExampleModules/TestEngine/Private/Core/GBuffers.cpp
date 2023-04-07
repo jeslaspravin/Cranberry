@@ -39,7 +39,7 @@ GBufferRenderTexture *GBufferRenderTexture::createTexture(const GBufferRTCreateP
     GBufferRenderTexture *texture = new GBufferRenderTexture();
 
     texture->mipCount = 1;
-    texture->textureSize = Size3D(createParams.textureSize.x, createParams.textureSize.y, 1);
+    texture->textureSize = UInt3(createParams.textureSize.x, createParams.textureSize.y, 1);
     texture->textureName = createParams.textureName;
     texture->bIsSrgb = createParams.bIsSrgb;
     texture->bSameReadWriteTexture = createParams.bSameReadWriteTexture;
@@ -85,7 +85,7 @@ void GBuffers::onSampleCountChanged(uint32 /*oldValue*/, uint32 newValue)
             cmdList->flushAllcommands();
             RenderManager *renderManager = IRenderInterfaceModule::get()->getRenderManager();
 
-            const Size2D &screenSize = ApplicationSettings::screenSize.get();
+            const UInt2 &screenSize = ApplicationSettings::screenSize.get();
             const EPixelSampleCount::Type sampleCount = EPixelSampleCount::Type(newValue);
             const bool bCanHaveResolves = sampleCount != EPixelSampleCount::SampleCount1;
 
@@ -126,7 +126,7 @@ void GBuffers::onSampleCountChanged(uint32 /*oldValue*/, uint32 newValue)
     );
 }
 
-void GBuffers::onScreenResized(Size2D newSize)
+void GBuffers::onScreenResized(UInt2 newSize)
 {
     ENQUEUE_COMMAND(GBufferResize)
     (
@@ -156,7 +156,7 @@ void GBuffers::onScreenResized(Size2D newSize)
 
 void GBuffers::initialize(uint32 swapchainCount)
 {
-    const Size2D &initialSize = ApplicationSettings::screenSize.get();
+    const UInt2 &initialSize = ApplicationSettings::screenSize.get();
     GlobalRenderVariables::GBUFFER_SAMPLE_COUNT.onConfigChanged().bindStatic(&GBuffers::onSampleCountChanged);
 
     EPixelSampleCount::Type sampleCount = EPixelSampleCount::Type(GlobalRenderVariables::GBUFFER_SAMPLE_COUNT.get());

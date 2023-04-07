@@ -88,14 +88,14 @@ public:
 
     template <typename StrType>
     requires std::convertible_to<StrType, const TChar *>
-    FORCE_INLINE CONST_EXPR static const TChar *getChar(StrType &&value)
+    FORCE_INLINE CONST_EXPR static const TChar *getChar(StrType value)
     {
         return static_cast<const TChar *>(value);
     }
 
     template <typename StrType>
     requires NonStringType<StrType>
-    FORCE_INLINE CONST_EXPR static StrType getChar(StrType &&value)
+    FORCE_INLINE CONST_EXPR static StrType getChar(StrType value)
     {
         return std::forward<StrType>(value);
     }
@@ -171,10 +171,10 @@ private:
     template <typename... Args>
     DEBUG_INLINE static String fmtString(const TChar *fmt, Args &&...args)
     {
-        int32 size = STRING_PRINTF(nullptr, 0, fmt, getChar<Args>(std::forward<Args>(args))...);
+        int32 size = STRING_PRINTF(nullptr, 0, fmt, getChar<Args>(args)...);
         String fmted;
         // +1 size printf needs one more in buffer for null char
-        fmted.resize(size + 1);
+        fmted.resize(size + 1u);
         STRING_PRINTF(fmted.data(), size + 1, fmt, getChar<Args>(std::forward<Args>(args))...);
         // Resizing it back to original length
         fmted.resize(size);
@@ -185,7 +185,7 @@ private:
         int32 size = STRING_VPRINTF(nullptr, 0, fmt, args);
         String fmted;
         // +1 size printf needs one more in buffer for null char
-        fmted.resize(size + 1);
+        fmted.resize(size + 1u);
         STRING_PRINTF(fmted.data(), size + 1, fmt, args);
         // Resizing it back to original length
         fmted.resize(size);

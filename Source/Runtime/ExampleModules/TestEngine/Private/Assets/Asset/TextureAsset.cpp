@@ -40,7 +40,7 @@ void TextureAsset::clearAsset()
 
 void TextureAsset::setTempPixelData(const std::vector<Color> &pixelData) { tempPixelData = pixelData; }
 
-void TextureAsset::setTextureSize(const Size2D &dimension) { textureDimension = dimension; }
+void TextureAsset::setTextureSize(const UInt2 &dimension) { textureDimension = dimension; }
 
 void TextureAsset::setNormalMap(bool bIsNormal) { bIsNormalMap = bIsNormal; }
 

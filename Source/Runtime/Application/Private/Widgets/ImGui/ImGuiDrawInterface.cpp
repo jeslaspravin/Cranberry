@@ -14,20 +14,20 @@
 #include "Math/MathGeom.h"
 
 void ImGuiDrawInterface::drawQuadFilled(
-    const Vector2D &min, const Vector2D &max, const Vector2D &offset, float rotInDeg, Color color /*= ColorConst::WHITE*/,
+    const Vector2 &min, const Vector2 &max, const Vector2 &offset, float rotInDeg, Color color /*= ColorConst::WHITE*/,
     TextureBase *texture /*= nullptr*/
 )
 {
     ImDrawList *drawList = ImGui::GetWindowDrawList();
     // ImGui::GetCursorPos() - Gives pos relative to window pos without any scrolling as it adds scroll
     // and negates relative screen pos
-    Vector2D contentStart = Vector2D(ImGui::GetCursorScreenPos()) + Vector2D(ImGui::GetWindowPos()) + offset;
+    Vector2 contentStart = Vector2(ImGui::GetCursorScreenPos()) + Vector2(ImGui::GetWindowPos()) + offset;
 
-    Vector2D size = max - min;
-    Vector2D a = MathGeom::transform2d(min, contentStart, rotInDeg);
-    Vector2D b = MathGeom::transform2d(min + Vector2D(size.x(), 0), contentStart, rotInDeg);
-    Vector2D c = MathGeom::transform2d(min + Vector2D(size.x(), size.y()), contentStart, rotInDeg);
-    Vector2D d = MathGeom::transform2d(min + Vector2D(0, size.y()), contentStart, rotInDeg);
+    Vector2 size = max - min;
+    Vector2 a = MathGeom::transform2d(min, contentStart, rotInDeg);
+    Vector2 b = MathGeom::transform2d(min + Vector2(size.x(), 0), contentStart, rotInDeg);
+    Vector2 c = MathGeom::transform2d(min + Vector2(size.x(), size.y()), contentStart, rotInDeg);
+    Vector2 d = MathGeom::transform2d(min + Vector2(0, size.y()), contentStart, rotInDeg);
 
     // Rect bb(a);
     // bb.grow(b);
@@ -49,18 +49,18 @@ void ImGuiDrawInterface::drawQuadFilled(
 }
 
 void ImGuiDrawInterface::
-    drawQuad(const Vector2D &min, const Vector2D &max, const Vector2D &offset, float rotInDeg, Color color /*= ColorConst::WHITE*/)
+    drawQuad(const Vector2 &min, const Vector2 &max, const Vector2 &offset, float rotInDeg, Color color /*= ColorConst::WHITE*/)
 {
     ImDrawList *drawList = ImGui::GetWindowDrawList();
     // ImGui::GetCursorPos() - Gives pos relative to window pos without any scrolling as it adds scroll
     // and negates relative screen pos
-    Vector2D contentStart = Vector2D(ImGui::GetCursorScreenPos()) + Vector2D(ImGui::GetWindowPos()) + offset;
+    Vector2 contentStart = Vector2(ImGui::GetCursorScreenPos()) + Vector2(ImGui::GetWindowPos()) + offset;
 
-    Vector2D size = max - min;
-    Vector2D a = MathGeom::transform2d(min, contentStart, rotInDeg);
-    Vector2D b = MathGeom::transform2d(min + Vector2D(size.x(), 0), contentStart, rotInDeg);
-    Vector2D c = MathGeom::transform2d(min + Vector2D(size.x(), size.y()), contentStart, rotInDeg);
-    Vector2D d = MathGeom::transform2d(min + Vector2D(0, size.y()), contentStart, rotInDeg);
+    Vector2 size = max - min;
+    Vector2 a = MathGeom::transform2d(min, contentStart, rotInDeg);
+    Vector2 b = MathGeom::transform2d(min + Vector2(size.x(), 0), contentStart, rotInDeg);
+    Vector2 c = MathGeom::transform2d(min + Vector2(size.x(), size.y()), contentStart, rotInDeg);
+    Vector2 d = MathGeom::transform2d(min + Vector2(0, size.y()), contentStart, rotInDeg);
 
     // Rect bb(a);
     // bb.grow(b);

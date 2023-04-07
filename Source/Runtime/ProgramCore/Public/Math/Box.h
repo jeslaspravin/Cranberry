@@ -16,8 +16,8 @@
 #include "Types/Containers/ArrayView.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 
-class Vector2D;
-class Vector3D;
+class Vector2;
+class Vector3;
 
 // Usage AABB
 template <typename T, uint32 d>
@@ -36,10 +36,11 @@ public:
     T minBound;
     T maxBound;
 
-    Box()
+    Box() noexcept
         : minBound(NumericLimits::max())
         , maxBound(NumericLimits::lowest())
     {}
+    MAKE_TYPE_DEFAULT_COPY_MOVE(Box)
 
     Box(const T &min, const T &max)
         : minBound(min)
@@ -62,23 +63,6 @@ public:
             grow(points[i]);
         }
         fixAABB();
-    }
-
-    Box(const Box<T, d> &other)
-        : minBound(other.minBound)
-        , maxBound(other.maxBound)
-    {}
-
-    Box(Box<T, d> &&other)
-        : minBound(std::move(other.minBound))
-        , maxBound(std::move(other.maxBound))
-    {}
-
-    Box<T, d> &operator= (const Box<T, d> &other)
-    {
-        minBound = other.minBound;
-        maxBound = other.maxBound;
-        return *this;
     }
 
     Box<T, d> operator+ (const Box<T, d> &other)
@@ -106,13 +90,6 @@ public:
     void operator+= (const Box<T, d> &other) { grow(other); }
 
     void operator+= (const T &dx) { offset(dx); }
-
-    Box<T, d> &operator= (Box<T, d> &&other)
-    {
-        minBound = std::move(other.minBound);
-        maxBound = std::move(other.maxBound);
-        return *this;
-    }
 
     void reset(const T &min, const T &max)
     {
@@ -412,30 +389,12 @@ public:
         : minBound(NumericLimits::max())
         , maxBound(NumericLimits::lowest())
     {}
+    MAKE_TYPE_DEFAULT_COPY_MOVE(Box)
 
     Box(const T &min, const T &max)
     {
         minBound = min;
         maxBound = max;
-    }
-
-    Box(const Box<T, 1> &other)
-    {
-        minBound = other.minBound;
-        maxBound = other.maxBound;
-    }
-
-    Box(Box<T, 1> &&other)
-    {
-        minBound = std::move(other.minBound);
-        maxBound = std::move(other.maxBound);
-    }
-
-    Box<T, 1> &operator= (const Box<T, 1> &other)
-    {
-        minBound = other.minBound;
-        maxBound = other.maxBound;
-        return *this;
     }
 
     Box<T, 1> operator+ (const Box<T, 1> &other)
@@ -457,13 +416,6 @@ public:
     void operator+= (const Box<T, 1> &other) { grow(other); }
 
     void operator+= (const T &dx) { offset(dx); }
-
-    Box<T, 1> &operator= (Box<T, 1> &&other)
-    {
-        minBound = std::move(other.minBound);
-        maxBound = std::move(other.maxBound);
-        return *this;
-    }
 
     void reset(const T &min, const T &max)
     {
@@ -542,18 +494,20 @@ public:
 template <typename T>
 using ValueRange = Box<T, 1>;
 
-using SizeBox2D = Box<Size2D, 2>;
-using SizeBox3D = Box<Size3D, 3>;
+using URect = Box<UInt2, 2>;
+using UBox = Box<UInt3, 3>;
 
-using ShortSizeBox2D = Box<ShortSize2D, 2>;
+using UShortRect = Box<UShort2, 2>;
+using UShortBox = Box<UShort2, 3>;
 
-using QuantizedBox2D = Box<Int2D, 2>;
-using QuantizedBox3D = Box<Int3D, 3>;
+using IRect = Box<Int2, 2>;
+using IBox = Box<Int3, 3>;
 
-using QuantShortBox2D = Box<Short2D, 2>;
+using ShortRect = Box<Short2, 2>;
+using ShortBox = Box<Short2, 3>;
 
-using Rect = Box<Vector2D, 2>;
-using AABB = Box<Vector3D, 3>;
+using Rect = Box<Vector2, 2>;
+using AABB = Box<Vector3, 3>;
 
 template <typename BoxType>
 struct IsBox2DType : std::false_type
@@ -580,7 +534,7 @@ struct IsBoxType<Box<Type, ExtDim>> : std::true_type
 {};
 
 template <typename BoxType>
-concept Box2DType = IsBox2DType<BoxType>::value;
+concept Box2Dim = IsBox2DType<BoxType>::value;
 
 template <typename BoxType>
-concept Box3DType = IsBox3DType<BoxType>::value;
+concept Box3Dim = IsBox3DType<BoxType>::value;

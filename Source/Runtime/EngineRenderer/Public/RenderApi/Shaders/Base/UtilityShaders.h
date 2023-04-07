@@ -34,17 +34,17 @@ class ENGINERENDERER_EXPORT ComputeShaderConfig : public ShaderConfigCollector
 {
     DECLARE_GRAPHICS_RESOURCE(ComputeShaderConfig, , ShaderConfigCollector, )
 private:
-    const Size3D subgrpSize;
+    const UInt3 subgrpSize;
 
 protected:
     ComputeShaderConfig() = default;
-    ComputeShaderConfig(const Size3D &subgroupSize, const String &name)
+    ComputeShaderConfig(const UInt3 &subgroupSize, const String &name)
         : BaseType(name)
         , subgrpSize(subgroupSize)
     {}
 
 public:
-    const Size3D &getSubGroupSize() const { return subgrpSize; }
+    const UInt3 &getSubGroupSize() const { return subgrpSize; }
 };
 
 template <uint32 SizeX, uint32 SizeY, uint32 SizeZ>
@@ -60,7 +60,7 @@ private:
 protected:
     ComputeShaderConfigTemplated(const String &name)
         : BaseType(
-            Size3D(SizeX, SizeY, SizeZ),
+            UInt3(SizeX, SizeY, SizeZ),
             name + TCHAR("_") + String::toString(SizeX) + TCHAR("x") + String::toString(SizeY) + TCHAR("x") + String::toString(SizeZ)
         )
         , shaderFileName(name)

@@ -125,7 +125,7 @@ VulkanCommandList::fillClearValue(EPixelDataFormat::Type format, VkClearColorVal
     }
     else
     {
-        LinearColor clamped = LinearColor(Math::clamp(Vector4D(color), Vector4D::ZERO, Vector4D::ONE));
+        LinearColor clamped = LinearColor(Math::clamp(Vector4(color), Vector4::ZERO, Vector4::ONE));
         uint32 uMaxVal = Math::pow(2, formatInfo->componentSize[0]) - 1;
         clearValue.uint32[0] = uint32(uMaxVal * clamped[0]);
         clearValue.uint32[1] = uint32(uMaxVal * clamped[1]);
@@ -134,7 +134,7 @@ VulkanCommandList::fillClearValue(EPixelDataFormat::Type format, VkClearColorVal
 
         if (EPixelDataFormat::isSignedFormat(format))
         {
-            clamped = LinearColor(Math::clamp(Vector4D(color), Vector4D(-1), Vector4D::ONE));
+            clamped = LinearColor(Math::clamp(Vector4(color), Vector4(-1), Vector4::ONE));
             int32 signedDelta = Math::pow(2, formatInfo->componentSize[0] - 1);
             clearValue.int32[0] = clearValue.uint32[0] - signedDelta;
             clearValue.int32[1] = clearValue.uint32[1] - signedDelta;
@@ -1003,8 +1003,8 @@ void VulkanCommandList::cmdCopyOrResolveImage(
         return;
     }
     {
-        SizeBox3D srcBound(srcInfoCpy.offset, Size3D(srcInfoCpy.offset + srcInfoCpy.extent));
-        SizeBox3D dstBound(dstInfoCpy.offset, Size3D(dstInfoCpy.offset + dstInfoCpy.extent));
+        UBox srcBound(srcInfoCpy.offset, UInt3(srcInfoCpy.offset + srcInfoCpy.extent));
+        UBox dstBound(dstInfoCpy.offset, UInt3(dstInfoCpy.offset + dstInfoCpy.extent));
         if (src == dst && srcBound.intersect(dstBound))
         {
             LOG_ERROR("VulkanCommandList", "Cannot copy to same image with intersecting region");
@@ -1198,9 +1198,9 @@ void VulkanCommandList::cmdCopyOrResolveImage(
     {
         std::vector<VkImageCopy> imageCopyRegions(srcInfoCpy.subres.mipCount);
 
-        Size3D mipSize = srcInfoCpy.extent;
-        Size3D srcMipSizeOffset = srcInfoCpy.offset;
-        Size3D dstMipSizeOffset = dstInfoCpy.offset;
+        UInt3 mipSize = srcInfoCpy.extent;
+        UInt3 srcMipSizeOffset = srcInfoCpy.offset;
+        UInt3 dstMipSizeOffset = dstInfoCpy.offset;
         for (uint32 mipLevel = 0; mipLevel < srcInfoCpy.subres.mipCount; ++mipLevel)
         {
             imageCopyRegions[mipLevel].srcOffset = { int32(srcMipSizeOffset.x), int32(srcMipSizeOffset.y), int32(srcMipSizeOffset.z) };
@@ -1213,7 +1213,7 @@ void VulkanCommandList::cmdCopyOrResolveImage(
 
             srcMipSizeOffset /= 2u;
             dstMipSizeOffset /= 2u;
-            mipSize = Math::max(mipSize / 2u, Size3D{ 1, 1, 1 });
+            mipSize = Math::max(mipSize / 2u, UInt3{ 1, 1, 1 });
         }
 
         vDevice->vkCmdCopyImage(
@@ -1226,9 +1226,9 @@ void VulkanCommandList::cmdCopyOrResolveImage(
         std::vector<VkImageResolve> imageResolveRegions;
         imageResolveRegions.reserve(srcInfoCpy.subres.mipCount);
 
-        Size3D mipSize = srcInfoCpy.extent;
-        Size3D srcMipSizeOffset = srcInfoCpy.offset;
-        Size3D dstMipSizeOffset = dstInfoCpy.offset;
+        UInt3 mipSize = srcInfoCpy.extent;
+        UInt3 srcMipSizeOffset = srcInfoCpy.offset;
+        UInt3 dstMipSizeOffset = dstInfoCpy.offset;
         for (uint32 mipLevel = 0; mipLevel < srcInfoCpy.subres.mipCount; ++mipLevel)
         {
             imageResolveRegions[mipLevel].srcOffset = { int32(srcMipSizeOffset.x), int32(srcMipSizeOffset.y), int32(srcMipSizeOffset.z) };
@@ -1241,7 +1241,7 @@ void VulkanCommandList::cmdCopyOrResolveImage(
 
             srcMipSizeOffset /= 2u;
             dstMipSizeOffset /= 2u;
-            mipSize = Math::max(mipSize / 2u, Size3D{ 1, 1, 1 });
+            mipSize = Math::max(mipSize / 2u, UInt3{ 1, 1, 1 });
         }
 
         vDevice->vkCmdResolveImage(
@@ -2178,7 +2178,7 @@ void VulkanCommandList::cmdReleaseQueueResources(
 }
 
 void VulkanCommandList::cmdBeginRenderPass(
-    const GraphicsResource *cmdBuffer, const LocalPipelineContext &contextPipeline, const QuantizedBox2D &renderArea,
+    const GraphicsResource *cmdBuffer, const LocalPipelineContext &contextPipeline, const IRect &renderArea,
     const RenderPassAdditionalProps &renderpassAdditionalProps, const RenderPassClearValue &clearColor
 )
 {
@@ -2197,7 +2197,7 @@ void VulkanCommandList::cmdBeginRenderPass(
         = static_cast<VulkanGlobalRenderingContext *>(IRenderInterfaceModule::get()->getRenderManager()->getGlobalRenderingContext());
     const VulkanGraphicsPipeline *graphicsPipeline = static_cast<const VulkanGraphicsPipeline *>(contextPipeline.getPipeline());
 
-    Size2D extent = renderArea.size();
+    UInt2 extent = renderArea.size();
     std::vector<VkClearValue> clearValues;
 
     VkClearColorValue lastClearColor;
@@ -2540,7 +2540,7 @@ void VulkanCommandList::cmdDrawIndirect(
 }
 
 void VulkanCommandList::cmdSetViewportAndScissors(
-    const GraphicsResource *cmdBuffer, ArrayView<const std::pair<QuantizedBox2D, QuantizedBox2D>> viewportAndScissors,
+    const GraphicsResource *cmdBuffer, ArrayView<const std::pair<IRect, IRect>> viewportAndScissors,
     uint32 firstViewport /*= 0*/
 ) const
 {
@@ -2550,14 +2550,14 @@ void VulkanCommandList::cmdSetViewportAndScissors(
     viewports.reserve(viewportAndScissors.size());
     std::vector<VkRect2D> scissors;
     scissors.reserve(viewportAndScissors.size());
-    for (std::pair<QuantizedBox2D, QuantizedBox2D> viewportAndScis : viewportAndScissors)
+    for (std::pair<IRect, IRect> viewportAndScis : viewportAndScissors)
     {
-        Int2D viewportSize = viewportAndScis.first.size();
+        Int2 viewportSize = viewportAndScis.first.size();
         viewports.emplace_back(VkViewport{ float(viewportAndScis.first.minBound.x), float(viewportAndScis.first.minBound.y),
                                            float(viewportSize.x), float(viewportSize.y), 0.f /* Min depth */, 1.f /* Max depth */ });
 
         viewportAndScis.second.fixAABB();
-        Size2D scissorSize = viewportAndScis.second.size();
+        UInt2 scissorSize = viewportAndScis.second.size();
         scissors.emplace_back(VkRect2D{
             {viewportAndScis.second.minBound.x, viewportAndScis.second.minBound.y},
             {                    scissorSize.x,                     scissorSize.y}
@@ -2569,12 +2569,12 @@ void VulkanCommandList::cmdSetViewportAndScissors(
 }
 
 void VulkanCommandList::cmdSetViewportAndScissor(
-    const GraphicsResource *cmdBuffer, const QuantizedBox2D &viewport, const QuantizedBox2D &scissor, uint32 atViewport /*= 0*/
+    const GraphicsResource *cmdBuffer, const IRect &viewport, const IRect &scissor, uint32 atViewport /*= 0*/
 ) const
 {
     VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
 
-    Int2D viewportSize = viewport.size();
+    Int2 viewportSize = viewport.size();
     VkViewport vulkanViewport{ float(viewport.minBound.x), float(viewport.minBound.y), float(viewportSize.x),
                                float(viewportSize.y),      0.f /* Min depth */,        1.f /* Max depth */ };
     vDevice->vkCmdSetViewport(rawCmdBuffer, atViewport, 1, &vulkanViewport);
@@ -2582,13 +2582,13 @@ void VulkanCommandList::cmdSetViewportAndScissor(
     cmdSetScissor(cmdBuffer, scissor, atViewport);
 }
 
-void VulkanCommandList::cmdSetScissor(const GraphicsResource *cmdBuffer, const QuantizedBox2D &scissor, uint32 atViewport /*= 0*/) const
+void VulkanCommandList::cmdSetScissor(const GraphicsResource *cmdBuffer, const IRect &scissor, uint32 atViewport /*= 0*/) const
 {
     VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
 
     if (scissor.isValidAABB())
     {
-        Size2D scissorSize = scissor.size();
+        UInt2 scissorSize = scissor.size();
         VkRect2D vulkanScissor{
             {scissor.minBound.x, scissor.minBound.y},
             {     scissorSize.x,      scissorSize.y}
@@ -2597,10 +2597,10 @@ void VulkanCommandList::cmdSetScissor(const GraphicsResource *cmdBuffer, const Q
     }
     else
     {
-        QuantizedBox2D tempScissor(scissor);
+        IRect tempScissor(scissor);
         tempScissor.fixAABB();
 
-        Size2D scissorSize = tempScissor.size();
+        UInt2 scissorSize = tempScissor.size();
         VkRect2D vulkanScissor{
             {tempScissor.minBound.x, tempScissor.minBound.y},
             {         scissorSize.x,          scissorSize.y}
@@ -2778,8 +2778,8 @@ void VulkanCommandList::copyToImage_Internal(ImageResourceRef dst, const BufferR
     else
     {
         uint32 mipLinearOffset = 0;
-        Size3D mipSize = copyInfo.extent;
-        Size3D mipSizeOffset = copyInfo.dstOffset;
+        UInt3 mipSize = copyInfo.extent;
+        UInt3 mipSizeOffset = copyInfo.dstOffset;
 
         for (uint32 mipLevel = 0; mipLevel < copyInfo.subres.mipCount; ++mipLevel)
         {
@@ -2795,7 +2795,7 @@ void VulkanCommandList::copyToImage_Internal(ImageResourceRef dst, const BufferR
             copies.emplace_back(vkCopyInfo);
 
             mipLinearOffset += mipSize.x * mipSize.y * mipSize.z * copyInfo.subres.layersCount;
-            mipSize = Math::max(mipSize / 2u, Size3D{ 1, 1, 1 });
+            mipSize = Math::max(mipSize / 2u, UInt3{ 1, 1, 1 });
             mipSizeOffset /= 2u;
         }
     }
@@ -2851,8 +2851,8 @@ void VulkanCommandList::copyToImage_Internal(ImageResourceRef dst, const BufferR
         transitionToSrc.image = dst.reference<VulkanImageResource>()->image;
         transitionToSrc.subresourceRange = { imageAspect, copyInfo.subres.baseMip, 1, copyInfo.subres.baseLayer, copyInfo.subres.layersCount };
 
-        Size3D srcMipSize = copyInfo.extent;
-        Size3D srcMipSizeOffset = copyInfo.dstOffset;
+        UInt3 srcMipSize = copyInfo.extent;
+        UInt3 srcMipSizeOffset = copyInfo.dstOffset;
         for (uint32 mipLevel = 1; mipLevel < copyInfo.subres.mipCount; ++mipLevel)
         {
             transitionToSrc.subresourceRange.baseMipLevel = copyInfo.subres.baseMip + mipLevel - 1;
@@ -2861,8 +2861,8 @@ void VulkanCommandList::copyToImage_Internal(ImageResourceRef dst, const BufferR
                 VkDependencyFlagBits::VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1, &transitionToSrc
             );
 
-            Size3D dstMipSize = Math::max(srcMipSize / 2u, Size3D{ 1, 1, 1 });
-            Size3D dstMipSizeOffset = srcMipSizeOffset / 2u;
+            UInt3 dstMipSize = Math::max(srcMipSize / 2u, UInt3{ 1, 1, 1 });
+            UInt3 dstMipSizeOffset = srcMipSizeOffset / 2u;
             VkImageBlit blitRegion;
             blitRegion.srcOffsets[0] = { int32(srcMipSizeOffset.x), int32(srcMipSizeOffset.y), int32(srcMipSizeOffset.z) };
             ;
@@ -2957,8 +2957,8 @@ void VulkanCommandList::copyOrResolveImage(
         return;
     }
     {
-        SizeBox3D srcBound(srcInfoCpy.offset, Size3D(srcInfoCpy.offset + srcInfoCpy.extent));
-        SizeBox3D dstBound(dstInfo.offset, Size3D(dstInfo.offset + dstInfo.extent));
+        UBox srcBound(srcInfoCpy.offset, UInt3(srcInfoCpy.offset + srcInfoCpy.extent));
+        UBox dstBound(dstInfo.offset, UInt3(dstInfo.offset + dstInfo.extent));
         if (src == dst && srcBound.intersect(dstBound))
         {
             LOG_ERROR("VulkanCommandList", "Cannot copy to same image with intersecting region");
@@ -3025,9 +3025,9 @@ void VulkanCommandList::copyOrResolveImage(
     {
         std::vector<VkImageCopy> imageCopyRegions(srcInfoCpy.subres.mipCount);
 
-        Size3D mipSize = srcInfoCpy.extent;
-        Size3D srcMipSizeOffset = srcInfoCpy.offset;
-        Size3D dstMipSizeOffset = dstInfoCpy.offset;
+        UInt3 mipSize = srcInfoCpy.extent;
+        UInt3 srcMipSizeOffset = srcInfoCpy.offset;
+        UInt3 dstMipSizeOffset = dstInfoCpy.offset;
         for (uint32 mipLevel = 0; mipLevel < srcInfoCpy.subres.mipCount; ++mipLevel)
         {
             imageCopyRegions[mipLevel].srcOffset = { int32(srcMipSizeOffset.x), int32(srcMipSizeOffset.y), int32(srcMipSizeOffset.z) };
@@ -3040,7 +3040,7 @@ void VulkanCommandList::copyOrResolveImage(
 
             srcMipSizeOffset /= 2u;
             dstMipSizeOffset /= 2u;
-            mipSize = Math::max(mipSize / 2u, Size3D{ 1, 1, 1 });
+            mipSize = Math::max(mipSize / 2u, UInt3{ 1, 1, 1 });
         }
 
         vDevice->vkCmdCopyImage(
@@ -3053,9 +3053,9 @@ void VulkanCommandList::copyOrResolveImage(
         std::vector<VkImageResolve> imageResolveRegions;
         imageResolveRegions.reserve(srcInfoCpy.subres.mipCount);
 
-        Size3D mipSize = srcInfoCpy.extent;
-        Size3D srcMipSizeOffset = srcInfoCpy.offset;
-        Size3D dstMipSizeOffset = dstInfoCpy.offset;
+        UInt3 mipSize = srcInfoCpy.extent;
+        UInt3 srcMipSizeOffset = srcInfoCpy.offset;
+        UInt3 dstMipSizeOffset = dstInfoCpy.offset;
         for (uint32 mipLevel = 0; mipLevel < srcInfoCpy.subres.mipCount; ++mipLevel)
         {
             imageResolveRegions[mipLevel].srcOffset = { int32(srcMipSizeOffset.x), int32(srcMipSizeOffset.y), int32(srcMipSizeOffset.z) };
@@ -3068,7 +3068,7 @@ void VulkanCommandList::copyOrResolveImage(
 
             srcMipSizeOffset /= 2u;
             dstMipSizeOffset /= 2u;
-            mipSize = Math::max(mipSize / 2u, Size3D{ 1, 1, 1 });
+            mipSize = Math::max(mipSize / 2u, UInt3{ 1, 1, 1 });
         }
 
         vDevice->vkCmdResolveImage(

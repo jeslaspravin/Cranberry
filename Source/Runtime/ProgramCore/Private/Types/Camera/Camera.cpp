@@ -12,8 +12,8 @@
 #include "Types/Camera/Camera.h"
 #include "Math/Math.h"
 #include "Math/RotationMatrix.h"
-#include "Math/Vector2D.h"
-#include "Math/Vector4D.h"
+#include "Math/Vector2.h"
+#include "Math/Vector4.h"
 #include "Types/Transform3D.h"
 #include "Math/Quaternion.h"
 
@@ -97,7 +97,7 @@ void Camera::setFOV(float horizontal, float vertical)
     vFov = Math::min(Math::abs(vertical), MAX_FOV);
 }
 
-void Camera::setOrthoSize(const Size2D &orthographicSize) { orthoSize = orthographicSize; }
+void Camera::setOrthoSize(const UInt2 &orthographicSize) { orthoSize = orthographicSize; }
 
 void Camera::setClippingPlane(float near, float far)
 {
@@ -109,14 +109,14 @@ void Camera::setCustomProjection(Matrix4 projMatrix) { customProjMatrix = projMa
 
 void Camera::clearCustomProjection() { customProjMatrix.reset(); }
 
-void Camera::setTranslation(const Vector3D &newLocation) { camTranslation = newLocation; }
+void Camera::setTranslation(const Vector3 &newLocation) { camTranslation = newLocation; }
 
 void Camera::setRotation(const Rotation &newRotation) { camRotation = newRotation; }
 
-void Camera::frustumCorners(Vector3D *corners, Vector3D *center /*= nullptr*/) const
+void Camera::frustumCorners(Vector3 *corners, Vector3 *center /*= nullptr*/) const
 {
     Matrix4 ndcToWorld = viewMatrix() * projectionMatrix().inverse();
-    Vector3D frustumMid(0);
+    Vector3 frustumMid(0);
     int32 cornerIdx = 0;
     for (float z = 0; z < 2; ++z)
     {
@@ -124,10 +124,10 @@ void Camera::frustumCorners(Vector3D *corners, Vector3D *center /*= nullptr*/) c
         {
             for (float x = -1; x < 2; x += 2)
             {
-                Vector4D worldPos(ndcToWorld * Vector4D(x, y, z, 1));
+                Vector4 worldPos(ndcToWorld * Vector4(x, y, z, 1));
                 worldPos /= worldPos.w();
 
-                corners[cornerIdx] = Vector3D(worldPos);
+                corners[cornerIdx] = Vector3(worldPos);
                 frustumMid += corners[cornerIdx];
                 cornerIdx++;
             }
@@ -139,24 +139,24 @@ void Camera::frustumCorners(Vector3D *corners, Vector3D *center /*= nullptr*/) c
     }
 }
 
-void Camera::lookAt(const Vector3D &lookAtTarget)
+void Camera::lookAt(const Vector3 &lookAtTarget)
 {
     RotationMatrix rotMatrix = RotationMatrix::fromX(lookAtTarget - camTranslation);
     setRotation(rotMatrix.asRotation());
 }
 
-Vector3D Camera::screenToWorld(const Vector2D &screenPos) const
+Vector3 Camera::screenToWorld(const Vector2 &screenPos) const
 {
     // Fliping y since Quad draw uses vulkan screen coord top left -1,-1 bottom right 1,1. But our
     // view/projection y coordinate is from bottom(-1) to top(1)
-    Vector4D ndcCoord{ ((screenPos.x() - 0.5f) * 2), (-(screenPos.y() - 0.5f) * 2), 1, 1 };
-    Vector4D worldCoord = projectionMatrix().inverse() * ndcCoord;
+    Vector4 ndcCoord{ ((screenPos.x() - 0.5f) * 2), (-(screenPos.y() - 0.5f) * 2), 1, 1 };
+    Vector4 worldCoord = projectionMatrix().inverse() * ndcCoord;
     worldCoord /= worldCoord.w();
     worldCoord = viewMatrix() * worldCoord;
     return { worldCoord };
 }
 
-Vector3D Camera::screenToWorldFwd(const Vector2D &screenPos) const { return (screenToWorld(screenPos) - camTranslation).safeNormalized(); }
+Vector3 Camera::screenToWorldFwd(const Vector2 &screenPos) const { return (screenToWorld(screenPos) - camTranslation).safeNormalized(); }
 
 Matrix4 Camera::viewMatrix() const
 {
@@ -178,9 +178,9 @@ Matrix4 Camera::viewMatrix() const
 Matrix4 Camera::viewMatrix(Matrix4 &outInvView) const
 {
     Matrix4 viewMat = viewMatrix();
-    Matrix3 viewInv = { Vector3D(viewMat[0]), Vector3D(viewMat[1]), Vector3D(viewMat[2]) };
+    Matrix3 viewInv = { Vector3(viewMat[0]), Vector3(viewMat[1]), Vector3(viewMat[2]) };
     viewInv = viewInv.transpose();
-    outInvView = { Vector3D(viewInv[0]), Vector3D(viewInv[1]), Vector3D(viewInv[2]), -(viewInv * Vector3D(viewMat[3])) };
+    outInvView = { Vector3(viewInv[0]), Vector3(viewInv[1]), Vector3(viewInv[2]), -(viewInv * Vector3(viewMat[3])) };
     return viewMat;
 }
 

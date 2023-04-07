@@ -31,31 +31,34 @@ struct Function
 
     // Class default constructors and operators
     Function() = default;
-    Function(const Function &otherFuncPtr)
-        : staticDelegate(otherFuncPtr.staticDelegate)
-    {}
-    void operator= (const Function &otherFuncPtr) { staticDelegate = otherFuncPtr.staticDelegate; }
-    Function(Function &&otherFuncPtr)
+    Function(const Function &otherFuncPtr) = default;
+    Function &operator= (const Function &otherFuncPtr) = default;
+    Function(Function &&otherFuncPtr) noexcept
         : staticDelegate(std::move(otherFuncPtr.staticDelegate))
     {
         otherFuncPtr.staticDelegate = nullptr;
     }
-    void operator= (Function &&otherFuncPtr)
+    Function &operator= (Function &&otherFuncPtr) noexcept
     {
         staticDelegate = std::move(otherFuncPtr.staticDelegate);
         otherFuncPtr.staticDelegate = nullptr;
+        return *this;
     }
     bool operator== (const Function &otherFuncPtr) const { return staticDelegate == otherFuncPtr.staticDelegate; }
     // End class default constructors and operators
 
-    CONST_EXPR Function(const StaticDelegate &functionPointer)
+    CONST_EXPR Function(const StaticDelegate &functionPointer) noexcept
         : staticDelegate(functionPointer)
     {}
 
-    CONST_EXPR void operator= (const StaticDelegate &functionPointer) { staticDelegate = functionPointer; }
+    CONST_EXPR Function &operator= (const StaticDelegate &functionPointer) noexcept
+    {
+        staticDelegate = functionPointer;
+        return *this;
+    }
 
     // Not using perfect forwarding as it not necessary for function ptr calls
-    ReturnType operator() (Parameters... params) const { return (*staticDelegate)(std::forward<Parameters>(params)...); }
+    ReturnType operator() (Parameters... params) const noexcept { return (*staticDelegate)(std::forward<Parameters>(params)...); }
 
     operator bool () const { return staticDelegate != nullptr; }
 };
@@ -72,35 +75,38 @@ struct ClassFunction<false, ClassType, ReturnType, Parameters...>
 
     // Class default constructors and operators
     ClassFunction() = default;
-    ClassFunction(const ClassFunction &otherFuncPtr)
-        : classDelegate(otherFuncPtr.classDelegate)
-    {}
-    void operator= (const ClassFunction &otherFuncPtr) { classDelegate = otherFuncPtr.classDelegate; }
-    ClassFunction(ClassFunction &&otherFuncPtr)
+    ClassFunction(const ClassFunction &otherFuncPtr) = default;
+    ClassFunction &operator= (const ClassFunction &otherFuncPtr) = default;
+    ClassFunction(ClassFunction &&otherFuncPtr) noexcept
         : classDelegate(std::move(otherFuncPtr.classDelegate))
     {
         otherFuncPtr.classDelegate = nullptr;
     }
-    void operator= (ClassFunction &&otherFuncPtr)
+    ClassFunction &operator= (ClassFunction &&otherFuncPtr) noexcept
     {
         classDelegate = std::move(otherFuncPtr.classDelegate);
         otherFuncPtr.classDelegate = nullptr;
+        return *this;
     }
     bool operator== (const ClassFunction &otherFuncPtr) const { return classDelegate == otherFuncPtr.classDelegate; }
     // End class default constructors and operators
 
-    CONST_EXPR ClassFunction(const ClassDelegate &functionPointer)
+    CONST_EXPR ClassFunction(const ClassDelegate &functionPointer) noexcept
         : classDelegate(functionPointer)
     {}
 
-    CONST_EXPR void operator= (const ClassDelegate &functionPointer) { classDelegate = functionPointer; }
+    CONST_EXPR ClassFunction &operator= (const ClassDelegate &functionPointer) noexcept
+    {
+        classDelegate = functionPointer;
+        return *this;
+    }
 
-    ReturnType operator() (ClassType *object, Parameters... params) const
+    ReturnType operator() (ClassType *object, Parameters... params) const noexcept
     {
         return (object->*classDelegate)(std::forward<Parameters>(params)...);
     }
 
-    ReturnType operator() (ClassType &object, Parameters... params) const
+    ReturnType operator() (ClassType &object, Parameters... params) const noexcept
     {
         return (object.*classDelegate)(std::forward<Parameters>(params)...);
     }
@@ -117,35 +123,38 @@ struct ClassFunction<true, ClassType, ReturnType, Parameters...>
 
     // Class default constructors and operators
     ClassFunction() = default;
-    ClassFunction(const ClassFunction &otherFuncPtr)
-        : classDelegate(otherFuncPtr.classDelegate)
-    {}
-    void operator= (const ClassFunction &otherFuncPtr) { classDelegate = otherFuncPtr.classDelegate; }
-    ClassFunction(ClassFunction &&otherFuncPtr)
+    ClassFunction(const ClassFunction &otherFuncPtr) = default;
+    ClassFunction &operator= (const ClassFunction &otherFuncPtr) = default;
+    ClassFunction(ClassFunction &&otherFuncPtr) noexcept
         : classDelegate(std::move(otherFuncPtr.classDelegate))
     {
         otherFuncPtr.classDelegate = nullptr;
     }
-    void operator= (ClassFunction &&otherFuncPtr)
+    ClassFunction &operator= (ClassFunction &&otherFuncPtr) noexcept
     {
         classDelegate = std::move(otherFuncPtr.classDelegate);
         otherFuncPtr.classDelegate = nullptr;
+        return *this;
     }
     bool operator== (const ClassFunction &otherFuncPtr) const { return classDelegate == otherFuncPtr.classDelegate; }
     // End class default constructors and operators
 
-    CONST_EXPR ClassFunction(const ClassDelegate &functionPointer)
+    CONST_EXPR ClassFunction(const ClassDelegate &functionPointer) noexcept
         : classDelegate(functionPointer)
     {}
 
-    CONST_EXPR void operator= (const ClassDelegate &functionPointer) { classDelegate = functionPointer; }
+    CONST_EXPR ClassFunction &operator= (const ClassDelegate &functionPointer)
+    {
+        classDelegate = functionPointer;
+        return *this;
+    }
 
-    ReturnType operator() (const ClassType *object, Parameters... params) const
+    ReturnType operator() (const ClassType *object, Parameters... params) const noexcept
     {
         return (object->*classDelegate)(std::forward<Parameters>(params)...);
     }
 
-    ReturnType operator() (const ClassType &object, Parameters... params) const
+    ReturnType operator() (const ClassType &object, Parameters... params) const noexcept
     {
         return (object.*classDelegate)(std::forward<Parameters>(params)...);
     }
@@ -170,43 +179,53 @@ struct LambdaFunctionUsingStdFunction
 
     // Class default constructors and operators
     LambdaFunctionUsingStdFunction() = default;
-    LambdaFunctionUsingStdFunction(const LambdaFunctionUsingStdFunction &otherFuncPtr)
-        : lambdaDelegate(otherFuncPtr.lambdaDelegate)
-    {}
-    LambdaFunctionUsingStdFunction(LambdaFunctionUsingStdFunction &&otherFuncPtr)
+    LambdaFunctionUsingStdFunction(const LambdaFunctionUsingStdFunction &otherFuncPtr) = default;
+    LambdaFunctionUsingStdFunction(LambdaFunctionUsingStdFunction &&otherFuncPtr) noexcept
         : lambdaDelegate(std::move(otherFuncPtr.lambdaDelegate))
     {
         otherFuncPtr.lambdaDelegate = nullptr;
     }
 
-    void operator= (const LambdaFunctionUsingStdFunction &otherFuncPtr) { lambdaDelegate = otherFuncPtr.lambdaDelegate; }
-    void operator= (LambdaFunctionUsingStdFunction &&otherFuncPtr)
+    LambdaFunctionUsingStdFunction &operator= (const LambdaFunctionUsingStdFunction &otherFuncPtr) = default;
+    LambdaFunctionUsingStdFunction &operator= (LambdaFunctionUsingStdFunction &&otherFuncPtr) noexcept
     {
         lambdaDelegate = std::move(otherFuncPtr.lambdaDelegate);
         otherFuncPtr.lambdaDelegate = nullptr;
+        return *this;
     }
 
-    bool operator== (const LambdaFunctionUsingStdFunction &otherFuncPtr) const { return lambdaDelegate == otherFuncPtr.lambdaDelegate; }
+    bool operator== (const LambdaFunctionUsingStdFunction &otherFuncPtr) const noexcept
+    {
+        return lambdaDelegate == otherFuncPtr.lambdaDelegate;
+    }
     // End class default constructors and operators
 
     template <typename Callable, IsCallable<Callable, int> = 0>
-    CONST_EXPR LambdaFunctionUsingStdFunction(Callable &&lambda)
+    CONST_EXPR LambdaFunctionUsingStdFunction(Callable &&lambda) noexcept
         : lambdaDelegate(std::forward<decltype(lambda)>(lambda))
     {}
 
-    LambdaFunctionUsingStdFunction(const LambdaDelegate &functionPointer)
+    LambdaFunctionUsingStdFunction(const LambdaDelegate &functionPointer) noexcept
         : lambdaDelegate(functionPointer)
     {}
 
-    LambdaFunctionUsingStdFunction(LambdaDelegate &&functionPointer)
+    LambdaFunctionUsingStdFunction(LambdaDelegate &&functionPointer) noexcept
         : lambdaDelegate(std::forward<LambdaDelegate>(functionPointer))
     {}
 
-    void operator= (const LambdaDelegate &functionPointer) { lambdaDelegate = functionPointer; }
+    LambdaFunctionUsingStdFunction &operator= (const LambdaDelegate &functionPointer) noexcept
+    {
+        lambdaDelegate = functionPointer;
+        return *this;
+    }
 
-    void operator= (LambdaDelegate &&functionPointer) { lambdaDelegate = std::forward<LambdaDelegate>(functionPointer); }
+    LambdaFunctionUsingStdFunction &operator= (LambdaDelegate &&functionPointer) noexcept
+    {
+        lambdaDelegate = std::forward<LambdaDelegate>(functionPointer);
+        return *this;
+    }
 
-    ReturnType operator() (Parameters... params) const { return lambdaDelegate(std::forward<Parameters>(params)...); }
+    ReturnType operator() (Parameters... params) const noexcept { return lambdaDelegate(std::forward<Parameters>(params)...); }
 
     operator bool () const { return bool(lambdaDelegate); }
 };
@@ -228,9 +247,9 @@ struct CapturedFunctor
     class LambdaFunctionCapInterface
     {
     public:
-        virtual void copy(CapturedFunctor &copyTo, const CapturedFunctor &copyFrom) const = 0;
-        virtual void move(CapturedFunctor &moveTo, CapturedFunctor &&moveFrom) const = 0;
-        virtual void destruct(CapturedFunctor &) const = 0;
+        virtual void copy(CapturedFunctor &copyTo, const CapturedFunctor &copyFrom) const noexcept = 0;
+        virtual void move(CapturedFunctor &moveTo, CapturedFunctor &&moveFrom) const noexcept = 0;
+        virtual void destruct(CapturedFunctor &) const noexcept = 0;
     };
 
     /**
@@ -252,13 +271,13 @@ struct CapturedFunctor
 
     // Class default constructors and operators
     CapturedFunctor() = default;
-    CapturedFunctor(const CapturedFunctor &otherFuncPtr)
+    CapturedFunctor(const CapturedFunctor &otherFuncPtr) noexcept
         : lambdaDataInterface(otherFuncPtr.lambdaDataInterface)
         , trampolineFunc(otherFuncPtr.trampolineFunc)
     {
         lambdaDataInterface->copy(*this, otherFuncPtr);
     }
-    CapturedFunctor(CapturedFunctor &&otherFuncPtr)
+    CapturedFunctor(CapturedFunctor &&otherFuncPtr) noexcept
         : lambdaDataInterface(otherFuncPtr.lambdaDataInterface)
         , trampolineFunc(otherFuncPtr.trampolineFunc)
     {
@@ -267,13 +286,14 @@ struct CapturedFunctor
         otherFuncPtr.trampolineFunc = nullptr;
     }
 
-    void operator= (const CapturedFunctor &otherFuncPtr)
+    CapturedFunctor &operator= (const CapturedFunctor &otherFuncPtr) noexcept
     {
         lambdaDataInterface = otherFuncPtr.lambdaDataInterface;
         trampolineFunc = otherFuncPtr.trampolineFunc;
         lambdaDataInterface->copy(*this, otherFuncPtr);
+        return *this;
     }
-    void operator= (CapturedFunctor &&otherFuncPtr)
+    CapturedFunctor &operator= (CapturedFunctor &&otherFuncPtr) noexcept
     {
         lambdaDataInterface = otherFuncPtr.lambdaDataInterface;
         trampolineFunc = otherFuncPtr.trampolineFunc;
@@ -281,9 +301,11 @@ struct CapturedFunctor
 
         otherFuncPtr.lambdaDataInterface = nullptr;
         otherFuncPtr.trampolineFunc = nullptr;
+
+        return *this;
     }
 
-    ~CapturedFunctor()
+    ~CapturedFunctor() noexcept
     {
         if (lambdaDataInterface)
         {
@@ -292,13 +314,13 @@ struct CapturedFunctor
         trampolineFunc = nullptr;
     }
 
-    bool operator== (const CapturedFunctor &otherFuncPtr) const
+    bool operator== (const CapturedFunctor &otherFuncPtr) const noexcept
     {
         // Since two trampoline function will be same in same lambda only, We could may be compare data's memory using memcmp()
         return lambdaDataInterface == otherFuncPtr.lambdaDataInterface && trampolineFunc == otherFuncPtr.trampolineFunc;
     }
     // End class default constructors and operators
-    ReturnType operator() (Parameters... params) const { return (*trampolineFunc)(*this, std::forward<Parameters>(params)...); }
+    ReturnType operator() (Parameters... params) const noexcept { return (*trampolineFunc)(*this, std::forward<Parameters>(params)...); }
 
     operator bool () const { return trampolineFunc && lambdaDataInterface; }
 
@@ -316,22 +338,22 @@ struct CapturedFunctor
     class LambdaFunctionCaptureImpl<CallableType> : public LambdaFunctionCapInterface
     {
     public:
-        void copy(CapturedFunctor &copyTo, const CapturedFunctor &copyFrom) const override
+        void copy(CapturedFunctor &copyTo, const CapturedFunctor &copyFrom) const noexcept override
         {
             construct(copyTo, *reinterpret_cast<const CallableType *>(&copyFrom.data[0]));
         }
-        void move(CapturedFunctor &moveTo, CapturedFunctor &&moveFrom) const override
+        void move(CapturedFunctor &moveTo, CapturedFunctor &&moveFrom) const noexcept override
         {
             construct(moveTo, std::move(*reinterpret_cast<CallableType *>(&moveFrom.data[0])));
         }
-        void destruct(CapturedFunctor &functor) const override { reinterpret_cast<CallableType *>(&functor.data[0])->~CallableType(); }
+        void destruct(CapturedFunctor &functor) const noexcept override { reinterpret_cast<CallableType *>(&functor.data[0])->~CallableType(); }
 
         template <typename Callable>
-        static void construct(CapturedFunctor &functor, Callable &&func)
+        static void construct(CapturedFunctor &functor, Callable &&func) noexcept
         {
             new (functor.data) CallableType(std::forward<Callable>(func));
         }
-        static ReturnType invoke(const CapturedFunctor &thisFunctor, Parameters... params)
+        static ReturnType invoke(const CapturedFunctor &thisFunctor, Parameters... params) noexcept
         {
             (*reinterpret_cast<CallableType *>(const_cast<uint8 *>(&thisFunctor.data[0])))(std::forward<Parameters>(params)...);
         }
@@ -341,11 +363,11 @@ struct CapturedFunctor
     class LambdaFunctionCaptureImpl<CallableType> : public LambdaFunctionCapInterface
     {
     public:
-        void copy(CapturedFunctor &copyTo, const CapturedFunctor &copyFrom) const override
+        void copy(CapturedFunctor &copyTo, const CapturedFunctor &copyFrom) const noexcept override
         {
             construct(copyTo, *reinterpret_cast<CallableType *>(copyFrom.heapAlloc.dataPtr));
         }
-        void move(CapturedFunctor &moveTo, CapturedFunctor &&moveFrom) const override
+        void move(CapturedFunctor &moveTo, CapturedFunctor &&moveFrom) const noexcept override
         {
             if (moveTo.heapAlloc.dataPtr)
             {
@@ -354,10 +376,10 @@ struct CapturedFunctor
             moveTo.heapAlloc.dataPtr = moveFrom.heapAlloc.dataPtr;
             moveFrom.heapAlloc.dataPtr = nullptr;
         }
-        void destruct(CapturedFunctor &functor) const override { delete reinterpret_cast<CallableType *>(functor.heapAlloc.dataPtr); }
+        void destruct(CapturedFunctor &functor) const noexcept override { delete reinterpret_cast<CallableType *>(functor.heapAlloc.dataPtr); }
 
         template <typename Callable>
-        static void construct(CapturedFunctor &functor, Callable &&func)
+        static void construct(CapturedFunctor &functor, Callable &&func) noexcept
         {
             if (functor.heapAlloc.dataPtr)
             {
@@ -368,14 +390,14 @@ struct CapturedFunctor
                 functor.heapAlloc.dataPtr = new CallableType(std::forward<Callable>(func));
             }
         }
-        static ReturnType invoke(const CapturedFunctor &thisFunctor, Parameters... params)
+        static ReturnType invoke(const CapturedFunctor &thisFunctor, Parameters... params) noexcept
         {
             (*reinterpret_cast<CallableType *>(thisFunctor.heapAlloc.dataPtr))(std::forward<Parameters>(params)...);
         }
     };
 
     template <typename Callable>
-    CapturedFunctor(Callable &&func)
+    CapturedFunctor(Callable &&func) noexcept
         : lambdaDataInterface(nullptr)
         , trampolineFunc(nullptr)
     {
@@ -383,7 +405,7 @@ struct CapturedFunctor
     }
 
     template <typename Callable, typename CallableType = std::remove_cvref_t<Callable>, IsCallableLambda<Callable, int> = 0>
-    CapturedFunctor &operator= (Callable &&func)
+    CapturedFunctor &operator= (Callable &&func) noexcept
     {
         using LambdaCaptureImplType = LambdaFunctionCaptureImpl<CallableType>;
         static LambdaCaptureImplType lambdaCaptureImpl;

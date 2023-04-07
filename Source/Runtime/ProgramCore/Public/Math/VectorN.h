@@ -1,5 +1,5 @@
 /*!
- * \file VectorND.h
+ * \file VectorN.h
  *
  * \author Jeslas Pravin
  * \date January 2022
@@ -16,7 +16,7 @@
 #include <vector>
 
 template <class T, uint32 d>
-class VectorND
+class VectorN
 {
 
 private:
@@ -46,38 +46,13 @@ private:
     }
 
 public:
-    VectorND() { data.resize(0); }
+    VectorN() { data.resize(0); }
+    MAKE_TYPE_DEFAULT_COPY_MOVE(VectorN)
 
-    explicit VectorND(const CellIndex<d> &count)
+    explicit VectorN(const CellIndex<d> &count)
     {
         cellsCount = count;
         data.resize(cellsCount.size());
-    }
-
-    explicit VectorND(const VectorND<T, d> &other)
-    {
-        cellsCount = other.cellsCount;
-        data = other.data;
-    }
-
-    VectorND(VectorND<T, d> &&other)
-    {
-        data = std::move(other.data);
-        cellsCount = std::move(other.cellsCount);
-    }
-
-    FORCE_INLINE VectorND &operator= (const VectorND<T, d> &other)
-    {
-        cellsCount = other.cellsCount;
-        data = other.data;
-        return *this;
-    }
-
-    FORCE_INLINE VectorND &operator= (VectorND<T, d> &&other)
-    {
-        data = std::move(other.data);
-        cellsCount = std::move(other.cellsCount);
-        return *this;
     }
 
     FORCE_INLINE T &operator[] (const CellIndex<d> &cell) { return data[cellIndexToLinearIdx(cell)]; }

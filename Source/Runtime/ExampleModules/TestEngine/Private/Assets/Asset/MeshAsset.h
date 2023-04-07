@@ -28,7 +28,7 @@ struct MeshVertexView
 #if DEV_BUILD
 struct TbnLinePoint
 {
-    Vector3D position;
+    Vector3 position;
     Color color;
 };
 #endif

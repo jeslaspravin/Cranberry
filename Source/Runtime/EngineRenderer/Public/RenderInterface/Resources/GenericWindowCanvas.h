@@ -39,7 +39,7 @@ protected:
     GenericAppWindow *ownerWindow = nullptr;
 
     uint32 currentSwapchainIdx = 0;
-    Size2D currentImageSize;
+    UInt2 currentImageSize;
 
     GenericWindowCanvas() = default;
 
@@ -52,7 +52,7 @@ public:
 
     virtual uint32 requestNextImage(SemaphoreRef *waitOnSemaphore, FenceRef *waitOnFence = nullptr);
     uint32 currentImgIdx() const { return currentSwapchainIdx; }
-    Size2D imageSize() const { return currentImageSize; }
+    UInt2 imageSize() const { return currentImageSize; }
     virtual EPixelDataFormat::Type windowCanvasFormat() const { return EPixelDataFormat::Undefined; }
     virtual int32 imagesCount() const { return -1; }
 

@@ -93,7 +93,7 @@ struct PBRSceneEntity
         LinearColor color;
         float roughness;
         float metallic;
-        Vector2D uvScale{ Vector2D::ONE };
+        Vector2 uvScale{ Vector2::ONE };
         String textureName;
         LocalPipelineContext *pipeline;
     };
@@ -131,7 +131,7 @@ struct FrameResource
 #define SHADOWS_USE_CULLED_DRAW_CMDS 1
 struct PointLight
 {
-    Vector3D lightPos;
+    Vector3 lightPos;
     LinearColor lightcolor;
     float radius;
     float lumen;
@@ -305,7 +305,7 @@ class ExperimentalEnginePBR
 
     // Camera parameters
     Camera camera;
-    Vector3D cameraTranslation;
+    Vector3 cameraTranslation;
     Rotation cameraRotation;
     void updateCameraParams();
 
@@ -322,7 +322,7 @@ class ExperimentalEnginePBR
     void destroyShaderParameters();
 
     void setupLightShaderData();
-    void resizeLightingRts(const Size2D &size);
+    void resizeLightingRts(const UInt2 &size);
     void reupdateTextureParamsOnResize();
     void reupdateEnvMap();
 
@@ -391,7 +391,7 @@ class ExperimentalEnginePBR
     LinearColor thickColor = LinearColorConst::WHITE;
 
     int32 frameVisualizeId = 0; // 0 color 1 normal 2 depth
-    Size2D renderSize{ 1280, 720 };
+    UInt2 renderSize{ 1280, 720 };
     ECameraProjection projection = ECameraProjection::Perspective;
 
     // Textures
@@ -464,7 +464,7 @@ public:
         case GridEntity::PointLight:
         {
             fatalAssertf(scenePointLights.size() > entity.idx, "Invalid index %d", entity.idx);
-            AABB bound(scenePointLights[entity.idx].lightPos - Vector3D(50), scenePointLights[entity.idx].lightPos + Vector3D(50));
+            AABB bound(scenePointLights[entity.idx].lightPos - Vector3(50), scenePointLights[entity.idx].lightPos + Vector3(50));
             bound.fixAABB();
             return bound;
         }
@@ -472,8 +472,8 @@ public:
         {
             fatalAssertf(sceneSpotLights.size() > entity.idx, "Invalid index %d", entity.idx);
             AABB bound(
-                sceneSpotLights[entity.idx].transform.getTranslation() - Vector3D(50),
-                sceneSpotLights[entity.idx].transform.getTranslation() + Vector3D(50)
+                sceneSpotLights[entity.idx].transform.getTranslation() - Vector3(50),
+                sceneSpotLights[entity.idx].transform.getTranslation() + Vector3(50)
             );
             bound.fixAABB();
             return bound;
@@ -482,7 +482,7 @@ public:
             fatalAssertf(false, "Unsupported type");
             break;
         }
-        return { Vector3D::ZERO, Vector3D::ZERO };
+        return { Vector3::ZERO, Vector3::ZERO };
     }
 };
 
@@ -499,7 +499,7 @@ void ExperimentalEnginePBR::createImages(IGraphicsInstance *, const GraphicsHelp
     rtCreateParams.bSameReadWriteTexture = true;
     rtCreateParams.bIsSrgb = false;
     rtCreateParams.format = ERenderTargetFormat::RT_U8Packed;
-    rtCreateParams.textureSize = Size2D(256, 256);
+    rtCreateParams.textureSize = UInt2(256, 256);
     rtCreateParams.textureName = TCHAR("CameraGizmosRT");
     camGizmoColorTexture = TextureBase::createTexture<RenderTargetTexture>(rtCreateParams);
 
@@ -507,7 +507,7 @@ void ExperimentalEnginePBR::createImages(IGraphicsInstance *, const GraphicsHelp
     camGizmoDepthTarget = TextureBase::createTexture<RenderTargetTexture>(rtCreateParams);
 
     // Shadow RTs
-    Size2D baseDirRes(1024);
+    UInt2 baseDirRes(1024);
     RenderTextureArrayCreateParams directionalShadowRTCI;
     directionalShadowRTCI.bSameReadWriteTexture = true;
     directionalShadowRTCI.bIsSrgb = false;
@@ -521,7 +521,7 @@ void ExperimentalEnginePBR::createImages(IGraphicsInstance *, const GraphicsHelp
     lightShadowRtsCreateParam.bIsSrgb = false;
     lightShadowRtsCreateParam.format = ERenderTargetFormat::RT_Depth;
     lightShadowRtsCreateParam.bSameReadWriteTexture = true;
-    lightShadowRtsCreateParam.textureSize = baseDirRes / Size2D(2);
+    lightShadowRtsCreateParam.textureSize = baseDirRes / UInt2(2);
 
     uint32 shadowRTCount = uint32(Math::min(spotShadowRTs.size(), sceneSpotLights.size()));
     for (uint32 i = 0; i < shadowRTCount; ++i)
@@ -530,7 +530,7 @@ void ExperimentalEnginePBR::createImages(IGraphicsInstance *, const GraphicsHelp
         spotShadowRTs[i] = TextureBase::createTexture<RenderTargetTexture>(lightShadowRtsCreateParam);
     }
 
-    lightShadowRtsCreateParam.textureSize = baseDirRes / Size2D(4);
+    lightShadowRtsCreateParam.textureSize = baseDirRes / UInt2(4);
     shadowRTCount = uint32(Math::min(pointShadowRTs.size(), scenePointLights.size()));
     for (uint32 i = 0; i < shadowRTCount; ++i)
     {
@@ -783,12 +783,12 @@ void ExperimentalEnginePBR::setupLightSceneDrawCmdsBuffer(class IRenderCommandLi
             {
                 return;
             }
-            lightRegion = AABB(ptlit.lightPos + Vector3D(ptlit.radius, 0, 0));
-            lightRegion.grow(ptlit.lightPos + Vector3D(-ptlit.radius, 0, 0));
-            lightRegion.grow(ptlit.lightPos + Vector3D(0, ptlit.radius, 0));
-            lightRegion.grow(ptlit.lightPos + Vector3D(0, -ptlit.radius, 0));
-            lightRegion.grow(ptlit.lightPos + Vector3D(0, 0, ptlit.radius));
-            lightRegion.grow(ptlit.lightPos + Vector3D(0, 0, -ptlit.radius));
+            lightRegion = AABB(ptlit.lightPos + Vector3(ptlit.radius, 0, 0));
+            lightRegion.grow(ptlit.lightPos + Vector3(-ptlit.radius, 0, 0));
+            lightRegion.grow(ptlit.lightPos + Vector3(0, ptlit.radius, 0));
+            lightRegion.grow(ptlit.lightPos + Vector3(0, -ptlit.radius, 0));
+            lightRegion.grow(ptlit.lightPos + Vector3(0, 0, ptlit.radius));
+            lightRegion.grow(ptlit.lightPos + Vector3(0, 0, -ptlit.radius));
 
             drawCmdsBuffer = *ptlit.drawCmdsBuffer;
         }
@@ -800,9 +800,9 @@ void ExperimentalEnginePBR::setupLightSceneDrawCmdsBuffer(class IRenderCommandLi
                 return;
             }
 
-            Vector3D corners[8];
+            Vector3 corners[8];
             sptlit.view.frustumCorners(corners);
-            ArrayView<Vector3D> cornersView(corners);
+            ArrayView<Vector3> cornersView(corners);
             lightRegion = AABB(cornersView);
 
             drawCmdsBuffer = *sptlit.drawCmdsBuffer;
@@ -925,8 +925,8 @@ void ExperimentalEnginePBR::sortSpotFromView(std::vector<uint32> &indices)
         indices.begin(), indices.end(),
         [this](uint32 lhs, uint32 rhs)
         {
-            const Vector3D lhsLen = (sceneSpotLights[lhs].transform.getTranslation() - camera.translation());
-            const Vector3D rhsLen = (sceneSpotLights[rhs].transform.getTranslation() - camera.translation());
+            const Vector3 lhsLen = (sceneSpotLights[lhs].transform.getTranslation() - camera.translation());
+            const Vector3 rhsLen = (sceneSpotLights[rhs].transform.getTranslation() - camera.translation());
 
             const float lhsSqrLen = lhsLen.sqrlength();
             const float rhsSqrLen = rhsLen.sqrlength();
@@ -952,8 +952,8 @@ void ExperimentalEnginePBR::sortPointsFromView(std::vector<uint32> &indices)
         indices.begin(), indices.end(),
         [this](uint32 lhs, uint32 rhs)
         {
-            const Vector3D lhsLen = (scenePointLights[lhs].lightPos - camera.translation());
-            const Vector3D rhsLen = (scenePointLights[rhs].lightPos - camera.translation());
+            const Vector3 lhsLen = (scenePointLights[lhs].lightPos - camera.translation());
+            const Vector3 rhsLen = (scenePointLights[rhs].lightPos - camera.translation());
 
             const float lhsSqrLen = lhsLen.sqrlength();
             const float rhsSqrLen = rhsLen.sqrlength();
@@ -997,28 +997,28 @@ void ExperimentalEnginePBR::setupCascadeShadowViews()
 {
     // Directional light cascades
     const AABB sceneBounds = sceneVolume.getBounds();
-    Vector3D sceneBoundPts[8];
-    ArrayView<Vector3D> sceneBoundPtsView(sceneBoundPts, ARRAY_LENGTH(sceneBoundPts));
+    Vector3 sceneBoundPts[8];
+    ArrayView<Vector3> sceneBoundPtsView(sceneBoundPts, ARRAY_LENGTH(sceneBoundPts));
     sceneBounds.boundCorners(sceneBoundPtsView);
 
     const Matrix3 dirLightToWorld = RotationMatrix::fromX(dirLight.direction.fwdVector()).matrix();
     const Matrix3 worldToDirLight = dirLightToWorld.transpose(); // Since it is orthogonal matrix
-    const Vector3D dirLightFwd = dirLight.direction.fwdVector();
+    const Vector3 dirLightFwd = dirLight.direction.fwdVector();
 
     Camera tempCamera = camera;
     tempCamera.setClippingPlane(camera.nearPlane(), camera.farPlane() * dirLight.cascades[0].frustumFract);
     for (uint32 i = 0; i < dirLight.cascadeCount; ++i)
     {
         // Finding view orthographic size
-        AABB box(Vector3D(FLT_MAX), Vector3D(FLT_MIN));
-        std::array<Vector3D, 8> corners;
+        AABB box(Vector3(FLT_MAX), Vector3(FLT_MIN));
+        std::array<Vector3, 8> corners;
         tempCamera.frustumCorners(corners.data());
-        for (const Vector3D &corner : corners)
+        for (const Vector3 &corner : corners)
         {
             box.grow(worldToDirLight * corner);
         }
-        Vector3D extend = box.size();
-        Vector3D center = dirLightToWorld * box.center();
+        Vector3 extend = box.size();
+        Vector3 center = dirLightToWorld * box.center();
 
         // To determine the near and far plane so that they would cover all level objects
         ValueRange<float> nearFarValues(FLT_MAX, FLT_MIN);
@@ -1047,22 +1047,22 @@ void ExperimentalEnginePBR::setupCascadeShadowViewsShimmerFix()
 {
     // Directional light cascades
     const AABB sceneBounds = sceneVolume.getBounds();
-    Vector3D sceneBoundPts[8];
-    ArrayView<Vector3D> sceneBoundPtsView(sceneBoundPts);
+    Vector3 sceneBoundPts[8];
+    ArrayView<Vector3> sceneBoundPtsView(sceneBoundPts);
     sceneBounds.boundCorners(sceneBoundPtsView);
 
-    const Vector3D dirLightFwd = dirLight.direction.fwdVector();
+    const Vector3 dirLightFwd = dirLight.direction.fwdVector();
     Camera tempCamera = camera;
     tempCamera.setClippingPlane(camera.nearPlane(), camera.farPlane() * dirLight.cascades[0].frustumFract);
     for (uint32 i = 0; i < dirLight.cascadeCount; ++i)
     {
         // Finding view orthographic size
-        std::array<Vector3D, 8> corners;
-        Vector3D center;
+        std::array<Vector3, 8> corners;
+        Vector3 center;
         tempCamera.frustumCorners(corners.data(), &center);
         // Using sphere bounds to fix rotational shimmering
         float frustumMaxRadius = 0;
-        for (const Vector3D &corner : corners)
+        for (const Vector3 &corner : corners)
         {
             frustumMaxRadius = Math::max(frustumMaxRadius, (corner - center).length());
         }
@@ -1095,11 +1095,11 @@ void ExperimentalEnginePBR::setupCascadeShadowViewsShimmerFix()
         Matrix4 projMatrix = dirLight.cascades[i].cascadeView.projectionMatrix();
         Matrix4 shadowMatrix = projMatrix * dirLight.cascades[i].cascadeView.viewMatrix().inverse();
         // No divide by W as this is orthographic projection
-        Vector3D shadowOrigin(shadowMatrix * Vector4D(Vector3D::ZERO, 1.0f));
+        Vector3 shadowOrigin(shadowMatrix * Vector4(Vector3::ZERO, 1.0f));
         shadowOrigin *= directionalShadowRT->getTextureSize().x / 2.0f;
-        Vector3D roundedOrigin = Math::round(shadowOrigin);
+        Vector3 roundedOrigin = Math::round(shadowOrigin);
         // In projected clip space
-        Vector3D roundedOffset = roundedOrigin - shadowOrigin;
+        Vector3 roundedOffset = roundedOrigin - shadowOrigin;
         roundedOffset *= 2.0f / directionalShadowRT->getTextureSize().x;
         projMatrix[3].x += roundedOffset.x();
         projMatrix[3].y += roundedOffset.y();
@@ -1108,7 +1108,7 @@ void ExperimentalEnginePBR::setupCascadeShadowViewsShimmerFix()
         // roundedOrigin.z() = shadowOrigin.z();
         // roundedOrigin *= 2.0f / directionalShadowRT->getTextureSize().x;
         // Matrix4 shadowClipToWorld = dirLight.cascades[i].cascadeView.viewMatrix() *
-        // projMatrix.inverse(); roundedOrigin = shadowClipToWorld * Vector4D(roundedOrigin, 1.0f);
+        // projMatrix.inverse(); roundedOrigin = shadowClipToWorld * Vector4(roundedOrigin, 1.0f);
         // dirLight.cascades[i].cascadeView.setTranslation(dirLight.cascades[i].cascadeView.translation()
         // + roundedOrigin);
 
@@ -1156,9 +1156,9 @@ void ExperimentalEnginePBR::createScene()
     std::uniform_real_distribution<float> ud01(0.0, 1.0);
     std::normal_distribution<float> distribution1(0.5f, 0.15f);
 
-    const Vector2D floorTextureScale(1 / 16.0f);
-    const Vector2D pillarTextureScale(1 / 3.0f, 1 / 6.0f);
-    const Vector2D textureScale(1 / 3.0f);
+    const Vector2 floorTextureScale(1 / 16.0f);
+    const Vector2 pillarTextureScale(1 / 3.0f, 1 / 6.0f);
+    const Vector2 textureScale(1 / 3.0f);
 
     std::vector<GridEntity> entities;
     auto pushEntity = [&entities, this](const PBRSceneEntity &entity)
@@ -1183,11 +1183,11 @@ void ExperimentalEnginePBR::createScene()
         for (int32 j = -halfCount; j <= halfCount; j++)
         {
             String roomIdx = String::toString((i + 1) * 3 + j + 1);
-            Vector3D offset = Vector3D(i * 1400.0f, j * 1400.0f, 0);
+            Vector3 offset = Vector3(i * 1400.0f, j * 1400.0f, 0);
             PBRSceneEntity sceneFloor;
             sceneFloor.meshAsset = cube;
-            sceneFloor.transform.setScale(Vector3D(13, 13, 1));
-            sceneFloor.transform.setTranslation(offset + Vector3D(0, 0, -45));
+            sceneFloor.transform.setScale(Vector3(13, 13, 1));
+            sceneFloor.transform.setTranslation(offset + Vector3(0, 0, -45));
             sceneFloor.name = TCHAR("floor") + roomIdx;
 
             for (uint32 batchIdx = 0; batchIdx < sceneFloor.meshAsset->meshBatches.size(); ++batchIdx)
@@ -1215,10 +1215,10 @@ void ExperimentalEnginePBR::createScene()
                         float metallic = (m * 0.1f) + 0.05f;
                         String suffix = TCHAR("_R_") + String::toString(r) + TCHAR("_M_") + String::toString(m);
 
-                        Vector3D pos = offset + Vector3D(65.f + m * 130.0f, 65.f + r * 130.f, 25.f) - Vector3D(650, 650, 0);
+                        Vector3 pos = offset + Vector3(65.f + m * 130.0f, 65.f + r * 130.f, 25.f) - Vector3(650, 650, 0);
 
                         PBRSceneEntity entity;
-                        entity.transform.setTranslation(pos + Vector3D(0, 0, 75));
+                        entity.transform.setTranslation(pos + Vector3(0, 0, 75));
                         entity.meshAsset = sphere;
                         entity.name = sphere->assetName() + suffix;
 
@@ -1250,7 +1250,7 @@ void ExperimentalEnginePBR::createScene()
                             });
                         }
                         entity.transform.setTranslation(pos);
-                        entity.transform.setScale(Vector3D(1, 1, 0.5));
+                        entity.transform.setScale(Vector3(1, 1, 0.5));
                         pushEntity(entity);
                     }
                 }
@@ -1261,19 +1261,19 @@ void ExperimentalEnginePBR::createScene()
                 //    light.lumen = 250;
                 //    light.lightcolor = LinearColorConst::WHITE;
 
-                //    light.lightPos = offset + Vector3D(250, 250, 250);
+                //    light.lightPos = offset + Vector3(250, 250, 250);
                 //    light.name = TCHAR("point0_") + roomIdx;
                 //    pushPt(light);
 
-                //    light.lightPos = offset + Vector3D(250, -250, 250);
+                //    light.lightPos = offset + Vector3(250, -250, 250);
                 //    light.name = TCHAR("point1_") + roomIdx;
                 //    pushPt(light);
 
-                //    light.lightPos = offset + Vector3D(-250, 250, 250);
+                //    light.lightPos = offset + Vector3(-250, 250, 250);
                 //    light.name = TCHAR("point2_") + roomIdx;
                 //    pushPt(light);
 
-                //    light.lightPos = offset + Vector3D(-250, -250, 250);
+                //    light.lightPos = offset + Vector3(-250, -250, 250);
                 //    light.name = TCHAR("point3_") + roomIdx;
                 //    pushPt(light);
                 //}
@@ -1285,7 +1285,7 @@ void ExperimentalEnginePBR::createScene()
                 {
                     batchProp.textureName = ceilTypes[uint32(ceilTypes.size() * ud01(generator))];
                 }
-                sceneFloor.transform.setTranslation(offset + Vector3D(0, 0, 550));
+                sceneFloor.transform.setTranslation(offset + Vector3(0, 0, 550));
                 sceneFloor.name = TCHAR("ceil") + roomIdx;
                 pushEntity(sceneFloor);
 
@@ -1294,7 +1294,7 @@ void ExperimentalEnginePBR::createScene()
                     PBRSceneEntity entity;
                     entity.meshAsset = assets[std::rand() % assets.size()];
                     entity.transform.setTranslation(
-                        offset + Vector3D(distribution(generator) * 400, distribution(generator) * 400, distribution1(generator) * 100 + 50)
+                        offset + Vector3(distribution(generator) * 400, distribution(generator) * 400, distribution1(generator) * 100 + 50)
                     );
                     entity.transform.setRotation(Rotation(0, 0, distribution(generator) * 45));
                     entity.name = entity.meshAsset->assetName() + roomIdx + TCHAR("_") + String::toString(n);
@@ -1317,15 +1317,15 @@ void ExperimentalEnginePBR::createScene()
                     light.innerCone = 60;
                     light.outerCone = 80;
                     light.lumen = 200;
-                    light.transform.setTranslation(offset + Vector3D(0, 0, height));
+                    light.transform.setTranslation(offset + Vector3(0, 0, height));
 
-                    Vector3D dir = Vector3D(distribution(generator), distribution(generator), -0.5);
+                    Vector3 dir = Vector3(distribution(generator), distribution(generator), -0.5);
                     light.name = TCHAR("spot0_") + roomIdx;
                     light.lightcolor = LinearColor(distribution1(generator), distribution1(generator), distribution1(generator), 1);
                     light.transform.setRotation(RotationMatrix::fromX(dir).asRotation());
                     pushSpt(light);
 
-                    dir = dir * Vector3D(-1, -1, 1);
+                    dir = dir * Vector3(-1, -1, 1);
                     light.name = TCHAR("spot1_") + roomIdx;
                     light.lightcolor = LinearColor(distribution1(generator), distribution1(generator), distribution1(generator), 1);
                     light.transform.setRotation(RotationMatrix::fromX(dir).asRotation());
@@ -1337,22 +1337,22 @@ void ExperimentalEnginePBR::createScene()
                     light.radius = 800;
                     light.lumen = 250;
 
-                    light.lightPos = offset + Vector3D(400, 400, 130);
+                    light.lightPos = offset + Vector3(400, 400, 130);
                     light.name = TCHAR("point0_") + roomIdx;
                     light.lightcolor = LinearColor(distribution1(generator), distribution1(generator), distribution1(generator), 1);
                     pushPt(light);
 
-                    light.lightPos = offset + Vector3D(400, -400, 130);
+                    light.lightPos = offset + Vector3(400, -400, 130);
                     light.name = TCHAR("point1_") + roomIdx;
                     light.lightcolor = LinearColor(distribution1(generator), distribution1(generator), distribution1(generator), 1);
                     pushPt(light);
 
-                    light.lightPos = offset + Vector3D(-400, 400, 130);
+                    light.lightPos = offset + Vector3(-400, 400, 130);
                     light.name = TCHAR("point2_") + roomIdx;
                     light.lightcolor = LinearColor(distribution1(generator), distribution1(generator), distribution1(generator), 1);
                     pushPt(light);
 
-                    light.lightPos = offset + Vector3D(-400, -400, 130);
+                    light.lightPos = offset + Vector3(-400, -400, 130);
                     light.name = TCHAR("point3_") + roomIdx;
                     light.lightcolor = LinearColor(distribution1(generator), distribution1(generator), distribution1(generator), 1);
                     pushPt(light);
@@ -1365,8 +1365,8 @@ void ExperimentalEnginePBR::createScene()
                     batchProp.textureName = pillarTypes[uint32(pillarTypes.size() * ud01(generator))];
                 }
                 sceneFloor.meshAsset = cylinder;
-                sceneFloor.transform.setScale(Vector3D(1, 1, 5));
-                sceneFloor.transform.setTranslation(offset + Vector3D(450, 450, 250));
+                sceneFloor.transform.setScale(Vector3(1, 1, 5));
+                sceneFloor.transform.setTranslation(offset + Vector3(450, 450, 250));
                 sceneFloor.name = TCHAR("pillar1_") + roomIdx;
                 pushEntity(sceneFloor);
 
@@ -1374,7 +1374,7 @@ void ExperimentalEnginePBR::createScene()
                 {
                     batchProp.textureName = pillarTypes[uint32(pillarTypes.size() * ud01(generator))];
                 }
-                sceneFloor.transform.setTranslation(offset + Vector3D(-450, 450, 250));
+                sceneFloor.transform.setTranslation(offset + Vector3(-450, 450, 250));
                 sceneFloor.name = TCHAR("pillar2_") + roomIdx;
                 pushEntity(sceneFloor);
 
@@ -1382,7 +1382,7 @@ void ExperimentalEnginePBR::createScene()
                 {
                     batchProp.textureName = pillarTypes[uint32(pillarTypes.size() * ud01(generator))];
                 }
-                sceneFloor.transform.setTranslation(offset + Vector3D(450, -450, 250));
+                sceneFloor.transform.setTranslation(offset + Vector3(450, -450, 250));
                 sceneFloor.name = TCHAR("pillar3_") + roomIdx;
                 pushEntity(sceneFloor);
 
@@ -1390,7 +1390,7 @@ void ExperimentalEnginePBR::createScene()
                 {
                     batchProp.textureName = pillarTypes[uint32(pillarTypes.size() * ud01(generator))];
                 }
-                sceneFloor.transform.setTranslation(offset + Vector3D(-450, -450, 250));
+                sceneFloor.transform.setTranslation(offset + Vector3(-450, -450, 250));
                 sceneFloor.name = TCHAR("pillar4_") + roomIdx;
                 pushEntity(sceneFloor);
             }
@@ -1401,8 +1401,8 @@ void ExperimentalEnginePBR::createScene()
         PBRSceneEntity carsFloor;
         carsFloor.name = TCHAR("ShowroomFloor");
         carsFloor.meshAsset = cylinder;
-        carsFloor.transform.setScale(Vector3D(13, 13, 1));
-        carsFloor.transform.setTranslation(Vector3D(0, 2800, -45));
+        carsFloor.transform.setScale(Vector3(13, 13, 1));
+        carsFloor.transform.setTranslation(Vector3(0, 2800, -45));
         for (uint32 batchIdx = 0; batchIdx < carsFloor.meshAsset->meshBatches.size(); ++batchIdx)
         {
             carsFloor.meshBatchProps.emplace_back(PBRSceneEntity::BatchProperties{ LinearColorConst::WHITE, 1.f, 1.f, floorTextureScale,
@@ -1414,10 +1414,10 @@ void ExperimentalEnginePBR::createScene()
         car.name = TCHAR("DodgeChallenger");
         car.meshAsset = static_cast<StaticMeshAsset *>(assetManager.getAsset(car.name));
         fatalAssertf(car.meshAsset, "Failed finding car mesh %s", car.name.getChar());
-        car.transform.setTranslation(Vector3D(0, 2800, 0));
+        car.transform.setTranslation(Vector3(0, 2800, 0));
         for (uint32 batchIdx = 0; batchIdx < car.meshAsset->meshBatches.size(); ++batchIdx)
         {
-            car.meshBatchProps.emplace_back(PBRSceneEntity::BatchProperties{ LinearColorConst::WHITE, 1.f, 1.f, Vector2D::ONE,
+            car.meshBatchProps.emplace_back(PBRSceneEntity::BatchProperties{ LinearColorConst::WHITE, 1.f, 1.f, Vector2::ONE,
                                                                              car.name + car.meshAsset->meshBatches[batchIdx].name,
                                                                              &texturedPipelineContext });
         }
@@ -1425,7 +1425,7 @@ void ExperimentalEnginePBR::createScene()
 
         // SpotLight heroLight;
         // heroLight.name = TCHAR("HeroLight");
-        // heroLight.transform.setTranslation(car.transform.getTranslation() + Vector3D(0, 0, 400));
+        // heroLight.transform.setTranslation(car.transform.getTranslation() + Vector3(0, 0, 400));
         // heroLight.transform.setRotation(Rotation(0, 90, 0));
         // heroLight.radius = 600;
         // heroLight.innerCone = 72;
@@ -1435,7 +1435,7 @@ void ExperimentalEnginePBR::createScene()
         // pushSpt(heroLight);
     }
 
-    sceneVolume.reinitialize(entities, Vector3D(50, 50, 50));
+    sceneVolume.reinitialize(entities, Vector3(50, 50, 50));
 }
 
 void ExperimentalEnginePBR::createSceneRenderData(
@@ -1622,7 +1622,7 @@ void PointLight::update() const
     PbrPointLight ptLit;
     ptLit.ptLightColor_lumen = lightcolor;
     ptLit.ptLightColor_lumen.w() = lumen;
-    ptLit.ptPos_radius = Vector4D(lightPos.x(), lightPos.y(), lightPos.z(), radius);
+    ptLit.ptPos_radius = Vector4(lightPos.x(), lightPos.y(), lightPos.z(), radius);
     (*paramCollection)->setBuffer(TCHAR("ptLits"), ptLit, index);
 
     if (shadowMap != nullptr && shadowViewParams /* && (*shadowViewParams).isValid()*/)
@@ -1631,7 +1631,7 @@ void PointLight::update() const
         {
             Matrix4 w2Clip = views[i].projectionMatrix() * views[i].viewMatrix().inverse();
             (*shadowViewParams)->setMatrixParam(TCHAR("w2Clip"), w2Clip, i);
-            (*shadowViewParams)->setVector4Param(TCHAR("lightPosFarPlane"), Vector4D(lightPos, radius));
+            (*shadowViewParams)->setVector4Param(TCHAR("lightPosFarPlane"), Vector4(lightPos, radius));
         }
     }
 }
@@ -1639,12 +1639,12 @@ void PointLight::update() const
 void SpotLight::update() const
 {
     PbrSpotLight spotLit;
-    Vector3D temp = transform.getRotation().fwdVector();
-    spotLit.sptDirection = Vector4D(temp.x(), temp.y(), temp.z(), lumen);
-    spotLit.sptPos_radius = Vector4D(transform.getTranslation().x(), transform.getTranslation().y(), transform.getTranslation().z(), radius);
+    Vector3 temp = transform.getRotation().fwdVector();
+    spotLit.sptDirection = Vector4(temp.x(), temp.y(), temp.z(), lumen);
+    spotLit.sptPos_radius = Vector4(transform.getTranslation().x(), transform.getTranslation().y(), transform.getTranslation().z(), radius);
     spotLit.sptLightColor_lumen = lightcolor;
     spotLit.sptLightColor_lumen.w() = lumen;
-    spotLit.sptCone = Vector2D(Math::cos(Math::deg2Rad(innerCone * 0.5f)), Math::cos(Math::deg2Rad(outerCone * 0.5f)));
+    spotLit.sptCone = Vector2(Math::cos(Math::deg2Rad(innerCone * 0.5f)), Math::cos(Math::deg2Rad(outerCone * 0.5f)));
     (*paramCollection)->setBuffer(TCHAR("spotLits"), spotLit, index);
 
     if (shadowMap != nullptr && shadowViewParams /* && (*shadowViewParams).isValid()*/)
@@ -1655,8 +1655,8 @@ void SpotLight::update() const
         viewData.invProjection = viewData.projection.inverse();
         viewData.invView = viewData.view.inverse();
         Matrix4 ndcToTextureSpace(
-            Vector4D(0.5f, 0.0f, 0.0f, 0.0f), Vector4D(0.0f, 0.5f, 0.0f, 0.0f), Vector4D(0.0f, 0.0f, 1.0f, 0.0f),
-            Vector4D(0.5f, 0.5f, 0.0f, 1.0f)
+            Vector4(0.5f, 0.0f, 0.0f, 0.0f), Vector4(0.0f, 0.5f, 0.0f, 0.0f), Vector4(0.0f, 0.0f, 1.0f, 0.0f),
+            Vector4(0.5f, 0.5f, 0.0f, 1.0f)
         );
 
         (*paramCollection)->setMatrixParam(TCHAR("sptLitsW2C"), ndcToTextureSpace * viewData.projection * viewData.invView, index);
@@ -1666,7 +1666,7 @@ void SpotLight::update() const
 
 void DirectionalLight::update() const
 {
-    auto dirLit = PbrDirectionalLight{ Vector4D(lightcolor), direction.fwdVector() };
+    auto dirLit = PbrDirectionalLight{ Vector4(lightcolor), direction.fwdVector() };
     dirLit.lightColor_lumen.w() = lumen;
     (*paramCollection)->setBuffer(TCHAR("dirLit"), dirLit);
 
@@ -1683,8 +1683,8 @@ void DirectionalLight::update() const
         {
             Matrix4 w2Clip = cascades[i].cascadeView.projectionMatrix() * cascades[i].cascadeView.viewMatrix().inverse();
             Matrix4 ndcToTextureSpace(
-                Vector4D(0.5f, 0.0f, 0.0f, 0.0f), Vector4D(0.0f, 0.5f, 0.0f, 0.0f), Vector4D(0.0f, 0.0f, 1.0f, 0.0f),
-                Vector4D(0.5f, 0.5f, 0.0f, 1.0f)
+                Vector4(0.5f, 0.0f, 0.0f, 0.0f), Vector4(0.0f, 0.5f, 0.0f, 0.0f), Vector4(0.0f, 0.0f, 1.0f, 0.0f),
+                Vector4(0.5f, 0.5f, 0.0f, 1.0f)
             );
 
             (*paramCollection)->setFloatParam(TCHAR("cascadeFarPlane"), cascades[i].frustumFarDistance, i);
@@ -1870,7 +1870,7 @@ void ExperimentalEnginePBR::setupShaderParameterParams(IGraphicsInstance *, cons
     drawQuadDepthDescs.init();
     drawLitColorsDescs.init();
 
-    clearInfoParams->setVector4Param(TCHAR("clearColor"), Vector4D(0, 0, 0, 0));
+    clearInfoParams->setVector4Param(TCHAR("clearColor"), Vector4(0, 0, 0, 0));
     clearInfoParams->init();
 
     Camera gizmoCamera;
@@ -2074,7 +2074,7 @@ void ExperimentalEnginePBR::setupLightShaderData()
     }
 }
 
-void ExperimentalEnginePBR::resizeLightingRts(const Size2D &size)
+void ExperimentalEnginePBR::resizeLightingRts(const UInt2 &size)
 {
     WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(application->windowManager->getMainWindow());
 
@@ -2292,15 +2292,15 @@ void ExperimentalEnginePBR::updateCameraParams()
     }
     if (application->inputSystem->isKeyPressed(Keys::Q))
     {
-        cameraTranslation -= Vector3D::UP * timeData.deltaTime * timeData.activeTimeDilation * camSpeedModifier * 150.f;
+        cameraTranslation -= Vector3::UP * timeData.deltaTime * timeData.activeTimeDilation * camSpeedModifier * 150.f;
     }
     if (application->inputSystem->isKeyPressed(Keys::E))
     {
-        cameraTranslation += Vector3D::UP * timeData.deltaTime * timeData.activeTimeDilation * camSpeedModifier * 150.f;
+        cameraTranslation += Vector3::UP * timeData.deltaTime * timeData.activeTimeDilation * camSpeedModifier * 150.f;
     }
     if (application->inputSystem->keyState(Keys::R)->keyWentUp)
     {
-        cameraRotation = RotationMatrix::fromZX(Vector3D::UP, cameraRotation.fwdVector()).asRotation();
+        cameraRotation = RotationMatrix::fromZX(Vector3::UP, cameraRotation.fwdVector()).asRotation();
         bCamRotated = true;
     }
 
@@ -2325,7 +2325,7 @@ void ExperimentalEnginePBR::updateCameraParams()
         projectionChanged();
     }
     static DelegateHandle handle = ApplicationSettings::surfaceSize.onConfigChanged().bindLambda(
-        [projectionChanged](Size2D, Size2D)
+        [projectionChanged](UInt2, UInt2)
         {
             projectionChanged();
         }
@@ -2367,11 +2367,11 @@ void ExperimentalEnginePBR::onStartUp()
     camera.setClippingPlane(0.1f, 6000.f);
     camera.setFOV((110.f * ApplicationSettings::surfaceSize.get().x) / (ApplicationSettings::surfaceSize.get().y * 1.78f), 90.f);
 
-    cameraTranslation = Vector3D(0.f, 1.f, 0.0f).safeNormalized() * (500);
+    cameraTranslation = Vector3(0.f, 1.f, 0.0f).safeNormalized() * (500);
     cameraTranslation.z() += 200;
 
     camera.setTranslation(cameraTranslation);
-    camera.lookAt(Vector3D::ZERO);
+    camera.lookAt(Vector3::ZERO);
     cameraRotation = camera.rotation();
 
     thinColor = LinearColorConst::GRAY;
@@ -2497,14 +2497,14 @@ void ExperimentalEnginePBR::frameRender(
     //}
     // frameResources[index].recordingFence->resetSignal();
 
-    QuantizedBox2D viewport;
+    IRect viewport;
     // Since view matrix positive y is along up while vulkan positive y in view is down
     viewport.minBound.x = 0;
     viewport.minBound.y = ApplicationSettings::screenSize.get().y;
     viewport.maxBound.x = ApplicationSettings::screenSize.get().x;
     viewport.maxBound.y = 0;
 
-    QuantizedBox2D scissor;
+    IRect scissor;
     scissor.minBound = { 0, 0 };
     scissor.maxBound = ApplicationSettings::screenSize.get();
 
@@ -2544,7 +2544,7 @@ void ExperimentalEnginePBR::frameRender(
         cmdList->cmdEndRenderPass(cmdBuffer);
 
         // Drawing lighting quads
-        viewport.minBound = Int2D(0, 0);
+        viewport.minBound = Int2(0, 0);
         viewport.maxBound = ApplicationSettings::screenSize.get();
 
         cmdList->cmdBindVertexBuffer(cmdBuffer, 0, GlobalBuffers::getQuadTriVertexBuffer(), 0);
@@ -2660,7 +2660,7 @@ void ExperimentalEnginePBR::frameRender(
         getImGuiManager().draw(cmdList, graphicsInstance, graphicsHelper, drawingContext);
 
         // Drawing final resolve to presenting surface quad
-        viewport.minBound = Int2D(0, 0);
+        viewport.minBound = Int2(0, 0);
         viewport.maxBound = scissor.maxBound = ApplicationSettings::surfaceSize.get();
 
         cmdList->cmdBindVertexBuffer(cmdBuffer, 0, GlobalBuffers::getQuadTriVertexBuffer(), 0);
@@ -2702,7 +2702,7 @@ void ExperimentalEnginePBR::updateCamGizmoViewParams()
 {
     Camera gizmoCam;
     gizmoCam.setTranslation(-camera.rotation().fwdVector() * 150);
-    gizmoCam.lookAt(Vector3D::ZERO);
+    gizmoCam.lookAt(Vector3::ZERO);
 
     camViewAndInstanceParams->setMatrixParam(TCHAR("invView"), gizmoCam.viewMatrix().inverse());
 }
@@ -2719,14 +2719,14 @@ void ExperimentalEnginePBR::updateCamGizmoCapture(class IRenderCommandList *cmdL
         pipelineState.pipelineQuery = { EPolygonDrawMode::Fill, ECullingMode::BackFace };
         pipelineState.lineWidth = 3.0f;
 
-        QuantizedBox2D viewport;
+        IRect viewport;
         // Since view matrix positive y is along up while vulkan positive y in view is down
         viewport.minBound.x = 0;
         viewport.minBound.y = camGizmoColorTexture->getTextureSize().y;
         viewport.maxBound.x = camGizmoColorTexture->getTextureSize().x;
         viewport.maxBound.y = 0;
 
-        QuantizedBox2D scissor;
+        IRect scissor;
         scissor.minBound = { 0, 0 };
         scissor.maxBound = camGizmoColorTexture->getTextureSize();
 
@@ -2769,8 +2769,8 @@ void ExperimentalEnginePBR::renderShadows(class IRenderCommandList *cmdList, IGr
     faceFillQueryParam.drawMode = EPolygonDrawMode::Fill;
 
     // This will render shadows inverted y(1, -1) but we are fine with that
-    QuantizedBox2D viewport(Int2D(0, 0), Int2D(directionalShadowRT->getTextureSize()));
-    QuantizedBox2D scissor = viewport;
+    IRect viewport(Int2(0, 0), Int2(directionalShadowRT->getTextureSize()));
+    IRect scissor = viewport;
 
     SCOPED_CMD_MARKER(cmdList, cmdBuffer, RenderShadows);
     cmdList->cmdBindVertexBuffer(cmdBuffer, 0, sceneVertexBuffer, 0);
@@ -2797,7 +2797,7 @@ void ExperimentalEnginePBR::renderShadows(class IRenderCommandList *cmdList, IGr
         {
             if (sptlit.shadowViewParams && sptlit.shadowMap && sptlit.drawCmdsBuffer)
             {
-                viewport = { Int2D(0, 0), Int2D(sptlit.shadowMap->getTextureSize()) };
+                viewport = { Int2(0, 0), Int2(sptlit.shadowMap->getTextureSize()) };
                 scissor = viewport;
 
                 const IRenderTargetTexture *shadowMapRt = sptlit.shadowMap;
@@ -2835,8 +2835,8 @@ void ExperimentalEnginePBR::renderShadows(class IRenderCommandList *cmdList, IGr
         {
             if (ptlit.shadowViewParams && ptlit.shadowMap && ptlit.drawCmdsBuffer)
             {
-                viewport = { Int2D(0, ptlit.shadowMap->getTextureSize().y), Int2D(ptlit.shadowMap->getTextureSize().x, 0) };
-                scissor = { Int2D(0, 0), Int2D(ptlit.shadowMap->getTextureSize()) };
+                viewport = { Int2(0, ptlit.shadowMap->getTextureSize().y), Int2(ptlit.shadowMap->getTextureSize().x, 0) };
+                scissor = { Int2(0, 0), Int2(ptlit.shadowMap->getTextureSize()) };
 
                 const IRenderTargetTexture *shadowMapRt = ptlit.shadowMap;
                 rendererModule->getRenderManager()->preparePipelineContext(&pointShadowPipelineContext, { &shadowMapRt, 1 });
@@ -2880,14 +2880,14 @@ void ExperimentalEnginePBR::debugFrameRender(
     debugSceneDrawAdditionalProps.colorAttachmentLoadOp = EAttachmentOp::LoadOp::Load;
 
     // Drawing in scene first
-    QuantizedBox2D viewport;
+    IRect viewport;
     // Since view matrix positive y is along up while vulkan positive y in view is down
     viewport.minBound.x = 0;
     viewport.minBound.y = ApplicationSettings::screenSize.get().y;
     viewport.maxBound.x = ApplicationSettings::screenSize.get().x;
     viewport.maxBound.y = 0;
 
-    QuantizedBox2D scissor;
+    IRect scissor;
     scissor.minBound = { 0, 0 };
     scissor.maxBound = ApplicationSettings::screenSize.get();
 
@@ -2945,8 +2945,8 @@ void ExperimentalEnginePBR::debugFrameRender(
                 {        TCHAR("gridCellSize"),         gridCellSize},
                 {      TCHAR("gridExtendSize"),       gridExtendSize},
                                                            {TCHAR("cellMinPixelCoverage"), cellMinPixelCoverage},
-                                                             {           TCHAR("thinColor"),  Vector4D(thinColor)},
-                                                               {          TCHAR("thickColor"), Vector4D(thickColor)}
+                                                             {           TCHAR("thinColor"),  Vector4(thinColor)},
+                                                               {          TCHAR("thickColor"), Vector4(thickColor)}
             };
             GraphicsPipelineState pipelineState;
             pipelineState.pipelineQuery = { EPolygonDrawMode::Fill, ECullingMode::None };
@@ -2970,12 +2970,12 @@ void ExperimentalEnginePBR::debugFrameRender(
         RenderPassAdditionalProps drawOverlay;
         drawOverlay.colorAttachmentLoadOp = EAttachmentOp::LoadOp::Load;
 
-        const Int2D margin(10, 10);
+        const Int2 margin(10, 10);
 
-        Vector2D viewportSize
-            = (Vector2D(camGizmoColorTexture->getTextureSize()) / Vector2D(3840, 2160)) * Vector2D(ApplicationSettings::screenSize.get());
-        viewport.minBound = Int2D(0 + margin.x, ApplicationSettings::screenSize.get().y - int32(viewportSize.y()) - margin.y);
-        viewport.maxBound = viewport.minBound + Int2D(viewportSize.x(), viewportSize.y());
+        Vector2 viewportSize
+            = (Vector2(camGizmoColorTexture->getTextureSize()) / Vector2(3840, 2160)) * Vector2(ApplicationSettings::screenSize.get());
+        viewport.minBound = Int2(0 + margin.x, ApplicationSettings::screenSize.get().y - int32(viewportSize.y()) - margin.y);
+        viewport.maxBound = viewport.minBound + Int2(viewportSize.x(), viewportSize.y());
 
         scissor = viewport;
 
@@ -3021,18 +3021,18 @@ void ExperimentalEnginePBR::tickEngine()
     if (application->inputSystem->keyState(Keys::LMB)->keyWentDown && !getImGuiManager().capturedInputs()
         && !application->windowManager->getMainWindow()->isMinimized())
     {
-        QuantShortBox2D windowArea = application->windowManager->getMainWindow()->windowClientRect();
-        Vector2D windowOrigin{ float(windowArea.minBound.x), float(windowArea.minBound.y) };
-        Vector2D mouseCoord = Vector2D(
+        ShortRect windowArea = application->windowManager->getMainWindow()->windowClientRect();
+        Vector2 windowOrigin{ float(windowArea.minBound.x), float(windowArea.minBound.y) };
+        Vector2 mouseCoord = Vector2(
                                   application->inputSystem->analogState(AnalogStates::AbsMouseX)->currentValue,
                                   application->inputSystem->analogState(AnalogStates::AbsMouseY)->currentValue
                               )
                               - windowOrigin;
-        mouseCoord /= Vector2D(ApplicationSettings::surfaceSize.get());
+        mouseCoord /= Vector2(ApplicationSettings::surfaceSize.get());
         LOG_DEBUG("ExperimentalEnginePBR", "mouse coord (%f, %f)", mouseCoord.x(), mouseCoord.y());
         if (mouseCoord.x() >= 0 && mouseCoord.x() <= 1.0f && mouseCoord.y() >= 0 && mouseCoord.y() <= 1.0f)
         {
-            Vector3D worldFwd = camera.screenToWorldFwd(mouseCoord);
+            Vector3 worldFwd = camera.screenToWorldFwd(mouseCoord);
             std::vector<GridEntity> entities;
             if (sceneVolume.raycast(entities, camera.translation(), worldFwd, 2000))
             {
@@ -3085,8 +3085,8 @@ int32 ExperimentalEnginePBR::sublayerDepth() const { return 0; }
 class TestWidget : public WidgetBase
 {
 private:
-    Short2D origin = { 300, 300 };
-    Short2D halfExtent = { 75, 50 };
+    Short2 origin = { 300, 300 };
+    Short2 halfExtent = { 75, 50 };
     Color colors[4] = { ColorConst::GREEN, ColorConst::GREEN, ColorConst::GREEN, ColorConst::GREEN };
     Color color = ColorConst::GREEN;
 
@@ -3095,8 +3095,8 @@ private:
 public:
     struct WgArguments
     {
-        Short2D origin = { 300, 300 };
-        Short2D halfExtent = { 75, 50 };
+        Short2 origin = { 300, 300 };
+        Short2 halfExtent = { 75, 50 };
         Color color = ColorConst::GREEN;
         // 1 or 2 or 3 or 0
         uint32 style;
@@ -3120,7 +3120,7 @@ public:
         if (args.style == 2)
         {
             TestWidget::WgArguments childArgs = args;
-            childArgs.origin = halfExtent * Short2D(2);
+            childArgs.origin = halfExtent * Short2(2);
             childArgs.style = 0;
             childArgs.color = Color{ 255, 0, 0, 130 };
             auto wg = std::make_shared<TestWidget>();
@@ -3130,26 +3130,26 @@ public:
         if (args.style == 3)
         {
             TestWidget::WgArguments childArgs = args;
-            childArgs.origin = Short2D(halfExtent.x + 2 * origin.x, halfExtent.y);
+            childArgs.origin = Short2(halfExtent.x + 2 * origin.x, halfExtent.y);
             childArgs.color = ColorConst::BLUE;
             childArgs.style = 0;
             auto wg = std::make_shared<TestWidget>();
             wg->construct(childArgs);
             content = wg;
 
-            childArgs.origin = Short2D(halfExtent.x, 2 * halfExtent.y + origin.y);
+            childArgs.origin = Short2(halfExtent.x, 2 * halfExtent.y + origin.y);
             childArgs.color = ColorConst::RED;
             wg = std::make_shared<TestWidget>();
             wg->construct(childArgs);
             content->content = wg;
 
-            childArgs.origin = Short2D(halfExtent.x - 2 * origin.x, halfExtent.y);
+            childArgs.origin = Short2(halfExtent.x - 2 * origin.x, halfExtent.y);
             childArgs.color = ColorConst::GRAY;
             wg = std::make_shared<TestWidget>();
             wg->construct(childArgs);
             content->content->content = wg;
 
-            childArgs.origin = Short2D(halfExtent.x + origin.x, 0);
+            childArgs.origin = Short2(halfExtent.x + origin.x, 0);
             childArgs.color = ColorConst::CYAN;
             wg = std::make_shared<TestWidget>();
             wg->construct(childArgs);
@@ -3170,9 +3170,9 @@ protected:
     }
 
 public:
-    void drawWidget(QuantShortBox2D clipBound, WidgetGeomId thisId, const WidgetGeomTree &geomTree, WidgetDrawContext &context) override
+    void drawWidget(ShortRect clipBound, WidgetGeomId thisId, const WidgetGeomTree &geomTree, WidgetDrawContext &context) override
     {
-        const QuantShortBox2D &box = geomTree[thisId].box;
+        const ShortRect &box = geomTree[thisId].box;
         context.drawBox(box, nullptr, clipBound, colors);
         if (content)
         {
@@ -3197,7 +3197,7 @@ public:
         return EInputHandleState::NotHandled;
     }
 
-    void mouseEnter(Short2D /*absPos*/, Short2D /*widgetRelPos*/, const InputSystem * /*inputSystem*/) override
+    void mouseEnter(Short2 /*absPos*/, Short2 /*widgetRelPos*/, const InputSystem * /*inputSystem*/) override
     {
         colors[0] = ColorConst::random();
         colors[1] = ColorConst::random();
@@ -3205,9 +3205,9 @@ public:
         colors[3] = ColorConst::random();
     }
 
-    void mouseMoved(Short2D /*absPos*/, Short2D /*widgetRelPos*/, const InputSystem * /*inputSystem*/) override {}
+    void mouseMoved(Short2 /*absPos*/, Short2 /*widgetRelPos*/, const InputSystem * /*inputSystem*/) override {}
 
-    void mouseLeave(Short2D /*absPos*/, Short2D /*widgetRelPos*/, const InputSystem * /*inputSystem*/) override
+    void mouseLeave(Short2 /*absPos*/, Short2 /*widgetRelPos*/, const InputSystem * /*inputSystem*/) override
     {
         colors[0] = color;
         colors[1] = color;
@@ -3255,7 +3255,7 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface *drawInterface)
             SharedPtr<WgWindow> wnd = application->getHoveringWindow();
             if (wnd)
             {
-                Short2D wndRelPos = wnd->screenToWgWindowSpace(Short2D(amxState->currentValue, amyState->currentValue));
+                Short2 wndRelPos = wnd->screenToWgWindowSpace(Short2(amxState->currentValue, amyState->currentValue));
                 ImGui::Text(
                     "Cursor pos in window %s (%d, %d)", TCHAR_TO_UTF8(wnd->getAppWindow()->getWindowName().getChar()), wndRelPos.x, wndRelPos.y
                 );
@@ -3320,16 +3320,16 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface *drawInterface)
                     switch (currRes)
                     {
                     case 0:
-                        renderSize = Size2D(1280, 720);
+                        renderSize = UInt2(1280, 720);
                         break;
                     case 1:
-                        renderSize = Size2D(1920, 1080);
+                        renderSize = UInt2(1920, 1080);
                         break;
                     case 2:
-                        renderSize = Size2D(2560, 1440);
+                        renderSize = UInt2(2560, 1440);
                         break;
                     case 3:
-                        renderSize = Size2D(3840, 2160);
+                        renderSize = UInt2(3840, 2160);
                         break;
                     }
                 }
@@ -3421,14 +3421,14 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface *drawInterface)
 
                     if (ImGui::ColorEdit3("Color", reinterpret_cast<float *>(&dirLight.lightcolor)))
                     {
-                        Vector4D param{ dirLight.lightcolor };
+                        Vector4 param{ dirLight.lightcolor };
                         param.w() = dirLight.lumen;
                         (*dirLight.paramCollection)->setVector4Param(TCHAR("lightColor_lumen"), param);
                     }
 
                     if (ImGui::InputFloat("Lumen", &dirLight.lumen, 1.0f, 10.f, "%.1f"))
                     {
-                        Vector4D param{ dirLight.lightcolor };
+                        Vector4 param{ dirLight.lightcolor };
                         param.w() = dirLight.lumen;
                         (*dirLight.paramCollection)->setVector4Param(TCHAR("lightColor_lumen"), param);
                     }

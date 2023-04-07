@@ -32,7 +32,7 @@ class Object;
 class COREOBJECTS_EXPORT ObjectArchive : public ArchiveBase
 {
 protected:
-    ArchiveBase *innerArchive;
+    ArchiveBase *innerArchive = nullptr;
 
 public:
     ObjectArchive() = default;

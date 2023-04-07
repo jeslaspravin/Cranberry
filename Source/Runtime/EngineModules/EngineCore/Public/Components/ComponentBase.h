@@ -72,13 +72,13 @@ public:
     void invalidateComponent();
     FORCE_INLINE void clearInvalidatedFlag() { bInvalidated = false; }
 
-    const Vector3D &setRelativeLocation(Vector3D location);
+    const Vector3 &setRelativeLocation(Vector3 location);
     const Rotation &setRelativeRotation(Rotation rotation);
-    const Vector3D &setRelativeScale(Vector3D scale);
+    const Vector3 &setRelativeScale(Vector3 scale);
     const Transform3D &setRelativeTransform(const Transform3D &newRelativeTf);
-    Vector3D setWorldLocation(Vector3D location);
+    Vector3 setWorldLocation(Vector3 location);
     Rotation setWorldRotation(Rotation rotation);
-    Vector3D setWorldScale(Vector3D scale);
+    Vector3 setWorldScale(Vector3 scale);
     Transform3D setWorldTransform(const Transform3D &newTf);
     FORCE_INLINE void clearTransformedFlag() { bTransformed = false; }
 
@@ -86,13 +86,13 @@ public:
     // Searches prefab or world to determine component's actual attachTo even when world is not being played
     TransformComponent *canonicalAttachedTo();
 
-    FORCE_INLINE const Vector3D &getRelativeLocation() const { return relativeTf.getTranslation(); }
+    FORCE_INLINE const Vector3 &getRelativeLocation() const { return relativeTf.getTranslation(); }
     FORCE_INLINE const Rotation &getRelativeRotation() const { return relativeTf.getRotation(); }
-    FORCE_INLINE const Vector3D &getRelativeScale() const { return relativeTf.getScale(); }
+    FORCE_INLINE const Vector3 &getRelativeScale() const { return relativeTf.getScale(); }
     FORCE_INLINE const Transform3D &getRelativeTransform() const { return relativeTf; }
-    FORCE_INLINE Vector3D getWorldLocation() const { return getWorldTransform().getTranslation(); }
+    FORCE_INLINE Vector3 getWorldLocation() const { return getWorldTransform().getTranslation(); }
     FORCE_INLINE Rotation getWorldRotation() const { return getWorldTransform().getRotation(); }
-    FORCE_INLINE Vector3D getWorldScale() const { return getWorldTransform().getScale(); }
+    FORCE_INLINE Vector3 getWorldScale() const { return getWorldTransform().getScale(); }
     Transform3D getWorldTransform() const;
 
     World *getWorld() const;

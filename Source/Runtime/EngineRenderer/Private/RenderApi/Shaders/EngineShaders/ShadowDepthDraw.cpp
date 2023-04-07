@@ -11,7 +11,7 @@
 
 #include "RenderApi/Shaders/EngineShaders/ShadowDepthDraw.h"
 #include "Math/RotationMatrix.h"
-#include "Math/Vector3D.h"
+#include "Math/Vector3.h"
 
 BEGIN_BUFFER_DEFINITION(PointShadowDepthViews)
 ADD_BUFFER_TYPED_FIELD(w2Clip)
@@ -37,9 +37,9 @@ ShaderBufferParamInfo *PointShadowDepthViews::paramInfo()
 
 // Doing explicit negation over unary negation to avoid unwanted rotation when doing atan2
 Rotation PointShadowDepthViews::VIEW_DIRECTIONS[6]
-    = { RotationMatrix::fromZX(Vector3D::UP, Vector3D::RIGHT).asRotation(),
-        RotationMatrix::fromZX(Vector3D::UP, Vector3D(0, -1, 0) /*-Vector3D::RIGHT*/).asRotation(),
-        RotationMatrix::fromZX(Vector3D(-1, 0, 0) /*-Vector3D::FWD*/, Vector3D::UP).asRotation(),
-        RotationMatrix::fromZX(Vector3D::FWD, Vector3D(0, 0, -1) /*-Vector3D::UP*/).asRotation(),
-        RotationMatrix::fromZX(Vector3D::UP, Vector3D::FWD).asRotation(),
-        RotationMatrix::fromZX(Vector3D::UP, Vector3D(-1, 0, 0) /*-Vector3D::FWD*/).asRotation() };
+    = { RotationMatrix::fromZX(Vector3::UP, Vector3::RIGHT).asRotation(),
+        RotationMatrix::fromZX(Vector3::UP, Vector3(0, -1, 0) /*-Vector3::RIGHT*/).asRotation(),
+        RotationMatrix::fromZX(Vector3(-1, 0, 0) /*-Vector3::FWD*/, Vector3::UP).asRotation(),
+        RotationMatrix::fromZX(Vector3::FWD, Vector3(0, 0, -1) /*-Vector3::UP*/).asRotation(),
+        RotationMatrix::fromZX(Vector3::UP, Vector3::FWD).asRotation(),
+        RotationMatrix::fromZX(Vector3::UP, Vector3(-1, 0, 0) /*-Vector3::FWD*/).asRotation() };
