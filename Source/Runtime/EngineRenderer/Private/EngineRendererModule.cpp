@@ -108,9 +108,12 @@ IRenderInterfaceModule *IRenderInterfaceModule::get()
     return weakRiModule.expired() ? nullptr : static_cast<IRenderInterfaceModule *>(weakRiModule.lock().get());
 }
 
-RenderThreadEnqTask execInRenderThreadAwaitable(RenderThreadEnqueuer::RenderEnqFuncType execFunc, const CBEProfilerChar *commandName)
+RenderThreadEnqTask execInRenderThreadAwaitable(RenderThreadEnqueuer::RenderEnqFuncType execFunc, const CBEProfilerSrcLoc *srcLoc)
 {
-    // CBE_PROFILER_ENTERFIBER(commandName);
+#if ENABLE_PROFILING
+    CBEProfilerStaticScope profileScope(*srcLoc, true);
+#endif
+
     if (IRenderInterfaceModule *renderInterface = IRenderInterfaceModule::get())
     {
         execFunc(
@@ -148,15 +151,15 @@ void RenderThreadEnqueuer::execInRenderThreadAndWait(RenderEnqFuncType &&execFun
     copat::waitOnAwaitable(execInRenderThreadAwaitable(std::forward<RenderEnqFuncType>(execFunc)));
 }
 
-copat::NormalFuncAwaiter
-RenderThreadEnqueuer::execInRenderingThreadOrImmediate(RenderEnqFuncType &&execFunc, const CBEProfilerChar *commandName)
+copat::NormalFuncAwaiter RenderThreadEnqueuer::execInRenderingThreadOrImmediate(RenderEnqFuncType &&execFunc, const CBEProfilerSrcLoc *srcLoc)
 {
-    // TODO(Jeslas) : Fix FIBER marking issue
-    // CBE_PROFILER_SCOPE_FIBER(commandName);
-    // CBE_PROFILER_SCOPE_VAR(ExecInRenderThreadOrImmd, commandName, true);
-
     if (copat::JobSystem::get()->isInThread(copat::EJobThreadType::RenderThread))
     {
+#if ENABLE_PROFILING
+        // Cannot use fibers in our case as they expect to be inside same zone context when starting and ending which is not the case here
+        CBEProfilerStaticScope profileScope(*srcLoc, true);
+#endif
+
         IRenderInterfaceModule *renderInterface = IRenderInterfaceModule::get();
         debugAssert(renderInterface);
         execFunc(
@@ -165,6 +168,6 @@ RenderThreadEnqueuer::execInRenderingThreadOrImmediate(RenderEnqFuncType &&execF
         );
         co_return;
     }
-    // CBE_PROFILER_LEAVEFIBER();
-    co_await ::execInRenderThreadAwaitable(std::forward<RenderEnqFuncType>(execFunc), commandName);
+
+    co_await ::execInRenderThreadAwaitable(std::forward<RenderEnqFuncType>(execFunc), srcLoc);
 }

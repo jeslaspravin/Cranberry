@@ -30,11 +30,23 @@ public:
     /**
      * Executes the passed in lambda in render thread and terminates. Fire and forget tasks can be enqueued this way
      */
-    template <CBE_PROFILER_STRLITERAL CommandName, typename LambdaType>
+    template <
+        CBE_PROFILER_STRLITERAL CommandName, CBE_PROFILER_STRLITERAL FileName, CBE_PROFILER_STRLITERAL FuncName, uint32 Line,
+        typename LambdaType>
     FORCE_INLINE static void execInRenderingThread(LambdaType &&lambdaFunc)
     {
+#if ENABLE_PROFILING
+        static constexpr const CBEProfilerSrcLoc srcLoc{ .name = CommandName.value,
+                                                         .function = FuncName.value,
+                                                         .file = FileName.value,
+                                                         .line = Line,
+                                                         .color = CBE_PROFILER_COLOR(CBE_PROFILER_DEFAULT_COLOR) };
+        constexpr const CBEProfilerSrcLoc *srcLocPtr = &srcLoc;
+#else
+        constexpr const CBEProfilerSrcLoc *srcLocPtr = nullptr;
+#endif
         // As purpose of enqueue is to execute in render thread not postpone execution if already in render thread.
-        execInRenderingThreadOrImmediate(std::forward<LambdaType>(lambdaFunc), CommandName.value);
+        execInRenderingThreadOrImmediate(std::forward<LambdaType>(lambdaFunc), srcLocPtr);
     }
 
     FORCE_INLINE static void flushWaitRenderThread()
@@ -43,10 +55,12 @@ public:
     }
 
 private:
-    static copat::NormalFuncAwaiter execInRenderingThreadOrImmediate(RenderEnqFuncType &&execFunc, const CBEProfilerChar *commandName);
+    static copat::NormalFuncAwaiter execInRenderingThreadOrImmediate(RenderEnqFuncType &&execFunc, const CBEProfilerSrcLoc *srcLoc);
 };
 
-#define ENQUEUE_RENDER_COMMAND(CommandName) RenderThreadEnqueuer::execInRenderingThread<CBE_PROFILER_CHAR(#CommandName)>
+#define ENQUEUE_RENDER_COMMAND(CommandName)                                                                                                    \
+    RenderThreadEnqueuer::execInRenderingThread<                                                                                               \
+        CBE_PROFILER_CHAR(#CommandName), CBE_PROFILER_CHAR(__FILE__), CBE_PROFILER_CHAR(__func__), CBE_PROFILER_CHAR(__LINE__)>
 
 #define ENQUEUE_RENDER_COMMAND_NODEBUG(CommandName, LambdaBody, ...)                                                                           \
     ENQUEUE_RENDER_COMMAND(CommandName)                                                                                                        \

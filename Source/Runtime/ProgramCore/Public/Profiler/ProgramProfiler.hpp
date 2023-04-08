@@ -224,24 +224,24 @@ public:
 // If name is temporary(String is dynamic allocated) use TRANSIENT variants or use CBEProfiler::setScopeName
 // Following macros can also be used in non constexpr case for constexpr use non VAR variant of CBE_PROFILER_SCOPE_* macros
 #define CBE_PROFILER_SCOPE_VAR_FULL(VarName, Name, ControlVar, Text, Colour, Value)                                                            \
-    static const CBEProfilerSrcLoc zzzCBE_PROFILER_UNIQ_NAME(cbeProfilerSrcLoc_                                                                \
-    ){ Name, CBE_PROFILER_CHAR(__func__), CBE_PROFILER_CHAR(__FILE__), __LINE__, CBE_PROFILER_COLOR(Colour) };                                 \
+    const CBEProfilerSrcLoc zzzCBE_PROFILER_UNIQ_NAME(cbeProfilerSrcLoc_){ Name, CBE_PROFILER_CHAR(__func__), CBE_PROFILER_CHAR(__FILE__),     \
+                                                                           __LINE__, CBE_PROFILER_COLOR(Colour) };                             \
     CBEProfilerStaticScope VarName { zzzCBE_PROFILER_UNIQ_NAME(cbeProfilerSrcLoc_), ControlVar, Text, Value }
 #define CBE_PROFILER_SCOPE_VAR_VC(VarName, Name, ControlVar, Colour, Value)                                                                    \
-    static const CBEProfilerSrcLoc zzzCBE_PROFILER_UNIQ_NAME(cbeProfilerSrcLoc_                                                                \
-    ){ Name, CBE_PROFILER_CHAR(__func__), CBE_PROFILER_CHAR(__FILE__), __LINE__, CBE_PROFILER_COLOR(Colour) };                                 \
+    const CBEProfilerSrcLoc zzzCBE_PROFILER_UNIQ_NAME(cbeProfilerSrcLoc_){ Name, CBE_PROFILER_CHAR(__func__), CBE_PROFILER_CHAR(__FILE__),     \
+                                                                           __LINE__, CBE_PROFILER_COLOR(Colour) };                             \
     CBEProfilerStaticScope VarName { zzzCBE_PROFILER_UNIQ_NAME(cbeProfilerSrcLoc_), ControlVar, Value }
 #define CBE_PROFILER_SCOPE_VAR_TC(VarName, Name, ControlVar, Text, Colour)                                                                     \
-    static const CBEProfilerSrcLoc zzzCBE_PROFILER_UNIQ_NAME(cbeProfilerSrcLoc_                                                                \
-    ){ Name, CBE_PROFILER_CHAR(__func__), CBE_PROFILER_CHAR(__FILE__), __LINE__, CBE_PROFILER_COLOR(Colour) };                                 \
+    const CBEProfilerSrcLoc zzzCBE_PROFILER_UNIQ_NAME(cbeProfilerSrcLoc_){ Name, CBE_PROFILER_CHAR(__func__), CBE_PROFILER_CHAR(__FILE__),     \
+                                                                           __LINE__, CBE_PROFILER_COLOR(Colour) };                             \
     CBEProfilerStaticScope VarName { zzzCBE_PROFILER_UNIQ_NAME(cbeProfilerSrcLoc_), ControlVar, Text }
 #define CBE_PROFILER_SCOPE_VAR_C(VarName, Name, ControlVar, Colour)                                                                            \
-    static const CBEProfilerSrcLoc zzzCBE_PROFILER_UNIQ_NAME(cbeProfilerSrcLoc_                                                                \
-    ){ Name, CBE_PROFILER_CHAR(__func__), CBE_PROFILER_CHAR(__FILE__), __LINE__, CBE_PROFILER_COLOR(Colour) };                                 \
+    const CBEProfilerSrcLoc zzzCBE_PROFILER_UNIQ_NAME(cbeProfilerSrcLoc_){ Name, CBE_PROFILER_CHAR(__func__), CBE_PROFILER_CHAR(__FILE__),     \
+                                                                           __LINE__, CBE_PROFILER_COLOR(Colour) };                             \
     CBEProfilerStaticScope VarName { zzzCBE_PROFILER_UNIQ_NAME(cbeProfilerSrcLoc_), ControlVar }
 #define CBE_PROFILER_SCOPE_VAR(VarName, Name, ControlVar)                                                                                      \
-    static const CBEProfilerSrcLoc zzzCBE_PROFILER_UNIQ_NAME(cbeProfilerSrcLoc_                                                                \
-    ){ Name, CBE_PROFILER_CHAR(__func__), CBE_PROFILER_CHAR(__FILE__), __LINE__, CBE_PROFILER_COLOR(ColorConst::BLACK_Transparent) };          \
+    const CBEProfilerSrcLoc zzzCBE_PROFILER_UNIQ_NAME(cbeProfilerSrcLoc_){ Name, CBE_PROFILER_CHAR(__func__), CBE_PROFILER_CHAR(__FILE__),     \
+                                                                           __LINE__, CBE_PROFILER_COLOR(CBE_PROFILER_DEFAULT_COLOR) };         \
     CBEProfilerStaticScope VarName { zzzCBE_PROFILER_UNIQ_NAME(cbeProfilerSrcLoc_), ControlVar }
 
 // Below are Transient variant of scopes
@@ -259,7 +259,7 @@ public:
 #define CBE_PROFILER_TSCOPE_VAR(VarName, Name, ControlVar)                                                                                     \
     CBEProfilerTransientScope VarName                                                                                                          \
     {                                                                                                                                          \
-        Name, CBE_PROFILER_CHAR(__func__), CBE_PROFILER_CHAR(__FILE__), __LINE__, ColorConst::BLACK_Transparent, ControlVar                    \
+        Name, CBE_PROFILER_CHAR(__func__), CBE_PROFILER_CHAR(__FILE__), __LINE__, CBE_PROFILER_DEFAULT_COLOR, ControlVar                       \
     }
 
 #else // ENABLE_PROFILING
@@ -301,16 +301,16 @@ public:
 #endif // ENABLE_PROFILING
 
 // For Persistent scope with Persistent lifetime for Names
-#define CBE_PROFILER_SCOPE_DYN(Name, ControlVar) constexpr CBE_PROFILER_SCOPE_VAR(UNIQ_VAR_NAME(cbeProfilerScope_), Name, ControlVar)
+#define CBE_PROFILER_SCOPE_DYN(Name, ControlVar) static constexpr CBE_PROFILER_SCOPE_VAR(UNIQ_VAR_NAME(cbeProfilerScope_), Name, ControlVar)
 #define CBE_PROFILER_SCOPE(Name) CBE_PROFILER_SCOPE_DYN(Name, true)
 #define CBE_PROFILER_SCOPE_DYN_C(Name, ControlVar, Colour)                                                                                     \
-    constexpr CBE_PROFILER_SCOPE_VAR_C(UNIQ_VAR_NAME(cbeProfilerScope_), Name, ControlVar, Colour)
+    static constexpr CBE_PROFILER_SCOPE_VAR_C(UNIQ_VAR_NAME(cbeProfilerScope_), Name, ControlVar, Colour)
 #define CBE_PROFILER_SCOPE_C(Name, Colour) CBE_PROFILER_SCOPE_DYN_C(Name, true, Colour)
 #define CBE_PROFILER_SCOPE_DYN_VC(Name, ControlVar, Colour, Value)                                                                             \
-    constexpr CBE_PROFILER_SCOPE_VAR_VC(UNIQ_VAR_NAME(cbeProfilerScope_), Name, ControlVar, Colour, Value)
+    static constexpr CBE_PROFILER_SCOPE_VAR_VC(UNIQ_VAR_NAME(cbeProfilerScope_), Name, ControlVar, Colour, Value)
 #define CBE_PROFILER_SCOPE_VC(Name, Colour, Value) CBE_PROFILER_SCOPE_DYN_VC(Name, true, Colour, Value)
 #define CBE_PROFILER_SCOPE_DYN_TC(Name, ControlVar, Text, Colour)                                                                              \
-    constexpr CBE_PROFILER_SCOPE_VAR_TC(UNIQ_VAR_NAME(cbeProfilerScope_), Name, ControlVar, Text, Colour)
+    static constexpr CBE_PROFILER_SCOPE_VAR_TC(UNIQ_VAR_NAME(cbeProfilerScope_), Name, ControlVar, Text, Colour)
 #define CBE_PROFILER_SCOPE_TC(Name, Text, Colour) CBE_PROFILER_SCOPE_DYN_TC(Name, true, Text, Colour)
 
 // For Transient scope

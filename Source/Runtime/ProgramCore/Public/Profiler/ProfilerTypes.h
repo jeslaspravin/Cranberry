@@ -24,6 +24,7 @@ using CBEProfilerChar = AChar;
 #define CBE_PROFILER_STRLITERAL AStringLiteral
 
 #define CBE_PROFILER_COLOR(Colour) (Colour).bgra()
+#define CBE_PROFILER_DEFAULT_COLOR ColorConst::BLACK_Transparent
 
 // Copied directly from ___tracy_source_location_data in TracyC.h
 struct TracySrcLocDataType
@@ -58,5 +59,6 @@ using CBEProfilerChar = TChar;
 #define CBE_PROFILER_STRLITERAL StringLiteral
 
 #define CBE_PROFILER_COLOR(Colour) Colour
+#define CBE_PROFILER_DEFAULT_COLOR CBE_PROFILER_COLOR(ColorConst::BLACK_Transparent)
 
 #endif
