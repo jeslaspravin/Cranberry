@@ -27,6 +27,12 @@ namespace cbe
 template <typename T>
 concept ObjectType = ReflectClassType<T> && std::is_base_of_v<Object, T>;
 
+/**
+ * Prefer cbe::get(fullPath, sid) or cbe::get(fullPath) over isValid*(obj) functions
+ * If you know the path string or if you are not sure that object is gc'd.
+ * Use this if the object is pointed in a reflected field then GC visits it and clears it as null if object pointed is destroyed.
+ */
+
 FORCE_INLINE bool isValid(const Object *obj)
 {
     if (obj && NO_BITS_SET(obj->getFlags(), EObjectFlagBits::ObjFlag_Deleted | EObjectFlagBits::ObjFlag_MarkedForDelete))

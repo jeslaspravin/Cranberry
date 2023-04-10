@@ -37,7 +37,7 @@
 NODISCARD constexpr const AChar *filterFileName(const AChar *fileName) noexcept
 {
     SizeT foundAt = 0;
-    TCharStr::rfind(fileName, FS_PATH_SEPARATOR, &foundAt);
+    TCharStr::rfind<AChar>(fileName, FS_PATH_SEPARATOR, &foundAt);
     return fileName + foundAt + 1;
 }
 

@@ -19,7 +19,11 @@ ObjectPath &ObjectPath::operator= (const TChar *fullPath)
 {
     allocIdx = 0;
 
-    packagePath = ObjectPathHelper::getPathComponents(outerPath, objectName, fullPath);
+    StringView outerPathView, objectNameView;
+    packagePath = ObjectPathHelper::getPathComponents(outerPathView, objectNameView, fullPath);
+    outerPath = outerPathView;
+    objectName = objectNameView;
+
     Object *obj = get(fullPath);
     if (cbe::isValidFast(obj))
     {
@@ -35,7 +39,13 @@ ObjectPath &ObjectPath::operator= (Object *obj)
         return *this;
     }
     allocIdx = INTERNAL_ObjectCoreAccessors::getAllocIdx(obj);
-    packagePath = ObjectPathHelper::getPathComponents(outerPath, objectName, obj->getFullPath().getChar());
+
+    String objFullPath = obj->getFullPath();
+    StringView outerPathView, objectNameView;
+    packagePath = ObjectPathHelper::getPathComponents(outerPathView, objectNameView, objFullPath);
+    outerPath = outerPathView;
+    objectName = objectNameView;
+
     return *this;
 }
 
@@ -50,7 +60,10 @@ ObjectPath::ObjectPath(Object *outerObj, const TChar *objectName)
     (*this) = ObjectPathHelper::getFullPath(objectName, outerObj).getChar();
 }
 
-String ObjectPath::getFullPath() const { return ObjectPathHelper::combinePathComponents(packagePath, outerPath, objectName); }
+String ObjectPath::getFullPath() const
+{
+    return ObjectPathHelper::combinePathComponents(packagePath.getChar(), outerPath.getChar(), objectName.getChar());
+}
 
 Object *ObjectPath::getObject() const
 {

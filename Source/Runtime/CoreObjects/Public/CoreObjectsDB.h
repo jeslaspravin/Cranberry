@@ -52,6 +52,9 @@ public:
     struct ObjectData
     {
         String path;
+        StringView name;
+        NodeIdxType outerIdx;
+        EObjectFlags flags;
         // Below 2 can be used to retrieve object from allocator directly
         CBEClass clazz;
         ObjectAllocIdx allocIdx;

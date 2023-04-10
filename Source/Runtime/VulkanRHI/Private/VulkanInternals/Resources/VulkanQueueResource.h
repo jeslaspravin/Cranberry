@@ -328,31 +328,31 @@ namespace VulkanQueueResourceInvoker
 template <typename ReturnType, template <typename QueueType> typename Functor, typename... Args>
 ReturnType invoke(QueueResourceBase *queueRes, Args... args)
 {
-    if (queueRes->getType()->isChildOf<VulkanQueueResource<EQueueFunction::Compute>>())
+    if (queueRes->getType() == VulkanQueueResource<EQueueFunction::Compute>::staticType())
     {
         return Functor<VulkanQueueResource<EQueueFunction::Compute>>{}(
             static_cast<VulkanQueueResource<EQueueFunction::Compute> *>(queueRes), args...
         );
     }
-    else if (queueRes->getType()->isChildOf<VulkanQueueResource<EQueueFunction::Graphics>>())
+    else if (queueRes->getType() == VulkanQueueResource<EQueueFunction::Graphics>::staticType())
     {
         return Functor<VulkanQueueResource<EQueueFunction::Graphics>>{}(
             static_cast<VulkanQueueResource<EQueueFunction::Graphics> *>(queueRes), args...
         );
     }
-    else if (queueRes->getType()->isChildOf<VulkanQueueResource<EQueueFunction::Transfer>>())
+    else if (queueRes->getType() == VulkanQueueResource<EQueueFunction::Transfer>::staticType())
     {
         return Functor<VulkanQueueResource<EQueueFunction::Transfer>>{}(
             static_cast<VulkanQueueResource<EQueueFunction::Transfer> *>(queueRes), args...
         );
     }
-    else if (queueRes->getType()->isChildOf<VulkanQueueResource<EQueueFunction::Present>>())
+    else if (queueRes->getType() == VulkanQueueResource<EQueueFunction::Present>::staticType())
     {
         return Functor<VulkanQueueResource<EQueueFunction::Present>>{}(
             static_cast<VulkanQueueResource<EQueueFunction::Present> *>(queueRes), args...
         );
     }
-    else if (queueRes->getType()->isChildOf<VulkanQueueResource<EQueueFunction::Generic>>())
+    else if (queueRes->getType() == VulkanQueueResource<EQueueFunction::Generic>::staticType())
     {
         return Functor<VulkanQueueResource<EQueueFunction::Generic>>{}(
             static_cast<VulkanQueueResource<EQueueFunction::Generic> *>(queueRes), args...

@@ -168,7 +168,7 @@ void tempTest()
     bool bUseCubeScene = false;
     if (!bUseCubeScene)
     {
-        const TChar *meshObjPath = TCHAR("D:/Assets/Scenes/CrytekSponza1/sponza.obj");
+        const TChar *meshObjPath = TCHAR("D:/Assets/Scenes/CrytekSponza/sponza.obj");
         const TChar *meshEnginePath = TCHAR("Scenes/sponza:sponza");
         cbe::World *sceneObj = cbe::getOrLoad<cbe::World>(meshEnginePath);
         if (sceneObj == nullptr)

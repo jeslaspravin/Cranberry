@@ -12,14 +12,14 @@
 #pragma once
 
 #include "CoreObjectsExports.h"
-#include "String/TCharString.h"
+#include "String/String.h"
 
 class COREOBJECTS_EXPORT ObjectPathHelper
 {
 private:
     ObjectPathHelper() = default;
 
-    FORCE_INLINE static String getOuterPathAndObjectName(String &outObjectName, const TChar *objectPath);
+    FORCE_INLINE static StringView getOuterPathAndObjectName(StringView &outObjectName, StringView objectPath);
 
 public:
     // Object paths will be "RootObjName:OuterMostObjName/OuterObjName/ObjName"
@@ -29,10 +29,10 @@ public:
     CONST_EXPR static const TChar RootObjectSeparator = ':';
 
     static String getFullPath(const cbe::Object *object);
-    static String getFullPath(const TChar *objectName, const cbe::Object *outerObj);
+    static String getFullPath(StringView objectName, const cbe::Object *outerObj);
     static String getObjectPath(const cbe::Object *object, const cbe::Object *stopAt);
 
-    static String getPackagePath(const TChar *objFullPath);
+    static StringView getPackagePath(StringView objFullPath);
     /**
      * ObjectPathHelper::getPathComponents
      *
@@ -43,11 +43,13 @@ public:
      *
      * @return String - Package name/path
      */
-    static String getPathComponents(String &outOuterObjectPath, String &outObjectName, const TChar *objFullPath);
-    static String combinePathComponents(const String &packagePath, const String &outerObjectPath, const String &objectName);
+    static StringView getPathComponents(StringView &outOuterObjectPath, StringView &outObjectName, StringView objFullPath);
+    static String combinePathComponents(StringView packagePath, StringView outerObjectPath, StringView objectName);
+
+    static StringView getObjectName(StringView objPath);
 
     // Just helper to split package host path and package's name
-    static String splitPackageNameAndPath(String &outName, const TChar *path);
+    static StringView splitPackageNameAndPath(StringView &outName, StringView objPath);
 
     static String packagePathFromFilePath(const String &filePath, const String &contentDir);
 

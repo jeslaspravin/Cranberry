@@ -42,8 +42,8 @@ ObjectTemplate::ObjectTemplate(ObjectTemplate *inTemplate, const String &name)
     : Object()
     , parentTemplate(inTemplate)
 {
-    debugAssert(parentTemplate && parentTemplate->objectClass);
-    createTemplate(parentTemplate->objectClass, name.getChar());
+    debugAssert(parentTemplate && parentTemplate->templateClass);
+    createTemplate(parentTemplate->templateClass, name.getChar());
     debugAssert(templateObj);
     templateObj->constructed();
     markDirty(this);
@@ -51,12 +51,14 @@ ObjectTemplate::ObjectTemplate(ObjectTemplate *inTemplate, const String &name)
 
 void ObjectTemplate::destroy()
 {
-    Object::destroy();
-    if (isValid(templateObj))
+    // Cannot use cbe::isValid(templateObj) here as there is chance that Allocation might have been deleted
+    if (cbe::get(ObjectPathHelper::getFullPath(templateObjName.getChar(), this).getChar()))
     {
         templateObj->beginDestroy();
         templateObj = nullptr;
     }
+
+    Object::destroy();
 }
 
 ObjectArchive &ObjectTemplate::serialize(ObjectArchive &ar)
@@ -77,10 +79,10 @@ ObjectArchive &ObjectTemplate::serialize(ObjectArchive &ar)
     }
 
     ar << parentTemplate;
-    ar << objectName;
     // objectClass will be set inside createTemplate when loading
-    CBEClass clazz = objectClass;
+    CBEClass clazz = templateClass;
     ar << clazz;
+    ar << templateObjName;
     if (ar.isLoading())
     {
         if (clazz == nullptr)
@@ -89,7 +91,7 @@ ObjectArchive &ObjectTemplate::serialize(ObjectArchive &ar)
             return ar;
         }
 
-        createTemplate(clazz, objectName.toString().getChar());
+        createTemplate(clazz, templateObjName.getChar());
         std::unordered_map<NameString, TemplateObjectEntry> loadedEntries;
         uint64 archiveEnd = 0;
         ar << loadedEntries;
@@ -167,7 +169,8 @@ void ObjectTemplate::onFieldReset(const FieldProperty *prop, Object *obj)
 
 bool ObjectTemplate::copyFrom(ObjectTemplate *otherTemplate)
 {
-    if (objectClass != otherTemplate->objectClass || parentTemplate != otherTemplate->parentTemplate || objectName != otherTemplate->objectName)
+    if (templateClass != otherTemplate->templateClass || parentTemplate != otherTemplate->parentTemplate
+        || templateObjName != otherTemplate->templateObjName)
     {
         return false;
     }
@@ -195,31 +198,32 @@ bool ObjectTemplate::copyFrom(ObjectTemplate *otherTemplate)
 
 void ObjectTemplate::createTemplate(CBEClass clazz, const TChar *name)
 {
-    if (clazz != objectClass && isValidFast(templateObj))
+    if (clazz != templateClass && isValidFast(templateObj))
     {
         templateObj->beginDestroy();
         templateObj = nullptr;
         objectEntries.clear();
     }
-    objectClass = clazz;
-    objectName = name;
+    templateClass = clazz;
+    templateObjName = name;
 
     EObjectFlags templateObjflags = EObjectFlagBits::ObjFlag_Transient | EObjectFlagBits::ObjFlag_TemplateDefault;
     if (parentTemplate)
     {
-        templateObj = create(parentTemplate, name, this, templateObjflags);
+        templateObj = create(parentTemplate, templateObjName, this, templateObjflags);
     }
     else
     {
-        templateObj = INTERNAL_create(objectClass, name, this, templateObjflags);
+        templateObj = INTERNAL_create(templateClass, templateObjName, this, templateObjflags);
     }
+    debugAssert(templateObj->getOuter() == this);
 
     const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
     String templateObjFullPath = templateObj->getFullPath();
     std::vector<Object *> subObjs;
     objectsDb.getSubobjects(subObjs, { .objectPath = templateObjFullPath.getChar(), .objectId = templateObj->getStringID() });
 
-    objectEntries.emplace(objectName, TemplateObjectEntry{});
+    objectEntries.emplace(templateObjName, TemplateObjectEntry{});
     for (Object *subObj : subObjs)
     {
         objectEntries.emplace(ObjectPathHelper::getObjectPath(subObj, this), TemplateObjectEntry{});

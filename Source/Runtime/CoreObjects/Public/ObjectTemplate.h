@@ -34,16 +34,16 @@ public:
     };
 
 private:
-    // Will be temporary template object
+    // Will be temporary template object. Will be subobject of this template
     META_ANNOTATE(Transient)
     Object *templateObj;
 
     META_ANNOTATE()
     ObjectTemplate *parentTemplate = nullptr;
 
+    CBEClass templateClass;
     // Object names are relative to outer, ie) templateObj will be subobject of ObjectTemplate
-    NameString objectName;
-    CBEClass objectClass;
+    String templateObjName;
     // using map as we might have several sub objects that are created for template object
     std::unordered_map<NameString, TemplateObjectEntry> objectEntries;
 
@@ -63,7 +63,7 @@ public:
     {
         return cast<T>(templateObj);
     }
-    FORCE_INLINE CBEClass getClass() const { return objectClass; }
+    FORCE_INLINE CBEClass getTemplateClass() const { return templateClass; }
     FORCE_INLINE ObjectTemplate *getParentTemplate() const { return parentTemplate; }
 
     void onFieldModified(const FieldProperty *prop, Object *obj);

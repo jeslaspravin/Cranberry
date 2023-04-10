@@ -232,7 +232,7 @@ bool ActorPrefab::copyFrom(ActorPrefab *otherPrefab)
             }
             else
             {
-                thisComp = objectTemplateFromObj(addComponent(otherComp->getClass(), otherComp->getTemplate()->getName()));
+                thisComp = objectTemplateFromObj(addComponent(otherComp->getTemplateClass(), otherComp->getTemplate()->getName()));
             }
             debugAssert(thisComp);
         }

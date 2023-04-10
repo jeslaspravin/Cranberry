@@ -135,8 +135,8 @@ public:
             return ParseFromFormat<DigitsWithHyphen, CharType>{}(str, len);
         case 38:
             return (
-                TCharStr::startsWith(str, '{', true) ? ParseFromFormat<DigitsInBraces, CharType>{}(str, len)
-                                                     : ParseFromFormat<DigitsInParans, CharType>{}(str, len)
+                TCharStr::startsWith<CharType>(str, '{', true) ? ParseFromFormat<DigitsInBraces, CharType>{}(str, len)
+                                                               : ParseFromFormat<DigitsInParans, CharType>{}(str, len)
             );
         case 68:
             return ParseFromFormat<HexValues, CharType>{}(str, len);

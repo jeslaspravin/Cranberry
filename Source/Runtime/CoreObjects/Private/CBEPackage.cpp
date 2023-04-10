@@ -24,7 +24,9 @@ Package::Package()
     // Name will be empty only in default objects now
     if (!getName().empty())
     {
-        packagePath = ObjectPathHelper::splitPackageNameAndPath(packageName, getName().getChar());
+        StringView outPackageName;
+        packagePath = ObjectPathHelper::splitPackageNameAndPath(outPackageName, getName().getChar());
+        packageName = outPackageName;
     }
 }
 

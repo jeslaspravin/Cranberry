@@ -171,18 +171,18 @@ void ObjectArchive::relinkSerializedPtr(const void ** /*objPtrPtr*/) const { fat
 /// ObjectPathHelper implementations
 //////////////////////////////////////////////////////////////////////////
 
-FORCE_INLINE String ObjectPathHelper::getOuterPathAndObjectName(String &outObjectName, const TChar *objectPath)
+FORCE_INLINE StringView ObjectPathHelper::getOuterPathAndObjectName(StringView &outObjectName, StringView objectPath)
 {
     debugAssert(!TCharStr::find(objectPath, ObjectPathHelper::RootObjectSeparator));
 
     SizeT outerObjectSepIdx;
     if (TCharStr::rfind(objectPath, ObjectPathHelper::ObjectObjectSeparator, &outerObjectSepIdx))
     {
-        outObjectName = objectPath + outerObjectSepIdx + 1;
-        return { objectPath, outerObjectSepIdx };
+        outObjectName = objectPath.substr(outerObjectSepIdx + 1);
+        return objectPath.substr(0, outerObjectSepIdx);
     }
     outObjectName = objectPath;
-    return TCHAR("");
+    return {};
 }
 
 String ObjectPathHelper::getObjectPath(const cbe::Object *object, const cbe::Object *stopAt)
@@ -234,28 +234,34 @@ FORCE_INLINE String ObjectPathHelper::getFullPath(const cbe::Object *object)
     return objectPath;
 }
 
-String ObjectPathHelper::getFullPath(const TChar *objectName, const cbe::Object *outerObj)
+String ObjectPathHelper::getFullPath(StringView objectName, const cbe::Object *outerObj)
 {
     if (outerObj)
     {
-        return outerObj->getFullPath()
-               + (outerObj->getOuter() ? ObjectPathHelper::ObjectObjectSeparator : ObjectPathHelper::RootObjectSeparator) + objectName;
+        String outputStr = outerObj->getFullPath();
+        SizeT outerPathLen = outputStr.length();
+        outputStr.resize(
+            outerPathLen + objectName.length() + 1,
+            outerObj->getOuter() ? ObjectPathHelper::ObjectObjectSeparator : ObjectPathHelper::RootObjectSeparator
+        );
+        objectName.copy(outputStr.data() + outerPathLen + 1, objectName.length());
+        return outputStr;
     }
     return objectName;
 }
 
-String ObjectPathHelper::getPackagePath(const TChar *objFullPath)
+StringView ObjectPathHelper::getPackagePath(StringView objFullPath)
 {
     SizeT rootObjSepIdx;
     bool bRootSepFound = TCharStr::find(objFullPath, ObjectPathHelper::RootObjectSeparator, &rootObjSepIdx);
     if (bRootSepFound)
     {
-        return { objFullPath, rootObjSepIdx };
+        return objFullPath.substr(0, rootObjSepIdx);
     }
-    return TCHAR("");
+    return {};
 }
 
-String ObjectPathHelper::getPathComponents(String &outOuterObjectPath, String &outObjectName, const TChar *objFullPath)
+StringView ObjectPathHelper::getPathComponents(StringView &outOuterObjectPath, StringView &outObjectName, StringView objFullPath)
 {
     SizeT rootObjSepIdx;
     bool bRootSepFound = TCharStr::find(objFullPath, ObjectPathHelper::RootObjectSeparator, &rootObjSepIdx);
@@ -263,42 +269,68 @@ String ObjectPathHelper::getPathComponents(String &outOuterObjectPath, String &o
     if (bRootSepFound)
     {
         // Path after RootObjectSeparator is outers... and object name
-        outOuterObjectPath = getOuterPathAndObjectName(outObjectName, String(objFullPath + rootObjSepIdx + 1).getChar());
-        return { objFullPath, rootObjSepIdx };
+        outOuterObjectPath = getOuterPathAndObjectName(outObjectName, objFullPath.substr(rootObjSepIdx + 1));
+        return objFullPath.substr(0, rootObjSepIdx);
     }
     else
     {
         outOuterObjectPath = getOuterPathAndObjectName(outObjectName, objFullPath);
-        return TCHAR("");
+        return {};
     }
 }
 
-String ObjectPathHelper::combinePathComponents(const String &packagePath, const String &outerObjectPath, const String &objectName)
+String ObjectPathHelper::combinePathComponents(StringView packagePath, StringView outerObjectPath, StringView objectName)
 {
     // Ensure that package path is package path without any additional root path and outer object is without any root/package object path
-    debugAssert(
-        !packagePath.empty()
-        && (!(
-            TCharStr::find(packagePath.getChar(), ObjectPathHelper::RootObjectSeparator)
-            || TCharStr::find(packagePath.getChar(), ObjectPathHelper::RootObjectSeparator)
-        ))
-    );
+    debugAssert(!packagePath.empty() && !TCharStr::find(packagePath, ObjectPathHelper::RootObjectSeparator));
+
+    String outputStr;
+    // + 2 for Root separator and object separator
+    outputStr.reserve(packagePath.length() + outerObjectPath.length() + objectName.length() + 2);
 
     if (outerObjectPath.empty())
     {
-        return packagePath + ObjectPathHelper::RootObjectSeparator + objectName;
+        outputStr.resize(packagePath.length() + objectName.length() + 1);
+
+        outputStr[packagePath.length()] = ObjectPathHelper::RootObjectSeparator;
+
+        packagePath.copy(outputStr.data(), packagePath.length());
+        objectName.copy(outputStr.data() + packagePath.length() + 1, objectName.length());
     }
-    return packagePath + ObjectPathHelper::RootObjectSeparator + outerObjectPath + ObjectPathHelper::ObjectObjectSeparator + objectName;
+    else
+    {
+        outputStr.resize(outputStr.capacity());
+        SizeT outerIdx = packagePath.length() + 1;
+        SizeT objNameIdx = outerIdx + outerObjectPath.length() + 1;
+
+        outputStr[outerIdx - 1] = ObjectPathHelper::RootObjectSeparator;
+        outputStr[objNameIdx - 1] = ObjectPathHelper::ObjectObjectSeparator;
+
+        packagePath.copy(outputStr.data(), packagePath.length());
+        outerObjectPath.copy(outputStr.data() + outerIdx, outerObjectPath.length());
+        objectName.copy(outputStr.data() + objNameIdx, objectName.length());
+    }
+    return outputStr;
 }
 
-String ObjectPathHelper::splitPackageNameAndPath(String &outName, const TChar *path)
+StringView ObjectPathHelper::getObjectName(StringView objPath)
+{
+    SizeT outerObjectSepIdx;
+    if (TCharStr::rfind(objPath, ObjectPathHelper::ObjectObjectSeparator, &outerObjectSepIdx))
+    {
+        return objPath.substr(outerObjectSepIdx + 1);
+    }
+    return {};
+}
+
+StringView ObjectPathHelper::splitPackageNameAndPath(StringView &outName, StringView objPath)
 {
     SizeT rootObjSepIdx;
-    bool bRootSepFound = TCharStr::find(path, ObjectPathHelper::RootObjectSeparator, &rootObjSepIdx);
+    bool bRootSepFound = TCharStr::find(objPath, ObjectPathHelper::RootObjectSeparator, &rootObjSepIdx);
 
     if (bRootSepFound)
     {
-        return getOuterPathAndObjectName(outName, String(path, rootObjSepIdx).getChar());
+        return getOuterPathAndObjectName(outName, objPath.substr(0, rootObjSepIdx));
     }
-    return getOuterPathAndObjectName(outName, path);
+    return getOuterPathAndObjectName(outName, objPath);
 }

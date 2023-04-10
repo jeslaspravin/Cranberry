@@ -14,7 +14,8 @@
 #include "Types/CoreDefines.h"
 #include "Types/CoreTypes.h"
 #include "Types/Platform/PlatformFunctions.h"
-#include "Types/Platform/PlatformAssertionErrors.h"
+
+#include <string>
 
 template <typename CharType>
 using CharStringView = std::basic_string_view<CharType, std::char_traits<CharType>>;
@@ -45,60 +46,61 @@ NODISCARD CONST_EXPR bool empty(const CharType *start)
     return length(start) == 0;
 }
 
-template <typename CharType, typename StringViewType = CharStringView<CharType>>
+template <typename CharType>
 NODISCARD CONST_EXPR bool isEqual(const CharType *lhs, const CharType *rhs)
 {
-    return StringViewType(lhs) == StringViewType(rhs);
-}
-
-template <typename CharType, typename StringViewType = CharStringView<CharType>>
-CONST_EXPR bool find(const CharType *findIn, const CharType *findStr, SizeT *outFoundAt = nullptr, SizeT findFrom = 0)
-{
-    StringViewType strView(findIn);
-    SizeT foundAt = strView.find(findStr, findFrom);
-    if (outFoundAt)
-    {
-        *outFoundAt = foundAt;
-    }
-    return foundAt != StringViewType::npos;
-}
-template <typename CharType, typename StringViewType = CharStringView<CharType>>
-CONST_EXPR bool find(const CharType *findIn, const CharType findCh, SizeT *outFoundAt = nullptr, SizeT findFrom = 0)
-{
-    StringViewType strView(findIn);
-    SizeT foundAt = strView.find(findCh, findFrom);
-    if (outFoundAt)
-    {
-        *outFoundAt = foundAt;
-    }
-    return foundAt != StringViewType::npos;
-}
-
-template <typename CharType, typename StringViewType = CharStringView<CharType>>
-CONST_EXPR bool rfind(const CharType *findIn, const CharType *findStr, SizeT *outFoundAt = nullptr, SizeT findFrom = StringViewType::npos)
-{
-    StringViewType strView(findIn);
-    SizeT foundAt = strView.rfind(findStr, findFrom);
-    if (outFoundAt)
-    {
-        *outFoundAt = foundAt;
-    }
-    return foundAt != StringViewType::npos;
-}
-template <typename CharType, typename StringViewType = CharStringView<CharType>>
-CONST_EXPR bool rfind(const CharType *findIn, const CharType findCh, SizeT *outFoundAt = nullptr, SizeT findFrom = StringViewType::npos)
-{
-    StringViewType strView(findIn);
-    SizeT foundAt = strView.rfind(findCh, findFrom);
-    if (outFoundAt)
-    {
-        *outFoundAt = foundAt;
-    }
-    return foundAt != StringViewType::npos;
+    return CharStringView<CharType>(lhs) == CharStringView<CharType>(rhs);
 }
 
 template <typename CharType>
-NODISCARD CONST_EXPR SizeT findCount(const CharType *findIn, const CharType findCh, SizeT findFrom = 0)
+CONST_EXPR bool find(CharStringView<CharType> findIn, CharStringView<CharType> findStr, SizeT *outFoundAt = nullptr, SizeT findFrom = 0)
+{
+    SizeT foundAt = findIn.find(findStr, findFrom);
+    if (outFoundAt)
+    {
+        *outFoundAt = foundAt;
+    }
+    return foundAt != CharStringView<CharType>::npos;
+}
+
+template <typename CharType>
+CONST_EXPR bool find(CharStringView<CharType> findIn, const CharType findCh, SizeT *outFoundAt = nullptr, SizeT findFrom = 0)
+{
+    SizeT foundAt = findIn.find(findCh, findFrom);
+    if (outFoundAt)
+    {
+        *outFoundAt = foundAt;
+    }
+    return foundAt != CharStringView<CharType>::npos;
+}
+
+template <typename CharType>
+CONST_EXPR bool rfind(
+    CharStringView<CharType> findIn, CharStringView<CharType> findStr, SizeT *outFoundAt = nullptr,
+    SizeT findFrom = CharStringView<CharType>::npos
+)
+{
+    SizeT foundAt = findIn.rfind(findStr, findFrom);
+    if (outFoundAt)
+    {
+        *outFoundAt = foundAt;
+    }
+    return foundAt != CharStringView<CharType>::npos;
+}
+template <typename CharType>
+CONST_EXPR bool
+rfind(CharStringView<CharType> findIn, const CharType findCh, SizeT *outFoundAt = nullptr, SizeT findFrom = CharStringView<CharType>::npos)
+{
+    SizeT foundAt = findIn.rfind(findCh, findFrom);
+    if (outFoundAt)
+    {
+        *outFoundAt = foundAt;
+    }
+    return foundAt != CharStringView<CharType>::npos;
+}
+
+template <typename CharType>
+NODISCARD CONST_EXPR SizeT findCount(CharStringView<CharType> findIn, const CharType findCh, SizeT findFrom = 0)
 {
     SizeT numberOfInst = 0;
     SizeT atPos = 0;
@@ -110,7 +112,7 @@ NODISCARD CONST_EXPR SizeT findCount(const CharType *findIn, const CharType find
     return numberOfInst;
 }
 template <typename CharType>
-NODISCARD CONST_EXPR SizeT findCount(const CharType *findIn, const CharType *findStr, SizeT findFrom = 0)
+NODISCARD CONST_EXPR SizeT findCount(CharStringView<CharType> findIn, CharStringView<CharType> findStr, SizeT findFrom = 0)
 {
     SizeT findStrLen = length(findStr);
 
@@ -124,7 +126,7 @@ NODISCARD CONST_EXPR SizeT findCount(const CharType *findIn, const CharType *fin
     return numberOfInst;
 }
 
-template <typename CharType, typename StringViewType = CharStringView<CharType>>
+template <typename CharType>
 CONST_EXPR void replaceInPlace(CharType *replaceIn, SizeT replaceFrom, SizeT replaceLen, const CharType *replaceWith)
 {
     if (replaceLen <= 0 || replaceIn == nullptr || replaceWith == nullptr)
@@ -136,8 +138,10 @@ CONST_EXPR void replaceInPlace(CharType *replaceIn, SizeT replaceFrom, SizeT rep
 #if DEBUG_BUILD
     SizeT replaceInLen = length(replaceIn);
     SizeT replaceWithLen = length(replaceWith);
-    debugAssert(replaceFrom < replaceInLen && (replaceFrom + replaceLen) <= replaceInLen);
-    debugAssert(replaceLen < replaceWithLen);
+    if (replaceFrom >= replaceInLen || (replaceFrom + replaceLen) > replaceInLen || replaceLen >= replaceWithLen)
+    {
+        return;
+    }
 #endif
 
     memcpy(replaceIn + replaceFrom, replaceWith, replaceLen);
@@ -150,12 +154,18 @@ replace(const CharType *replaceIn, SizeT replaceFrom, SizeT replaceLen, const Ch
 {
     if (replaceLen <= 0 || replaceIn == nullptr || replaceWith == nullptr)
     {
-        return;
+        return nullptr;
     }
 
     SizeT replaceInLen = length(replaceIn);
+
+#if DEBUG_BUILD
     // Ensure inputs are valid
-    debugAssert(replaceFrom < replaceInLen && (replaceFrom + replaceLen) <= replaceInLen);
+    if (replaceFrom >= replaceInLen && (replaceFrom + replaceLen) > replaceInLen)
+    {
+        return nullptr;
+    }
+#endif
 
     SizeT replaceWithLen = length(replaceWith);
 
@@ -184,7 +194,10 @@ CONST_EXPR void replaceAllInPlace(CharType *replaceIn, const CharType *from, con
     SizeT replaceFromLen = length(from);
 #if DEBUG_BUILD
     SizeT replaceToLen = length(to);
-    debugAssert(replaceFromLen == replaceToLen);
+    if (replaceFromLen != replaceToLen)
+    {
+        return;
+    }
 #endif
 
     SizeT replaceAtPos = 0;
@@ -240,98 +253,82 @@ NODISCARD CONST_EXPR CharType *replaceAll(const CharType *replaceIn, const CharT
     return retVal;
 }
 
-template <typename CharType, typename StringViewType = CharStringView<CharType>>
-CONST_EXPR bool startsWith(const CharType *matchIn, const CharType *match)
+template <typename CharType>
+CONST_EXPR bool startsWith(CharStringView<CharType> matchIn, CharStringView<CharType> match)
 {
-    SizeT matchInLen = length(matchIn);
-    SizeT matchLen = length(match);
-
-    if (matchInLen < matchLen)
+    if (matchIn.length() < match.length())
     {
         return false;
     }
 
-    StringViewType matchInView(matchIn, 0, matchLen);
-    StringViewType matchView(match, 0, matchLen);
-
-    return matchInView == matchView;
+    return matchIn == match;
 }
 
-template <typename CharType, typename StringViewType = CharStringView<CharType>>
-NODISCARD bool startsWith(const CharType *matchIn, const CharType *match, bool bMatchCase)
+template <typename CharType>
+NODISCARD bool startsWith(CharStringView<CharType> matchIn, CharStringView<CharType> match, bool bMatchCase)
 {
-    SizeT matchInLen = length(matchIn);
-    SizeT matchLen = length(match);
-
-    if (matchInLen < matchLen)
+    if (matchIn.length() < match.length())
     {
         return false;
     }
 
-    StringViewType matchInView(matchIn, 0, matchLen);
-    StringViewType matchView(match, 0, matchLen);
     if (bMatchCase)
     {
-        return matchInView == matchView;
+        return matchIn == match;
     }
 
     auto it = std::search(
-        matchInView.cbegin(), matchInView.cend(), matchView.cbegin(), matchView.cend(),
+        matchIn.cbegin(), matchIn.cend(), match.cbegin(), match.cend(),
         [](CharType c1, CharType c2)
         {
             return PlatformFunctions::toUpper(c1) == PlatformFunctions::toUpper(c2);
         }
     );
 
-    return matchInView.cbegin() == it;
+    return matchIn.cbegin() == it;
 }
 
 template <typename CharType>
-NODISCARD CONST_EXPR bool startsWith(const CharType *matchIn, CharType match)
+NODISCARD CONST_EXPR bool startsWith(CharStringView<CharType> matchIn, CharType match)
 {
-    return *matchIn == match;
+    return matchIn[0] == match;
 }
 template <typename CharType>
-NODISCARD bool startsWith(const CharType *matchIn, CharType match, bool bMatchCase)
+NODISCARD bool startsWith(CharStringView<CharType> matchIn, CharType match, bool bMatchCase)
 {
     if (bMatchCase)
     {
         return startsWith(matchIn, match);
     }
-    return PlatformFunctions::toUpper(*matchIn) == PlatformFunctions::toUpper(match);
+    return PlatformFunctions::toUpper(matchIn[0]) == PlatformFunctions::toUpper(match);
 }
 
-template <typename CharType, typename StringViewType = CharStringView<CharType>>
-NODISCARD bool endsWith(const CharType *matchIn, const CharType *match, bool bMatchCase)
+template <typename CharType>
+NODISCARD bool endsWith(CharStringView<CharType> matchIn, CharStringView<CharType> match, bool bMatchCase)
 {
-    SizeT matchInLen = length(matchIn);
-    SizeT matchLen = length(match);
-
-    if (matchInLen < matchLen)
+    if (matchIn.length() < match.length())
     {
         return false;
     }
 
-    StringViewType matchInView(matchIn, matchInLen - matchLen, matchInLen);
-    StringViewType matchView(match, 0, matchLen);
     if (bMatchCase)
     {
-        return matchInView == matchView;
+        return matchIn == match;
     }
 
     auto it = std::search(
-        matchInView.cbegin(), matchInView.cend(), matchView.cbegin(), matchView.cend(),
+        matchIn.cbegin(), matchIn.cend(), match.cbegin(), match.cend(),
         [](CharType c1, CharType c2)
         {
             return PlatformFunctions::toUpper(c1) == PlatformFunctions::toUpper(c2);
         }
     );
 
-    return matchInView.cbegin() == it;
+    return matchIn.cbegin() == it;
 }
 
-template <typename CharType, typename StringViewType = CharStringView<CharType>>
-NODISCARD CONST_EXPR StringViewType trimL(StringViewType strView)
+template <typename CharType>
+NODISCARD CONST_EXPR CharStringView<CharType> trimL(CharStringView<CharType> strView)
 {
     auto itr = std::find_if(
         strView.cbegin(), strView.cend(),
@@ -346,11 +343,11 @@ NODISCARD CONST_EXPR StringViewType trimL(StringViewType strView)
         return strView;
     }
 
-    return StringViewType(itr, strView.cend());
+    return CharStringView<CharType>(itr, strView.cend());
 }
 
-template <typename CharType, typename StringViewType = CharStringView<CharType>>
-NODISCARD CONST_EXPR StringViewType trimR(StringViewType strView)
+template <typename CharType>
+NODISCARD CONST_EXPR CharStringView<CharType> trimR(CharStringView<CharType> strView)
 {
     auto itr = std::find_if(
         strView.crbegin(), strView.crend(),
@@ -365,22 +362,20 @@ NODISCARD CONST_EXPR StringViewType trimR(StringViewType strView)
         return strView;
     }
 
-    return StringViewType(strView.cbegin(), itr);
+    return CharStringView<CharType>(strView.cbegin(), itr);
 }
 
-template <typename CharType, typename StringViewType = CharStringView<CharType>>
-NODISCARD CONST_EXPR StringViewType trim(StringViewType strView)
+template <typename CharType>
+NODISCARD CONST_EXPR CharStringView<CharType> trim(CharStringView<CharType> strView)
 {
-    StringViewType retView = trimL(strView);
+    CharStringView<CharType> retView = trimL(strView);
     return trimR(retView);
 }
 
-template <typename CharType, typename StringViewType = CharStringView<CharType>>
-NODISCARD CONST_EXPR std::vector<StringViewType> splitLines(const CharType *str)
+template <typename CharType>
+NODISCARD CONST_EXPR std::vector<CharStringView<CharType>> splitLines(CharStringView<CharType> str)
 {
-    const CharType *strEnd = recurseToNullEnd(str);
-
-    std::vector<StringViewType> outStrs;
+    std::vector<CharStringView<CharType>> outStrs;
 
     uint64 foundAtPos = 0;
     uint64 offsetPos = 0;
@@ -390,44 +385,43 @@ NODISCARD CONST_EXPR std::vector<StringViewType> splitLines(const CharType *str)
         // part of CR-LF
         if (foundAtPos != 0 || str[foundAtPos - 1] == TCHAR('\r'))
         {
-            outStrs.emplace_back(StringViewType(str + offsetPos, str + (foundAtPos - 1)));
+            outStrs.emplace_back(str.substr(offsetPos, foundAtPos - offsetPos - 1));
         }
         else
         {
             // Since offsetPos is end of last separator and foundAtPos is where this separator is
             // found, Whatever in between is what we need
-            outStrs.emplace_back(StringViewType(str + offsetPos, str + foundAtPos));
+            outStrs.emplace_back(str.substr(offsetPos, foundAtPos - offsetPos));
         }
         // Post CR-LF char
         offsetPos = foundAtPos + 1;
     }
     // After final separator the suffix has to be added if there is any char after final CR-LF
-    if ((str + offsetPos) != strEnd)
+    if (offsetPos != str.length())
     {
-        outStrs.emplace_back(StringViewType(str + offsetPos, strEnd));
+        outStrs.emplace_back(str.substr(offsetPos));
     }
     return outStrs;
 }
 
-template <typename CharType, typename StringViewType = CharStringView<CharType>>
-NODISCARD CONST_EXPR std::vector<StringViewType> split(const CharType *str, const CharType *separator)
+template <typename CharType>
+NODISCARD CONST_EXPR std::vector<CharStringView<CharType>> split(CharStringView<CharType> str, CharStringView<CharType> separator)
 {
-    const CharType *strEnd = recurseToNullEnd(str);
-    SizeT separatorLen = length(separator);
+    SizeT separatorLen = separator.length();
 
-    std::vector<StringViewType> outStrs;
+    std::vector<CharStringView<CharType>> outStrs;
 
     uint64 foundAtPos = 0;
     uint64 offsetPos = 0;
     while (find(str, separator, &foundAtPos, offsetPos))
     {
-        outStrs.emplace_back(StringViewType(str + offsetPos, str + foundAtPos));
+        outStrs.emplace_back(str.substr(offsetPos, foundAtPos - offsetPos));
         offsetPos = foundAtPos + separatorLen;
     }
-    // After final separator the suffix has to be added if there is any char after final CR-LF
-    if ((str + offsetPos) != strEnd)
+    // After final separator the suffix has to be added if there is any char after final match
+    if (offsetPos != str.length())
     {
-        outStrs.emplace_back(StringViewType(str + offsetPos, strEnd));
+        outStrs.emplace_back(str.substr(offsetPos));
     }
     return outStrs;
 }

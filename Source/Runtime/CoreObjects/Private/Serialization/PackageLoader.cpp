@@ -173,15 +173,15 @@ EObjectFlags PackageLoader::createContainedObject(PackageContainedData &containe
         return 0;
     }
 
-    String objectName;
-    String outerPath;
+    StringView objectName;
+    StringView outerPath;
     ObjectPathHelper::getPathComponents(outerPath, objectName, containedData.objectPath.getChar());
 
     EObjectFlags collectedFlags = containedData.objectFlags;
     cbe::Object *outerObj = nullptr;
     if (!outerPath.empty())
     {
-        String outerFullPath = package->getName() + ObjectPathHelper::RootObjectSeparator + outerPath;
+        String outerFullPath = (package->getName() + ObjectPathHelper::RootObjectSeparator).append(outerPath);
         outerObj = cbe::get(outerFullPath.getChar());
         if (!outerObj)
         {
@@ -224,7 +224,7 @@ EObjectFlags PackageLoader::createContainedObject(PackageContainedData &containe
         }
         else
         {
-            cbe::Object *obj = cbe::get(ObjectPathHelper::getFullPath(objectName.getChar(), outerObj).getChar());
+            cbe::Object *obj = cbe::get(ObjectPathHelper::getFullPath(objectName, outerObj).getChar());
             debugAssert(!obj || BIT_SET(obj->collectAllFlags(), cbe::EObjectFlagBits::ObjFlag_Transient));
             containedData.object = obj;
         }
