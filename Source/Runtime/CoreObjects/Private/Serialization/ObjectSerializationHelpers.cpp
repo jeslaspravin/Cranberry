@@ -473,7 +473,7 @@ ObjectArchive &serializeObjectFieldsHelper(cbe::Object *obj, ObjectArchive &ar, 
         fatalAssertf(
             objectFieldSerVersion >= OBJECTFIELD_SER_CUTOFF_VERSION,
             "Unsupport version %d of serialized object fields of object %s! Minimum supported version %d", objectFieldSerVersion,
-            obj->getFullPath(), OBJECTFIELD_SER_CUTOFF_VERSION
+            obj->getObjectData().path, OBJECTFIELD_SER_CUTOFF_VERSION
         );
         return readFieldsHelper(obj, obj->getType(), ar);
     }

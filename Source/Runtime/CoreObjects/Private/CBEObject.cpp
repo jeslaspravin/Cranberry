@@ -23,82 +23,146 @@ namespace cbe
 
 void Object::destroyObject()
 {
+    ObjectPrivateDataView objDatV = getObjectData();
+    debugAssert(objDatV);
+
     destroy();
-
-    if (BIT_NOT_SET(flags, EObjectFlagBits::ObjFlag_GCPurge))
+    if (BIT_NOT_SET(objDatV.flags, EObjectFlagBits::ObjFlag_GCPurge))
     {
-        String objPath = getFullPath();
-        CoreObjectsDB::NodeIdxType objNodeIdx
-            = CoreObjectsModule::objectsDB().getObjectNodeIdx({ .objectPath = objPath.getChar(), .objectId = sid });
-
-        // Must have entry in object DB if we constructed the objects properly unless object is default
-        debugAssert(CoreObjectsModule::objectsDB().hasObject(objNodeIdx) || BIT_SET(flags, EObjectFlagBits::ObjFlag_Default));
-        if (CoreObjectsModule::objectsDB().hasObject(objNodeIdx))
-        {
-            CoreObjectsModule::objectsDB().removeObject(objNodeIdx);
-        }
+        CoreObjectsModule::objectsDB().removeObject(getDbIdx());
     }
-
-    objOuter = nullptr;
-    sid = StringID();
-    SET_BITS(flags, EObjectFlagBits::ObjFlag_Deleted);
 }
 
 void Object::beginDestroy()
 {
-    markReadyForDestroy();
-
     CoreObjectsDB &objectsDb = CoreObjectsModule::objectsDB();
+    ObjectPrivateDataView objectDatV = getObjectData();
+    String objectNameBase = objectDatV.name;
+    Object *outerObj = objectsDb.getObject(objectDatV.outerIdx);
 
     uint64 uniqNameSuffix = 0;
-    String newObjName = objectName + TCHAR("_Delete");
-    String newObjPath = ObjectPathHelper::getFullPath(newObjName.getChar(), objOuter);
+    String newObjName = objectNameBase + TCHAR("_Delete");
+    String newObjPath = ObjectPathHelper::getFullPath(newObjName.getChar(), outerObj);
     while (objectsDb.hasObject({ .objectPath = newObjPath.getChar(), .objectId = newObjPath.getChar() }))
     {
-        newObjName = objectName + TCHAR("_Delete") + String::toString(uniqNameSuffix);
-        newObjPath = ObjectPathHelper::getFullPath(newObjName.getChar(), objOuter);
+        newObjName = objectNameBase + TCHAR("_Delete") + String::toString(uniqNameSuffix);
+        newObjPath = ObjectPathHelper::getFullPath(newObjName.getChar(), outerObj);
         uniqNameSuffix++;
     }
     // Rename it Immediately to allow other objects to replace this object with same name
-    INTERNAL_ObjectCoreAccessors::setOuterAndName(this, newObjName, objOuter, getType());
+    INTERNAL_ObjectCoreAccessors::setOuterAndName(this, newObjName, outerObj, getType());
+    SET_BITS(INTERNAL_ObjectCoreAccessors::getFlags(this), EObjectFlagBits::ObjFlag_MarkedForDelete);
 }
 
-String Object::getFullPath() const { return ObjectPathHelper::getFullPath(this); }
+cbe::ObjectPrivateDataView Object::getObjectData() const { return CoreObjectsModule::objectsDB().getObjectData(getDbIdx()); }
+
+cbe::Object *Object::getOuter() const
+{
+    const CoreObjectsDB &objectsDb = CoreObjectsModule::objectsDB();
+    ObjectDbIdx outerIdx = objectsDb.getParentIdx(getDbIdx());
+    return objectsDb.getObject(outerIdx);
+}
+cbe::Object *Object::getOuterMost() const
+{
+    const CoreObjectsDB &objectsDb = CoreObjectsModule::objectsDB();
+
+    ObjectDbIdx lastValidOuter = CoreObjectsDB::InvalidDbIdx;
+    ObjectDbIdx outerIdx = objectsDb.getParentIdx(getDbIdx());
+    while (outerIdx != CoreObjectsDB::InvalidDbIdx)
+    {
+        lastValidOuter = outerIdx;
+        outerIdx = objectsDb.getParentIdx(outerIdx);
+    }
+
+    return objectsDb.getObject(lastValidOuter);
+}
+cbe::Object *Object::getOuterOfType(CBEClass clazz) const
+{
+    const CoreObjectsDB &objectsDb = CoreObjectsModule::objectsDB();
+
+    ObjectDbIdx outerIdx = objectsDb.getParentIdx(getDbIdx());
+    while (ObjectPrivateDataView objectDatV = objectsDb.getObjectData(outerIdx))
+    {
+        if (objectDatV.clazz == clazz)
+        {
+            return objectsDb.getObject(outerIdx);
+        }
+        outerIdx = objectDatV.outerIdx;
+    }
+    return nullptr;
+}
+
+bool Object::hasOuter(Object *checkOuter) const
+{
+    const CoreObjectsDB &objectsDb = CoreObjectsModule::objectsDB();
+    ObjectDbIdx checkOuterIdx = checkOuter->getDbIdx();
+
+    ObjectDbIdx outerIdx = objectsDb.getParentIdx(getDbIdx());
+    bool bHasOuter = false;
+    while (outerIdx != CoreObjectsDB::InvalidDbIdx && !bHasOuter)
+    {
+        bHasOuter = bHasOuter || outerIdx == checkOuterIdx;
+        outerIdx = objectsDb.getParentIdx(outerIdx);
+    }
+    return bHasOuter;
+}
+
+EObjectFlags Object::collectAllFlags() const
+{
+    EObjectFlags retVal = 0;
+    const CoreObjectsDB &objectsDb = CoreObjectsModule::objectsDB();
+    for (cbe::ObjectPrivateDataView objectDatV = objectsDb.getObjectData(getDbIdx()); objectDatV;
+         objectDatV = objectsDb.getObjectData(objectDatV.outerIdx))
+    {
+        retVal |= objectDatV.flags;
+    }
+    return retVal;
+}
 
 //////////////////////////////////////////////////////////////////////////
 /// PrivateObjectCoreAccessors implementations
 //////////////////////////////////////////////////////////////////////////
 
-EObjectFlags &INTERNAL_ObjectCoreAccessors::getFlags(Object *object) { return object->flags; }
+EObjectFlags &INTERNAL_ObjectCoreAccessors::getFlags(Object *object) { return CoreObjectsModule::objectsDB().objectFlags(object->getDbIdx()); }
 
-ObjectAllocIdx INTERNAL_ObjectCoreAccessors::getAllocIdx(const Object *object) { return object->allocIdx; }
+ObjectAllocIdx INTERNAL_ObjectCoreAccessors::getAllocIdx(const Object *object)
+{
+    return CoreObjectsModule::objectsDB().getObjectData(object->getDbIdx()).allocIdx;
+}
+void INTERNAL_ObjectCoreAccessors::setAllocIdx(Object *object, ObjectAllocIdx allocIdx)
+{
+    CoreObjectsModule::objectsDB().setAllocIdx(object->getDbIdx(), allocIdx);
+}
 
-void INTERNAL_ObjectCoreAccessors::setAllocIdx(Object *object, ObjectAllocIdx allocIdx) { object->allocIdx = allocIdx; }
+void INTERNAL_ObjectCoreAccessors::setDbIdx(Object *object, ObjectDbIdx dbIdx) { object->dbIdx = dbIdx; }
 
-void INTERNAL_ObjectCoreAccessors::setOuterAndName(Object *object, const String &newName, Object *outer, CBEClass clazz /*= nullptr*/)
+void INTERNAL_ObjectCoreAccessors::setOuterAndName(Object *object, StringView newName, Object *outer, CBEClass clazz /*= nullptr*/)
 {
     fatalAssertf(!newName.empty(), "Object name cannot be empty");
-    if (outer == object->getOuter() && object->getName() == newName)
-    {
-        return;
-    }
 
     CoreObjectsDB &objectsDb = CoreObjectsModule::objectsDB();
+    ObjectPrivateDataView objectDatV = objectsDb.getObjectData(object->getDbIdx());
 
-    String objPath = object->getFullPath();
-    String newObjPath = ObjectPathHelper::getFullPath(newName.getChar(), outer);
+    String newObjPath = ObjectPathHelper::getFullPath(newName, outer);
     StringID newSid(newObjPath);
     fatalAssertf(
         !objectsDb.hasObject({ .objectPath = newObjPath.getChar(), .objectId = newSid }),
-        "Object cannot be renamed to another existing object! [Old name: %s, New name: %s]", object->getName(), newName
+        "Object cannot be renamed to another existing object! [Old name: %s, New name: %s]", objectDatV.name, newName
     );
 
-    CoreObjectsDB::NodeIdxType existingNodeIdx
-        = objectsDb.getObjectNodeIdx({ .objectPath = objPath.getChar(), .objectId = object->getStringID() });
-    if (object->getStringID().isValid() && objectsDb.hasObject(existingNodeIdx))
+    if (objectDatV.isValid())
     {
+        ObjectDbIdx outerDbIdx = outer ? outer->getDbIdx() : CoreObjectsDB::InvalidDbIdx;
+        if (objectDatV.outerIdx == outerDbIdx && objectDatV.name == newName)
+        {
+            return;
+        }
+
+        ObjectDbIdx existingNodeIdx = object->getDbIdx();
         // Setting object name here so that sub object's new full path can be calculated easily
-        object->objectName = newName;
+        objectsDb.setObject(existingNodeIdx, newSid, newObjPath, newName);
+        // It is fine to use the existingNodeIdx since the node index do not change when changing object id or parent
+        objectsDb.setObjectParent(existingNodeIdx, outerDbIdx);
 
         // If there is child then all of them must be renamed before object can be renamed
         if (objectsDb.hasChild(existingNodeIdx))
@@ -109,54 +173,38 @@ void INTERNAL_ObjectCoreAccessors::setOuterAndName(Object *object, const String 
             {
                 debugAssert(objectsDb.hasObject(subObjNodeIdx));
                 Object *subObj = objectsDb.getObject(subObjNodeIdx);
-                String newSubObjFullPath = subObj->getFullPath();
+                String newSubObjFullPath = ObjectPathHelper::computeFullPath(subObj);
+                StringID newSubObjSid = newSubObjFullPath.getChar();
 
-                subObj->sid = newSubObjFullPath.getChar();
                 // Only need to set name, No need to reset parent
-                objectsDb.setObject(subObjNodeIdx, subObj->getStringID(), newSubObjFullPath.getChar());
+                objectsDb.setObject(subObjNodeIdx, newSubObjSid, newSubObjFullPath.getChar(), objectsDb.getObjectData(subObjNodeIdx).name);
             }
-        }
-
-        objectsDb.setObject(existingNodeIdx, newSid, newObjPath.getChar());
-        // It is fine to use the existingNodeIdx since the node index do not change when changing object id or parent
-        if (outer)
-        {
-            String outerObjPath = outer->getFullPath();
-            objectsDb.setObjectParent(existingNodeIdx, { .objectPath = outerObjPath.getChar(), .objectId = outer->getStringID() });
-        }
-        else
-        {
-            objectsDb.setObjectParent(existingNodeIdx, { .objectId = StringID::INVALID });
         }
     }
     else
     {
-        // constructing object's name
-        new (&object->objectName) String(newName);
-
         CoreObjectsDB::ObjectData objData{
-            .path = newObjPath, .clazz = (clazz != nullptr ? clazz : object->getType()), .allocIdx = object->allocIdx, .sid = newSid
+            .path = newObjPath, .name = newName, .clazz = (clazz != nullptr ? clazz : object->getType()), .sid = newSid
         };
-
+        ObjectDbIdx dbIdx = CoreObjectsDB::InvalidDbIdx;
         if (outer)
         {
-            String outerObjPath = outer->getFullPath();
-            objectsDb.addObject(newSid, objData, { .objectPath = outerObjPath.getChar(), .objectId = outer->getStringID() });
+            dbIdx = objectsDb.addObject(newSid, objData, outer->getDbIdx());
         }
         else
         {
-            objectsDb.addRootObject(newSid, objData);
+            dbIdx = objectsDb.addRootObject(newSid, objData);
         }
+        setDbIdx(object, dbIdx);
     }
-    // Setting object outer
-    object->objOuter = outer;
-    // Setting object's new sid
-    object->sid = newSid;
 }
 
-void INTERNAL_ObjectCoreAccessors::setOuter(Object *object, Object *outer) { setOuterAndName(object, object->objectName, outer); }
+void INTERNAL_ObjectCoreAccessors::setOuter(Object *object, Object *outer) { setOuterAndName(object, object->getObjectData().name, outer); }
 
-void INTERNAL_ObjectCoreAccessors::renameObject(Object *object, const String &newName) { setOuterAndName(object, newName, object->objOuter); }
+void INTERNAL_ObjectCoreAccessors::renameObject(Object *object, StringView newName)
+{
+    setOuterAndName(object, newName, CoreObjectsModule::objectsDB().getObject(object->getObjectData().outerIdx));
+}
 } // namespace cbe
 
 ObjectArchive &ObjectArchive::serialize(cbe::Object *& /*obj*/)
@@ -185,60 +233,73 @@ FORCE_INLINE StringView ObjectPathHelper::getOuterPathAndObjectName(StringView &
     return {};
 }
 
-String ObjectPathHelper::getObjectPath(const cbe::Object *object, const cbe::Object *stopAt)
+String ObjectPathHelper::computeFullPath(const cbe::Object *object)
+{
+    const CoreObjectsDB &objectsDb = CoreObjectsModule::objectsDB();
+    std::vector<StringView> outers;
+    for (cbe::ObjectPrivateDataView objectDatV = object->getObjectData(); objectDatV; objectDatV = objectsDb.getObjectData(objectDatV.outerIdx))
+    {
+        outers.emplace_back(objectDatV.name);
+    }
+
+    return String(outers.back()) + ObjectPathHelper::RootObjectSeparator
+           + String::join(outers.crbegin() + 1, outers.crend(), ObjectPathHelper::ObjectObjectSeparator);
+}
+
+String ObjectPathHelper::computeFullPath(StringView objectName, const cbe::Object *outerObj)
+{
+    if (outerObj)
+    {
+        String outputStr = computeFullPath(outerObj);
+        SizeT outerPathLen = outputStr.length();
+        outputStr.resize(
+            outerPathLen + objectName.length() + 1,
+            outerObj->getOuter() ? ObjectPathHelper::ObjectObjectSeparator : ObjectPathHelper::RootObjectSeparator
+        );
+        objectName.copy(outputStr.data() + outerPathLen + 1, objectName.length());
+        return outputStr;
+    }
+    return objectName;
+}
+
+String ObjectPathHelper::computeObjectPath(const cbe::Object *object, const cbe::Object *stopAt)
 {
     debugAssert(stopAt != object);
 
-    if (object->getOuter() == nullptr)
+    cbe::ObjectPrivateDataView objectDatV = object->getObjectData();
+    const CoreObjectsDB &objectsDb = CoreObjectsModule::objectsDB();
+    if (objectDatV.outerIdx == CoreObjectsDB::InvalidDbIdx)
     {
-        return object->getName();
+        return objectDatV.name;
     }
 
-    std::vector<const TChar *> outers;
+    std::vector<StringView> outers;
     // Since last path element must be this obj name
-    outers.emplace_back(object->getName().getChar());
-    const cbe::Object *outer = object->getOuter();
-    while (outer != stopAt && outer->getOuter())
+    outers.emplace_back(objectDatV.name);
+
+    ObjectDbIdx outerIdx = objectDatV.outerIdx;
+    objectDatV = objectsDb.getObjectData(outerIdx);
+    // Check if this outer has an outer else it is last outer and must be package
+    while (outerIdx != stopAt->getDbIdx() && objectDatV.outerIdx != CoreObjectsDB::InvalidDbIdx)
     {
-        outers.emplace_back(outer->getName().getChar());
-        outer = outer->getOuter();
+        outers.emplace_back(objectDatV.name);
+        outerIdx = objectDatV.outerIdx;
+        objectDatV = objectsDb.getObjectData(outerIdx);
     }
-    if (outer != stopAt)
+    if (outerIdx != stopAt->getDbIdx())
     {
-        debugAssertf(stopAt == nullptr, "Object %s is not subobject of %s", object->getFullPath(), stopAt->getFullPath());
-        return outer->getName() + ObjectPathHelper::RootObjectSeparator
+        debugAssertf(stopAt == nullptr, "Object %s is not subobject of %s", objectDatV.path, stopAt->getObjectData().path);
+        return String(objectDatV.name) + ObjectPathHelper::RootObjectSeparator
                + String::join(outers.crbegin(), outers.crend(), ObjectPathHelper::ObjectObjectSeparator);
     }
     return String::join(outers.crbegin(), outers.crend(), ObjectPathHelper::ObjectObjectSeparator);
-}
-
-FORCE_INLINE String ObjectPathHelper::getFullPath(const cbe::Object *object)
-{
-    if (object->getOuter() == nullptr)
-    {
-        return object->getName();
-    }
-
-    std::vector<const TChar *> outers;
-    // Since last path element must be this obj name
-    outers.emplace_back(object->getName().getChar());
-    const cbe::Object *outer = object->getOuter();
-    while (outer->getOuter())
-    {
-        outers.emplace_back(outer->getName().getChar());
-        outer = outer->getOuter();
-    }
-    String objectPath = outer->getName() + ObjectPathHelper::RootObjectSeparator
-                        + String::join(outers.crbegin(), outers.crend(), ObjectPathHelper::ObjectObjectSeparator);
-
-    return objectPath;
 }
 
 String ObjectPathHelper::getFullPath(StringView objectName, const cbe::Object *outerObj)
 {
     if (outerObj)
     {
-        String outputStr = outerObj->getFullPath();
+        String outputStr = outerObj->getObjectData().path;
         SizeT outerPathLen = outputStr.length();
         outputStr.resize(
             outerPathLen + objectName.length() + 1,

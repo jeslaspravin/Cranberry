@@ -20,7 +20,7 @@ namespace cbe
 {
 EngineBase::EngineBase()
 {
-    if (BIT_NOT_SET(getFlags(), EObjectFlagBits::ObjFlag_Default))
+    if (BIT_NOT_SET(getObjectData().flags, EObjectFlagBits::ObjFlag_Default))
     {
         debugAssert(gCBEEngine == nullptr);
         gCBEEngine = this;

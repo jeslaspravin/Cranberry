@@ -21,6 +21,7 @@ namespace cbe
 {
 class Package;
 class Object;
+struct ObjectPrivateDataView;
 } // namespace cbe
 
 class PackageLoader final : public ObjectArchive
@@ -49,7 +50,7 @@ private:
      * For transient objects this will set object to found object. If no transient object exists it will be nullptr
      * Returns collectedFlags from all outers
      */
-    EObjectFlags createContainedObject(PackageContainedData &containedData);
+    EObjectFlags createContainedObject(PackageContainedData &containedData, const String &packageName, EObjectFlags packageFlags);
     template <typename T>
     FORCE_INLINE void relinkLoadedPtr(T **objPtrPtr) const;
     FORCE_INLINE void linkContainedObjects() const;

@@ -33,7 +33,7 @@ EditorEngine *gCBEditorEngine = nullptr;
 
 EditorEngine::EditorEngine()
 {
-    if (BIT_NOT_SET(getFlags(), EObjectFlagBits::ObjFlag_Default))
+    if (BIT_NOT_SET(getObjectData().flags, EObjectFlagBits::ObjFlag_Default))
     {
         debugAssert(gCBEditorEngine == nullptr);
         gCBEditorEngine = this;
@@ -119,7 +119,7 @@ void EditorEngine::selectionChanged(Object *newSelection)
     else
     {
         selectedActor = nullptr;
-        LOG_WARN("EditorEngine", "Selection %s is not handled properly!", newSelection->getFullPath());
+        LOG_WARN("EditorEngine", "Selection %s is not handled properly!", newSelection->getObjectData().path);
     }
 }
 

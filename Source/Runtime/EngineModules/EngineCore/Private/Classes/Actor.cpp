@@ -30,8 +30,11 @@ STRINGID_CONSTEXPR inline const StringID ACTOR_PREFAB_CUSTOM_VERSION_ID = STRID(
 ActorPrefab::ActorPrefab(StringID className, const String &actorName)
     : parentPrefab(nullptr)
 {
+    ObjectPrivateDataView thisObjDatV = getObjectData();
+
     actorClass = IReflectionRuntimeModule::get()->getClassType(className);
-    actorTemplate = create<ObjectTemplate, StringID, const String &>(actorName + TCHAR("_AcTmpt"), this, getFlags(), className, actorName);
+    actorTemplate
+        = create<ObjectTemplate, StringID, const String &>(actorName + TCHAR("_AcTmpt"), this, thisObjDatV.flags, className, actorName);
 
     // If there is no root component already then we must create a root component and add it
     if (!static_cast<Actor *>(actorTemplate->getTemplate())->getRootComponent())
@@ -39,7 +42,7 @@ ActorPrefab::ActorPrefab(StringID className, const String &actorName)
         String componentName = TCHAR("RootComp");
         String compTemplateName = TCHAR("RootComp_CpTmpt");
         components.emplace_back(create<ObjectTemplate, StringID, const String &>(
-            compTemplateName, actorTemplate, getFlags(), TransformComponent::staticType()->name, componentName
+            compTemplateName, actorTemplate, thisObjDatV.flags, TransformComponent::staticType()->name, componentName
         ));
         rootComponent = static_cast<TransformComponent *>(components.back()->getTemplate());
     }
@@ -50,11 +53,14 @@ ActorPrefab::ActorPrefab(ActorPrefab *inPrefab, const String &name)
     : parentPrefab(inPrefab)
 {
     debugAssert(parentPrefab);
+    ObjectPrivateDataView thisObjDatV = getObjectData();
+
     actorClass = parentPrefab->actorClass;
 
     String actorTemplateName = name + TCHAR("_AcTmpt");
-    actorTemplate
-        = create<ObjectTemplate, ObjectTemplate *, const String &>(actorTemplateName, this, getFlags(), parentPrefab->actorTemplate, name);
+    actorTemplate = create<ObjectTemplate, ObjectTemplate *, const String &>(
+        actorTemplateName, this, thisObjDatV.flags, parentPrefab->actorTemplate, name
+    );
     // Since parentPrefab must have set it up
     debugAssert(static_cast<Actor *>(actorTemplate->getTemplate())->getRootComponent());
 
@@ -77,7 +83,7 @@ ActorPrefab::ActorPrefab(ActorPrefab *inPrefab, const String &name)
         if (isNativeComponent(compAttachedTo.second))
         {
             // Path of native component from this prefab's actor template
-            String attachedToPath = ObjectPathHelper::getFullPath(compAttachedTo.second->getName().getChar(), actorTemplate->getTemplate());
+            String attachedToPath = ObjectPathHelper::getFullPath(compAttachedTo.second->getObjectData().name, actorTemplate->getTemplate());
             Object *nativeComp = get(attachedToPath.getChar());
             debugAssert(nativeComp && PropertyHelper::isChildOf<TransformComponent>(nativeComp->getType()));
             componentAttachedTo[compAttachedTo.first] = static_cast<TransformComponent *>(nativeComp);
@@ -207,11 +213,14 @@ bool ActorPrefab::copyFrom(ActorPrefab *otherPrefab)
     {
         return false;
     }
+    const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
 
     bool bCopiedActorTemplate = actorTemplate->copyFrom(otherPrefab->actorTemplate);
     if (!bCopiedActorTemplate)
     {
-        LOG_ERROR("ActorPrefab", "Cannot copy mismatched actor templates[To: %s, From: %s]", getFullPath(), otherPrefab->getFullPath());
+        LOG_ERROR(
+            "ActorPrefab", "Cannot copy mismatched actor templates[To: %s, From: %s]", getObjectData().path, otherPrefab->getObjectData().path
+        );
         return false;
     }
 
@@ -223,16 +232,19 @@ bool ActorPrefab::copyFrom(ActorPrefab *otherPrefab)
     std::unordered_set<ObjectTemplate *> compsToRemove(components.cbegin(), components.cend());
     for (ObjectTemplate *otherComp : otherPrefab->components)
     {
-        ObjectTemplate *thisComp = get<ObjectTemplate>(ObjectPathHelper::getFullPath(otherComp->getName().getChar(), actorTemplate).getChar());
+        ObjectPrivateDataView otherCompDatV = objectsDb.getObjectData(otherComp->getDbIdx());
+        ObjectPrivateDataView otherCompTemplateDatV = objectsDb.getObjectData(otherComp->getTemplate()->getDbIdx());
+
+        ObjectTemplate *thisComp = get<ObjectTemplate>(ObjectPathHelper::getFullPath(otherCompDatV.name, actorTemplate).getChar());
         if (thisComp == nullptr)
         {
             if (ObjectTemplate *parentTemplate = otherComp->getParentTemplate())
             {
-                thisComp = objectTemplateFromObj(addComponent(parentTemplate, otherComp->getTemplate()->getName()));
+                thisComp = objectTemplateFromObj(addComponent(parentTemplate, otherCompTemplateDatV.name));
             }
             else
             {
-                thisComp = objectTemplateFromObj(addComponent(otherComp->getTemplateClass(), otherComp->getTemplate()->getName()));
+                thisComp = objectTemplateFromObj(addComponent(otherComp->getTemplateClass(), otherCompTemplateDatV.name));
             }
             debugAssert(thisComp);
         }
@@ -243,12 +255,16 @@ bool ActorPrefab::copyFrom(ActorPrefab *otherPrefab)
     }
     for (ObjectTemplate *otherComp : otherPrefab->components)
     {
-        ObjectTemplate *thisComp = get<ObjectTemplate>(ObjectPathHelper::getFullPath(otherComp->getName().getChar(), actorTemplate).getChar());
+        ObjectPrivateDataView otherCompDatV = objectsDb.getObjectData(otherComp->getDbIdx());
+
+        ObjectTemplate *thisComp = get<ObjectTemplate>(ObjectPathHelper::getFullPath(otherCompDatV.name, actorTemplate).getChar());
         bool bIsCopied = thisComp->copyFrom(otherComp);
         compsToRemove.erase(thisComp);
         if (!bIsCopied)
         {
-            LOG_ERROR("ActorPrefab", "Failed to copy component templates[To: %s, From: %s]", thisComp->getFullPath(), otherComp->getFullPath());
+            LOG_ERROR(
+                "ActorPrefab", "Failed to copy component templates[To: %s, From: %s]", thisComp->getObjectData().path, otherCompDatV.path
+            );
             return false;
         }
 
@@ -273,7 +289,9 @@ bool ActorPrefab::copyFrom(ActorPrefab *otherPrefab)
 
         if (compOverrideItr == componentOverrides.end())
         {
-            LOG_ERROR("ActorPrefab", "Cannot find component override entry for %s", getTemplateToOverride(otherOverrides)->getFullPath());
+            LOG_ERROR(
+                "ActorPrefab", "Cannot find component override entry for %s", getTemplateToOverride(otherOverrides)->getObjectData().path
+            );
             return false;
         }
 
@@ -329,12 +347,13 @@ bool ActorPrefab::copyFrom(ActorPrefab *otherPrefab)
         TransformComponent *attachedToComp = otherAttachedPair.second;
         if (otherPrefab->isOwnedComponent(attachingComp))
         {
-            attachingComp = get<TransformComponent>(ObjectPathHelper::getFullPath(attachingComp->getName().getChar(), actorTemplate).getChar());
+            attachingComp
+                = get<TransformComponent>(ObjectPathHelper::getFullPath(attachingComp->getObjectData().name, actorTemplate).getChar());
         }
         if (otherPrefab->isOwnedComponent(attachedToComp))
         {
             attachedToComp
-                = get<TransformComponent>(ObjectPathHelper::getFullPath(attachedToComp->getName().getChar(), actorTemplate).getChar());
+                = get<TransformComponent>(ObjectPathHelper::getFullPath(attachedToComp->getObjectData().name, actorTemplate).getChar());
         }
         // Below assert must not trigger as above component and overrides copy logics must create all necessary components
         fatalAssert(attachingComp && attachedToComp);
@@ -349,7 +368,7 @@ void ActorPrefab::setRootComponent(TransformComponent *component)
 {
     if (!isOwnedComponent(component))
     {
-        LOG_WARN("ActorPrefab", "Component is not owned, Call modifyComponent() to override the component!", component->getFullPath());
+        LOG_WARN("ActorPrefab", "Component is not owned, Call modifyComponent() to override the component!", component->getObjectData().path);
         return;
     }
     debugAssert(canOverrideRootComp());
@@ -387,7 +406,8 @@ void ActorPrefab::setComponentAttachedTo(TransformComponent *attachingComp, Tran
     if (!isOwnedComponent(attachingComp))
     {
         LOG_WARN(
-            "ActorPrefab", "Attaching component is not owned, Call modifyComponent() to override the component!", attachingComp->getFullPath()
+            "ActorPrefab", "Attaching component is not owned, Call modifyComponent() to override the component!",
+            attachingComp->getObjectData().path
         );
         return;
     }
@@ -417,9 +437,11 @@ void ActorPrefab::setComponentAttachedTo(TransformComponent *attachingComp, Tran
 
 Object *ActorPrefab::addComponent(CBEClass compClass, const String &compName)
 {
+    ObjectPrivateDataView thisObjDatV = getObjectData();
+
     String compTemplateName = compName + TCHAR("_CpTmpt");
     ObjectTemplate *compTemplate
-        = create<ObjectTemplate, StringID, const String &>(compTemplateName, actorTemplate, getFlags(), compClass->name, compName);
+        = create<ObjectTemplate, StringID, const String &>(compTemplateName, actorTemplate, thisObjDatV.flags, compClass->name, compName);
     components.emplace_back(compTemplate);
     postAddComponent(compTemplate->getTemplate());
     return compTemplate->getTemplate();
@@ -427,9 +449,11 @@ Object *ActorPrefab::addComponent(CBEClass compClass, const String &compName)
 
 Object *ActorPrefab::addComponent(ObjectTemplate *compTemplate, const String &compName)
 {
+    ObjectPrivateDataView thisObjDatV = getObjectData();
+
     String compTemplateName = compName + TCHAR("_CpTmpt");
     ObjectTemplate *compObjTemplate
-        = create<ObjectTemplate, ObjectTemplate *, const String &>(compTemplateName, actorTemplate, getFlags(), compTemplate, compName);
+        = create<ObjectTemplate, ObjectTemplate *, const String &>(compTemplateName, actorTemplate, thisObjDatV.flags, compTemplate, compName);
     components.emplace_back(compObjTemplate);
     postAddComponent(compObjTemplate->getTemplate());
     return compObjTemplate->getTemplate();
@@ -444,7 +468,7 @@ void ActorPrefab::removeComponent(Object *comp)
     auto compTemplateItr = std::find(components.begin(), components.end(), compTemplate);
     if (compTemplateItr == components.end())
     {
-        LOG("ActorPrefab", "Component %s is already removed", comp->getName());
+        LOG("ActorPrefab", "Component %s is already removed", comp->getObjectData().name);
         return;
     }
 
@@ -540,7 +564,7 @@ ObjectArchive &ActorPrefab::serialize(ObjectArchive &ar)
         // This must crash
         fatalAssertf(
             ACTOR_PREFAB_SERIALIZER_CUTOFF_VERSION >= dataVersion,
-            "Version of ActorPrefab %u loaded from package %s is outdated, Minimum supported %u!", dataVersion, getOuterMost()->getFullPath(),
+            "Version of ActorPrefab %u loaded from package %s is outdated, Minimum supported %u!", dataVersion, getObjectData().path,
             ACTOR_PREFAB_SERIALIZER_CUTOFF_VERSION
         );
     }
@@ -561,7 +585,7 @@ void ActorPrefab::onPostSerialize(const ObjectArchive &ar)
         {
             componentOverrides.clear();
         }
-        alertAlwaysf(actorClass && actorTemplate, "Missing actor class/Template for actor prefab %s", getFullPath());
+        alertAlwaysf(actorClass && actorTemplate, "Missing actor class/Template for actor prefab %s", getObjectData().path);
         std::erase(components, nullptr);
         std::erase_if(
             componentOverrides,
@@ -695,7 +719,9 @@ void ActorPrefab::initializeActor(ActorPrefab *inPrefab)
         }
         else
         {
-            fatalAssertf(false, "Why?? Component %s of type %s is not a valid component", comp->getName(), comp->getType()->nameString);
+            fatalAssertf(
+                false, "Why?? Component %s of type %s is not a valid component", comp->getObjectData().name, comp->getType()->nameString
+            );
         }
     };
     for (ObjectTemplate *comp : inPrefab->components)
@@ -718,18 +744,21 @@ bool ActorPrefab::isNativeComponent(Object *obj) const { return obj && PropertyH
 
 void ActorPrefab::createComponentOverride(ComponentOverrideInfo &overrideInfo, bool bReplaceReferences)
 {
-    ObjectTemplate *componentTemplate = getTemplateToOverride(overrideInfo);
-    TransformComponent *tfComponent = componentTemplate->getTemplateAs<TransformComponent>();
+    const CoreObjectsDB &objsDb = ICoreObjectsModule::get()->getObjectsDB();
+
+    ObjectTemplate *compTemplateObj = getTemplateToOverride(overrideInfo);
+    TransformComponent *tfComponent = compTemplateObj->getTemplateAs<TransformComponent>();
 
 #if DEBUG_BUILD
-    ActorPrefab *actorPrefab = prefabFromCompTemplate(componentTemplate);
-    LogicComponent *logicComponent = componentTemplate->getTemplateAs<LogicComponent>();
-    debugAssert(componentTemplate && (logicComponent || tfComponent) && actorPrefab && actorPrefab != this);
+    ActorPrefab *actorPrefab = prefabFromCompTemplate(compTemplateObj);
+    LogicComponent *logicComponent = compTemplateObj->getTemplateAs<LogicComponent>();
+    debugAssert(compTemplateObj && (logicComponent || tfComponent) && actorPrefab && actorPrefab != this);
 #endif
+    ObjectPrivateDataView compTemplateObjDatV = objsDb.getObjectData(compTemplateObj->getDbIdx());
+    ObjectPrivateDataView compTemplateDatV = objsDb.getObjectData(compTemplateObj->getTemplate()->getDbIdx());
 
     overrideInfo.overriddenTemplate = create<ObjectTemplate, ObjectTemplate *, const String &>(
-        componentTemplate->getName(), actorTemplate, componentTemplate->getFlags(), componentTemplate,
-        componentTemplate->getTemplate()->getName()
+        compTemplateObjDatV.name, actorTemplate, compTemplateObjDatV.flags, compTemplateObj, compTemplateDatV.name
     );
 
     if (tfComponent)
@@ -761,7 +790,7 @@ void ActorPrefab::createComponentOverride(ComponentOverrideInfo &overrideInfo, b
     if (bReplaceReferences)
     {
         std::unordered_map<Object *, Object *> replacements = {
-            {componentTemplate->getTemplate(), overrideInfo.overriddenTemplate->getTemplate()}
+            {compTemplateObj->getTemplate(), overrideInfo.overriddenTemplate->getTemplate()}
         };
         replaceObjectReferences(this, replacements, EObjectTraversalMode::EntireObjectTree);
     }

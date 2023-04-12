@@ -71,14 +71,14 @@ namespace cbe
 class ObjectBase
 {
 protected:
-    String objectName;
+    ObjectDbIdx dbIdx;
 
 protected:
     ObjectBase() = delete;
     MAKE_TYPE_NONCOPY_NONMOVE(ObjectBase)
 
-    ObjectBase(String inObjectName)
-        : objectName(inObjectName)
+    ObjectBase(ObjectDbIdx inDbIdx)
+        : dbIdx(inDbIdx)
     {}
 };
 
@@ -93,21 +93,9 @@ private:
     friend INTERNAL_ObjectCoreAccessors;
     friend CBEObjectConstructionPolicy;
 
-    Object *objOuter;
-    EObjectFlags flags;
-    StringID sid;
-    ObjectAllocIdx allocIdx;
-
-protected:
-    void markReadyForDestroy() { SET_BITS(flags, EObjectFlagBits::ObjFlag_MarkedForDelete); }
-
 public:
     Object()
-        : ObjectBase(objectName)
-        , objOuter(objOuter)
-        , flags(flags)
-        , sid(sid)
-        , allocIdx(allocIdx)
+        : ObjectBase(dbIdx)
     {}
 
     virtual ~Object() = default;
@@ -122,7 +110,7 @@ public:
     {
         // Also change cbe::create()
         debugAssertf(
-            NO_BITS_SET(flags, EObjectFlagBits::ObjFlag_PackageLoadPending),
+            NO_BITS_SET(INTERNAL_ObjectCoreAccessors::getFlags(this), EObjectFlagBits::ObjFlag_PackageLoadPending),
             "constructed called before load is finished! Try using INTERNAL_create"
         );
         onConstructed();
@@ -132,48 +120,19 @@ public:
     // Will get called after serialize and linking is done
     void postSerialize(const ObjectArchive &ar) { onPostSerialize(ar); }
 
-    FORCE_INLINE Object *getOuter() const { return objOuter; }
-    FORCE_INLINE Object *getOuterMost() const
-    {
-        Object *outer = this->getOuter();
-        while (outer && outer->getOuter())
-        {
-            outer = outer->getOuter();
-        }
-        return outer;
-    }
+    FORCE_INLINE ObjectDbIdx getDbIdx() const { return dbIdx; }
+    ObjectPrivateDataView getObjectData() const;
+
+    Object *getOuter() const;
+    Object *getOuterMost() const;
     template <typename Type>
-    FORCE_INLINE Type *getOuterOfType() const
+    Type *getOuterOfType() const
     {
         return static_cast<Type *>(getOuterOfType(Type::staticType()));
     }
-    FORCE_INLINE Object *getOuterOfType(CBEClass clazz) const
-    {
-        Object *outer = this->getOuter();
-        while (outer && outer->getType() != clazz)
-        {
-            outer = outer->getOuter();
-        }
-        return outer;
-    }
-    bool hasOuter(Object *checkOuter) const { return getOuter() && (getOuter() == checkOuter || getOuter()->hasOuter(checkOuter)); }
-
-    FORCE_INLINE EObjectFlags getFlags() const { return flags; }
-    FORCE_INLINE EObjectFlags collectAllFlags() const
-    {
-        EObjectFlags retVal = flags;
-        Object *outer = this->getOuter();
-        while (outer)
-        {
-            retVal |= outer->flags;
-            outer = outer->getOuter();
-        }
-        return retVal;
-    }
-
-    FORCE_INLINE const String &getName() const { return objectName; }
-    FORCE_INLINE StringID getStringID() const { return sid; }
-    String getFullPath() const;
+    Object *getOuterOfType(CBEClass clazz) const;
+    bool hasOuter(Object *checkOuter) const;
+    EObjectFlags collectAllFlags() const;
 
     virtual void destroy() {}
     virtual void onConstructed() {}
@@ -193,14 +152,15 @@ void *CBEObjectConstructionPolicy::allocate()
     CBEMemory::memZero(ptr, sizeof(Type));
 
     cbe::Object *objPtr = static_cast<cbe::Object *>(ptr);
-    objPtr->allocIdx = allocIdx;
+    // Pushing alloc index to dbIdx. This has to be used by cbe::INTERNAL_create() before setting up the object
+    objPtr->dbIdx = allocIdx;
     return ptr;
 }
 template <typename Type>
 void CBEObjectConstructionPolicy::deallocate(void *ptr)
 {
     cbe::Object *objPtr = static_cast<cbe::Object *>(ptr);
-    cbe::getObjAllocator<Type>().free(ptr, objPtr->allocIdx);
+    cbe::getObjAllocator<Type>().free(ptr, ObjectAllocIdx(objPtr->dbIdx));
 }
 
 template <typename Type, typename... CtorArgs>

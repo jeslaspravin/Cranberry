@@ -60,7 +60,7 @@ public:
 private:
 #if ENABLE_STRID_DEBUG
     // Holds pointer to debugStringsDB which will be used by debug to visualize string
-    const std::unordered_map<StringID::IDType, String> *debugStrings = nullptr;
+    const std::unordered_map<IDType, String> *debugStrings = nullptr;
     static std::unordered_map<IDType, String> &debugStringDB();
     static const TChar *findDebugString(IDType strId);
     void insertDbgStr(StringView str);
@@ -100,10 +100,10 @@ public:
         : id(0)
     {}
     // Additional constructors
-    FORCE_INLINE explicit StringID(const String &str)
+    FORCE_INLINE explicit StringID(StringView str)
         : id(STRINGID_HASHFUNC(str, Seed))
     {
-        insertDbgStr(str.getChar());
+        insertDbgStr(str);
     }
     STRINGID_FUNCQUALIFIER
     StringID(const AChar *str, SizeT len)
@@ -117,10 +117,10 @@ public:
     StringID(const WChar *str) { initFromAChar(TCHAR_TO_UTF8(WCHAR_TO_TCHAR(str))); }
     // Additional assignments
     FORCE_INLINE
-    StringID &operator= (const String &str)
+    StringID &operator= (StringView str)
     {
         id = STRINGID_HASHFUNC(str, Seed);
-        insertDbgStr(str.getChar());
+        insertDbgStr(str);
         return *this;
     }
     STRINGID_FUNCQUALIFIER

@@ -11,6 +11,7 @@
 
 #include "ObjectTemplate.h"
 #include "CBEObjectHelpers.h"
+#include "CoreObjectsModule.h"
 #include "Serialization/CommonTypesSerialization.h"
 #include "Serialization/ObjectSerializationHelpers.h"
 
@@ -70,7 +71,7 @@ ObjectArchive &ObjectTemplate::serialize(ObjectArchive &ar)
         fatalAssertf(
             OBJECT_TEMPLATE_SERIALIZER_CUTOFF_VERSION >= dataVersion,
             "Version of ObjectTemplate %u loaded from package %s is outdated, Minimum supported %u!", dataVersion,
-            getOuterMost()->getFullPath(), OBJECT_TEMPLATE_SERIALIZER_CUTOFF_VERSION
+            getOuterMost()->getObjectData().path, OBJECT_TEMPLATE_SERIALIZER_CUTOFF_VERSION
         );
     }
     else
@@ -87,7 +88,7 @@ ObjectArchive &ObjectTemplate::serialize(ObjectArchive &ar)
     {
         if (clazz == nullptr)
         {
-            LOG_ERROR("ObjectTemplate", "Failed to get class while serializing %s", getOuterMost()->getFullPath());
+            LOG_ERROR("ObjectTemplate", "Failed to get class while serializing %s", getOuterMost()->getObjectData().path);
             return ar;
         }
 
@@ -150,7 +151,7 @@ ObjectArchive &ObjectTemplate::serialize(ObjectArchive &ar)
 void ObjectTemplate::onFieldModified(const FieldProperty *prop, Object *obj)
 {
     debugAssert(obj->hasOuter(this));
-    NameString objName(ObjectPathHelper::getObjectPath(obj, this));
+    NameString objName(ObjectPathHelper::computeObjectPath(obj, this));
 
     TemplateObjectEntry &entry = objectEntries[objName];
     entry.modifiedFields.emplace(prop->name);
@@ -160,7 +161,7 @@ void ObjectTemplate::onFieldModified(const FieldProperty *prop, Object *obj)
 void ObjectTemplate::onFieldReset(const FieldProperty *prop, Object *obj)
 {
     debugAssert(obj->hasOuter(this));
-    NameString objName(ObjectPathHelper::getObjectPath(obj, this));
+    NameString objName(ObjectPathHelper::computeObjectPath(obj, this));
 
     TemplateObjectEntry &entry = objectEntries[objName];
     entry.modifiedFields.erase(prop->name);
@@ -185,7 +186,7 @@ bool ObjectTemplate::copyFrom(ObjectTemplate *otherTemplate)
         Object *thisEntryObj = get(ObjectPathHelper::getFullPath(entry.first.toString().getChar(), this).getChar());
         if (thisEntryObj == nullptr)
         {
-            LOG_WARN("ObjectTemplate", "ObjectTemplate %s does not have sub-object named %s", getFullPath(), entry.first);
+            LOG_WARN("ObjectTemplate", "ObjectTemplate %s does not have sub-object named %s", getObjectData().path, entry.first);
         }
         else
         {
@@ -218,19 +219,19 @@ void ObjectTemplate::createTemplate(CBEClass clazz, const TChar *name)
     }
     debugAssert(templateObj->getOuter() == this);
 
-    const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
-    String templateObjFullPath = templateObj->getFullPath();
+    // TODO(Jeslas) : ASAP Replace ICoreObjectsModule::get()->getObjectsDb() to CoreObjectsModule::objectsDb()
+    const CoreObjectsDB &objectsDb = CoreObjectsModule::objectsDB();
     std::vector<Object *> subObjs;
-    objectsDb.getSubobjects(subObjs, { .objectPath = templateObjFullPath.getChar(), .objectId = templateObj->getStringID() });
+    objectsDb.getSubobjects(subObjs, templateObj->getDbIdx());
 
     objectEntries.emplace(templateObjName, TemplateObjectEntry{});
     for (Object *subObj : subObjs)
     {
-        objectEntries.emplace(ObjectPathHelper::getObjectPath(subObj, this), TemplateObjectEntry{});
+        objectEntries.emplace(ObjectPathHelper::computeObjectPath(subObj, this), TemplateObjectEntry{});
     }
 }
 
-cbe::Object *create(ObjectTemplate *objTemplate, const String &name, Object *outerObj, EObjectFlags flags /*= 0*/)
+cbe::Object *create(ObjectTemplate *objTemplate, StringView name, Object *outerObj, EObjectFlags flags /*= 0*/)
 {
     if (!isValidFast(objTemplate))
     {

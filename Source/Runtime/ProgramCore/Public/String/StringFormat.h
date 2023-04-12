@@ -93,8 +93,8 @@ public:
         return static_cast<const TChar *>(value);
     }
 
+    // Fall through getChar()
     template <typename StrType>
-    requires NonStringType<StrType>
     FORCE_INLINE CONST_EXPR static StrType getChar(StrType value)
     {
         return std::forward<StrType>(value);

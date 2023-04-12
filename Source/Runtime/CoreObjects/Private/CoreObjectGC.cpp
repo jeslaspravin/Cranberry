@@ -27,14 +27,12 @@ void INTERNAL_destroyCBEObject(cbe::Object *obj);
 uint64 CoreObjectGC::deleteObject(cbe::Object *obj) const
 {
     CoreObjectsDB &objsDb = CoreObjectsModule::objectsDB();
-    String objFullPath = obj->getFullPath();
-    CoreObjectsDB::NodeIdxType objNodeIdx = objsDb.getObjectNodeIdx({ .objectPath = objFullPath.getChar(), .objectId = obj->getStringID() });
-    if (objsDb.hasObject(objNodeIdx))
+    if (objsDb.hasObject(obj->getDbIdx()))
     {
         // Deleting obj and its sub objects
         std::vector<cbe::Object *> subObjs;
         subObjs.emplace_back(obj);
-        objsDb.getSubobjects(subObjs, objNodeIdx);
+        objsDb.getSubobjects(subObjs, obj->getDbIdx());
         // Need to reverse so that children will be destroyed before parent
         for (auto rItr = subObjs.crbegin(); rItr != subObjs.crend(); ++rItr)
         {
@@ -51,6 +49,8 @@ void CoreObjectGC::collectFromRefCollectors(TickRep &budgetTicks)
 
     StopWatch collectionSW;
 
+    CoreObjectsDB &objsDb = CoreObjectsModule::objectsDB();
+
     std::vector<cbe::Object *> objects;
     std::vector<cbe::Object *> markedDelete;
     for (IReferenceCollector *refCollector : refCollectors)
@@ -61,7 +61,8 @@ void CoreObjectGC::collectFromRefCollectors(TickRep &budgetTicks)
 
         for (cbe::Object *obj : objects)
         {
-            if (BIT_SET(obj->getFlags(), cbe::EObjectFlagBits::ObjFlag_MarkedForDelete))
+            cbe::ObjectPrivateDataView objDatV = objsDb.getObjectData(obj->getDbIdx());
+            if (BIT_SET(objDatV.flags, cbe::EObjectFlagBits::ObjFlag_MarkedForDelete))
             {
                 markedDelete.emplace_back(obj);
             }
@@ -69,7 +70,7 @@ void CoreObjectGC::collectFromRefCollectors(TickRep &budgetTicks)
             {
                 // Assumes that caller ensures that objUsedFlags are populated and available
                 // throughout collection
-                objUsedFlags[obj->getType()][cbe::INTERNAL_ObjectCoreAccessors::getAllocIdx(obj)] = true;
+                objUsedFlags[objDatV.clazz][objDatV.allocIdx] = true;
             }
         }
 
@@ -89,7 +90,7 @@ void CoreObjectGC::markObjectsAsValid(TickRep &budgetTicks)
     debugAssert(state == EGCState::Collecting);
     StopWatch nonTransientMarker;
 
-    CoreObjectsDB &objsDb = CoreObjectsModule::objectsDB();
+    const CoreObjectsDB &objsDb = CoreObjectsModule::objectsDB();
     for (CBEClass clazz : classesLeft)
     {
         BitArray<uint64> &classObjsFlag = objUsedFlags[clazz];
@@ -99,12 +100,14 @@ void CoreObjectGC::markObjectsAsValid(TickRep &budgetTicks)
 
         for (cbe::Object *obj : allocatorItr->second->getAllObjects<cbe::Object>())
         {
+            cbe::ObjectPrivateDataView objDatV = objsDb.getObjectData(obj->getDbIdx());
+
             // Only mark as valid if object not marked for delete already and
             // If object is marked explicitly as root or default then we must not delete it
-            if (BIT_NOT_SET(obj->getFlags(), cbe::EObjectFlagBits::ObjFlag_MarkedForDelete)
-                && ANY_BIT_SET(obj->getFlags(), cbe::EObjectFlagBits::ObjFlag_RootObject | cbe::EObjectFlagBits::ObjFlag_Default))
+            if (BIT_NOT_SET(objDatV.flags, cbe::EObjectFlagBits::ObjFlag_MarkedForDelete)
+                && ANY_BIT_SET(objDatV.flags, cbe::EObjectFlagBits::ObjFlag_RootObject | cbe::EObjectFlagBits::ObjFlag_Default))
             {
-                classObjsFlag[cbe::INTERNAL_ObjectCoreAccessors::getAllocIdx(obj)] = true;
+                classObjsFlag[objDatV.allocIdx] = true;
             }
         }
     }
@@ -114,13 +117,11 @@ void CoreObjectGC::markObjectsAsValid(TickRep &budgetTicks)
         BitArray<uint64> &packagesFlag = objUsedFlags[cbe::Package::staticType()];
         for (cbe::Package *package : (*gCBEObjectAllocators)[cbe::Package::staticType()]->getAllObjects<cbe::Package>())
         {
-            debugAssertf(
-                package->getFullPath().isEqual(package->getName()), "Package name is not same as Package full path below logic will fail!"
-            );
-            if (BIT_NOT_SET(package->getFlags(), cbe::EObjectFlagBits::ObjFlag_MarkedForDelete)
-                && objsDb.hasChild({ .objectPath = package->getName().getChar(), .objectId = package->getStringID() }))
+            cbe::ObjectPrivateDataView packageDatV = objsDb.getObjectData(package->getDbIdx());
+            debugAssertf(packageDatV.path == packageDatV.name, "Package name is not same as Package full path below logic will fail!");
+            if (BIT_NOT_SET(packageDatV.flags, cbe::EObjectFlagBits::ObjFlag_MarkedForDelete) && objsDb.hasChild(package->getDbIdx()))
             {
-                packagesFlag[cbe::INTERNAL_ObjectCoreAccessors::getAllocIdx(package)] = true;
+                packagesFlag[packageDatV.allocIdx] = true;
             }
         }
     }
@@ -213,17 +214,18 @@ void CoreObjectGC::purgeAll()
     std::vector<cbe::Object *> allObjs;
     CoreObjectsDB &objsDb = CoreObjectsModule::objectsDB();
     objsDb.getAllObjects(allObjs);
-    objsDb.clear();
 
     for (auto objRItr = allObjs.crbegin(); objRItr != allObjs.crend(); ++objRItr)
     {
         cbe::Object *obj = *objRItr;
-        SET_BITS(cbe::INTERNAL_ObjectCoreAccessors::getFlags(obj), cbe::EObjectFlagBits::ObjFlag_GCPurge);
-        if (BIT_NOT_SET(obj->getFlags(), cbe::EObjectFlagBits::ObjFlag_Default))
+        EObjectFlags &flags = cbe::INTERNAL_ObjectCoreAccessors::getFlags(obj);
+        SET_BITS(flags, cbe::EObjectFlagBits::ObjFlag_GCPurge | cbe::EObjectFlagBits::ObjFlag_MarkedForDelete);
+        if (BIT_NOT_SET(flags, cbe::EObjectFlagBits::ObjFlag_Default))
         {
             cbe::INTERNAL_destroyCBEObject(obj);
         }
     }
+    objsDb.clear();
 }
 
 void CoreObjectGC::collect(TickRep budgetTicks)
@@ -278,6 +280,7 @@ void CoreObjectGC::unregisterReferenceCollector(IReferenceCollector *collector)
 struct GCObjectVisitableUserData
 {
     std::unordered_map<CBEClass, BitArray<uint64>> *objUsedFlags;
+    const CoreObjectsDB &objsDb = CoreObjectsModule::objectsDB();
     // Object we are inside, This is to ignore adding reference to itself
     cbe::Object *thisObj = nullptr;
     void *pNext = nullptr;
@@ -361,14 +364,15 @@ struct GCObjectFieldVisitable
             cbe::Object *objPtr = *objPtrPtr;
             if (objPtr && objPtr != gcUserData->thisObj)
             {
+                cbe::ObjectPrivateDataView objDatV = gcUserData->objsDb.getObjectData(objPtr->getDbIdx());
                 // No need to check if Deleted flag as that happens only when no references where found
-                if (BIT_SET(objPtr->getFlags(), cbe::EObjectFlagBits::ObjFlag_MarkedForDelete))
+                if (BIT_SET(objDatV.flags, cbe::EObjectFlagBits::ObjFlag_MarkedForDelete))
                 {
                     (*objPtrPtr) = nullptr;
                 }
                 else
                 {
-                    (*gcUserData->objUsedFlags)[objPtr->getType()][cbe::INTERNAL_ObjectCoreAccessors::getAllocIdx(objPtr)] = true;
+                    (*gcUserData->objUsedFlags)[objDatV.clazz][objDatV.allocIdx] = true;
                 }
             }
             break;
@@ -399,13 +403,14 @@ struct GCObjectFieldVisitable
             const cbe::Object *objPtr = *objPtrPtr;
             if (objPtr && objPtr != gcUserData->thisObj)
             {
-                if (BIT_SET(objPtr->getFlags(), cbe::EObjectFlagBits::ObjFlag_MarkedForDelete))
+                cbe::ObjectPrivateDataView objDatV = gcUserData->objsDb.getObjectData(objPtr->getDbIdx());
+                if (BIT_SET(objDatV.flags, cbe::EObjectFlagBits::ObjFlag_MarkedForDelete))
                 {
                     (*objPtrPtr) = nullptr;
                 }
                 else
                 {
-                    (*gcUserData->objUsedFlags)[objPtr->getType()][cbe::INTERNAL_ObjectCoreAccessors::getAllocIdx(objPtr)] = true;
+                    (*gcUserData->objUsedFlags)[objDatV.clazz][objDatV.allocIdx] = true;
                 }
             }
             break;
@@ -453,7 +458,7 @@ void CoreObjectGC::collectObjects(TickRep &budgetTicks)
 
             for (cbe::Object *obj : allocator->getAllObjects<cbe::Object>())
             {
-                if (BIT_NOT_SET(obj->getFlags(), cbe::EObjectFlagBits::ObjFlag_MarkedForDelete))
+                if (BIT_NOT_SET(userData.objsDb.getObjectData(obj->getDbIdx()).flags, cbe::EObjectFlagBits::ObjFlag_MarkedForDelete))
                 {
                     userData.thisObj = obj;
                     FieldVisitor::visitFields<GCObjectFieldVisitable>(classesLeft.back(), obj, &userData);

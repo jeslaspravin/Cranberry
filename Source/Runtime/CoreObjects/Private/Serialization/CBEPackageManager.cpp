@@ -20,14 +20,14 @@
 #include "Types/Platform/LFS/PlatformLFS.h"
 #include "Types/Platform/LFS/PathFunctions.h"
 
-bool ObjectPathHelper::isValidPackageName(const String &packageName)
+bool ObjectPathHelper::isValidPackageName(StringView packageName)
 {
     // Must start with non / valid symbol and followed by any valid symbols
     static const StringRegex matchPattern(TCHAR("^[a-zA-Z0-9_]{1}[a-zA-Z0-9_/]*"), std::regex_constants::ECMAScript);
-    return std::regex_match(packageName, matchPattern);
+    return std::regex_match(packageName.cbegin(), packageName.cend(), matchPattern);
 }
 
-String ObjectPathHelper::getValidPackageName(const String &packageName)
+String ObjectPathHelper::getValidPackageName(StringView packageName)
 {
     String output;
     output.resize(packageName.length());
@@ -110,15 +110,18 @@ Object *load(String objectPath, CBEClass clazz)
         }
     }
 
+    const CoreObjectsDB &objectsDb = CoreObjectsModule::objectsDB();
+
     cbe::Package *package = objectPackageLoader->getPackage();
     debugAssert(package);
+    ObjectPrivateDataView packageObjDatV = objectsDb.getObjectData(package->getDbIdx());
 
-    if (BIT_SET(package->getFlags(), EObjectFlagBits::ObjFlag_PackageLoadPending))
+    if (BIT_SET(packageObjDatV.flags, EObjectFlagBits::ObjFlag_PackageLoadPending))
     {
         EPackageLoadSaveResult loadResult = objectPackageLoader->load();
         if (CBEPACKAGE_SAVELOAD_ERROR(loadResult))
         {
-            fatalAssertf(CBEPACKAGE_SAVELOAD_SUCCESS(loadResult), "Loading package %s failed", package->getName());
+            fatalAssertf(CBEPACKAGE_SAVELOAD_SUCCESS(loadResult), "Loading package %s failed", packageObjDatV.name);
             return nullptr;
         }
         else if (!CBEPACKAGE_SAVELOAD_SUCCESS(loadResult))
@@ -127,15 +130,11 @@ Object *load(String objectPath, CBEClass clazz)
         }
     }
 
-    const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
     CoreObjectsDB::NodeIdxType objNodeIdx
         = objectsDb.getObjectNodeIdx({ .objectPath = objectPath.getChar(), .objectId = objectPath.getChar() });
-    Object *obj = nullptr;
-    if (objectsDb.hasObject(objNodeIdx))
-    {
-        obj = objectsDb.getObject(objNodeIdx);
-    }
-    debugAssert(obj && BIT_NOT_SET(obj->getFlags(), EObjectFlagBits::ObjFlag_PackageLoadPending));
+    Object *obj = objectsDb.getObject(objNodeIdx);
+    ObjectPrivateDataView objectDatV = objectsDb.getObjectData(objNodeIdx);
+    debugAssert(obj && BIT_NOT_SET(objectDatV.flags, EObjectFlagBits::ObjFlag_PackageLoadPending));
     return obj;
 }
 
@@ -160,16 +159,12 @@ Object *getOrLoad(String objectPath, CBEClass clazz)
         objectPath = objPath;
     }
 
-    const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
+    const CoreObjectsDB &objectsDb = CoreObjectsModule::objectsDB();
     CoreObjectsDB::NodeIdxType objNodeIdx
         = objectsDb.getObjectNodeIdx({ .objectPath = objectPath.getChar(), .objectId = objectPath.getChar() });
-    Object *obj = nullptr;
-    if (objectsDb.hasObject(objNodeIdx))
-    {
-        obj = objectsDb.getObject(objNodeIdx);
-    }
-
-    if (!obj || BIT_SET(obj->getFlags(), EObjectFlagBits::ObjFlag_PackageLoadPending))
+    Object *obj = objectsDb.getObject(objNodeIdx);
+    ObjectPrivateDataView objectDatV = objectsDb.getObjectData(objNodeIdx);
+    if (!obj || BIT_SET(objectDatV.flags, EObjectFlagBits::ObjFlag_PackageLoadPending))
     {
         return load(objectPath, clazz);
     }
@@ -194,20 +189,21 @@ bool save(Object *obj)
     }
     if (!package)
     {
-        LOG_WARN("ObjectHelper", "Object %s cannot be saved due to invalid package", obj->getFullPath());
+        LOG_WARN("ObjectHelper", "Object %s cannot be saved due to invalid package", obj->getObjectData().path);
         return false;
     }
+    ObjectPrivateDataView packageDatV = package->getObjectData();
 
     PackageSaver saver(package);
     EPackageLoadSaveResult saveResult = saver.savePackage();
     if (CBEPACKAGE_SAVELOAD_ERROR(saveResult))
     {
-        LOG_ERROR("ObjectHelper", "Failed to save package %s", package->getName());
+        LOG_ERROR("ObjectHelper", "Failed to save package %s", packageDatV.name);
         return false;
     }
     else if (!CBEPACKAGE_SAVELOAD_SUCCESS(saveResult))
     {
-        LOG_WARN("ObjectHelper", "Saved package %s with minor warnings", package->getName());
+        LOG_WARN("ObjectHelper", "Saved package %s with minor warnings", packageDatV.name);
     }
     CLEAR_BITS(INTERNAL_ObjectCoreAccessors::getFlags(obj), EObjectFlagBits::ObjFlag_PackageDirty);
 
@@ -252,7 +248,8 @@ void CBEPackageManager::onObjectDeleted(cbe::Object *obj)
     cbe::Package *package = cbe::cast<cbe::Package>(obj);
     if (package)
     {
-        auto packageLoaderItr = packageToLoader.find(package->getStringID());
+        cbe::ObjectPrivateDataView packageDatV = package->getObjectData();
+        auto packageLoaderItr = packageToLoader.find(packageDatV.sid);
         if (packageLoaderItr != packageToLoader.end())
         {
             clearPackage(packageLoaderItr->second);
@@ -262,10 +259,16 @@ void CBEPackageManager::onObjectDeleted(cbe::Object *obj)
     }
 
     package = cbe::cast<cbe::Package>(obj->getOuterMost());
-    // If load pending then it means package is unloaded, We need to reload the entire package
-    if (package && BIT_NOT_SET(package->getFlags(), cbe::EObjectFlagBits::ObjFlag_PackageLoadPending))
+    if (package)
     {
-        auto packageLoaderItr = packageToLoader.find(package->getStringID());
+        // If load pending then it means package is unloaded, We need to reload the entire package
+        cbe::ObjectPrivateDataView packageDatV = package->getObjectData();
+        if (ANY_BIT_SET(packageDatV.flags, cbe::EObjectFlagBits::ObjFlag_PackageLoadPending))
+        {
+            return;
+        }
+
+        auto packageLoaderItr = packageToLoader.find(packageDatV.sid);
         if (packageLoaderItr != packageToLoader.end())
         {
             packageLoaderItr->second->unload();
@@ -374,12 +377,13 @@ void CBEPackageManager::setupPackage(const String &packageFilePath, const String
 
 void CBEPackageManager::clearPackage(PackageLoader *loader)
 {
-    std::erase(allFoundPackages, loader->getPackage()->getName());
+    cbe::ObjectPrivateDataView packageDatV = loader->getPackage()->getObjectData();
+    std::erase(allFoundPackages, packageDatV.name);
     std::erase_if(
         allFoundObjects,
-        [packageId = loader->getPackage()->getStringID()](const FoundObjectsInfo &foundInfo)
+        [&packageDatV](const FoundObjectsInfo &foundInfo)
         {
-            return foundInfo.packageName == packageId;
+            return foundInfo.packageName == packageDatV.sid;
         }
     );
     delete loader;

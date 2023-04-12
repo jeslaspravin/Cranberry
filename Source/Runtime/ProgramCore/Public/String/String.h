@@ -498,6 +498,9 @@ template <>
 struct IsStringUnqualified<BaseString> : std::true_type
 {};
 template <>
+struct IsStringUnqualified<StringView> : std::true_type
+{};
+template <>
 struct IsStringUnqualified<TChar> : std::true_type
 {};
 // For char[] arrays
@@ -519,8 +522,6 @@ struct IsStringTypes : std::conjunction<IsString<T>...>
 
 template <typename T>
 concept StringType = IsString<T>::value;
-template <typename T>
-concept StringOrView = std::same_as<T, String> || std::same_as<T, StringView>;
 template <typename T>
 concept NonStringType = std::negation_v<IsString<T>>;
 template <typename... T>

@@ -40,19 +40,18 @@ void CoreObjectsDB::clear()
     objectIdToNodeIdx.clear();
 }
 
-CoreObjectsDB::NodeIdxType CoreObjectsDB::addObject(StringID objectId, const ObjectData &objData, ObjectsDBQuery &&parentQuery)
+CoreObjectsDB::NodeIdxType CoreObjectsDB::addObject(StringID objectId, const ObjectData &objData, NodeIdxType parentNodeIdx)
 {
     fatalAssertf(isMainThread(), "Add object %s must be done from main thread!", objData.path);
 
-    auto parentItr = findQueryNodeIdx(this, parentQuery);
     debugAssert(
         objectId.isValid() && !TCharStr::empty(objData.path.getChar())
-        && !hasObject({ .objectPath = objData.path.getChar(), .objectId = objData.sid }) && parentItr != objectIdToNodeIdx.end()
+        && !hasObject({ .objectPath = objData.path.getChar(), .objectId = objData.sid })
     );
 
     std::scoped_lock<SharedLockType> scopedLock(*dbLock);
 
-    NodeIdxType nodeIdx = objectTree.add(objData, parentItr->second);
+    NodeIdxType nodeIdx = objectTree.add(objData, parentNodeIdx);
     objectIdToNodeIdx.emplace(objectId, nodeIdx);
     return nodeIdx;
 }
@@ -72,19 +71,6 @@ CoreObjectsDB::NodeIdxType CoreObjectsDB::addRootObject(StringID objectId, const
     return nodeIdx;
 }
 
-void CoreObjectsDB::removeObject(ObjectsDBQuery &&query)
-{
-    fatalAssertf(isMainThread(), "Remove object %s must be done from main thread!", query.objectPath);
-
-    auto objItr = findQueryNodeIdx(this, query);
-    debugAssert(query.objectId.isValid() && !TCharStr::empty(query.objectPath) && objItr != objectIdToNodeIdx.end());
-
-    std::scoped_lock<SharedLockType> scopedLock(*dbLock);
-
-    objectTree.remove(objItr->second);
-    objectIdToNodeIdx.erase(objItr);
-}
-
 void CoreObjectsDB::removeObject(NodeIdxType nodeIdx)
 {
     fatalAssertf(isMainThread(), "Remove object at node index %llu must be done from main thread!", nodeIdx);
@@ -99,29 +85,7 @@ void CoreObjectsDB::removeObject(NodeIdxType nodeIdx)
     objectTree.remove(nodeIdx);
 }
 
-void CoreObjectsDB::setObject(ObjectsDBQuery &&query, StringID newId, const TChar *newFullPath)
-{
-    fatalAssertf(isMainThread(), "Set object %s must be done from main thread!", query.objectPath);
-
-    auto objItr = findQueryNodeIdx(this, query);
-    debugAssert(
-        query.objectId.isValid() && newId.isValid() && query.objectId != newId
-        && !hasObject({ .objectPath = query.objectPath, .clazz = query.clazz, .objectId = newId, .classMatch = query.classMatch })
-        && objItr != objectIdToNodeIdx.end()
-    );
-
-    std::scoped_lock<SharedLockType> scopedLock(*dbLock);
-
-    NodeIdxType nodeIdx = objItr->second;
-    objectIdToNodeIdx.erase(objItr);
-    objectIdToNodeIdx.emplace(newId, nodeIdx);
-
-    ObjectData &objData = objectTree[nodeIdx];
-    objData.sid = newId;
-    objData.path = newFullPath;
-}
-
-void CoreObjectsDB::setObject(NodeIdxType nodeIdx, StringID newId, const TChar *newFullPath)
+void CoreObjectsDB::setObject(NodeIdxType nodeIdx, StringID newId, StringView newFullPath, StringView objName)
 {
     fatalAssertf(isMainThread(), "Set object at node index %llu must be done from main thread!", nodeIdx);
     debugAssert(objectTree.isValid(nodeIdx) && newId.isValid());
@@ -135,37 +99,17 @@ void CoreObjectsDB::setObject(NodeIdxType nodeIdx, StringID newId, const TChar *
     objectIdToNodeIdx.emplace(newId, nodeIdx);
     objData.sid = newId;
     objData.path = newFullPath;
+    objData.name = objName;
 }
 
-void CoreObjectsDB::setObjectParent(ObjectsDBQuery &&query, ObjectsDBQuery &&parentQuery)
+void CoreObjectsDB::setObjectParent(NodeIdxType nodeIdx, NodeIdxType parentNodeIdx)
 {
-    fatalAssertf(isMainThread(), "Set parent object %s must be done from main thread!", query.objectPath);
-
-    auto objItr = findQueryNodeIdx(this, query);
-    debugAssert(objItr != objectIdToNodeIdx.end());
-
-    SharedLockObjectsDB scopedLock(this);
-
-    setObjectParent(objItr->second, std::forward<ObjectsDBQuery>(parentQuery));
-}
-
-void CoreObjectsDB::setObjectParent(NodeIdxType nodeIdx, ObjectsDBQuery &&parentQuery)
-{
-    fatalAssertf(isMainThread(), "Set parent object for object with node index %s must be done from main thread!", nodeIdx);
+    fatalAssertf(isMainThread(), "Set parent object for object with node index %llu must be done from main thread!", nodeIdx);
     debugAssert(objectTree.isValid(nodeIdx));
 
     std::scoped_lock<SharedLockType> scopedLock(*dbLock);
 
-    if (parentQuery.objectId.isValid())
-    {
-        auto parentItr = findQueryNodeIdx(this, parentQuery);
-        debugAssert(parentItr != objectIdToNodeIdx.end());
-        objectTree.relinkTo(nodeIdx, parentItr->second);
-    }
-    else
-    {
-        objectTree.relinkTo(nodeIdx);
-    }
+    objectTree.relinkTo(nodeIdx, parentNodeIdx);
 }
 
 cbe::Object *CoreObjectsDB::getObject(NodeIdxType nodeIdx) const
@@ -175,7 +119,15 @@ cbe::Object *CoreObjectsDB::getObject(NodeIdxType nodeIdx) const
     if (objectTree.isValid(nodeIdx))
     {
         const ObjectData &objData = objectTree[nodeIdx];
-        return cbe::getObjAllocator(objData.clazz)->getAt<cbe::Object>(objData.allocIdx);
+        if (ANY_BIT_SET(objData.flags, cbe::EObjectFlagBits::ObjFlag_GCPurge))
+        {
+            cbe::ObjectAllocatorBase *allocator = cbe::getObjAllocator(objData.clazz);
+            return allocator && allocator->isValid(objData.allocIdx) ? allocator->getAt<cbe::Object>(objData.allocIdx) : nullptr;
+        }
+        else
+        {
+            return cbe::getObjAllocator(objData.clazz)->getAt<cbe::Object>(objData.allocIdx);
+        }
     }
     return nullptr;
 }

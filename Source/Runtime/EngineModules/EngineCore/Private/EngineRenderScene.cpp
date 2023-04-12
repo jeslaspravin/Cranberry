@@ -334,7 +334,7 @@ EngineRenderScene::EngineRenderScene(cbe::World *inWorld)
         {
             if (cbe::RenderableComponent *renderComp = cbe::cast<cbe::RenderableComponent>(compObj))
             {
-                componentUpdates.compsRemoved.emplace_back(renderComp->getFullPath());
+                componentUpdates.compsRemoved.emplace_back(renderComp->getObjectData().path);
                 // Remove component from added components list if both happening in same frame
                 std::erase(componentUpdates.compsAdded, compObj);
                 std::erase(componentUpdates.recreateComps, compObj);
@@ -880,7 +880,7 @@ void EngineRenderScene::createRenderInfo(cbe::RenderableComponent *comp, SizeT c
 
     // TODO(Jeslas): Remove below demo code
     compRenderInfo.shaderName = TCHAR("SingleColor");
-    compRenderInfo.matObjPath = comp->getActor()->getFullPath().getChar();
+    compRenderInfo.matObjPath = comp->getActor();
     addCompMaterialData(compRenderInfoIdx);
     addCompInstanceData(compRenderInfoIdx);
 }

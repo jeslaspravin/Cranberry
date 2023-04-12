@@ -71,7 +71,7 @@ public:
             {
                 debugAssertf(
                     packageVersion >= BASICPACKAGEDOBJ_SERIALIZER_CUTOFF_VERSION, "Unsupported serialization version for object %s of class %s",
-                    getName(), staticType()->nameString
+                    getObjectData().name, staticType()->nameString
                 );
                 return ar;
             }

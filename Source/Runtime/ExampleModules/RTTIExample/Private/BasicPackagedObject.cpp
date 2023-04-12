@@ -11,10 +11,16 @@
 
 #include "BasicPackagedObject.h"
 
-void BasicPackagedObject::onPostLoad() { LOG("BasicPackageObject", "Loaded BasicPackageObject %s", getFullPath()); }
-void BasicPackagedObject::onConstructed() { LOG("BasicPackageObject", "Constructed BasicPackageObject %s", getFullPath()); }
+void BasicPackagedObject::onPostLoad() { LOG("BasicPackageObject", "Loaded BasicPackageObject %s", getObjectData().path); }
+void BasicPackagedObject::onConstructed() { LOG("BasicPackageObject", "Constructed BasicPackageObject %s", getObjectData().path); }
 void BasicPackagedObject::exampleFunc() const { LOG("BasicPackageObject", "Example interface function"); }
 
-void BasicFieldSerializedObject::onPostLoad() { LOG("BasicFieldSerializedObject", "Loaded BasicFieldSerializedObject %s", getFullPath()); }
-void BasicFieldSerializedObject::onConstructed() { LOG("BasicPackageObject", "Constructed BasicFieldSerializedObject %s", getFullPath()); }
+void BasicFieldSerializedObject::onPostLoad()
+{
+    LOG("BasicFieldSerializedObject", "Loaded BasicFieldSerializedObject %s", getObjectData().path);
+}
+void BasicFieldSerializedObject::onConstructed()
+{
+    LOG("BasicPackageObject", "Constructed BasicFieldSerializedObject %s", getObjectData().path);
+}
 void BasicFieldSerializedObject::exampleFunc() const { LOG("BasicFieldSerializedObject", "Example interface function"); }

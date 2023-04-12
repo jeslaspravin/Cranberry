@@ -17,6 +17,8 @@
 namespace cbe
 {
 
+// TODO(Jeslas) : ASAP update WeakObjPtr and ObjectPath codes to work with new ObjectDbIdx
+
 template <ObjectType PtrType>
 class WeakObjPtr
 {
@@ -33,8 +35,9 @@ public:
     {
         if (cbe::isValid(ptr))
         {
-            allocIdx = INTERNAL_ObjectCoreAccessors::getAllocIdx(ptr);
-            objectPath = ptr->getFullPath().getChar();
+            ObjectPrivateDataView ptrDatV = ptr->getObjectData();
+            allocIdx = ptrDatV.allocIdx;
+            objectPath = ptrDatV.path;
         }
     }
 
@@ -74,8 +77,9 @@ public:
     {
         if (cbe::isValid(ptr))
         {
-            allocIdx = INTERNAL_ObjectCoreAccessors::getAllocIdx(ptr);
-            objectPath = ptr->getFullPath().getChar();
+            ObjectPrivateDataView ptrDatV = ptr->getObjectData();
+            allocIdx = ptrDatV.allocIdx;
+            objectPath = ptrDatV.path;
         }
         else
         {

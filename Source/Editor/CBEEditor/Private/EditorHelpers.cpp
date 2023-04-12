@@ -61,12 +61,13 @@ EditorHelpers::addStaticMeshesToWorld(const std::vector<cbe::StaticMesh *> &stat
 
     for (StaticMesh *sm : staticMeshes)
     {
+        String smName{ sm->getObjectData().name };
         ActorPrefab *smActorPrefab = ActorPrefab::prefabFromActorTemplate(
-            ActorPrefab::objectTemplateFromObj(addActorToWorld(world, cbe::Actor::staticType(), sm->getName(), 0))
+            ActorPrefab::objectTemplateFromObj(addActorToWorld(world, cbe::Actor::staticType(), smName, 0))
         );
         Actor *smActor = smActorPrefab->getActorTemplate();
         StaticMeshComponent *smComp
-            = static_cast<StaticMeshComponent *>(addComponentToPrefab(smActorPrefab, StaticMeshComponent::staticType(), sm->getName()));
+            = static_cast<StaticMeshComponent *>(addComponentToPrefab(smActorPrefab, StaticMeshComponent::staticType(), smName));
 
         Object *modifyingComp
             = modifyPrefabCompField(PropertyHelper::findField(smComp->getType(), GET_MEMBER_ID_CHECKED(StaticMeshComponent, mesh)), smComp);

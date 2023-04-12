@@ -15,6 +15,7 @@
 #include "Serialization/PackageData.h"
 #include "Visitors/FieldVisitors.h"
 #include "PropertyVisitorHelpers.h"
+#include "CoreObjectsModule.h"
 #include "CBEObjectHelpers.h"
 #include "CBEPackage.h"
 #include "CoreObjectDelegates.h"
@@ -165,7 +166,7 @@ FORCE_INLINE void PackageLoader::linkContainedObjects() const
 // PackageLoader specific implementations
 //////////////////////////////////////////////////////////////////////////
 
-EObjectFlags PackageLoader::createContainedObject(PackageContainedData &containedData)
+EObjectFlags PackageLoader::createContainedObject(PackageContainedData &containedData, const String &packageName, EObjectFlags packageFlags)
 {
     if (containedData.clazz == nullptr)
     {
@@ -181,7 +182,7 @@ EObjectFlags PackageLoader::createContainedObject(PackageContainedData &containe
     cbe::Object *outerObj = nullptr;
     if (!outerPath.empty())
     {
-        String outerFullPath = (package->getName() + ObjectPathHelper::RootObjectSeparator).append(outerPath);
+        String outerFullPath = (packageName + ObjectPathHelper::RootObjectSeparator).append(outerPath);
         outerObj = cbe::get(outerFullPath.getChar());
         if (!outerObj)
         {
@@ -195,7 +196,7 @@ EObjectFlags PackageLoader::createContainedObject(PackageContainedData &containe
 
             debugAssert(outerContainedDataItr != containedObjects.end());
 
-            collectedFlags |= createContainedObject(*outerContainedDataItr);
+            collectedFlags |= createContainedObject(*outerContainedDataItr, packageName, packageFlags);
             // Transient object can be null
             alertAlwaysf(
                 BIT_SET(collectedFlags, cbe::EObjectFlagBits::ObjFlag_Transient) || outerObj,
@@ -212,7 +213,7 @@ EObjectFlags PackageLoader::createContainedObject(PackageContainedData &containe
     {
         // Empty outer means this is direct child of package
         outerObj = package;
-        collectedFlags |= outerObj->getFlags();
+        collectedFlags |= packageFlags;
     }
 
     if (BIT_SET(collectedFlags, cbe::EObjectFlagBits::ObjFlag_Transient))
@@ -236,7 +237,7 @@ EObjectFlags PackageLoader::createContainedObject(PackageContainedData &containe
         cbe::Object *obj = cbe::createOrGet(
             containedData.clazz, objectName, outerObj, cbe::EObjectFlagBits::ObjFlag_PackageLoadPending | containedData.objectFlags
         );
-        alertAlwaysf(obj, "Package(%s) load failed to create object %s", package->getName(), containedData.objectPath);
+        alertAlwaysf(obj, "Package(%s) load failed to create object %s", packageName, containedData.objectPath);
         containedData.object = obj;
     }
     return collectedFlags;
@@ -300,7 +301,9 @@ ObjectArchive &PackageLoader::serialize(cbe::Object *&obj)
         if (!dependentObjects[tableIdx].object.isValid())
         {
             cbe::Object *depObj = cbe::getOrLoad(dependentObjects[tableIdx].objectFullPath, dependentObjects[tableIdx].clazz);
-            alertAlwaysf(depObj, "Invalid dependent object[%s] in package %s", dependentObjects[tableIdx].objectFullPath, package->getName());
+            alertAlwaysf(
+                depObj, "Invalid dependent object[%s] in package %s", dependentObjects[tableIdx].objectFullPath, package->getObjectData().name
+            );
             dependentObjects[tableIdx].object = depObj;
         }
         obj = dependentObjects[tableIdx].object.get();
@@ -327,13 +330,15 @@ ObjectArchive &PackageLoader::serialize(cbe::Object *&obj)
 
 void PackageLoader::prepareLoader()
 {
+    cbe::ObjectPrivateDataView packageDatV = package->getObjectData();
+
     ArrayArchiveStream localStream;
     ArrayArchiveStream *archiveStreamPtr = inStream;
     if (inStream == nullptr)
     {
         std::vector<uint8> fileData;
         bool bRead = FileHelper::readBytes(fileData, packageFilePath);
-        fatalAssertf(bRead, "Package %s at %s cannot be read!", package->getName(), packageFilePath);
+        fatalAssertf(bRead, "Package %s at %s cannot be read!", packageDatV.name, packageFilePath);
         localStream.setBuffer(fileData);
         archiveStreamPtr = &localStream;
     }
@@ -348,7 +353,7 @@ void PackageLoader::prepareLoader()
     uint32 packageVersion = getCustomVersion(uint32(PACKAGE_CUSTOM_VERSION_ID));
     fatalAssertf(
         packageVersion >= PACKAGE_SERIALIZER_CUTOFF_VERSION, "Package(%s) version %u is not supported. Minimum supported version is %u",
-        package->getName(), packageVersion, PACKAGE_SERIALIZER_CUTOFF_VERSION
+        packageDatV.name, packageVersion, PACKAGE_SERIALIZER_CUTOFF_VERSION
     );
 
     // Try reading the marker
@@ -374,12 +379,19 @@ void PackageLoader::prepareLoader()
 
     streamStartAt = archiveStreamPtr->cursorPos();
 
-    alertAlwaysf(!containedObjects.empty(), "Empty package %s at %s", package->getName(), packageFilePath);
+    alertAlwaysf(!containedObjects.empty(), "Empty package %s at %s", packageDatV.name, packageFilePath);
     CoreObjectDelegates::broadcastPackageScanned(this);
 }
 
 EPackageLoadSaveResult PackageLoader::load()
 {
+    // Do not use this
+    cbe::ObjectPrivateDataView tempPackageDatV = package->getObjectData();
+    // This is temporary flag cache to avoid getting package object data for every createContainedObject().
+    EObjectFlags packageFlag = tempPackageDatV.flags;
+    String packageName = tempPackageDatV.name;
+    tempPackageDatV = {};
+
     ArrayArchiveStream localStream;
     ArrayArchiveStream *archiveStreamPtr = inStream;
     if (inStream == nullptr)
@@ -388,7 +400,7 @@ EPackageLoadSaveResult PackageLoader::load()
         bool bRead = FileHelper::readBytes(fileData, packageFilePath);
         if (!bRead)
         {
-            alertAlwaysf(bRead, "Package %s at %s cannot be read!", package->getName(), packageFilePath);
+            alertAlwaysf(bRead, "Package %s at %s cannot be read!", packageName, packageFilePath);
             return EPackageLoadSaveResult::IOError;
         }
         localStream.setBuffer(fileData);
@@ -398,7 +410,7 @@ EPackageLoadSaveResult PackageLoader::load()
     packageArchive.setStream(archiveStreamPtr);
 
     EPackageLoadSaveResult loadResult = EPackageLoadSaveResult::Success;
-    auto containedObjSerializer = [&loadResult, archiveStreamPtr, this](PackageContainedData &containedData)
+    auto containedObjSerializer = [&loadResult, &packageName, archiveStreamPtr, this](PackageContainedData &containedData)
     {
         if (archiveStreamPtr->cursorPos() > containedData.streamStart)
         {
@@ -409,7 +421,8 @@ EPackageLoadSaveResult PackageLoader::load()
             archiveStreamPtr->moveForward(containedData.streamStart - archiveStreamPtr->cursorPos());
         }
 
-        if (containedData.object.isValid() && BIT_SET(containedData.object->getFlags(), cbe::EObjectFlagBits::ObjFlag_PackageLoadPending))
+        if (containedData.object.isValid()
+            && BIT_SET(containedData.object->getObjectData().flags, cbe::EObjectFlagBits::ObjFlag_PackageLoadPending))
         {
             if (NO_BITS_SET(containedData.object->collectAllFlags(), cbe::EObjectFlagBits::ObjFlag_Transient))
             {
@@ -429,8 +442,7 @@ EPackageLoadSaveResult PackageLoader::load()
                     "Corrupted package %s for object %s consider using Custom version and handle versioning! Written out size for object %llu "
                     "is "
                     "not same as read size %llu",
-                    package->getName(), containedData.objectPath, containedData.streamSize,
-                    (archiveStreamPtr->cursorPos() - containedData.streamStart)
+                    packageName, containedData.objectPath, containedData.streamSize, (archiveStreamPtr->cursorPos() - containedData.streamStart)
                 );
                 // It is okay to continue as it is just warning
                 loadResult = EPackageLoadSaveResult::WithWarnings;
@@ -446,7 +458,7 @@ EPackageLoadSaveResult PackageLoader::load()
             {
                 // If this object is transient or in transient hierarchy? Then there is a chance that object will only be created after main
                 // packaged object is serialized
-                EObjectFlags collectedFlags = createContainedObject(containedData);
+                EObjectFlags collectedFlags = createContainedObject(containedData, packageName, packageFlag);
                 debugAssert(BIT_SET(collectedFlags, cbe::EObjectFlagBits::ObjFlag_Transient) || containedData.object.isValid());
             }
         }
@@ -462,7 +474,7 @@ EPackageLoadSaveResult PackageLoader::load()
     {
         if (!containedData.object.isValid())
         {
-            createContainedObject(containedData);
+            createContainedObject(containedData, packageName, packageFlag);
         }
     }
     // Now link the pointers that points to delay created objects

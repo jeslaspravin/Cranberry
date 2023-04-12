@@ -21,6 +21,7 @@ namespace cbe
 
 World *WorldsManager::initWorld(World *world, bool bAsMainWorld)
 {
+    ObjectPrivateDataView worldDatV = world->getObjectData();
     if (bAsMainWorld)
     {
         if (isMainWorld(world))
@@ -29,13 +30,13 @@ World *WorldsManager::initWorld(World *world, bool bAsMainWorld)
         }
         unloadWorld(mainWorld);
 
-        LOG("WorldManager", "Initializing main world %s", world->getFullPath());
+        LOG("WorldManager", "Initializing main world %.*s", worldDatV.path.length(), worldDatV.path.data());
         mainWorld = world;
         renderingWorld = mainWorld;
         playingWorld = mainWorld;
 #if EDITOR_BUILD
         renderingWorld = editorWorld
-            = create<World>(mainWorld->getName(), ICoreObjectsModule::get()->getTransientPackage(), EObjectFlagBits::ObjFlag_Transient);
+            = create<World>(worldDatV.name, ICoreObjectsModule::get()->getTransientPackage(), EObjectFlagBits::ObjFlag_Transient);
         editorWorld->copyFrom(mainWorld);
         playingWorld = nullptr;
 #endif
@@ -51,7 +52,7 @@ World *WorldsManager::initWorld(World *world, bool bAsMainWorld)
         return world;
     }
 
-    LOG("WorldManager", "Initializing world %s", world->getFullPath());
+    LOG("WorldManager", "Initializing world %.*s", worldDatV.path.length(), worldDatV.path.data());
     otherWorlds[world] = { .renderScene = std::make_shared<EngineRenderScene>(world) };
     world->prepareForPlay();
     onWorldInitEvent().invoke(world, false);
@@ -80,9 +81,10 @@ void WorldsManager::unloadWorld(World *world)
         return;
     }
 
+    ObjectPrivateDataView worldDatV = world->getObjectData();
     if (isMainWorld(world))
     {
-        LOG("WorldManager", "Unloading main world %s", mainWorld->getFullPath());
+        LOG("WorldManager", "Unloading main world %s", worldDatV.path);
         onWorldUnloadEvent().invoke(mainWorld, true);
 #if EDITOR_BUILD
         editorWorld->beginDestroy();
@@ -98,7 +100,7 @@ void WorldsManager::unloadWorld(World *world)
     }
     else if (otherWorlds.contains(world))
     {
-        LOG("WorldManager", "Unloading world %s", world->getFullPath());
+        LOG("WorldManager", "Unloading world %s", worldDatV.path);
         onWorldUnloadEvent().invoke(world, false);
         world->beginDestroy();
         otherWorlds.erase(world);
@@ -109,7 +111,8 @@ void WorldsManager::unloadAllWorlds()
 {
     if (mainWorld)
     {
-        LOG("WorldManager", "Unloading main world %s", mainWorld->getFullPath());
+        StringView fullPath = mainWorld->getObjectData().path;
+        LOG("WorldManager", "Unloading main world %.*s", fullPath.length(), fullPath.data());
         onWorldUnloadEvent().invoke(mainWorld, true);
 #if EDITOR_BUILD
         editorWorld->beginDestroy();
@@ -125,7 +128,8 @@ void WorldsManager::unloadAllWorlds()
     }
     for (const std::pair<World *const, WorldInfo> &otherWorld : otherWorlds)
     {
-        LOG("WorldManager", "Unloading world %s", otherWorld.first->getFullPath());
+        StringView fullPath = otherWorld.first->getObjectData().path;
+        LOG("WorldManager", "Unloading world %.*s", fullPath.length(), fullPath.data());
         onWorldUnloadEvent().invoke(otherWorld.first, false);
         otherWorld.first->beginDestroy();
     }

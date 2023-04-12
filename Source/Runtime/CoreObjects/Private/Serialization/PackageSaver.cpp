@@ -15,38 +15,38 @@
 #include "Serialization/ArrayArchiveStream.h"
 #include "ObjectPathHelpers.h"
 #include "CoreObjectsDB.h"
-#include "ICoreObjectsModule.h"
+#include "CoreObjectsModule.h"
 #include "CBEPackage.h"
 #include "CoreObjectDelegates.h"
 
 void PackageSaver::setupContainedObjs()
 {
-    String packageFullPath = package->getFullPath();
-    const CoreObjectsDB &objsDb = ICoreObjectsModule::get()->getObjectsDB();
+    const CoreObjectsDB &objsDb = CoreObjectsModule::objectsDB();
 
     // We peel the onion as parent must be create before child,
     // The getChildren from FlatTree already returns in ordered manner so we should be good without peeling manually here
     std::vector<cbe::Object *> children;
-    objsDb.getSubobjects(children, { .objectPath = packageFullPath.getChar(), .objectId = package->getStringID() });
+    objsDb.getSubobjects(children, package->getDbIdx());
     containedObjects.clear();
     containedObjects.reserve(children.size());
     for (cbe::Object *child : children)
     {
+        cbe::ObjectPrivateDataView childObjDatV = child->getObjectData();
         // Package is final class so we just have compare, no need to go through isChild hierarchy
-        fatalAssertf(child->getType() != cbe::Package::staticType(), "Package must not contain package object");
-        if (ANY_BIT_SET(child->getFlags(), cbe::EObjectFlagBits::ObjFlag_MarkedForDelete | cbe::EObjectFlagBits::ObjFlag_Deleted))
+        fatalAssertf(childObjDatV.clazz != cbe::Package::staticType(), "Package must not contain package object");
+        if (ANY_BIT_SET(childObjDatV.flags, cbe::EObjectFlagBits::ObjFlag_MarkedForDelete))
         {
             continue;
         }
 
-        objToContObjsIdx[child->getFullPath().getChar()] = containedObjects.size();
+        objToContObjsIdx[NameString(childObjDatV.path)] = containedObjects.size();
         PackageContainedData &containedObjData = containedObjects.emplace_back();
         containedObjData.object = child;
-        containedObjData.objectPath = ObjectPathHelper::getObjectPath(child, package);
-        containedObjData.objectFlags = child->getFlags();
+        containedObjData.objectPath = ObjectPathHelper::computeObjectPath(child, package);
+        containedObjData.objectFlags = childObjDatV.flags;
         // No need for dirty flags to be serialized out
         CLEAR_BITS(containedObjData.objectFlags, cbe::EObjectFlagBits::ObjFlag_PackageDirty);
-        containedObjData.clazz = child->getType();
+        containedObjData.clazz = childObjDatV.clazz;
     }
 }
 
@@ -140,7 +140,7 @@ EPackageLoadSaveResult PackageSaver::savePackage()
         String packagePath = package->getPackageFilePath();
         if (!FileHelper::writeBytes(archiveStreamPtr->getBuffer(), packagePath))
         {
-            LOG_ERROR("PackageSaver", "Failed to open file stream to save package %s at %s", package->getName(), packagePath);
+            LOG_ERROR("PackageSaver", "Failed to open file stream to save package %s at %s", package->getObjectData().name, packagePath);
             return EPackageLoadSaveResult::IOError;
         }
         CoreObjectDelegates::broadcastPackageSaved(package);
@@ -158,23 +158,24 @@ ObjectArchive &PackageSaver::serialize(cbe::Object *&obj)
         return (*this);
     }
 
-    auto containedObjItr = objToContObjsIdx.find(obj->getFullPath().getChar());
+    NameString objFullPath = NameString(obj->getObjectData().path);
+    auto containedObjItr = objToContObjsIdx.find(objFullPath);
     if (containedObjItr != objToContObjsIdx.end())
     {
         (*static_cast<ObjectArchive *>(this)) << containedObjItr->second;
     }
     else
     {
-        auto depObjItr = objToDepObjsIdx.find(obj->getFullPath().getChar());
+        auto depObjItr = objToDepObjsIdx.find(objFullPath);
         SizeT depObjIdx = 0;
         // If dependent is not there then we must create a new entry and serialize it
         if (depObjItr == objToDepObjsIdx.end())
         {
             depObjIdx = dependentObjects.size();
-            objToDepObjsIdx[obj->getFullPath().getChar()] = depObjIdx;
+            objToDepObjsIdx[objFullPath] = depObjIdx;
             PackageDependencyData &objDepData = dependentObjects.emplace_back();
             objDepData.object = obj;
-            objDepData.objectFullPath = obj->getFullPath();
+            objDepData.objectFullPath = objFullPath.toString();
             objDepData.clazz = obj->getType();
         }
         else

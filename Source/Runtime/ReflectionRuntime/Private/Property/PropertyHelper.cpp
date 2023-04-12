@@ -13,10 +13,11 @@
 #include "String/StringRegex.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 
-String PropertyHelper::getValidSymbolName(const String &inValue)
+String PropertyHelper::getValidSymbolName(StringView inValue)
 {
+    String postReplaceRefPtr = inValue;
     // Replace all Pointers as Ptr and References as Ref
-    String postReplaceRefPtr = inValue.replaceAllCopy(TCHAR("*"), TCHAR("Ptr"));
+    postReplaceRefPtr.replaceAll(TCHAR("*"), TCHAR("Ptr"));
     postReplaceRefPtr.replaceAll(TCHAR("&"), TCHAR("Ref"));
 
     // Now replace other invalid chars as _
@@ -29,17 +30,17 @@ String PropertyHelper::getValidSymbolName(const String &inValue)
     return output;
 }
 
-bool PropertyHelper::isValidSymbolName(const String &inValue)
+bool PropertyHelper::isValidSymbolName(StringView inValue)
 {
     static const StringRegex matchPattern(VALID_SYMBOL_REGEX_PATTERN, std::regex_constants::ECMAScript);
-    return std::regex_match(inValue, matchPattern);
+    return std::regex_match(inValue.cbegin(), inValue.cend(), matchPattern);
 }
 
-bool PropertyHelper::isValidFunctionCall(const String &inValue)
+bool PropertyHelper::isValidFunctionCall(StringView inValue)
 {
     // Start with valid symbol then open and close braces followed by space or ;
     static const StringRegex matchPattern(COMBINE(VALID_SYMBOL_REGEX_PATTERN, " *\\(.*\\)[ ;]*"), std::regex_constants::ECMAScript);
-    return std::regex_match(inValue, matchPattern);
+    return std::regex_match(inValue.cbegin(), inValue.cend(), matchPattern);
 }
 
 bool PropertyHelper::isChildOf(const ClassProperty *childClassProp, const ClassProperty *parentClassProp)

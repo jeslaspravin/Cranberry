@@ -35,35 +35,55 @@ concept ObjectType = ReflectClassType<T> && std::is_base_of_v<Object, T>;
 
 FORCE_INLINE bool isValid(const Object *obj)
 {
-    if (obj && NO_BITS_SET(obj->getFlags(), EObjectFlagBits::ObjFlag_Deleted | EObjectFlagBits::ObjFlag_MarkedForDelete))
+    if (obj == nullptr)
     {
-        const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
-        // Object db must have this object if present, then at this point this object must have valid alloc index due to flags not being set
-        String objFullPath = obj->getFullPath();
-        bool bIsValid = objectsDb.hasObject({ .objectPath = objFullPath.getChar(), .objectId = obj->getStringID() });
-#if DEV_BUILD
-        ObjectAllocatorBase *objAllocator = getObjAllocator(obj->getType());
-        fatalAssertf(
-            !bIsValid || (objAllocator && objAllocator->isValid(INTERNAL_ObjectCoreAccessors::getAllocIdx(obj))),
-            "Object name %s is reused but old object must have been not properly marked as deleted", obj->getFullPath()
-        );
-#endif
-        return bIsValid;
+        return false;
+    }
+
+    // TODO(Jeslas) : Find some way to determine validity directly from obj pointer eg. Map obj pointer value to Object node index or have a set
+    // of valid objects in objects db
+    ObjectDbIdx dbIdx = obj->getDbIdx();
+
+    const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
+    ObjectPrivateDataView objectDatV = objectsDb.getObjectData(dbIdx);
+
+    if (objectDatV && NO_BITS_SET(objectDatV.flags, EObjectFlagBits::ObjFlag_MarkedForDelete | EObjectFlagBits::ObjFlag_GCPurge))
+    {
+        ObjectAllocatorBase *objAllocator = getObjAllocator(objectDatV.clazz);
+        return objAllocator && objAllocator->isValid(objectDatV.allocIdx) && objAllocator->getAt<Object>(objectDatV.allocIdx) == obj;
     }
     return false;
 }
 
 FORCE_INLINE bool isValidFast(const Object *obj)
 {
-    return obj && NO_BITS_SET(obj->getFlags(), EObjectFlagBits::ObjFlag_Deleted | EObjectFlagBits::ObjFlag_MarkedForDelete);
+    if (obj == nullptr)
+    {
+        return false;
+    }
+    ObjectDbIdx dbIdx = obj->getDbIdx();
+
+    const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
+    ObjectPrivateDataView objectDatV = objectsDb.getObjectData(dbIdx);
+
+    return objectDatV && NO_BITS_SET(objectDatV.flags, EObjectFlagBits::ObjFlag_MarkedForDelete | EObjectFlagBits::ObjFlag_GCPurge);
 }
 
 FORCE_INLINE bool isValidAlloc(const Object *obj)
 {
-    if (obj && NO_BITS_SET(obj->getFlags(), EObjectFlagBits::ObjFlag_Deleted | EObjectFlagBits::ObjFlag_MarkedForDelete))
+    if (obj == nullptr)
     {
-        ObjectAllocatorBase *objAllocator = getObjAllocator(obj->getType());
-        return objAllocator && objAllocator->isValid(INTERNAL_ObjectCoreAccessors::getAllocIdx(obj));
+        return false;
+    }
+    ObjectDbIdx dbIdx = obj->getDbIdx();
+
+    const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
+    ObjectPrivateDataView objectDatV = objectsDb.getObjectData(dbIdx);
+
+    if (objectDatV && NO_BITS_SET(objectDatV.flags, EObjectFlagBits::ObjFlag_MarkedForDelete | EObjectFlagBits::ObjFlag_GCPurge))
+    {
+        ObjectAllocatorBase *objAllocator = getObjAllocator(objectDatV.clazz);
+        return objAllocator && objAllocator->isValid(objectDatV.allocIdx);
     }
     return false;
 }
@@ -84,9 +104,9 @@ FORCE_INLINE AsType *cast(FromType *obj)
 COREOBJECTS_EXPORT void INTERNAL_destroyCBEObject(Object *obj);
 COREOBJECTS_EXPORT void INTERNAL_createdCBEObject(Object *obj);
 COREOBJECTS_EXPORT bool INTERNAL_isInMainThread();
-COREOBJECTS_EXPORT bool INTERNAL_validateObjectName(const String &name, CBEClass clazz);
-COREOBJECTS_EXPORT String INTERNAL_getValidObjectName(const String &name, CBEClass clazz);
-FORCE_INLINE bool INTERNAL_validateCreatedObject(Object *obj) { return BIT_NOT_SET(obj->getFlags(), EObjectFlagBits::ObjFlag_Default); }
+COREOBJECTS_EXPORT bool INTERNAL_validateObjectName(StringView name, CBEClass clazz);
+COREOBJECTS_EXPORT String INTERNAL_getValidObjectName(StringView name, CBEClass clazz);
+FORCE_INLINE bool INTERNAL_validateCreatedObject(Object *, EObjectFlags flags) { return BIT_NOT_SET(flags, EObjectFlagBits::ObjFlag_Default); }
 /**
  * cbe::INTERNAL_create - Only difference between regular create and this is constructed never gets called under any condition
  * This must be used if constructed() must be delayed without setting any neccessary flags
@@ -100,7 +120,7 @@ FORCE_INLINE bool INTERNAL_validateCreatedObject(Object *obj) { return BIT_NOT_S
  * @return cbe::Object *
  */
 template <typename... CtorArgs>
-Object *INTERNAL_create(CBEClass clazz, const String &name, Object *outerObj, EObjectFlags flags = 0, CtorArgs... ctorArgs)
+Object *INTERNAL_create(CBEClass clazz, StringView name, Object *outerObj, EObjectFlags flags = 0, CtorArgs... ctorArgs)
 {
     if (clazz == nullptr)
     {
@@ -119,7 +139,7 @@ Object *INTERNAL_create(CBEClass clazz, const String &name, Object *outerObj, EO
         alertAlwaysf(false, "Invalid object name! Invalid characters will be replaced with underscore(_)");
         objectName = INTERNAL_getValidObjectName(objectName, clazz);
     }
-    NameString objFullPath = NameString(ObjectPathHelper::getFullPath(objectName.getChar(), outerObj));
+    NameString objFullPath = NameString(ObjectPathHelper::getFullPath(objectName, outerObj));
 
     const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
 #if DEV_BUILD
@@ -151,6 +171,8 @@ Object *INTERNAL_create(CBEClass clazz, const String &name, Object *outerObj, EO
 
     void *objPtr = clazz->allocFunc();
     Object *object = reinterpret_cast<Object *>(objPtr);
+    ObjectAllocIdx allocIdx = ObjectAllocIdx(object->getDbIdx());
+    INTERNAL_ObjectCoreAccessors::setDbIdx(object, CoreObjectsDB::InvalidDbIdx);
 
     // Object's data must be populated even before constructor is called
     if (objectsDb.hasObject({ .objectPath = objFullPath.toString().getChar(), .objectId = StringID(objFullPath) }))
@@ -160,14 +182,15 @@ Object *INTERNAL_create(CBEClass clazz, const String &name, Object *outerObj, EO
         HashUtility::combineSeeds(uniqueNameId, INTERNAL_ObjectCoreAccessors::getAllocIdx(object));
         objectName = StringFormat::format(TCHAR("%s_%llu"), objectName, uniqueNameId);
     }
-    INTERNAL_ObjectCoreAccessors::getFlags(object) |= flags;
     INTERNAL_ObjectCoreAccessors::setOuterAndName(object, objectName, outerObj, clazz);
+    INTERNAL_ObjectCoreAccessors::setAllocIdx(object, allocIdx);
+    EObjectFlags objFlags = (INTERNAL_ObjectCoreAccessors::getFlags(object) |= flags);
 
     object = ctor->invokeUnsafe<Object *, void *, CtorArgs...>(objPtr, std::forward<CtorArgs>(ctorArgs)...);
 
-    if (!INTERNAL_validateCreatedObject(object))
+    if (!INTERNAL_validateCreatedObject(object, objFlags))
     {
-        alertAlwaysf(false, "Object validation failed! Destroying %s", object->getFullPath());
+        alertAlwaysf(false, "Object validation failed! Destroying %s", object->getObjectData().path);
         INTERNAL_destroyCBEObject(object);
         object = nullptr;
     }
@@ -176,7 +199,7 @@ Object *INTERNAL_create(CBEClass clazz, const String &name, Object *outerObj, EO
 }
 
 template <typename... CtorArgs>
-Object *create(CBEClass clazz, const String &name, Object *outerObj, EObjectFlags flags = 0, CtorArgs... ctorArgs)
+Object *create(CBEClass clazz, StringView name, Object *outerObj, EObjectFlags flags = 0, CtorArgs... ctorArgs)
 {
     Object *obj = INTERNAL_create<CtorArgs...>(clazz, name, outerObj, flags, std::forward<CtorArgs>(ctorArgs)...);
     // Also change cbe::Object::constructed(), Always construct for Transients
@@ -189,9 +212,9 @@ Object *create(CBEClass clazz, const String &name, Object *outerObj, EObjectFlag
 }
 
 template <typename... CtorArgs>
-Object *createOrGet(CBEClass clazz, const String &name, Object *outerObj, EObjectFlags flags = 0, CtorArgs... ctorArgs)
+Object *createOrGet(CBEClass clazz, StringView name, Object *outerObj, EObjectFlags flags = 0, CtorArgs... ctorArgs)
 {
-    String objFullPath = ObjectPathHelper::getFullPath(name.getChar(), outerObj);
+    String objFullPath = ObjectPathHelper::getFullPath(name, outerObj);
     const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
     CoreObjectsDB::NodeIdxType objNodeIdx
         = objectsDb.getObjectNodeIdx({ .objectPath = objFullPath.getChar(), .objectId = objFullPath.getChar() });
@@ -203,13 +226,13 @@ Object *createOrGet(CBEClass clazz, const String &name, Object *outerObj, EObjec
 }
 
 template <typename ClassType, typename... CtorArgs>
-ClassType *create(const String &name, Object *outerObj, EObjectFlags flags = 0, CtorArgs... ctorArgs)
+ClassType *create(StringView name, Object *outerObj, EObjectFlags flags = 0, CtorArgs... ctorArgs)
 {
     return static_cast<ClassType *>(create<CtorArgs...>(ClassType::staticType(), name, outerObj, flags, std::forward<CtorArgs>(ctorArgs)...));
 }
 
 template <typename ClassType, typename... CtorArgs>
-ClassType *createOrGet(const String &name, Object *outerObj, EObjectFlags flags = 0, CtorArgs... ctorArgs)
+ClassType *createOrGet(StringView name, Object *outerObj, EObjectFlags flags = 0, CtorArgs... ctorArgs)
 {
     return static_cast<ClassType *>(
         createOrGet<CtorArgs...>(ClassType::staticType(), name, outerObj, flags, std::forward<CtorArgs>(ctorArgs)...)
@@ -289,11 +312,12 @@ COREOBJECTS_EXPORT bool copyObject(CopyObjectOptions options);
  */
 COREOBJECTS_EXPORT bool
 deepCopy(Object *fromObject, Object *toObject, EObjectFlags additionalFlags = 0, EObjectFlags clearFlags = 0, bool bConstructToObject = true);
-COREOBJECTS_EXPORT Object *
-duplicateCBEObject(Object *fromObject, Object *newOuter, String newName = "", EObjectFlags additionalFlags = 0, EObjectFlags clearFlags = 0);
+COREOBJECTS_EXPORT Object *duplicateCBEObject(
+    Object *fromObject, Object *newOuter, StringView newName = {}, EObjectFlags additionalFlags = 0, EObjectFlags clearFlags = 0
+);
 
 template <typename T, typename AsType = T>
-AsType *duplicateObject(T *fromObject, Object *newOuter, String newName = "", EObjectFlags additionalFlags = 0, EObjectFlags clearFlags = 0)
+AsType *duplicateObject(T *fromObject, Object *newOuter, StringView newName = {}, EObjectFlags additionalFlags = 0, EObjectFlags clearFlags = 0)
 {
     return cast<AsType>(duplicateCBEObject(fromObject, newOuter, newName, additionalFlags, clearFlags));
 }

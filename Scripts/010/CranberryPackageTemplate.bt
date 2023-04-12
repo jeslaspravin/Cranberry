@@ -62,15 +62,15 @@ struct PackageDependencyData
 enum <uint64> ObjectFlagBits
 {
     OBJECTFLAG_Default= 0x0000000000000001,
-    OBJECTFLAG_MarkedForDelete= 0x0000000000000002,
-    OBJECTFLAG_Deleted= 0x0000000000000004,
-    OBJECTFLAG_RootObject= 0x0000000000000008,
-    OBJECTFLAG_Transient= 0x0000000000000010,
-    OBJECTFLAG_PackageDirty= 0x0000000000000020,
-    OBJECTFLAG_PackageLoadPending= 0x0000000000000040,
-    OBJECTFLAG_PackageLoaded= 0x0000000000000080,
-    OBJECTFLAG_TemplateDefault= 0x0000000000000100,
-    OBJECTFLAG_FromTemplate= 0x0000000000000200
+    OBJECTFLAG_MarkedForDelete= OBJECTFLAG_Default << 1,
+    OBJECTFLAG_GCPurge= OBJECTFLAG_MarkedForDelete << 1,
+    OBJECTFLAG_RootObject= OBJECTFLAG_GCPurge << 1,
+    OBJECTFLAG_Transient= OBJECTFLAG_RootObject << 1,
+    OBJECTFLAG_PackageDirty= OBJECTFLAG_Transient << 1,
+    OBJECTFLAG_PackageLoadPending= OBJECTFLAG_PackageDirty << 1,
+    OBJECTFLAG_PackageLoaded= OBJECTFLAG_PackageLoadPending << 1,
+    OBJECTFLAG_TemplateDefault= OBJECTFLAG_PackageLoaded << 1,
+    OBJECTFLAG_FromTemplate= OBJECTFLAG_TemplateDefault << 1
 };
 
 string ObjectFlagsDisplay(uint64 flags)
@@ -95,9 +95,9 @@ string ObjectBitFlagToStr(uint64 flags)
     {
         Strcat(fmtStr, "MarkedForDelete | ");
     }
-    if((flags & OBJECTFLAG_Deleted) != 0)
+    if((flags & OBJECTFLAG_GCPurge) != 0)
     {
-        Strcat(fmtStr, "Deleted | ");
+        Strcat(fmtStr, "GCPurge | ");
     }
     if((flags & OBJECTFLAG_RootObject) != 0)
     {

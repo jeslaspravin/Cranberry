@@ -35,7 +35,7 @@ public:
     CoreObjectGC &getGC() override;
     /* Overrides ends */
 
-    FORCE_INLINE static CoreObjectsModule *get() { return static_cast<CoreObjectsModule *>(ICoreObjectsModule::get()); }
+    static CoreObjectsModule *get();
     FORCE_INLINE static CoreObjectsDB &objectsDB() { return get()->objsDb; }
     FORCE_INLINE static CBEPackageManager &packageManager() { return get()->packMan; }
 };

@@ -79,6 +79,6 @@ private:
 /**
  * Creates an object from template
  */
-COREOBJECTS_EXPORT Object *create(ObjectTemplate *objTemplate, const String &name, Object *outerObj, EObjectFlags flags = 0);
+COREOBJECTS_EXPORT Object *create(ObjectTemplate *objTemplate, StringView name, Object *outerObj, EObjectFlags flags = 0);
 
 } // namespace cbe

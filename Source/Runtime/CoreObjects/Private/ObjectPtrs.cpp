@@ -40,7 +40,7 @@ ObjectPath &ObjectPath::operator= (Object *obj)
     }
     allocIdx = INTERNAL_ObjectCoreAccessors::getAllocIdx(obj);
 
-    String objFullPath = obj->getFullPath();
+    StringView objFullPath = obj->getObjectData().path;
     StringView outerPathView, objectNameView;
     packagePath = ObjectPathHelper::getPathComponents(outerPathView, objectNameView, objFullPath);
     outerPath = outerPathView;

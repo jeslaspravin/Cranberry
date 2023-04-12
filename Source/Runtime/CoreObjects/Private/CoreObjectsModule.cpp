@@ -40,3 +40,9 @@ const CoreObjectsDB &CoreObjectsModule::getObjectsDB() const { return objsDb; }
 cbe::Package *CoreObjectsModule::getTransientPackage() const { return cbe::getDefaultObject<cbe::Package>(); }
 
 CoreObjectGC &CoreObjectsModule::getGC() { return gc; }
+
+CoreObjectsModule *CoreObjectsModule::get()
+{
+    static CoreObjectsModule *modulePtr = static_cast<CoreObjectsModule *>(ICoreObjectsModule::get());
+    return modulePtr;
+}

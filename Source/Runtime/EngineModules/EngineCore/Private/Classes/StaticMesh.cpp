@@ -53,12 +53,11 @@ StaticMesh::StaticMesh(SMCreateInfo &&ci)
         [this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
             copyResources(vertices, indices, cmdList, graphicsInstance, graphicsHelper);
-
             if (!tbnVerts.empty())
             {
                 // Copy tangent, binormal, normal vertices
                 tbnVertexBuffer = graphicsHelper->createReadOnlyVertexBuffer(graphicsInstance, sizeof(SMTbnLinePoint), uint32(tbnVerts.size()));
-                tbnVertexBuffer->setResourceName(getName() + TCHAR("_TbnVerts"));
+                tbnVertexBuffer->setResourceName(String(getObjectData().name) + TCHAR("_TbnVerts"));
                 tbnVertexBuffer->init();
                 cmdList->copyToBuffer(tbnVertexBuffer, 0, tbnVerts.data(), uint32(tbnVertexBuffer->getResourceSize()));
             }
@@ -101,13 +100,14 @@ void StaticMesh::destroy()
 
 ObjectArchive &StaticMesh::serialize(ObjectArchive &ar)
 {
+    cbe::ObjectPrivateDataView thisDatV = getObjectData();
     if (ar.isLoading())
     {
         uint32 dataVersion = ar.getCustomVersion(uint32(STATIC_MESH_CUSTOM_VERSION_ID));
         // This must crash
         fatalAssertf(
             STATIC_MESH_SERIALIZER_CUTOFF_VERSION >= dataVersion,
-            "Version of Static mesh %u loaded from package %s is outdated, Minimum supported %u!", dataVersion, getOuterMost()->getFullPath(),
+            "Version of Static mesh %u loaded from package of path %s is outdated, Minimum supported %u!", dataVersion, thisDatV.path,
             STATIC_MESH_SERIALIZER_CUTOFF_VERSION
         );
     }
@@ -123,11 +123,12 @@ ObjectArchive &StaticMesh::serialize(ObjectArchive &ar)
     {
         ENQUEUE_RENDER_COMMAND(LoadTBNData)
         (
-            [this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+            [thisName = String(thisDatV.name),
+             this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
             {
                 // Copy tangent, binormal, normal vertices
                 tbnVertexBuffer = graphicsHelper->createReadOnlyVertexBuffer(graphicsInstance, sizeof(SMTbnLinePoint), uint32(tbnVerts.size()));
-                tbnVertexBuffer->setResourceName(getName() + TCHAR("_TbnVerts"));
+                tbnVertexBuffer->setResourceName(thisName + TCHAR("_TbnVerts"));
                 tbnVertexBuffer->init();
                 cmdList->copyToBuffer(tbnVertexBuffer, 0, tbnVerts.data(), uint32(tbnVertexBuffer->getResourceSize()));
             }
@@ -185,14 +186,16 @@ void StaticMesh::copyResources(
     IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
 )
 {
+    String thisName = getObjectData().name;
+
     vertexCpuBuffer = graphicsHelper->createReadOnlyVertexBuffer(graphicsInstance, uint32(sizeof(StaticMeshVertex)), uint32(inVertices.size()));
     vertexCpuBuffer->setAsStagingResource(true);
-    vertexCpuBuffer->setResourceName(getName() + TCHAR("_CPUVerts"));
+    vertexCpuBuffer->setResourceName(thisName + TCHAR("_CPUVerts"));
     vertexCpuBuffer->init();
 
     indexCpuBuffer = graphicsHelper->createReadOnlyIndexBuffer(graphicsInstance, uint32(sizeof(uint32)), uint32(inIndices.size()));
     indexCpuBuffer->setAsStagingResource(true);
-    indexCpuBuffer->setResourceName(getName() + TCHAR("_CPUIndices"));
+    indexCpuBuffer->setResourceName(thisName + TCHAR("_CPUIndices"));
     indexCpuBuffer->init();
 
     vertexCpuView = { static_cast<StaticMeshVertex *>(graphicsHelper->borrowMappedPtr(graphicsInstance, vertexCpuBuffer)),

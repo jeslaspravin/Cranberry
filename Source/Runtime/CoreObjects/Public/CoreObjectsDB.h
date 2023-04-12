@@ -48,19 +48,19 @@ struct ObjectsDBQuery
 class COREOBJECTS_EXPORT CoreObjectsDB
 {
 public:
-    using NodeIdxType = SizeT;
+    using NodeIdxType = ObjectDbIdx;
     struct ObjectData
     {
         String path;
-        StringView name;
-        NodeIdxType outerIdx;
-        EObjectFlags flags;
+        String name;
+        EObjectFlags flags = 0;
         // Below 2 can be used to retrieve object from allocator directly
         CBEClass clazz;
-        ObjectAllocIdx allocIdx;
+        ObjectAllocIdx allocIdx = 0;
         StringID sid;
     };
 
+    // This is just to avoid including std::mutex header
     class COREOBJECTS_EXPORT SharedLockObjectsDB
     {
     private:
@@ -86,29 +86,47 @@ private:
     using SharedLockType = std::shared_mutex;
     using ObjectIDToNodeIdx = std::unordered_multimap<StringID, NodeIdxType>;
     using ObjectTreeType = FlatTree<ObjectData, NodeIdxType>;
+    using ObjectPrivateDataView = cbe::ObjectPrivateDataView;
 
     ObjectIDToNodeIdx objectIdToNodeIdx;
     ObjectTreeType objectTree;
     SharedLockType *dbLock;
 
 public:
+    static constexpr const NodeIdxType InvalidDbIdx = ObjectTreeType::InvalidIdx;
+
+public:
     CoreObjectsDB();
-    MAKE_TYPE_NONCOPY_NONMOVE(CoreObjectsDB);
+    MAKE_TYPE_NONCOPY_NONMOVE(CoreObjectsDB)
     ~CoreObjectsDB();
 
     void clear();
 
-    NodeIdxType addObject(StringID objectId, const ObjectData &objData, ObjectsDBQuery &&parentQuery);
+    NodeIdxType addObject(StringID objectId, const ObjectData &objData, NodeIdxType parentNodeIdx);
     NodeIdxType addRootObject(StringID objectId, const ObjectData &objData);
     // Removes object and all its sub-object from db
-    void removeObject(ObjectsDBQuery &&query);
     void removeObject(NodeIdxType nodeIdx);
-    void setObject(ObjectsDBQuery &&query, StringID newId, const TChar *newFullPath);
-    void setObject(NodeIdxType nodeIdx, StringID newId, const TChar *newFullPath);
+    void setObject(NodeIdxType nodeIdx, StringID newId, StringView newFullPath, StringView objName);
     // Invalid newParent clears current parent
-    void setObjectParent(ObjectsDBQuery &&query, ObjectsDBQuery &&parentQuery);
-    void setObjectParent(NodeIdxType nodeIdx, ObjectsDBQuery &&parentQuery);
+    void setObjectParent(NodeIdxType nodeIdx, NodeIdxType parentNodeIdx);
+    // Assumes that node index is valid
+    void setAllocIdx(NodeIdxType nodeIdx, ObjectAllocIdx allocIdx)
+    {
+        SharedLockObjectsDB scopedLock(this);
+        fatalAssertf(isMainThread(), "Set allocIdx for object with node index %llu must be done from main thread!", nodeIdx);
+        debugAssert(objectTree.isValid(nodeIdx));
 
+        objectTree[nodeIdx].allocIdx = allocIdx;
+    }
+    // Assumes that node index is valid
+    EObjectFlags &objectFlags(NodeIdxType nodeIdx)
+    {
+        SharedLockObjectsDB scopedLock(this);
+        debugAssert(objectTree.isValid(nodeIdx));
+        return objectTree[nodeIdx].flags;
+    }
+
+    // Only determines if the object is present in the database. During GCPurge objects might be here but alloc might not be valid
     FORCE_INLINE bool hasObject(ObjectsDBQuery &&query) const
     {
         SharedLockObjectsDB scopedLock(this);
@@ -139,21 +157,9 @@ public:
         }
         return false;
     }
-    FORCE_INLINE bool hasChild(NodeIdxType nodeIdx) const { return objectTree.hasChild(nodeIdx); }
-    FORCE_INLINE bool hasChild(ObjectsDBQuery &&query) const
-    {
-        SharedLockObjectsDB scopedLock(this);
-
-        auto itr = findQueryNodeIdx(this, query);
-        if (itr != objectIdToNodeIdx.cend())
-        {
-            return hasChild(itr->second);
-        }
-        return false;
-    }
 
     cbe::Object *getObject(NodeIdxType nodeIdx) const;
-    FORCE_INLINE cbe::Object *getObject(ObjectsDBQuery &&query) const
+    cbe::Object *getObject(ObjectsDBQuery &&query) const
     {
         SharedLockObjectsDB scopedLock(this);
 
@@ -164,7 +170,7 @@ public:
         }
         return nullptr;
     }
-    FORCE_INLINE NodeIdxType getObjectNodeIdx(ObjectsDBQuery &&query) const
+    NodeIdxType getObjectNodeIdx(ObjectsDBQuery &&query) const
     {
         SharedLockObjectsDB scopedLock(this);
 
@@ -173,34 +179,48 @@ public:
         {
             return itr->second;
         }
-        return ObjectTreeType::InvalidIdx;
+        return InvalidDbIdx;
+    }
+    ObjectPrivateDataView getObjectData(NodeIdxType nodeIdx) const
+    {
+        SharedLockObjectsDB scopedLock(this);
+        if (!objectTree.isValid(nodeIdx))
+        {
+            return ObjectPrivateDataView::getInvalid();
+        }
+
+        const ObjectData &objData = objectTree[nodeIdx];
+        const ObjectTreeType::Node &node = objectTree.getNode(nodeIdx);
+        return ObjectPrivateDataView{ .name = objData.name,
+                                      .path = objData.path,
+                                      .flags = objData.flags,
+                                      .outerIdx = node.parent,
+                                      .sid = objData.sid,
+                                      .allocIdx = objData.allocIdx,
+                                      .clazz = objData.clazz };
+    }
+
+    NodeIdxType getParentIdx(NodeIdxType nodeIdx) const
+    {
+        SharedLockObjectsDB scopedLock(this);
+        if (objectTree.isValid(nodeIdx))
+        {
+            return objectTree.getNode(nodeIdx).parent;
+        }
+        return InvalidDbIdx;
+    }
+
+    FORCE_INLINE bool hasChild(NodeIdxType nodeIdx) const
+    {
+        SharedLockObjectsDB scopedLock(this);
+        return objectTree.hasChild(nodeIdx);
     }
     /**
      * All sub objects(Includes entire tree's branch hierarchy under an object
      */
     void getSubobjects(std::vector<NodeIdxType> &subobjNodeIdxs, NodeIdxType nodeIdx) const;
     void getSubobjects(std::vector<cbe::Object *> &subobjs, NodeIdxType nodeIdx) const;
-    FORCE_INLINE void getSubobjects(std::vector<cbe::Object *> &subobjs, ObjectsDBQuery &&query) const
-    {
-        SharedLockObjectsDB scopedLock(this);
-
-        auto itr = findQueryNodeIdx(this, query);
-        if (itr != objectIdToNodeIdx.cend())
-        {
-            getSubobjects(subobjs, itr->second);
-        }
-    }
     void getChildren(std::vector<cbe::Object *> &children, NodeIdxType nodeIdx) const;
-    FORCE_INLINE void getChildren(std::vector<cbe::Object *> &children, ObjectsDBQuery &&query) const
-    {
-        SharedLockObjectsDB scopedLock(this);
-
-        auto itr = findQueryNodeIdx(this, query);
-        if (itr != objectIdToNodeIdx.cend())
-        {
-            getChildren(children, itr->second);
-        }
-    }
 
     /**
      * Will be in order such that Root object will be appearing before sub objects

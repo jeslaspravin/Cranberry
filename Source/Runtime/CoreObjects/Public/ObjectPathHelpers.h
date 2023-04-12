@@ -28,9 +28,11 @@ public:
     CONST_EXPR static const TChar ObjectObjectSeparator = '/';
     CONST_EXPR static const TChar RootObjectSeparator = ':';
 
-    static String getFullPath(const cbe::Object *object);
+    static String computeFullPath(const cbe::Object *object);
+    static String computeFullPath(StringView objectName, const cbe::Object *outerObj);
+    static String computeObjectPath(const cbe::Object *object, const cbe::Object *stopAt);
+
     static String getFullPath(StringView objectName, const cbe::Object *outerObj);
-    static String getObjectPath(const cbe::Object *object, const cbe::Object *stopAt);
 
     static StringView getPackagePath(StringView objFullPath);
     /**
@@ -53,6 +55,6 @@ public:
 
     static String packagePathFromFilePath(const String &filePath, const String &contentDir);
 
-    static bool isValidPackageName(const String &packageName);
-    static String getValidPackageName(const String &packageName);
+    static bool isValidPackageName(StringView packageName);
+    static String getValidPackageName(StringView packageName);
 };

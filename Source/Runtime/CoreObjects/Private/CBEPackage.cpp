@@ -19,20 +19,25 @@ namespace cbe
 
 Package::Package()
 {
-    debugAssert(!getName().empty() || BIT_SET(getFlags(), EObjectFlagBits::ObjFlag_Default));
+    ObjectPrivateDataView objectDatV = getObjectData();
+    debugAssert(!objectDatV.name.empty() || BIT_SET(objectDatV.flags, EObjectFlagBits::ObjFlag_Default));
 
     // Name will be empty only in default objects now
-    if (!getName().empty())
+    if (!objectDatV.name.empty())
     {
         StringView outPackageName;
-        packagePath = ObjectPathHelper::splitPackageNameAndPath(outPackageName, getName().getChar());
+        packagePath = ObjectPathHelper::splitPackageNameAndPath(outPackageName, objectDatV.name);
         packageName = outPackageName;
     }
 }
 
 void Package::setPackageRoot(const String &root) { packageRoot = root; }
 
-String Package::getPackageFilePath() const { return PathFunctions::combinePath(getPackageRoot(), getName() + TCHAR(".") + PACKAGE_EXT); }
+String Package::getPackageFilePath() const
+{
+    ObjectPrivateDataView objectDatV = getObjectData();
+    return PathFunctions::combinePath(getPackageRoot(), String(objectDatV.name) + TCHAR(".") + PACKAGE_EXT);
+}
 
 void Package::destroy() { Object::destroy(); }
 

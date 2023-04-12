@@ -55,12 +55,13 @@ public:
         , id(initType)
     {}
     // Additional constructors
-    FORCE_INLINE explicit NameString(const String &str)
+    FORCE_INLINE
+    explicit NameString(StringView str)
         : nameStr(str)
-        , id(nameStr)
+        , id(str)
     {}
     STRING_FUNCQUALIFIER
-    NameString(const AChar *str, SizeT len)
+    NameString(const TChar *str, SizeT len)
         : nameStr(str, len)
         , id(str, len)
     {}
@@ -75,10 +76,10 @@ public:
         , id(str)
     {}
     // Additional assignments
-    FORCE_INLINE NameString &operator= (const String &str)
+    FORCE_INLINE NameString &operator= (StringView str)
     {
         nameStr = str;
-        id = nameStr;
+        id = str;
         return *this;
     }
     STRING_FUNCQUALIFIER NameString &operator= (const AChar *str)

@@ -15,6 +15,7 @@
 #include "Visitors/FieldVisitors.h"
 #include "Property/CustomProperty.h"
 #include "CoreObjectDelegates.h"
+#include "CoreObjectsModule.h"
 #include "Types/Platform/Threading/CoPaT/JobSystem.h"
 
 #include <memory_resource>
@@ -32,10 +33,11 @@ void ObjectAllocatorBase::constructDefault(void *objPtr, AllocIdx allocIdx, CBEC
     Object *object = reinterpret_cast<Object *>(objPtr);
 
     // Object's data must be populated even before constructor is called
+    String defaultName = PropertyHelper::getValidSymbolName(clazz->nameString) + TCHAR("_Default");
+    INTERNAL_ObjectCoreAccessors::setDbIdx(object, CoreObjectsDB::InvalidDbIdx);
+    INTERNAL_ObjectCoreAccessors::setOuterAndName(object, defaultName, nullptr, clazz);
     INTERNAL_ObjectCoreAccessors::setAllocIdx(object, allocIdx);
     INTERNAL_ObjectCoreAccessors::getFlags(object) |= EObjectFlagBits::ObjFlag_Default | EObjectFlagBits::ObjFlag_RootObject;
-    String defaultName = PropertyHelper::getValidSymbolName(clazz->nameString) + TCHAR("_Default");
-    INTERNAL_ObjectCoreAccessors::setOuterAndName(object, defaultName, nullptr, clazz);
 
     if (ctor)
     {
@@ -45,20 +47,25 @@ void ObjectAllocatorBase::constructDefault(void *objPtr, AllocIdx allocIdx, CBEC
 
 void INTERNAL_destroyCBEObject(Object *obj)
 {
-    CBEClass clazz = obj->getType();
+    ObjectPrivateDataView objDatV = obj->getObjectData();
+    debugAssert(objDatV);
 
-    fatalAssertf(INTERNAL_isInMainThread(), "Object[%s] of class %s must be destroyed inside main thread!", obj->getName(), clazz->nameString);
+    fatalAssertf(
+        INTERNAL_isInMainThread(), "Object[%s] of class %s must be destroyed inside main thread!", objDatV.name, objDatV.clazz->nameString
+    );
 
     CoreObjectDelegates::broadcastObjectDestroyed(obj);
     obj->destroyObject();
-    clazz->destructor(obj);
+    // Reset the alloc index into the dbIdx for use by CBEObjectConstructionPolicy::deallocate
+    INTERNAL_ObjectCoreAccessors::setDbIdx(obj, objDatV.allocIdx);
+    objDatV.clazz->destructor(obj);
 }
 
 void INTERNAL_createdCBEObject(Object *obj) { CoreObjectDelegates::broadcastObjectCreated(obj); }
 
 bool INTERNAL_isInMainThread() { return copat::JobSystem::get()->isInThread(copat::EJobThreadType::MainThread); }
 
-bool INTERNAL_validateObjectName(const String &name, CBEClass clazz)
+bool INTERNAL_validateObjectName(StringView name, CBEClass clazz)
 {
     if (PropertyHelper::isChildOf<Package>(clazz))
     {
@@ -70,7 +77,7 @@ bool INTERNAL_validateObjectName(const String &name, CBEClass clazz)
     }
 }
 
-String INTERNAL_getValidObjectName(const String &name, CBEClass clazz)
+String INTERNAL_getValidObjectName(StringView name, CBEClass clazz)
 {
     if (PropertyHelper::isChildOf<Package>(clazz))
     {
@@ -269,7 +276,7 @@ struct DeepCopyFieldVisitable
             // Replace pointer if we are replacing subobject references and the from pointer is valid sub object of fromCommonRoot
             if (copyUserData->bReplaceSubobjects && isValidFast(*fromDataPtrPtr) && (*fromDataPtrPtr)->hasOuter(copyUserData->fromCommonRoot))
             {
-                String dupObjFullPath = ObjectPathHelper::getObjectPath(*fromDataPtrPtr, copyUserData->fromCommonRoot);
+                String dupObjFullPath = ObjectPathHelper::computeObjectPath(*fromDataPtrPtr, copyUserData->fromCommonRoot);
                 dupObjFullPath = ObjectPathHelper::getFullPath(dupObjFullPath.getChar(), copyUserData->toCommonRoot);
                 Object *dupObj
                     = copyUserData->objDb->getObject({ .objectPath = dupObjFullPath.getChar(), .objectId = dupObjFullPath.getChar() });
@@ -355,28 +362,26 @@ bool copyObject(CopyObjectOptions options)
     if (options.fromObject->getType() != options.toObject->getType())
     {
         LOG_ERROR(
-            "DeepCopy", "Cannot copy %s of type %s to %s of type %s", options.fromObject->getFullPath(),
-            options.fromObject->getType()->nameString, options.toObject->getFullPath(), options.toObject->getType()->nameString
+            "DeepCopy", "Cannot copy %s of type %s to %s of type %s", options.fromObject->getObjectData().path,
+            options.fromObject->getType()->nameString, options.toObject->getObjectData().path, options.toObject->getType()->nameString
         );
         return false;
     }
 
-    const CoreObjectsDB &objDb = ICoreObjectsModule::get()->getObjectsDB();
+    const CoreObjectsDB &objDb = CoreObjectsModule::objectsDB();
     std::vector<Object *> subObjects;
     switch (options.copyMode)
     {
     case EObjectTraversalMode::EntireObjectTree:
     {
-        String objFullPath = options.fromObject->getFullPath();
         // We need to copy the entire object graph under this objects
-        objDb.getSubobjects(subObjects, { .objectPath = objFullPath.getChar(), .objectId = options.fromObject->getStringID() });
+        objDb.getSubobjects(subObjects, options.fromObject->getDbIdx());
         break;
     }
     case EObjectTraversalMode::ObjectAndChildren:
     {
-        String objFullPath = options.fromObject->getFullPath();
         // We need to copy the object and its children only
-        objDb.getChildren(subObjects, { .objectPath = objFullPath.getChar(), .objectId = options.fromObject->getStringID() });
+        objDb.getChildren(subObjects, options.fromObject->getDbIdx());
         break;
     }
     case EObjectTraversalMode::OnlyObject:
@@ -392,29 +397,31 @@ bool copyObject(CopyObjectOptions options)
     for (Object *subObj : subObjects)
     {
         // From this subobject at 0 to outer after fromObject at (size - 1)
-        std::vector<String> objectNamesChain{ subObj->getName() };
+        std::vector<StringView> objectNamesChain{ subObj->getObjectData().name };
         Object *subObjOuter = subObj->getOuter();
         while (subObjOuter != options.fromObject)
         {
-            objectNamesChain.emplace_back(subObjOuter->getName());
+            objectNamesChain.emplace_back(subObjOuter->getObjectData().name);
             subObjOuter = subObjOuter->getOuter();
         }
         // Create outer objects from outer most(direct child of fromObject) to this sub object
         Object *duplicateSubObjOuter = options.toObject;
         for (auto outerNameRItr = objectNamesChain.crbegin(); outerNameRItr != objectNamesChain.crend(); ++outerNameRItr)
         {
-            String fromObjFullPath = ObjectPathHelper::getFullPath(outerNameRItr->getChar(), subObjOuter);
+            String fromObjFullPath = ObjectPathHelper::getFullPath(*outerNameRItr, subObjOuter);
             Object *fromOuterObj = get(fromObjFullPath.getChar());
+            ObjectPrivateDataView fromOuterObjDatV = objDb.getObjectData(fromOuterObj->getDbIdx());
             debugAssert(fromOuterObj);
-            String toOuterFullPath = ObjectPathHelper::getFullPath(outerNameRItr->getChar(), duplicateSubObjOuter);
+
+            String toOuterFullPath = ObjectPathHelper::getFullPath(*outerNameRItr, duplicateSubObjOuter);
             // Just createOrGet()
             Object *toOuter = get(toOuterFullPath.getChar());
             if (!toOuter)
             {
-                EObjectFlags flags = fromOuterObj->getFlags();
+                EObjectFlags flags = fromOuterObjDatV.flags;
                 CLEAR_BITS(flags, options.clearFlags);
                 SET_BITS(flags, options.additionalFlags);
-                toOuter = INTERNAL_create(fromOuterObj->getType(), *outerNameRItr, duplicateSubObjOuter, flags);
+                toOuter = INTERNAL_create(fromOuterObjDatV.clazz, *outerNameRItr, duplicateSubObjOuter, flags);
             }
             else
             {
@@ -467,7 +474,7 @@ COREOBJECTS_EXPORT bool deepCopy(
 }
 
 Object *duplicateCBEObject(
-    Object *fromObject, Object *newOuter, String newName /*= ""*/, EObjectFlags additionalFlags /*= 0*/, EObjectFlags clearFlags /*= 0*/
+    Object *fromObject, Object *newOuter, StringView newName /* = {}*/, EObjectFlags additionalFlags /*= 0*/, EObjectFlags clearFlags /*= 0*/
 )
 {
     if (!fromObject)
@@ -475,9 +482,10 @@ Object *duplicateCBEObject(
         return nullptr;
     }
 
+    ObjectPrivateDataView fromObjDatV = fromObject->getObjectData();
     if (newName.empty())
     {
-        newName = fromObject->getName();
+        newName = fromObjDatV.name;
     }
 
     if (!isValidFast(newOuter))
@@ -485,10 +493,10 @@ Object *duplicateCBEObject(
         newOuter = fromObject->getOuter();
     }
 
-    EObjectFlags flags = fromObject->getFlags();
+    EObjectFlags flags = fromObjDatV.flags;
     CLEAR_BITS(flags, clearFlags);
     SET_BITS(flags, additionalFlags);
-    Object *duplicateObj = INTERNAL_create(fromObject->getType(), newName, newOuter, flags);
+    Object *duplicateObj = INTERNAL_create(fromObjDatV.clazz, newName, newOuter, flags);
     if (deepCopy(fromObject, duplicateObj, additionalFlags, clearFlags, false))
     {
         duplicateObj->constructed();
@@ -615,20 +623,18 @@ void replaceObjectReferences(
     EObjectTraversalMode replaceMode /*= EObjectTraversalMode::EntireObjectTree */
 )
 {
-    const CoreObjectsDB &objDb = ICoreObjectsModule::get()->getObjectsDB();
+    const CoreObjectsDB &objDb = CoreObjectsModule::objectsDB();
     std::vector<Object *> subObjects;
     switch (replaceMode)
     {
     case EObjectTraversalMode::EntireObjectTree:
     {
-        String objFullPath = object->getFullPath();
-        objDb.getSubobjects(subObjects, { .objectPath = objFullPath.getChar(), .objectId = object->getStringID() });
+        objDb.getSubobjects(subObjects, object->getDbIdx());
         break;
     }
     case EObjectTraversalMode::ObjectAndChildren:
     {
-        String objFullPath = object->getFullPath();
-        objDb.getChildren(subObjects, { .objectPath = objFullPath.getChar(), .objectId = object->getStringID() });
+        objDb.getChildren(subObjects, object->getDbIdx());
         break;
     }
     case EObjectTraversalMode::OnlyObject:
@@ -776,20 +782,18 @@ COREOBJECTS_EXPORT std::vector<ObjectReferences> findObjectReferences(
     Object *object, const std::unordered_set<Object *> &objects, EObjectTraversalMode replaceMode /*= EObjectTraversalMode::EntireObjectTree */
 )
 {
-    const CoreObjectsDB &objDb = ICoreObjectsModule::get()->getObjectsDB();
+    const CoreObjectsDB &objDb = CoreObjectsModule::objectsDB();
     std::vector<Object *> subObjects;
     switch (replaceMode)
     {
     case EObjectTraversalMode::EntireObjectTree:
     {
-        String objFullPath = object->getFullPath();
-        objDb.getSubobjects(subObjects, { .objectPath = objFullPath.getChar(), .objectId = object->getStringID() });
+        objDb.getSubobjects(subObjects, object->getDbIdx());
         break;
     }
     case EObjectTraversalMode::ObjectAndChildren:
     {
-        String objFullPath = object->getFullPath();
-        objDb.getChildren(subObjects, { .objectPath = objFullPath.getChar(), .objectId = object->getStringID() });
+        objDb.getChildren(subObjects, object->getDbIdx());
         break;
     }
     case EObjectTraversalMode::OnlyObject:
