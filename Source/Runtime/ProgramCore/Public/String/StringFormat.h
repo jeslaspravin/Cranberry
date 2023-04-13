@@ -95,6 +95,7 @@ public:
 
     // Fall through getChar()
     template <typename StrType>
+    requires NonStringType<StrType>
     FORCE_INLINE CONST_EXPR static StrType getChar(StrType value)
     {
         return std::forward<StrType>(value);
@@ -169,7 +170,7 @@ private:
     // && (Not necessary but nice to have this)passes the type as it is from the caller like r-values as
     // well, else r-values gets converted to l-values on this call
     template <typename... Args>
-    DEBUG_INLINE static String fmtString(const TChar *fmt, Args &&...args)
+    DEBUG_INLINE static String stringPrintf(const TChar *fmt, Args &&...args)
     {
         int32 size = STRING_PRINTF(nullptr, 0, fmt, getChar<Args>(args)...);
         String fmted;
@@ -180,7 +181,7 @@ private:
         fmted.resize(size);
         return fmted;
     }
-    DEBUG_INLINE static String fmtString(const TChar *fmt, va_list args)
+    DEBUG_INLINE static String stringPrintf(const TChar *fmt, va_list args)
     {
         int32 size = STRING_VPRINTF(nullptr, 0, fmt, args);
         String fmted;
@@ -196,13 +197,13 @@ private:
 
 public:
     template <typename FmtType, typename... Args>
-    DEBUG_INLINE static String format(FmtType &&fmt, Args &&...args)
+    DEBUG_INLINE static String printf(FmtType &&fmt, Args &&...args)
     {
-        return fmtString(getChar<FmtType>(std::forward<FmtType>(fmt)), toString<Args>(std::forward<Args>(args))...);
+        return stringPrintf(getChar<FmtType>(std::forward<FmtType>(fmt)), toString<Args>(std::forward<Args>(args))...);
     }
     template <typename FmtType>
-    DEBUG_INLINE static String format(FmtType &&fmt, va_list args)
+    DEBUG_INLINE static String printf(FmtType &&fmt, va_list args)
     {
-        return fmtString(getChar<FmtType>(std::forward<FmtType>(fmt)), args);
+        return stringPrintf(getChar<FmtType>(std::forward<FmtType>(fmt)), args);
     }
 };

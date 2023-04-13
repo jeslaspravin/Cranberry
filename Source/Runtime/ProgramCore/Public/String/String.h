@@ -82,8 +82,9 @@ public:
     // Count of String's character code points
     FORCE_INLINE uint64 codeCount() const;
 
-    STRING_FUNCQUALIFIER bool
-    findAny(size_type &outIndex, String &outFoundString, const std::vector<String> &findStrgs, size_type offset = 0, bool fromEnd = false) const
+    STRING_FUNCQUALIFIER bool findAny(
+        size_type &outIndex, StringView &outFoundString, const std::vector<String> &findStrgs, size_type offset = 0, bool fromEnd = false
+    ) const
     {
         size_type foundAt = npos;
         for (const String &strg : findStrgs)
@@ -92,7 +93,8 @@ public:
             if (foundAtNew != npos)
             {
                 outIndex = (foundAt == npos || (fromEnd ? foundAt < foundAtNew : foundAt > foundAtNew)) ? foundAtNew : foundAt;
-                outFoundString = (foundAt == npos || (fromEnd ? foundAt < foundAtNew : foundAt > foundAtNew)) ? strg : outFoundString;
+                outFoundString
+                    = (foundAt == npos || (fromEnd ? foundAt < foundAtNew : foundAt > foundAtNew)) ? StringView(strg) : outFoundString;
                 foundAt = outIndex;
             }
         }
@@ -101,11 +103,11 @@ public:
             return true;
         }
         outIndex = npos;
-        outFoundString = TCHAR("");
+        outFoundString = {};
         return false;
     }
 
-    STRING_FUNCQUALIFIER String replaceAllCopy(const String &from, const String &to) const
+    STRING_FUNCQUALIFIER String replaceAllCopy(StringView from, StringView to) const
     {
         String newStr{ this->getChar() };
         size_type replaceAtPos = 0;
@@ -117,7 +119,7 @@ public:
         return newStr;
     }
 
-    STRING_FUNCQUALIFIER String &replaceAll(const String &from, const String &to)
+    STRING_FUNCQUALIFIER String &replaceAll(StringView from, StringView to)
     {
         size_type replaceAtPos = 0;
         while ((replaceAtPos = find(from, replaceAtPos)) != npos)
@@ -128,7 +130,7 @@ public:
         return *this;
     }
 
-    STRING_FUNCQUALIFIER bool isEqual(const String &match, bool bMatchCase = true) const
+    STRING_FUNCQUALIFIER bool isEqual(StringView match, bool bMatchCase = true) const
     {
         if (length() != match.length())
         {
@@ -151,7 +153,7 @@ public:
         return cbegin() == it;
     }
 
-    STRING_FUNCQUALIFIER bool startsWith(const String &match, bool bMatchCase = true) const
+    STRING_FUNCQUALIFIER bool startsWith(StringView match, bool bMatchCase = true) const
     {
         if (length() < match.length())
         {
@@ -160,7 +162,7 @@ public:
 
         if (bMatchCase)
         {
-            return StringView(match) == StringView(cbegin(), cbegin() + match.length());
+            return match == StringView(cbegin(), cbegin() + match.length());
         }
 
         const_iterator it = std::search(
@@ -189,7 +191,7 @@ public:
         return std::toupper(*begin()) == std::toupper(match);
     }
 
-    STRING_FUNCQUALIFIER bool endsWith(const String &match, bool bMatchCase = true) const
+    STRING_FUNCQUALIFIER bool endsWith(StringView match, bool bMatchCase = true) const
     {
         if (length() < match.length())
         {
@@ -198,7 +200,7 @@ public:
 
         if (bMatchCase)
         {
-            return StringView(match) == StringView(cbegin() + (length() - match.length()), cbegin() + match.length());
+            return match == StringView(cbegin() + (length() - match.length()), cbegin() + match.length());
         }
 
         const_iterator searchFrom = cbegin() + (length() - match.length());
@@ -383,7 +385,7 @@ public:
     /*
      * Splits given string into list of line views
      */
-    std::vector<StringView> splitLines() const
+    STRING_FUNCQUALIFIER std::vector<StringView> splitLines() const
     {
         std::vector<StringView> outStrs;
         uint64 foundAtPos = 0;
@@ -441,7 +443,7 @@ public:
     }
 
     template <typename IteratorType, typename StrType>
-    static String join(IteratorType begin, IteratorType end, StrType &&separator)
+    STRING_FUNCQUALIFIER static String join(IteratorType begin, IteratorType end, StrType &&separator)
     {
         String s;
         if (begin == end)
@@ -457,20 +459,20 @@ public:
         return s;
     }
 
-    static std::vector<String> split(const String &inStr, const String &&separator)
+    STRING_FUNCQUALIFIER static std::vector<StringView> split(StringView inStr, StringView separator)
     {
-        std::vector<String> outStrs;
+        std::vector<StringView> outStrs;
         uint64 foundAtPos = 0;
         uint64 offsetPos = 0;
         while ((foundAtPos = inStr.find(separator, offsetPos)) != npos)
         {
             // Since offsetPos is end of last separator and foundAtPos is where this separator is
             // found, Whatever in between is what we need
-            outStrs.emplace_back(String(inStr.cbegin() + offsetPos, inStr.cbegin() + foundAtPos));
+            outStrs.emplace_back(inStr.substr(offsetPos, foundAtPos - offsetPos));
             offsetPos = foundAtPos + separator.length();
         }
         // After final separator the suffix has to be added
-        outStrs.emplace_back(String(inStr.cbegin() + offsetPos, inStr.cend()));
+        outStrs.emplace_back(inStr.substr(offsetPos, inStr.length() - offsetPos));
         return outStrs;
     }
 
