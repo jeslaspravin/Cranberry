@@ -45,10 +45,11 @@ String PathFunctions::toAbsolutePath(const String &relPath, const String &basePa
         }
     }
 
-    const String absPath(PathFunctions::combinePath(basePath, relPath));
-    // Replace all "//" and split each path elements
-    const std::vector<String> pathElems{ String::split(absPath.replaceAllCopy(TCHAR("\\"), TCHAR("/")), TCHAR("/")) };
-    std::vector<String> sanitizedPathElems;
+    String absPath(PathFunctions::combinePath(basePath, relPath));
+    absPath.replaceAll(TCHAR("\\"), TCHAR("/"));
+    // Split each path elements
+    const std::vector<StringView> pathElems{ String::split(absPath, TCHAR("/")) };
+    std::vector<StringView> sanitizedPathElems;
     sanitizedPathElems.reserve(pathElems.size());
 
     int32 parentDirNum = 0;
@@ -70,15 +71,15 @@ String PathFunctions::toAbsolutePath(const String &relPath, const String &basePa
             }
         }
     }
-    std::reverse(sanitizedPathElems.begin(), sanitizedPathElems.end());
-
-    return String::join(sanitizedPathElems.cbegin(), sanitizedPathElems.cend(), TCHAR("/"));
+    return String::join(sanitizedPathElems.crbegin(), sanitizedPathElems.crend(), TCHAR("/"));
 }
 
 bool PathFunctions::isSubdirectory(const String &checkPath, const String &basePath)
 {
-    const std::vector<String> checkPathElems{ String::split(asGenericPath(checkPath), TCHAR("/")) };
-    const std::vector<String> basePathElems{ String::split(asGenericPath(basePath), TCHAR("/")) };
+    String genericCheckPath = asGenericPath(checkPath);
+    String genericBasePath = asGenericPath(basePath);
+    const std::vector<StringView> checkPathElems{ String::split(genericCheckPath, TCHAR("/")) };
+    const std::vector<StringView> basePathElems{ String::split(genericBasePath, TCHAR("/")) };
 
     // If basePath folder count is larger or equal to checkPath then it means basPath can not fit into
     // checkPath. checkPath can never be subdir of basePath

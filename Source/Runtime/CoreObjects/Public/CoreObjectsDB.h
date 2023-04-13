@@ -32,7 +32,7 @@ enum class EObjectClassMatch
 
 struct ObjectsDBQuery
 {
-    const TChar *objectPath = nullptr;
+    StringView objectPath;
     CBEClass clazz = nullptr;
     StringID objectId;
     // Why ignore? Because even though we allow multiple object with same name now it is not encouraged
@@ -52,11 +52,12 @@ public:
     struct ObjectData
     {
         String path;
-        String name;
         EObjectFlags flags = 0;
         // Below 2 can be used to retrieve object from allocator directly
         CBEClass clazz;
         ObjectAllocIdx allocIdx = 0;
+        // Offset of name start index in path
+        uint32 nameOffset = 0;
         StringID sid;
     };
 
@@ -102,8 +103,8 @@ public:
 
     void clear();
 
-    NodeIdxType addObject(StringID objectId, const ObjectData &objData, NodeIdxType parentNodeIdx);
-    NodeIdxType addRootObject(StringID objectId, const ObjectData &objData);
+    NodeIdxType addObject(StringID objectId, StringView fullPath, StringView objName, CBEClass clazz, NodeIdxType parentNodeIdx);
+    NodeIdxType addRootObject(StringID objectId, StringView fullPath, StringView objName, CBEClass clazz);
     // Removes object and all its sub-object from db
     void removeObject(NodeIdxType nodeIdx);
     void setObject(NodeIdxType nodeIdx, StringID newId, StringView newFullPath, StringView objName);
@@ -191,8 +192,8 @@ public:
 
         const ObjectData &objData = objectTree[nodeIdx];
         const ObjectTreeType::Node &node = objectTree.getNode(nodeIdx);
-        return ObjectPrivateDataView{ .name = objData.name,
-                                      .path = objData.path,
+        return ObjectPrivateDataView{ .name = objData.path.getChar() + objData.nameOffset,
+                                      .path = objData.path.getChar(),
                                       .flags = objData.flags,
                                       .outerIdx = node.parent,
                                       .sid = objData.sid,
@@ -269,7 +270,7 @@ private:
                 continue;
             }
             const ObjectData &objData = db->objectTree[itr->second];
-            if (TCharStr::isEqual(objData.path.getChar(), query.objectPath))
+            if (objData.path.isEqual(query.objectPath))
             {
                 alertAlwaysf(!bDuplicatePathFound, "Objects with duplicate names found %s", objData.path);
                 bDuplicatePathFound = true;

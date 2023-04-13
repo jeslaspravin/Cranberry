@@ -24,15 +24,16 @@ std::vector<String> ParserHelper::parseMeta(std::vector<String> &metaData, const
     std::vector<String> metaFlags;
     // We do ; termination for meta specifiers atleast for now just to make sure parsing is easier and
     // simple
-    for (String &meta : String::split(annotatedStr, TCHAR(";")))
+    for (const StringView &metaView : String::split(annotatedStr, TCHAR(";")))
     {
+        String meta{ metaView };
         if (PropertyHelper::isValidFunctionCall(meta.trim()))
         {
-            metaData.emplace_back(meta);
+            metaData.emplace_back(std::move(meta));
         }
         else
         {
-            metaFlags.emplace_back(meta);
+            metaFlags.emplace_back(std::move(meta));
         }
     }
     return metaFlags;

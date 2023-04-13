@@ -20,11 +20,11 @@ String CBEGuid::toString(CBEGuid::EGuidFormat format /*= DWordWithHyphen*/) cons
     switch (format)
     {
     case CBEGuid::DigitsOnly:
-        return StringFormat::format(TCHAR("%08X%08X%08X%08X"), parts.a, parts.b, parts.c, parts.d);
+        return StringFormat::printf(TCHAR("%08X%08X%08X%08X"), parts.a, parts.b, parts.c, parts.d);
         break;
     case CBEGuid::HexValues:
         // Hard coding prefix 0x instead of format specifier flag # as this will always be hex
-        return StringFormat::format(
+        return StringFormat::printf(
             TCHAR("{0x%08X,0x%04hX,0x%04hX,{0x%02hhX,0x%02hhX,0x%02hhX,0x%"
                   "02hhX,0x%02hhX,0x%02hhX,0x%02hhX,0x%02hhX}}"),
             parts.a, 
@@ -34,7 +34,7 @@ String CBEGuid::toString(CBEGuid::EGuidFormat format /*= DWordWithHyphen*/) cons
         );
         break;
     case CBEGuid::DigitsWithHyphen:
-        return StringFormat::format(
+        return StringFormat::printf(
             TCHAR("%08X-%04hX-%04hX-%04hX-%04hX%08X"), 
             parts.a, 
             _comps.b.words.highWord, _comps.b.words.lowWord, 
@@ -43,7 +43,7 @@ String CBEGuid::toString(CBEGuid::EGuidFormat format /*= DWordWithHyphen*/) cons
         );
         break;
     case CBEGuid::DigitsInBraces:
-        return StringFormat::format(
+        return StringFormat::printf(
             TCHAR("{%08X-%04hX-%04hX-%04hX-%04hX%08X}"), 
             parts.a, 
             _comps.b.words.highWord, _comps.b.words.lowWord, 
@@ -52,7 +52,7 @@ String CBEGuid::toString(CBEGuid::EGuidFormat format /*= DWordWithHyphen*/) cons
         );
         break;
     case CBEGuid::DigitsInParans:
-        return StringFormat::format(
+        return StringFormat::printf(
             TCHAR("(%08X-%04hX-%04hX-%04hX-%04hX%08X)"),
             parts.a, 
             _comps.b.words.highWord, _comps.b.words.lowWord, 
@@ -62,7 +62,7 @@ String CBEGuid::toString(CBEGuid::EGuidFormat format /*= DWordWithHyphen*/) cons
         break;
     case CBEGuid::DWordWithHyphen:
     default:
-        return StringFormat::format(TCHAR("%08X-%08X-%08X-%08X"), parts.a, parts.b, parts.c, parts.d);
+        return StringFormat::printf(TCHAR("%08X-%08X-%08X-%08X"), parts.a, parts.b, parts.c, parts.d);
         break;
     }
 }

@@ -131,7 +131,7 @@ MustacheFormatArg &MustacheFormatArg::operator= (const MustacheFormatArg &arg)
     return *this;
 }
 
-#define FORMAT_FUNDAMENTALS(Specifier, VarName) StringFormat::format(TCHAR(Specifier), value.fundamentalVals.##VarName)
+#define FORMAT_FUNDAMENTALS(Specifier, VarName) StringFormat::printf(TCHAR(Specifier), value.fundamentalVals.##VarName)
 String MustacheFormatArg::toString() const
 {
     switch (type)

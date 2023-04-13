@@ -27,11 +27,12 @@ FileChangesTracker::FileChangesTracker(const String name, const String &director
     if (FileSystemFunctions::fileExists(manifestFile.getChar()) && FileHelper::readString(manifestContent, manifestFile))
     {
         std::vector<StringView> readLines = manifestContent.splitLines();
-        for (String line : readLines)
+        for (StringView line : readLines)
         {
-            std::vector<String> fileEntry = String::split(line, TCHAR("="));
-            fatalAssertf(fileEntry.size() == 2, "Cannot parse file timestamp from %s", line);
-            fileLastTimestamp[fileEntry[0]] = std::stoll(fileEntry[1]);
+            std::vector<StringView> fileEntry = String::split(line, TCHAR("="));
+            fatalAssertf(fileEntry.size() == 2, "Cannot parse file timestamp from %.*s", line.length(), line.data());
+
+            fileLastTimestamp[fileEntry[0]] = std::stoll(String(fileEntry[1]));
         }
     }
 }
@@ -42,7 +43,7 @@ FileChangesTracker::~FileChangesTracker()
     int32 i = 0;
     for (const auto &fileEntry : fileLastTimestamp)
     {
-        manifestEntries[i] = StringFormat::format(TCHAR("%s=%lld"), fileEntry.first, fileEntry.second);
+        manifestEntries[i] = StringFormat::printf(TCHAR("%s=%lld"), fileEntry.first, fileEntry.second);
         ++i;
     }
 

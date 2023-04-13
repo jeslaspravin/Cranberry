@@ -40,32 +40,33 @@ void CoreObjectsDB::clear()
     objectIdToNodeIdx.clear();
 }
 
-CoreObjectsDB::NodeIdxType CoreObjectsDB::addObject(StringID objectId, const ObjectData &objData, NodeIdxType parentNodeIdx)
+CoreObjectsDB::NodeIdxType
+CoreObjectsDB::addObject(StringID objectId, StringView fullPath, StringView objName, CBEClass clazz, NodeIdxType parentNodeIdx)
 {
-    fatalAssertf(isMainThread(), "Add object %s must be done from main thread!", objData.path);
+    fatalAssertf(isMainThread(), "Add object %.*s must be done from main thread!", fullPath.length(), fullPath.data());
 
-    debugAssert(
-        objectId.isValid() && !TCharStr::empty(objData.path.getChar())
-        && !hasObject({ .objectPath = objData.path.getChar(), .objectId = objData.sid })
-    );
+    debugAssert(objectId.isValid() && !fullPath.empty() && !hasObject({ .objectPath = fullPath, .objectId = objectId }));
 
     std::scoped_lock<SharedLockType> scopedLock(*dbLock);
 
+    CoreObjectsDB::ObjectData objData{
+        .path = fullPath, .clazz = clazz, .nameOffset = uint32(fullPath.length() - objName.length()), .sid = objectId
+    };
     NodeIdxType nodeIdx = objectTree.add(objData, parentNodeIdx);
     objectIdToNodeIdx.emplace(objectId, nodeIdx);
     return nodeIdx;
 }
 
-CoreObjectsDB::NodeIdxType CoreObjectsDB::addRootObject(StringID objectId, const ObjectData &objData)
+CoreObjectsDB::NodeIdxType CoreObjectsDB::addRootObject(StringID objectId, StringView fullPath, StringView objName, CBEClass clazz)
 {
-    fatalAssertf(isMainThread(), "Add object %s must be done from main thread!", objData.path);
-    debugAssert(
-        objectId.isValid() && !TCharStr::empty(objData.path.getChar())
-        && !hasObject({ .objectPath = objData.path.getChar(), .objectId = objData.sid })
-    );
+    fatalAssertf(isMainThread(), "Add object %.*s must be done from main thread!", fullPath.length(), fullPath.data());
+    debugAssert(objectId.isValid() && !fullPath.empty() && !hasObject({ .objectPath = fullPath, .objectId = objectId }));
 
     std::scoped_lock<SharedLockType> scopedLock(*dbLock);
 
+    CoreObjectsDB::ObjectData objData{
+        .path = fullPath, .clazz = clazz, .nameOffset = uint32(fullPath.length() - objName.length()), .sid = objectId
+    };
     NodeIdxType nodeIdx = objectTree.add(objData);
     objectIdToNodeIdx.emplace(objectId, nodeIdx);
     return nodeIdx;
@@ -99,7 +100,7 @@ void CoreObjectsDB::setObject(NodeIdxType nodeIdx, StringID newId, StringView ne
     objectIdToNodeIdx.emplace(newId, nodeIdx);
     objData.sid = newId;
     objData.path = newFullPath;
-    objData.name = objName;
+    objData.nameOffset = uint32(newFullPath.length() - objName.length());
 }
 
 void CoreObjectsDB::setObjectParent(NodeIdxType nodeIdx, NodeIdxType parentNodeIdx)

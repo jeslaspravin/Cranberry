@@ -137,7 +137,7 @@ public:
     {
         verboseInternal(
             srcLoc, StringFormat::getChar<CatType>(std::forward<CatType>(category)),
-            StringFormat::format<FmtType, Args...>(std::forward<FmtType>(fmt), std::forward<Args>(args)...)
+            StringFormat::printf<FmtType, Args...>(std::forward<FmtType>(fmt), std::forward<Args>(args)...)
         );
     }
 #endif
@@ -149,7 +149,7 @@ public:
     {
         debugInternal(
             srcLoc, StringFormat::getChar<CatType>(std::forward<CatType>(category)),
-            StringFormat::format<FmtType, Args...>(std::forward<FmtType>(fmt), std::forward<Args>(args)...)
+            StringFormat::printf<FmtType, Args...>(std::forward<FmtType>(fmt), std::forward<Args>(args)...)
         );
     }
 
@@ -158,7 +158,7 @@ public:
     {
         logInternal(
             srcLoc, StringFormat::getChar<CatType>(std::forward<CatType>(category)),
-            StringFormat::format<FmtType, Args...>(std::forward<FmtType>(fmt), std::forward<Args>(args)...)
+            StringFormat::printf<FmtType, Args...>(std::forward<FmtType>(fmt), std::forward<Args>(args)...)
         );
     }
 
@@ -167,7 +167,7 @@ public:
     {
         warnInternal(
             srcLoc, StringFormat::getChar<CatType>(std::forward<CatType>(category)),
-            StringFormat::format<FmtType, Args...>(std::forward<FmtType>(fmt), std::forward<Args>(args)...)
+            StringFormat::printf<FmtType, Args...>(std::forward<FmtType>(fmt), std::forward<Args>(args)...)
         );
     }
 
@@ -176,7 +176,7 @@ public:
     {
         errorInternal(
             srcLoc, StringFormat::getChar<CatType>(std::forward<CatType>(category)),
-            StringFormat::format<FmtType, Args...>(std::forward<FmtType>(fmt), std::forward<Args>(args)...)
+            StringFormat::printf<FmtType, Args...>(std::forward<FmtType>(fmt), std::forward<Args>(args)...)
         );
     }
 

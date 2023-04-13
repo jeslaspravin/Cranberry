@@ -477,7 +477,7 @@ private:
         VkResult result = device->vkAllocateMemory(VulkanGraphicsHelper::getDevice(device), &allocateInfo, nullptr, &memory);
         device->debugGraphics()->markObject(
             uint64(memory),
-            StringFormat::format(TCHAR("AllocatedMemChunk(%s)"), device->memoryTypeIdxToString(tIndex)), VK_OBJECT_TYPE_DEVICE_MEMORY
+            StringFormat::printf(TCHAR("AllocatedMemChunk(%s)"), device->memoryTypeIdxToString(tIndex)), VK_OBJECT_TYPE_DEVICE_MEMORY
             );
 
         if (result == VK_ERROR_OUT_OF_DEVICE_MEMORY || result == VK_ERROR_OUT_OF_HOST_MEMORY)

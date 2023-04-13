@@ -44,7 +44,7 @@ void parseFailed(CXCursor cursor, SourceGeneratorContext *srcGenContext, const T
     SCOPED_MUTE_LOG_SEVERITIES(Logger::Debug);
     LOG_ERROR(
         "SourceGenerator", "%s error ParseFailed: %s() Reflection parsing failed - %s", clang_getCursorLocation(cursor), funcName,
-        StringFormat::format(std::forward<FmtType>(fmtMsg), std::forward<Args>(args)...)
+        StringFormat::printf(std::forward<FmtType>(fmtMsg), std::forward<Args>(args)...)
     );
     srcGenContext->bGenerated = false;
 }
@@ -69,7 +69,7 @@ FORCE_INLINE void setTypeMetaInfo(MustacheContext &typeContext, const std::vecto
         metaFlagMasks.reserve(metaFlags.size());
         for (const String &metaFlag : metaFlags)
         {
-            metaFlagMasks.emplace_back(StringFormat::format(TCHAR("INDEX_TO_FLAG_MASK(%s)"), metaFlag));
+            metaFlagMasks.emplace_back(StringFormat::printf(TCHAR("INDEX_TO_FLAG_MASK(%s)"), metaFlag));
         }
         typeContext.args[MetaFlagsTag.value] = String::join(metaFlagMasks.cbegin(), metaFlagMasks.cend(), TCHAR(" | "));
     }

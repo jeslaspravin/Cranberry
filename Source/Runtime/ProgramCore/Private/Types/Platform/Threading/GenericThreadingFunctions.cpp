@@ -55,7 +55,7 @@ void INTERNAL_printSystemThreadingInfo(SystemProcessorsInfo processorInfo, Syste
             "        Cache Unit Size: [Instruction:%ubytes Data:%ubytes Trace:%ubytes]\n"\
             "|        Total Cache Size: %ubytes"
             );
-            return StringFormat::format(
+            return StringFormat::printf(
                 localFmtStr, cacheUnit.caches.iCacheByteSize, cacheUnit.caches.dCacheByteSize, cacheUnit.caches.tCacheByteSize, totalCacheSize
             );
         }
@@ -66,7 +66,7 @@ void INTERNAL_printSystemThreadingInfo(SystemProcessorsInfo processorInfo, Syste
             "        Cache Unit Size: %ubytes\n"\
             "|        Total Cache Size: %ubytes"
             );
-            return StringFormat::format(localFmtStr, cacheUnit.uCacheByteSize, totalCacheSize);
+            return StringFormat::printf(localFmtStr, cacheUnit.uCacheByteSize, totalCacheSize);
         }
     };
     LOG("PlatformThreading", fmtStrCacheInfo, cacheInfo.cacheLineSize,

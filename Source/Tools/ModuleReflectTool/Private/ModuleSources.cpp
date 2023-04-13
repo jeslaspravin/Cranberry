@@ -106,12 +106,12 @@ ModuleSources::ModuleSources()
     {
         fatalAssertf(!"Failed to read include file", "Failed to read include file from %s", includesFile);
     }
-    for (const String &includeList : content.splitLines())
+    for (const StringView &includeList : content.splitLines())
     {
-        std::vector<String> includeFolders = String::split(includeList, TCHAR(";"));
-        for (const String &includeFolder : includeFolders)
+        std::vector<StringView> includeFolders = String::split(includeList, TCHAR(";"));
+        for (const StringView &includeFolder : includeFolders)
         {
-            includes.emplace_back(includeFolder.trimCopy());
+            includes.emplace_back(includeFolder).trim();
         }
     }
 
@@ -328,7 +328,7 @@ void ModuleSources::injectGeneratedFiles(const std::vector<const SourceInformati
             for (uint32 j = i; j < sortedSources.size(); j += uint32(genFiles.size()))
             {
                 includeStmts.emplace_back(
-                    StringFormat::format(TCHAR("#include \"%s\""), PathFunctions::fileOrDirectoryName(sortedSources[j]->generatedTUPath))
+                    StringFormat::printf(TCHAR("#include \"%s\""), PathFunctions::fileOrDirectoryName(sortedSources[j]->generatedTUPath))
                 );
             }
 

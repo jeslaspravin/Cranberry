@@ -20,10 +20,10 @@ namespace cbe
 Package::Package()
 {
     ObjectPrivateDataView objectDatV = getObjectData();
-    debugAssert(!objectDatV.name.empty() || BIT_SET(objectDatV.flags, EObjectFlagBits::ObjFlag_Default));
+    debugAssert(!TCharStr::empty(objectDatV.name) || BIT_SET(objectDatV.flags, EObjectFlagBits::ObjFlag_Default));
 
     // Name will be empty only in default objects now
-    if (!objectDatV.name.empty())
+    if (!TCharStr::empty(objectDatV.name))
     {
         StringView outPackageName;
         packagePath = ObjectPathHelper::splitPackageNameAndPath(outPackageName, objectDatV.name);

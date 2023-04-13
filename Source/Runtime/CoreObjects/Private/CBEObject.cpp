@@ -147,7 +147,7 @@ void INTERNAL_ObjectCoreAccessors::setOuterAndName(Object *object, StringView ne
     StringID newSid(newObjPath);
     fatalAssertf(
         !objectsDb.hasObject({ .objectPath = newObjPath.getChar(), .objectId = newSid }),
-        "Object cannot be renamed to another existing object! [Old name: %s, New name: %s]", objectDatV.name, newName
+        "Object cannot be renamed to another existing object! [Old name: %s, New name: %.*s]", objectDatV.name, newName.length(), newName.data()
     );
 
     if (objectDatV.isValid())
@@ -174,26 +174,24 @@ void INTERNAL_ObjectCoreAccessors::setOuterAndName(Object *object, StringView ne
                 debugAssert(objectsDb.hasObject(subObjNodeIdx));
                 Object *subObj = objectsDb.getObject(subObjNodeIdx);
                 String newSubObjFullPath = ObjectPathHelper::computeFullPath(subObj);
-                StringID newSubObjSid = newSubObjFullPath.getChar();
+                StringID newSubObjSid{ newSubObjFullPath };
 
                 // Only need to set name, No need to reset parent
-                objectsDb.setObject(subObjNodeIdx, newSubObjSid, newSubObjFullPath.getChar(), objectsDb.getObjectData(subObjNodeIdx).name);
+                objectsDb.setObject(subObjNodeIdx, newSubObjSid, newSubObjFullPath, objectsDb.getObjectData(subObjNodeIdx).name);
             }
         }
     }
     else
     {
-        CoreObjectsDB::ObjectData objData{
-            .path = newObjPath, .name = newName, .clazz = (clazz != nullptr ? clazz : object->getType()), .sid = newSid
-        };
+        clazz = clazz != nullptr ? clazz : object->getType();
         ObjectDbIdx dbIdx = CoreObjectsDB::InvalidDbIdx;
         if (outer)
         {
-            dbIdx = objectsDb.addObject(newSid, objData, outer->getDbIdx());
+            dbIdx = objectsDb.addObject(newSid, newObjPath, newName, clazz, outer->getDbIdx());
         }
         else
         {
-            dbIdx = objectsDb.addRootObject(newSid, objData);
+            dbIdx = objectsDb.addRootObject(newSid, newObjPath, newName, clazz);
         }
         setDbIdx(object, dbIdx);
     }

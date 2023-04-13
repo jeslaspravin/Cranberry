@@ -124,7 +124,7 @@ Object *INTERNAL_create(CBEClass clazz, StringView name, Object *outerObj, EObje
 {
     if (clazz == nullptr)
     {
-        alertAlwaysf(false, "Invalid class type! when creating object %s", name);
+        alertAlwaysf(false, "Invalid class type! when creating object %.*s", name.length(), name.data());
         return nullptr;
     }
 
@@ -180,7 +180,7 @@ Object *INTERNAL_create(CBEClass clazz, StringView name, Object *outerObj, EObje
         // Appending allocation ID and class name will make it unique
         SizeT uniqueNameId = uint32(clazz->name);
         HashUtility::combineSeeds(uniqueNameId, INTERNAL_ObjectCoreAccessors::getAllocIdx(object));
-        objectName = StringFormat::format(TCHAR("%s_%llu"), objectName, uniqueNameId);
+        objectName = StringFormat::printf(TCHAR("%s_%llu"), objectName, uniqueNameId);
     }
     INTERNAL_ObjectCoreAccessors::setOuterAndName(object, objectName, outerObj, clazz);
     INTERNAL_ObjectCoreAccessors::setAllocIdx(object, allocIdx);

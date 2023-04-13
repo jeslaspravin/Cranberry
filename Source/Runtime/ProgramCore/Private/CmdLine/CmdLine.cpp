@@ -314,11 +314,11 @@ bool ProgramCmdLine::printHelp() const
         {
             if (allowedArg.shortArgName.empty())
             {
-                outHelp += StringFormat::format(TCHAR("\n\"%s\"\n    - %s"), allowedArg.argName, allowedArg.argDescription);
+                outHelp += StringFormat::printf(TCHAR("\n\"%s\"\n    - %s"), allowedArg.argName, allowedArg.argDescription);
             }
             else
             {
-                outHelp += StringFormat::format(
+                outHelp += StringFormat::printf(
                     TCHAR("\n\"%s\", \"%s\"\n    - %s"), allowedArg.argName, allowedArg.shortArgName, allowedArg.argDescription
                 );
             }

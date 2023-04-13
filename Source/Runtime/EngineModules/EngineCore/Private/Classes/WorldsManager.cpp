@@ -30,7 +30,7 @@ World *WorldsManager::initWorld(World *world, bool bAsMainWorld)
         }
         unloadWorld(mainWorld);
 
-        LOG("WorldManager", "Initializing main world %.*s", worldDatV.path.length(), worldDatV.path.data());
+        LOG("WorldManager", "Initializing main world %s", worldDatV.path);
         mainWorld = world;
         renderingWorld = mainWorld;
         playingWorld = mainWorld;
@@ -52,7 +52,7 @@ World *WorldsManager::initWorld(World *world, bool bAsMainWorld)
         return world;
     }
 
-    LOG("WorldManager", "Initializing world %.*s", worldDatV.path.length(), worldDatV.path.data());
+    LOG("WorldManager", "Initializing world %s", worldDatV.path);
     otherWorlds[world] = { .renderScene = std::make_shared<EngineRenderScene>(world) };
     world->prepareForPlay();
     onWorldInitEvent().invoke(world, false);
@@ -111,8 +111,7 @@ void WorldsManager::unloadAllWorlds()
 {
     if (mainWorld)
     {
-        StringView fullPath = mainWorld->getObjectData().path;
-        LOG("WorldManager", "Unloading main world %.*s", fullPath.length(), fullPath.data());
+        LOG("WorldManager", "Unloading main world %s", mainWorld->getObjectData().path);
         onWorldUnloadEvent().invoke(mainWorld, true);
 #if EDITOR_BUILD
         editorWorld->beginDestroy();
@@ -128,8 +127,7 @@ void WorldsManager::unloadAllWorlds()
     }
     for (const std::pair<World *const, WorldInfo> &otherWorld : otherWorlds)
     {
-        StringView fullPath = otherWorld.first->getObjectData().path;
-        LOG("WorldManager", "Unloading world %.*s", fullPath.length(), fullPath.data());
+        LOG("WorldManager", "Unloading world %s", otherWorld.first->getObjectData().path);
         onWorldUnloadEvent().invoke(otherWorld.first, false);
         otherWorld.first->beginDestroy();
     }

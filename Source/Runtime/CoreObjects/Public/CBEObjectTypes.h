@@ -87,10 +87,10 @@ enum class EObjectTraversalMode
 // Never hold copy or reference of this struct unless you are sure all StringView will be alive
 struct ObjectPrivateDataView
 {
-    // TODO(Jeslas) : ASAP replace all format specifier %s to %.*s combined with length and data pointer params when using below string view
     // Be aware when persisting this view, as there is chance below string view gets invalidated with CoreObjectsDB changes
-    StringView name;
-    StringView path;
+    // Not using string view as it is not easier to log with printf
+    const TChar *name;
+    const TChar *path;
     EObjectFlags flags;
     ObjectDbIdx outerIdx;
     StringID sid;
