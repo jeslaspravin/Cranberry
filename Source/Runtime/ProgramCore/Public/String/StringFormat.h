@@ -13,10 +13,12 @@
 
 #include "ProgramCoreExports.h"
 #include "String/String.h"
+#include "String/StringLiteral.h"
 #include "Types/Templates/TypeTraits.h"
 
 #include <cstdio>
 #include <sstream>
+#include <format>
 
 class StringFormat;
 
@@ -68,35 +70,54 @@ concept HasStringFormatToStringImpl = requires(Type &&val) {
     } -> StringOrFundamentalTypes;
 };
 
+// std::format related types and concepts
+using StdFormatContextType = std::conditional_t<IsTCharWide::value, std::wformat_context, std::format_context>;
+template <class Type>
+concept HasStdFormatter = requires(Type value, StdFormatContextType &context) {
+    std::declval<typename StdFormatContextType::template formatter_type<std::remove_cvref_t<Type>>>().format(value, context);
+};
+// Specialization to support String in std::format
+template <typename CharType>
+struct std::formatter<String, CharType> : std::formatter<BaseString, CharType>
+{
+public:
+    using BaseType = std::formatter<BaseString, CharType>;
+
+    template <class FormatContext>
+    typename FormatContext::iterator format(const String &value, FormatContext &formatCtx) const
+    {
+        return BaseType::format(value, formatCtx);
+    }
+};
+
 class StringFormat
 {
 public:
     // getChar - String to TChar* and primitive types pass templates
     template <typename StrType>
     requires HasValidCStrMethod<StrType>
-    FORCE_INLINE CONST_EXPR static const TChar *getChar(const StrType &value)
+    constexpr static const TChar *getChar(const StrType &value)
     {
         return static_cast<const TChar *>(value.c_str());
     }
 
     template <typename StrType>
     requires HasValidGetCharMethod<StrType> && (!HasValidCStrMethod<StrType>)
-    FORCE_INLINE CONST_EXPR static const TChar *getChar(const StrType &value)
+    constexpr static const TChar *getChar(const StrType &value)
     {
         return static_cast<const TChar *>(value.getChar());
     }
 
     template <typename StrType>
     requires std::convertible_to<StrType, const TChar *>
-    FORCE_INLINE CONST_EXPR static const TChar *getChar(StrType value)
+    constexpr static const TChar *getChar(StrType value)
     {
         return static_cast<const TChar *>(value);
     }
 
     // Fall through getChar()
     template <typename StrType>
-    requires NonStringType<StrType>
-    FORCE_INLINE CONST_EXPR static StrType getChar(StrType value)
+    constexpr static StrType getChar(StrType value)
     {
         return std::forward<StrType>(value);
     }
@@ -122,14 +143,14 @@ public:
     // All string and primitive(fundamental) type
     template <typename Type>
     requires StringOrFundamentalTypes<Type>
-    FORCE_INLINE CONST_EXPR static Type toString(Type &&value)
+    constexpr static Type toString(Type &&value)
     {
         return std::forward<Type>(value);
     }
 
     template <typename KeyType, typename ValueType>
     requires HasStringFormatToStringImpl<KeyType, StringFormat> && HasStringFormatToStringImpl<ValueType, StringFormat>
-    FORCE_INLINE static String toString(const std::pair<KeyType, ValueType> &pair)
+    static String toString(const std::pair<KeyType, ValueType> &pair)
     {
         OStringStream stream;
         stream << TCHAR("{ ") << toString(pair.first) << TCHAR(", ") << toString(pair.second) << TCHAR(" }");
@@ -138,7 +159,7 @@ public:
 
     template <typename IterableType>
     requires StringConvertibleIteratorType<IterableType, StringFormat>
-    FORCE_INLINE static BaseString toString(IterableType &&iterable)
+    static BaseString toString(IterableType &&iterable)
     {
         using Type = UnderlyingType<IterableType>;
 
@@ -155,6 +176,19 @@ public:
         }
         stream << TCHAR(" ]");
         return stream.str();
+    }
+
+    // std::format preprocessors
+    template <HasStdFormatter Type>
+    constexpr static Type toFormatValue(Type &&value)
+    {
+        return std::forward<Type>(value);
+    }
+    template <HasStringFormatToStringImpl<StringFormat> Type>
+    requires (!HasStdFormatter<Type>)
+    constexpr static String toFormatValue(Type &&value)
+    {
+        return toString(std::forward<Type>(value));
     }
 
 private:
@@ -205,5 +239,18 @@ public:
     DEBUG_INLINE static String printf(FmtType &&fmt, va_list args)
     {
         return stringPrintf(getChar<FmtType>(std::forward<FmtType>(fmt)), args);
+    }
+    template <StringLiteral Fmt, typename... Args>
+    constexpr static String format(Args &&...args)
+    {
+        return std::format(Fmt.value, toFormatValue<Args>(std::forward<Args>(args))...);
+    }
+    template <typename FmtType, typename... Args>
+    DEBUG_INLINE static String vFormat(FmtType &&fmt, Args &&...args)
+    {
+        return std::vformat(
+            getChar<FmtType>(std::forward<FmtType>(fmt)),
+            std::make_format_args<StdFormatContextType>(toString<Args>(std::forward<Args>(args))...)
+        );
     }
 };

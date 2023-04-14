@@ -133,51 +133,76 @@ private:
 public:
 #if ENABLE_VERBOSE_LOG
     template <typename CatType, typename FmtType, typename... Args>
-    DEBUG_INLINE CONST_EXPR static void verbose(const SourceLocationType srcLoc, CatType &&category, FmtType &&fmt, Args &&...args)
+    constexpr static void verbose(const SourceLocationType srcLoc, CatType &&category, FmtType &&fmt, Args &&...args)
     {
         verboseInternal(
             srcLoc, StringFormat::getChar<CatType>(std::forward<CatType>(category)),
-            StringFormat::printf<FmtType, Args...>(std::forward<FmtType>(fmt), std::forward<Args>(args)...)
+            StringFormat::vFormat<FmtType, Args...>(std::forward<FmtType>(fmt), std::forward<Args>(args)...)
         );
+    }
+    template <typename CatType, typename MsgType>
+    constexpr static void verbose(const SourceLocationType srcLoc, CatType &&category, MsgType &&msg)
+    {
+        verboseInternal(srcLoc, StringFormat::getChar<CatType>(std::forward<CatType>(category)), std::forward<MsgType>(msg));
     }
 #endif
 
     // && (Not necessary but nice to have this)passes the type as it is from the caller like r-values as
     // well else r-values gets converted to l-values on this call
     template <typename CatType, typename FmtType, typename... Args>
-    DEBUG_INLINE CONST_EXPR static void debug(const SourceLocationType srcLoc, CatType &&category, FmtType &&fmt, Args &&...args)
+    constexpr static void debug(const SourceLocationType srcLoc, CatType &&category, FmtType &&fmt, Args &&...args)
     {
         debugInternal(
             srcLoc, StringFormat::getChar<CatType>(std::forward<CatType>(category)),
-            StringFormat::printf<FmtType, Args...>(std::forward<FmtType>(fmt), std::forward<Args>(args)...)
+            StringFormat::vFormat<FmtType, Args...>(std::forward<FmtType>(fmt), std::forward<Args>(args)...)
         );
+    }
+    template <typename CatType, typename MsgType>
+    constexpr static void debug(const SourceLocationType srcLoc, CatType &&category, MsgType &&msg)
+    {
+        debugInternal(srcLoc, StringFormat::getChar<CatType>(std::forward<CatType>(category)), std::forward<MsgType>(msg));
     }
 
     template <typename CatType, typename FmtType, typename... Args>
-    DEBUG_INLINE CONST_EXPR static void log(const SourceLocationType srcLoc, CatType &&category, FmtType &&fmt, Args &&...args)
+    constexpr static void log(const SourceLocationType srcLoc, CatType &&category, FmtType &&fmt, Args &&...args)
     {
         logInternal(
             srcLoc, StringFormat::getChar<CatType>(std::forward<CatType>(category)),
-            StringFormat::printf<FmtType, Args...>(std::forward<FmtType>(fmt), std::forward<Args>(args)...)
+            StringFormat::vFormat<FmtType, Args...>(std::forward<FmtType>(fmt), std::forward<Args>(args)...)
         );
+    }
+    template <typename CatType, typename MsgType>
+    constexpr static void log(const SourceLocationType srcLoc, CatType &&category, MsgType &&msg)
+    {
+        logInternal(srcLoc, StringFormat::getChar<CatType>(std::forward<CatType>(category)), std::forward<MsgType>(msg));
     }
 
     template <typename CatType, typename FmtType, typename... Args>
-    DEBUG_INLINE CONST_EXPR static void warn(const SourceLocationType srcLoc, CatType &&category, FmtType &&fmt, Args &&...args)
+    constexpr static void warn(const SourceLocationType srcLoc, CatType &&category, FmtType &&fmt, Args &&...args)
     {
         warnInternal(
             srcLoc, StringFormat::getChar<CatType>(std::forward<CatType>(category)),
-            StringFormat::printf<FmtType, Args...>(std::forward<FmtType>(fmt), std::forward<Args>(args)...)
+            StringFormat::vFormat<FmtType, Args...>(std::forward<FmtType>(fmt), std::forward<Args>(args)...)
         );
+    }
+    template <typename CatType, typename MsgType>
+    constexpr static void warn(const SourceLocationType srcLoc, CatType &&category, MsgType &&msg)
+    {
+        warnInternal(srcLoc, StringFormat::getChar<CatType>(std::forward<CatType>(category)), std::forward<MsgType>(msg));
     }
 
     template <typename CatType, typename FmtType, typename... Args>
-    DEBUG_INLINE CONST_EXPR static void error(const SourceLocationType srcLoc, CatType &&category, FmtType &&fmt, Args &&...args)
+    constexpr static void error(const SourceLocationType srcLoc, CatType &&category, FmtType &&fmt, Args &&...args)
     {
         errorInternal(
             srcLoc, StringFormat::getChar<CatType>(std::forward<CatType>(category)),
-            StringFormat::printf<FmtType, Args...>(std::forward<FmtType>(fmt), std::forward<Args>(args)...)
+            StringFormat::vFormat<FmtType, Args...>(std::forward<FmtType>(fmt), std::forward<Args>(args)...)
         );
+    }
+    template <typename CatType, typename MsgType>
+    constexpr static void error(const SourceLocationType srcLoc, CatType &&category, MsgType &&msg)
+    {
+        errorInternal(srcLoc, StringFormat::getChar<CatType>(std::forward<CatType>(category)), std::forward<MsgType>(msg));
     }
 
     static void flushStream();
@@ -201,16 +226,36 @@ public:
 #define CURRENT_SRC_LOC() Logger::SourceLocationType::current(__FILE__, __func__, __LINE__)
 #endif
 
+// If use format function inside the macro itself(1) or let logging function do it(0)
+#define LOGGER_FORMAT_DIRECT 1
+
+#if LOGGER_FORMAT_DIRECT
+
+#if ENABLE_VERBOSE_LOG
+#define LOG_VERBOSE(Category, Fmt, ...) Logger::verbose(CURRENT_SRC_LOC(), TCHAR(Category), StringFormat::format<TCHAR(Fmt)>(__VA_ARGS__))
+#else // ENABLE_VERBOSE_LOG
+#define LOG_VERBOSE(Category, Fmt, ...)
+#endif // ENABLE_VERBOSE_LOG
+
+#define LOG_DEBUG(Category, Fmt, ...) Logger::debug(CURRENT_SRC_LOC(), TCHAR(Category), StringFormat::format<TCHAR(Fmt)>(__VA_ARGS__))
+#define LOG(Category, Fmt, ...) Logger::log(CURRENT_SRC_LOC(), TCHAR(Category), StringFormat::format<TCHAR(Fmt)>(__VA_ARGS__))
+#define LOG_WARN(Category, Fmt, ...) Logger::warn(CURRENT_SRC_LOC(), TCHAR(Category), StringFormat::format<TCHAR(Fmt)>(__VA_ARGS__))
+#define LOG_ERROR(Category, Fmt, ...) Logger::error(CURRENT_SRC_LOC(), TCHAR(Category), StringFormat::format<TCHAR(Fmt)>(__VA_ARGS__))
+
+#else // LOGGER_FORMAT_DIRECT
+
 #if ENABLE_VERBOSE_LOG
 #define LOG_VERBOSE(Category, Fmt, ...) Logger::verbose(CURRENT_SRC_LOC(), TCHAR(Category), TCHAR(Fmt), __VA_ARGS__)
-#else
+#else // ENABLE_VERBOSE_LOG
 #define LOG_VERBOSE(Category, Fmt, ...)
-#endif
+#endif // ENABLE_VERBOSE_LOG
 
 #define LOG_DEBUG(Category, Fmt, ...) Logger::debug(CURRENT_SRC_LOC(), TCHAR(Category), TCHAR(Fmt), __VA_ARGS__)
 #define LOG(Category, Fmt, ...) Logger::log(CURRENT_SRC_LOC(), TCHAR(Category), TCHAR(Fmt), __VA_ARGS__)
 #define LOG_WARN(Category, Fmt, ...) Logger::warn(CURRENT_SRC_LOC(), TCHAR(Category), TCHAR(Fmt), __VA_ARGS__)
 #define LOG_ERROR(Category, Fmt, ...) Logger::error(CURRENT_SRC_LOC(), TCHAR(Category), TCHAR(Fmt), __VA_ARGS__)
+
+#endif // LOGGER_FORMAT_DIRECT
 
 struct ScopedMuteLogServerity
 {
