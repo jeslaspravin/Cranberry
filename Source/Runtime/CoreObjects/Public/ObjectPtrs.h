@@ -230,16 +230,13 @@ public:
     ObjectPath(Object *outerObj, const TChar *objectName) noexcept;
 
     FORCE_INLINE bool operator!= (const ObjectPath &rhs) const { return !(*this == rhs); }
-    FORCE_INLINE bool operator== (const ObjectPath &rhs) const { return dbIdx == rhs.dbIdx && getFullPath() == rhs.getFullPath(); }
+    FORCE_INLINE bool operator== (const ObjectPath &rhs) const { return getFullPath() == rhs.getFullPath(); }
     template <typename Type>
     FORCE_INLINE bool operator== (Type *rhs) const
     {
         return getObject() == rhs;
     }
-    FORCE_INLINE bool operator< (const ObjectPath &rhs) const
-    {
-        return dbIdx == rhs.dbIdx ? getFullPath() < rhs.getFullPath() : dbIdx < rhs.dbIdx;
-    }
+    FORCE_INLINE bool operator< (const ObjectPath &rhs) const { return getFullPath() < rhs.getFullPath(); }
 
     const String &getPackagePath() const { return packagePath; }
     const String &getOuterPath() const { return outerPath; }
@@ -306,5 +303,5 @@ struct std::hash<cbe::WeakObjPtr<Type>>
 template <>
 struct std::hash<cbe::ObjectPath>
 {
-    NODISCARD size_t operator() (const cbe::ObjectPath &ptr) const noexcept { return HashUtility::hashAllReturn(ptr.dbIdx, ptr.getFullPath()); }
+    NODISCARD size_t operator() (const cbe::ObjectPath &ptr) const noexcept { return HashUtility::hashAllReturn(ptr.getFullPath()); }
 };
