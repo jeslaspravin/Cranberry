@@ -252,22 +252,7 @@ public:
     }
 
     // Checks if set objectId is valid now, Without loading
-    FORCE_INLINE bool isValid() const
-    {
-        const String fullPath = getFullPath();
-
-        const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
-        ObjectPrivateDataView objDatV;
-        if (dbIdx != CoreObjectsDB::InvalidDbIdx)
-        {
-            objDatV = objectsDb.getObjectData(dbIdx);
-        }
-        else
-        {
-            objDatV = objectsDb.getObjectData(objectsDb.getObjectNodeIdx({ .objectPath = fullPath, .objectId = fullPath.getChar() }));
-        }
-        return objDatV && TCharStr::isEqual(objDatV.path, fullPath.getChar());
-    }
+    bool isValid() const;
     FORCE_INLINE explicit operator bool () const { return isValid(); }
     FORCE_INLINE void reset()
     {
@@ -277,19 +262,7 @@ public:
 
     // Tries to refresh the cached dbIdx and updates it if it is outdated
     void refreshCache();
-    FORCE_INLINE bool isValidCache() const
-    {
-        const String fullPath = getFullPath();
-
-        const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
-        ObjectPrivateDataView objDatV = ObjectPrivateDataView::getInvalid();
-        if (dbIdx != CoreObjectsDB::InvalidDbIdx)
-        {
-            objDatV = objectsDb.getObjectData(dbIdx);
-        }
-
-        return objDatV && TCharStr::isEqual(objDatV.path, fullPath.getChar());
-    }
+    bool isValidCache() const;
 };
 
 } // namespace cbe

@@ -11,6 +11,7 @@
 
 #include "ObjectPtrs.h"
 #include "ObjectPathHelpers.h"
+#include "CoreObjectsModule.h"
 
 namespace cbe
 {
@@ -69,7 +70,7 @@ Object *ObjectPath::getObject() const
 {
     const String fullPath = getFullPath();
 
-    const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
+    const CoreObjectsDB &objectsDb = CoreObjectsModule::objectsDB();
     Object *obj = nullptr;
     if (dbIdx != CoreObjectsDB::InvalidDbIdx)
     {
@@ -87,16 +88,36 @@ Object *ObjectPath::getObject() const
     return obj;
 }
 
+bool ObjectPath::isValid() const
+{
+    const String fullPath = getFullPath();
+
+    const CoreObjectsDB &objectsDb = CoreObjectsModule::objectsDB();
+    ObjectPrivateDataView objDatV;
+    if (dbIdx != CoreObjectsDB::InvalidDbIdx)
+    {
+        objDatV = objectsDb.getObjectData(dbIdx);
+    }
+    else
+    {
+        objDatV = objectsDb.getObjectData(objectsDb.getObjectNodeIdx({ .objectPath = fullPath, .objectId = fullPath.getChar() }));
+    }
+    return objDatV && TCharStr::isEqual(objDatV.path, fullPath.getChar());
+}
+
 void ObjectPath::refreshCache()
 {
     const String fullPath = getFullPath();
 
-    const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
+    const CoreObjectsDB &objectsDb = CoreObjectsModule::objectsDB();
     // If dbIdx is valid value check if the obj is valid and clear dbIdx if not
     if (dbIdx != CoreObjectsDB::InvalidDbIdx)
     {
         Object *obj = objectsDb.getObject(dbIdx);
-        dbIdx = cbe::isValidFast(obj) ? obj->getDbIdx() : CoreObjectsDB::InvalidDbIdx;
+        if (!cbe::isValidFast(obj) || !TCharStr::isEqual(objectsDb.getObjectData(dbIdx).path, fullPath.getChar()))
+        {
+            dbIdx = CoreObjectsDB::InvalidDbIdx;
+        }
     }
     // Invalid dbIdx check if we can get the object from the db
     if (dbIdx == CoreObjectsDB::InvalidDbIdx)
@@ -109,6 +130,20 @@ void ObjectPath::refreshCache()
         Object *obj = load(fullPath, nullptr);
         dbIdx = obj ? obj->getDbIdx() : CoreObjectsDB::InvalidDbIdx;
     }
+}
+
+bool ObjectPath::isValidCache() const
+{
+    const String fullPath = getFullPath();
+
+    const CoreObjectsDB &objectsDb = CoreObjectsModule::objectsDB();
+    ObjectPrivateDataView objDatV = ObjectPrivateDataView::getInvalid();
+    if (dbIdx != CoreObjectsDB::InvalidDbIdx)
+    {
+        objDatV = objectsDb.getObjectData(dbIdx);
+    }
+
+    return objDatV && TCharStr::isEqual(objDatV.path, fullPath.getChar());
 }
 
 } // namespace cbe

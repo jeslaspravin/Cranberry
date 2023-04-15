@@ -41,11 +41,6 @@ using StringStream = std::basic_stringstream<BaseString::value_type, BaseString:
 #define STRING_FUNCQUALIFIER FORCE_INLINE
 #endif
 
-#if USING_WIDE_UNICODE
-#error "Cannot support wide char as LOGging uses {} as format specifier and it needs to be changed to {} or {} depending on Wide or not \
-Or replace StringFormat::printf to use std::format"
-#endif
-
 class String : public BaseString
 {
 public:
