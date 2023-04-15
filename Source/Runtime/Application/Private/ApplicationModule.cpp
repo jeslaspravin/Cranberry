@@ -179,7 +179,7 @@ void ApplicationModule::startAndRun(ApplicationInstance *appInst, const AppInsta
     // TODO(Jeslas) : Investigate proper fix
     Logger::startLoggingTime();
 
-    LOG("Application", "%s application start", appCI.applicationName);
+    LOG("Application", "{} application start", appCI.applicationName);
     appInstance->startApp();
     if (engineRenderer)
     {
@@ -190,7 +190,7 @@ void ApplicationModule::startAndRun(ApplicationInstance *appInst, const AppInsta
     Logger::flushStream();
     jobSys.joinMain();
 
-    LOG("Application", "%s application exit", appCI.applicationName);
+    LOG("Application", "{} application exit", appCI.applicationName);
     appInstance->exitApp();
 
     if (engineRenderer)

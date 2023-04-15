@@ -37,7 +37,7 @@ void ModuleSources::printDiagnostics(CXDiagnostic diagnostic, uint32 formatOptio
         return;
     }
 
-    LOG_WARN("Diagnostics", "%s%s", diagnosticLoc, diagnosticStr);
+    LOG_WARN("Diagnostics", "{}{}", diagnosticLoc, diagnosticStr);
     for (uint32 i = 0; i < childDiagsNum; ++i)
     {
         CXDiagnostic childDiagnostic = clang_getDiagnosticInSet(childDiags, i);
@@ -91,11 +91,11 @@ ModuleSources::ModuleSources()
     ProgramCmdLine::get().getArg(intermediateDir, ReflectToolCmdLineConst::INTERMEDIATE_DIR);
     ProgramCmdLine::get().getArg(includesFile, ReflectToolCmdLineConst::INCLUDE_LIST_FILE);
     ProgramCmdLine::get().getArg(compileDefsFile, ReflectToolCmdLineConst::COMPILE_DEF_LIST_FILE);
-    LOG_DEBUG("ModuleReflectTool", "Reflecting source from %s", srcDir);
+    LOG_DEBUG("ModuleReflectTool", "Reflecting source from {}", srcDir);
 
     fatalAssertf(
         (FileSystemFunctions::fileExists(includesFile.getChar()) && FileSystemFunctions::fileExists(compileDefsFile.getChar())),
-        "Includes list file(%s) or Definitions(%s) list file does not exists, Configuring cmake "
+        "Includes list file({}) or Definitions({}) list file does not exists, Configuring cmake "
         "will fix this!",
         includesFile, compileDefsFile
     );
@@ -104,7 +104,7 @@ ModuleSources::ModuleSources()
     // Read includes file
     if (!FileHelper::readString(content, includesFile))
     {
-        fatalAssertf(!"Failed to read include file", "Failed to read include file from %s", includesFile);
+        fatalAssertf(!"Failed to read include file", "Failed to read include file from {}", includesFile);
     }
     for (const StringView &includeList : content.splitLines())
     {
@@ -119,7 +119,7 @@ ModuleSources::ModuleSources()
     // Read compile defines
     if (!FileHelper::readString(content, compileDefsFile))
     {
-        fatalAssertf(!"Failed to read compile definitions", "Failed to read compile definitions from %s", compileDefsFile);
+        fatalAssertf(!"Failed to read compile definitions", "Failed to read compile definitions from {}", compileDefsFile);
     }
     // Parsing compile definitions
     for (const String &compileDefsList : content.splitLines())
@@ -274,7 +274,7 @@ bool ModuleSources::compileAllSources(bool bFullCompile /*= false*/)
 
             if (unit == nullptr)
             {
-                LOG_ERROR("CompileSource", "Unable to parse header %s. Quitting.", headerFile.getFullPath());
+                LOG_ERROR("CompileSource", "Unable to parse header {}. Quitting.", headerFile.getFullPath());
                 bAllClear = false;
             }
             else
@@ -285,7 +285,7 @@ bool ModuleSources::compileAllSources(bool bFullCompile /*= false*/)
                     uint32 diagnosticsNum = clang_getNumDiagnostics(unit);
                     for (uint32 diagIdx = 0; diagIdx < diagnosticsNum; ++diagIdx)
                     {
-                        LOG_WARN("Diagnostics", "------ Diagnostics %u ------", diagIdx);
+                        LOG_WARN("Diagnostics", "------ Diagnostics {} ------", diagIdx);
                         auto diagnostic = clang_getDiagnostic(unit, diagIdx);
                         printDiagnostics(diagnostic, formatOptions, diagIdx);
                         clang_disposeDiagnostic(diagnostic);
@@ -328,14 +328,14 @@ void ModuleSources::injectGeneratedFiles(const std::vector<const SourceInformati
             for (uint32 j = i; j < sortedSources.size(); j += uint32(genFiles.size()))
             {
                 includeStmts.emplace_back(
-                    StringFormat::printf(TCHAR("#include \"%s\""), PathFunctions::fileOrDirectoryName(sortedSources[j]->generatedTUPath))
+                    STR_FORMAT(TCHAR("#include \"{}\""), PathFunctions::fileOrDirectoryName(sortedSources[j]->generatedTUPath))
                 );
             }
 
             String genFileContent = String::join(includeStmts.cbegin(), includeStmts.cend(), LINE_FEED_TCHAR);
             if (!FileHelper::writeString(genFileContent, genFiles[i]))
             {
-                LOG_ERROR("GeneratingBuildTU", "Failed to write file %s", genFiles[i]);
+                LOG_ERROR("GeneratingBuildTU", "Failed to write file {}", genFiles[i]);
                 std::exit(-1);
                 return;
             }

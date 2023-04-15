@@ -62,7 +62,7 @@ using CleanType = UnderlyingType<Type>;
 //
 //  Test codes below
 //
-//  LOG("Test", "Test type info \n%s\n%s\n%s\n%s\n%s\n%s"
+//  LOG("Test", "Test type info \n{}\n{}\n{}\n{}\n{}\n{}"
 //      // Referenced variable is const
 //      , *typeInfoFrom<const int32&>()
 //      , *typeInfoFrom<const int32&&>()
@@ -74,7 +74,7 @@ using CleanType = UnderlyingType<Type>;
 //      , *typeInfoFrom<int32 const* const&>()
 //      , *typeInfoFrom<int32 const* const&&>()
 //  );
-//  LOG("Test", "Test type info %d, %d, %d"
+//  LOG("Test", "Test type info {}, {}, {}"
 //      , typeInfoFrom<const int32&>() == typeInfoFrom<const int32&&>()
 //      , typeInfoFrom<const int32*>() == typeInfoFrom<int32 const* const&>()
 //      , typeInfoFrom<int32 const* const&>() == typeInfoFrom<int32 const* const&&>()

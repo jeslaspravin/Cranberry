@@ -108,7 +108,7 @@ private:
         if (!Math::isPowOf2(offsetAlignment))
         {
             LOG_WARN(
-                "VulkanMemoryAllocator", "Offset alignment %d is not an exponent of 2, \
+                "VulkanMemoryAllocator", "Offset alignment {} is not an exponent of 2, \
                  Memory allocator is not developed with that into consideration",
                 offsetAlignment
             );
@@ -466,7 +466,7 @@ private:
 
         fatalAssertf(allocatingSize != 0, "Out of Memory");
 
-        LOG_DEBUG("VulkanChunkAllocator", "Allocating a chunk of size %d", allocatingSize);
+        LOG_DEBUG("VulkanChunkAllocator", "Allocating a chunk of size {}", allocatingSize);
 
         MEMORY_ALLOCATE_INFO(allocateInfo);
         allocateInfo.allocationSize = allocatingSize;
@@ -476,8 +476,7 @@ private:
         VkDeviceMemory memory;
         VkResult result = device->vkAllocateMemory(VulkanGraphicsHelper::getDevice(device), &allocateInfo, nullptr, &memory);
         device->debugGraphics()->markObject(
-            uint64(memory),
-            StringFormat::printf(TCHAR("AllocatedMemChunk(%s)"), device->memoryTypeIdxToString(tIndex)), VK_OBJECT_TYPE_DEVICE_MEMORY
+            uint64(memory), STR_FORMAT(TCHAR("AllocatedMemChunk({})"), device->memoryTypeIdxToString(tIndex)), VK_OBJECT_TYPE_DEVICE_MEMORY
             );
 
         if (result == VK_ERROR_OUT_OF_DEVICE_MEMORY || result == VK_ERROR_OUT_OF_HOST_MEMORY)
@@ -517,7 +516,7 @@ private:
     }
 };
 
-#if DEBUG_BUILD
+#if DEBUG_VALIDATIONS
 class TestChunk
 {
 public:
@@ -535,12 +534,12 @@ public:
                 failedAny |= true;
                 LOG_ERROR(
                     "TestChunk",
-                    "unexpected behavior(VulkanMemoryAllocator) : block offset %d expected "
-                    "offset %d",
+                    "unexpected behavior(VulkanMemoryAllocator) : block offset {} expected "
+                    "offset {}",
                     c4.getBlockByteOffset(block1), 0
                 );
             }
-            LOG_DEBUG("TestChunk", "%d - Allocated %d heap left", aligned4, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "{} - Allocated {} heap left", aligned4, c4.availableHeapSize());
             VulkanMemoryBlock *oomBlock = c4.allocateBlock(40, 1);
             if (oomBlock)
             {
@@ -555,12 +554,12 @@ public:
                 failedAny |= true;
                 LOG_ERROR(
                     "TestChunk",
-                    "unexpected behavior(VulkanMemoryAllocator) : block offset %d expected "
-                    "offset %d",
+                    "unexpected behavior(VulkanMemoryAllocator) : block offset {} expected "
+                    "offset {}",
                     c4.getBlockByteOffset(block2), 4
                 );
             }
-            LOG_DEBUG("TestChunk", "%d - Allocated %d heap left", aligned28, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "{} - Allocated {} heap left", aligned28, c4.availableHeapSize());
             oomBlock = c4.allocateBlock(4, 1);
             if (oomBlock)
             {
@@ -576,11 +575,11 @@ public:
                 LOG_ERROR(
                     "TestChunk",
                     "unexpected behavior(VulkanMemoryAllocator) : Freeing only 1 block of fully allocated chunk, "
-                    "Expected next index %d Found next index %d",
+                    "Expected next index {} Found next index {}",
                     VulkanMemoryBlock::INVALID_BLOCK_IDX, block1->nextFreeIndex
                 );
             }
-            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", aligned4, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "{} - deallocated {} heap left", aligned4, c4.availableHeapSize());
 
             block1 = c4.allocateBlock(aligned4, 1);
             if (c4.getBlockByteOffset(block1) != 0)
@@ -588,12 +587,12 @@ public:
                 failedAny |= true;
                 LOG_ERROR(
                     "TestChunk",
-                    "unexpected behavior(VulkanMemoryAllocator) : block offset %d expected "
-                    "offset %d",
+                    "unexpected behavior(VulkanMemoryAllocator) : block offset {} expected "
+                    "offset {}",
                     c4.getBlockByteOffset(block1), 0
                 );
             }
-            LOG_DEBUG("TestChunk", "%d - Allocated %d heap left", aligned4, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "{} - Allocated {} heap left", aligned4, c4.availableHeapSize());
 
             c4.freeBlock(block2, aligned28);
             if ((c4.idxToBlockIdx(block2->nextFreeIndex) - c4.getBlockIndex(block2)) != 1)
@@ -601,30 +600,30 @@ public:
                 failedAny |= true;
                 LOG_ERROR(
                     "TestChunk",
-                    "unexpected behavior(VulkanMemoryAllocator) : Freeing must link free list, Expected next index %d Found next index %d",
+                    "unexpected behavior(VulkanMemoryAllocator) : Freeing must link free list, Expected next index {} Found next index {}",
                     c4.getBlockIndex(block2) + 1, c4.idxToBlockIdx(block2->nextFreeIndex)
                 );
             }
-            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", aligned28, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "{} - deallocated {} heap left", aligned28, c4.availableHeapSize());
 
             block2 = c4.allocateBlock(12, 1);
-            LOG_DEBUG("TestChunk", "%d - Allocated %d heap left", c4.alignSize(12), c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "{} - Allocated {} heap left", c4.alignSize(12), c4.availableHeapSize());
             VulkanMemoryBlock *block3 = c4.allocateBlock(4, 1);
-            LOG_DEBUG("TestChunk", "%d - Allocated %d heap left", c4.alignSize(4), c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "{} - Allocated {} heap left", c4.alignSize(4), c4.availableHeapSize());
             VulkanMemoryBlock *block4 = c4.allocateBlock(12, 1);
-            LOG_DEBUG("TestChunk", "%d - Allocated %d heap left", c4.alignSize(12), c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "{} - Allocated {} heap left", c4.alignSize(12), c4.availableHeapSize());
             c4.freeBlock(block2, c4.alignSize(12));
-            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", c4.alignSize(12), c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "{} - deallocated {} heap left", c4.alignSize(12), c4.availableHeapSize());
             c4.freeBlock(block3, c4.alignSize(4));
-            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", c4.alignSize(4), c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "{} - deallocated {} heap left", c4.alignSize(4), c4.availableHeapSize());
             block2 = c4.allocateBlock(4, 1);
-            LOG_DEBUG("TestChunk", "%d - Allocated %d heap left", c4.alignSize(4), c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "{} - Allocated {} heap left", c4.alignSize(4), c4.availableHeapSize());
             block3 = c4.allocateBlock(4, 1);
-            LOG_DEBUG("TestChunk", "%d - Allocated %d heap left", c4.alignSize(4), c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "{} - Allocated {} heap left", c4.alignSize(4), c4.availableHeapSize());
             VulkanMemoryBlock *block5 = c4.allocateBlock(4, 1);
-            LOG_DEBUG("TestChunk", "%d - Allocated %d heap left", c4.alignSize(4), c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "{} - Allocated {} heap left", c4.alignSize(4), c4.availableHeapSize());
             VulkanMemoryBlock *block6 = c4.allocateBlock(4, 1);
-            LOG_DEBUG("TestChunk", "%d - Allocated %d heap left", c4.alignSize(4), c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "{} - Allocated {} heap left", c4.alignSize(4), c4.availableHeapSize());
 
             if (!block2 || !block3 || !block4 || !block6)
             {
@@ -636,12 +635,12 @@ public:
             }
 
             c4.freeBlock(block2, c4.alignSize(4));
-            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", c4.alignSize(4), c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "{} - deallocated {} heap left", c4.alignSize(4), c4.availableHeapSize());
             block2 = nullptr;
             c4.freeBlock(block5, c4.alignSize(4));
-            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", c4.alignSize(4), c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "{} - deallocated {} heap left", c4.alignSize(4), c4.availableHeapSize());
             c4.freeBlock(block6, c4.alignSize(4));
-            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", c4.alignSize(4), c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "{} - deallocated {} heap left", c4.alignSize(4), c4.availableHeapSize());
             block6 = nullptr;
 
             block5 = c4.allocateBlock(8, 1);
@@ -650,61 +649,61 @@ public:
                 failedAny |= true;
                 LOG_ERROR(
                     "TestChunk",
-                    "unexpected behavior(VulkanMemoryAllocator) : block offset %d expected "
-                    "offset %d",
+                    "unexpected behavior(VulkanMemoryAllocator) : block offset {} expected "
+                    "offset {}",
                     c4.getBlockByteOffset(block5), 12
                 );
             }
-            LOG_DEBUG("TestChunk", "%d - Allocated %d heap left", c4.alignSize(8), c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "{} - Allocated {} heap left", c4.alignSize(8), c4.availableHeapSize());
             c4.freeBlock(block5, c4.alignSize(8));
-            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", c4.alignSize(8), c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "{} - deallocated {} heap left", c4.alignSize(8), c4.availableHeapSize());
             c4.freeBlock(block4, c4.alignSize(12));
-            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", c4.alignSize(12), c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "{} - deallocated {} heap left", c4.alignSize(12), c4.availableHeapSize());
             c4.freeBlock(block1, c4.alignSize(4));
-            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", c4.alignSize(4), c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "{} - deallocated {} heap left", c4.alignSize(4), c4.availableHeapSize());
             c4.freeBlock(block3, c4.alignSize(4));
-            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", c4.alignSize(4), c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "{} - deallocated {} heap left", c4.alignSize(4), c4.availableHeapSize());
 
             block1 = c4.allocateBlock(4, 1);
             block2 = c4.allocateBlock(4, 1);
             block3 = c4.allocateBlock(4, 1);
             block4 = c4.allocateBlock(4, 1);
             block5 = c4.allocateBlock(4, 1);
-            LOG_DEBUG("TestChunk", "%d - Allocated %d heap left", 5 * c4.alignSize(4), c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "{} - Allocated {} heap left", 5 * c4.alignSize(4), c4.availableHeapSize());
             c4.freeBlock(block1, c4.alignSize(4));
             block1 = nullptr;
             c4.freeBlock(block3, c4.alignSize(4));
             block3 = nullptr;
-            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", 2 * c4.alignSize(4), c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "{} - deallocated {} heap left", 2 * c4.alignSize(4), c4.availableHeapSize());
 
             block6 = c4.allocateBlock(12, 1);
-            LOG_DEBUG("TestChunk", "%d - Allocated %d heap left", c4.alignSize(12), c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "{} - Allocated {} heap left", c4.alignSize(12), c4.availableHeapSize());
             if (!block6 || c4.getBlockByteOffset(block6) != 20)
             {
                 failedAny |= true;
                 LOG_ERROR(
                     "TestChunk",
-                    "unexpected behavior(VulkanMemoryAllocator) : block offset %d expected "
-                    "offset %d",
+                    "unexpected behavior(VulkanMemoryAllocator) : block offset {} expected "
+                    "offset {}",
                     c4.getBlockByteOffset(block6), 20
                 );
             }
 
             c4.freeBlock(block2, c4.alignSize(4));
-            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", c4.alignSize(4), c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "{} - deallocated {} heap left", c4.alignSize(4), c4.availableHeapSize());
             c4.freeBlock(block4, c4.alignSize(4));
-            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", c4.alignSize(4), c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "{} - deallocated {} heap left", c4.alignSize(4), c4.availableHeapSize());
             c4.freeBlock(block5, c4.alignSize(4));
-            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", c4.alignSize(4), c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "{} - deallocated {} heap left", c4.alignSize(4), c4.availableHeapSize());
             c4.freeBlock(block6, c4.alignSize(12));
-            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", c4.alignSize(12), c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "{} - deallocated {} heap left", c4.alignSize(12), c4.availableHeapSize());
             if (c4.availableHeapSize() != 32)
             {
                 failedAny |= true;
                 LOG_ERROR(
                     "TestChunk",
-                    "unexpected behavior(VulkanMemoryAllocator) : Heap size %d expected size "
-                    "%d",
+                    "unexpected behavior(VulkanMemoryAllocator) : Heap size {} expected size "
+                    "{}",
                     c4.availableHeapSize(), 32
                 );
             }
@@ -732,7 +731,7 @@ public:
     void initAllocator() override
     {
         LOG_DEBUG("VulkanMemoryAllocator", "Started");
-#if DEBUG_BUILD
+#if DEBUG_VALIDATIONS
         TestChunk::testChunk();
 #endif
         // to handle offset alignment
@@ -779,14 +778,14 @@ public:
 
         for (const std::pair<const uint32, VkMemoryPropertyFlags> &indexPropPair : availableMemoryProps)
         {
-            LOG_DEBUG("VulkanMemoryAllocator", "Freeing %dBytes of linear memory", linearChunkAllocators[indexPropPair.first]->allocatorSize());
+            LOG_DEBUG("VulkanMemoryAllocator", "Freeing {}Bytes of linear memory", linearChunkAllocators[indexPropPair.first]->allocatorSize());
             delete linearChunkAllocators[indexPropPair.first];
             linearChunkAllocators[indexPropPair.first] = nullptr;
 
             if (optimalChunkAllocators[indexPropPair.first] != nullptr)
             {
                 LOG_DEBUG(
-                    "VulkanMemoryAllocator", "Freeing %dBytes of optimal memory", optimalChunkAllocators[indexPropPair.first]->allocatorSize()
+                    "VulkanMemoryAllocator", "Freeing {}Bytes of optimal memory", optimalChunkAllocators[indexPropPair.first]->allocatorSize()
                 );
                 delete optimalChunkAllocators[indexPropPair.first];
                 optimalChunkAllocators[indexPropPair.first] = nullptr;

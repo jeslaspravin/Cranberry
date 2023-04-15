@@ -118,7 +118,7 @@ constexpr uint32 ShaderParameterUtility::getArrayElementCount(
         }
         else if (!SpecializationConstUtility::asValue(count, specializationConsts[arraySize[i].stageIdx][arraySize[i].dimension]))
         {
-            LOG_ERROR("ShaderParameters", "Specialized %s array count is invalid", paramName);
+            LOG_ERROR("ShaderParameters", "Specialized {} array count is invalid", paramName);
         }
 
         linearCount *= count;

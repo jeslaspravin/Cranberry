@@ -135,7 +135,7 @@ CONST_EXPR void replaceInPlace(CharType *replaceIn, SizeT replaceFrom, SizeT rep
     }
 
     // Ensure inputs are valid
-#if DEBUG_BUILD
+#if DEBUG_VALIDATIONS
     SizeT replaceInLen = length(replaceIn);
     SizeT replaceWithLen = length(replaceWith);
     if (replaceFrom >= replaceInLen || (replaceFrom + replaceLen) > replaceInLen || replaceLen >= replaceWithLen)
@@ -159,7 +159,7 @@ replace(const CharType *replaceIn, SizeT replaceFrom, SizeT replaceLen, const Ch
 
     SizeT replaceInLen = length(replaceIn);
 
-#if DEBUG_BUILD
+#if DEBUG_VALIDATIONS
     // Ensure inputs are valid
     if (replaceFrom >= replaceInLen && (replaceFrom + replaceLen) > replaceInLen)
     {
@@ -192,7 +192,7 @@ CONST_EXPR void replaceAllInPlace(CharType *replaceIn, const CharType *from, con
     }
 
     SizeT replaceFromLen = length(from);
-#if DEBUG_BUILD
+#if DEBUG_VALIDATIONS
     SizeT replaceToLen = length(to);
     if (replaceFromLen != replaceToLen)
     {

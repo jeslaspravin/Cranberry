@@ -64,7 +64,7 @@ ObjectArchive &World::serialize(ObjectArchive &ar)
         uint32 dataVersion = ar.getCustomVersion(uint32(WORLD_SERIALIZER_CUSTOM_VERSION_ID));
         // This must crash
         fatalAssertf(
-            WORLD_SERIALIZER_CUTOFF_VERSION >= dataVersion, "Version of World %u loaded from package %s is outdated, Minimum supported %u!",
+            WORLD_SERIALIZER_CUTOFF_VERSION >= dataVersion, "Version of World {} loaded from package {} is outdated, Minimum supported {}!",
             dataVersion, getObjectData().path, WORLD_SERIALIZER_CUTOFF_VERSION
         );
     }
@@ -584,7 +584,7 @@ cbe::Actor *World::setupActorInternal(ActorPrefab *actorPrefab)
         if (actorTransformComp != actor->getRootComponent())
         {
             debugAssertf(
-                actorTransformComp->getAttachedTo(), "TransformComponent %s is not root and not attached!",
+                actorTransformComp->getAttachedTo(), "TransformComponent {} is not root and not attached!",
                 actorTransformComp->getObjectData().name
             );
             tfAttachmentChanged(actorTransformComp, actorTransformComp->getAttachedTo());

@@ -40,8 +40,8 @@ void VulkanGraphicsInstance::load()
     uint32 apiVersion;
     Vk::vkEnumerateInstanceVersion(&apiVersion);
     const uint32 hVersion = VK_HEADER_VERSION_COMPLETE;
-    LOG_DEBUG("Vulkan", "Header version %d.%d.%d", VK_VERSION_MAJOR(hVersion), VK_VERSION_MINOR(hVersion), VK_VERSION_PATCH(hVersion));
-    LOG_DEBUG("Vulkan", "API version %d.%d.%d", VK_VERSION_MAJOR(apiVersion), VK_VERSION_MINOR(apiVersion), VK_VERSION_PATCH(apiVersion));
+    LOG_DEBUG("Vulkan", "Header version {}.{}.{}", VK_VERSION_MAJOR(hVersion), VK_VERSION_MINOR(hVersion), VK_VERSION_PATCH(hVersion));
+    LOG_DEBUG("Vulkan", "API version {}.{}.{}", VK_VERSION_MAJOR(apiVersion), VK_VERSION_MINOR(apiVersion), VK_VERSION_PATCH(apiVersion));
 
     uint32 extensionCounts;
     VkResult result = Vk::vkEnumerateInstanceExtensionProperties(nullptr, (uint32_t *)&extensionCounts, nullptr);
@@ -52,7 +52,7 @@ void VulkanGraphicsInstance::load()
 
     availableInstanceExtensions.resize(extensionCounts);
     Vk::vkEnumerateInstanceExtensionProperties(nullptr, (uint32_t *)&extensionCounts, availableInstanceExtensions.data());
-    LOG_DEBUG("Vulkan", "Fetched %d instance extension properties", extensionCounts);
+    LOG_DEBUG("Vulkan", "Fetched {} instance extension properties", extensionCounts);
 
     createVulkanInstance();
     loadInstanceFunctions();
@@ -139,7 +139,7 @@ void VulkanGraphicsInstance::createVulkanInstance()
             layersStr.append(TCHAR("\n\t"));
             layersStr.append(UTF8_TO_TCHAR(layer));
         }
-        LOG_ERROR("Vulkan", "Requested layer/s not available%s", layersStr.getChar());
+        LOG_ERROR("Vulkan", "Requested layer/s not available{}", layersStr.getChar());
     }
     fatalAssertf(result == VkResult::VK_SUCCESS && vulkanInstance != nullptr, "Could not create vulkan instance");
 }
@@ -171,7 +171,7 @@ bool VulkanGraphicsInstance::collectInstanceExtensions(std::vector<const char *>
         if (extensionsString.find(mandatoryExt, 0) != String::npos)
         {
             extensions.push_back(mandatoryExt);
-            LOG_DEBUG("Vulkan", "Loading instance extension %s", mandatoryExt);
+            LOG_DEBUG("Vulkan", "Loading instance extension {}", mandatoryExt);
         }
     }
 
@@ -247,7 +247,7 @@ void VulkanGraphicsInstance::createVulkanDevice(const WindowCanvasRef &windowCan
     selectedDevice = std::move(vulkanDevices[0]);
     vulkanDevices.clear();
 
-    LOG_DEBUG("Vulkan", "Selected device %s", selectedDevice.getDeviceName().getChar());
+    LOG_DEBUG("Vulkan", "Selected device {}", selectedDevice.getDeviceName().getChar());
 }
 
 void VulkanGraphicsInstance::updateSurfaceDependents()

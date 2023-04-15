@@ -80,7 +80,7 @@ void fillDescriptorsSet(
             auto itr = std::as_const(ShaderParameterUtility::unboundArrayResourcesCount()).find(attribName);
             fatalAssertf(
                 itr != ShaderParameterUtility::unboundArrayResourcesCount().cend(),
-                "Unbound image(texel) buffer array is not allowed for parameter %s", UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str())
+                "Unbound image(texel) buffer array is not allowed for parameter {}", UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str())
             );
             descCount = itr->second;
             runtimeArray[descriptorInfo.data.binding] = true;
@@ -120,7 +120,7 @@ void fillDescriptorsSet(
             auto itr = std::as_const(ShaderParameterUtility::unboundArrayResourcesCount()).find(attribName);
             fatalAssertf(
                 itr != ShaderParameterUtility::unboundArrayResourcesCount().cend(),
-                "Unbound sampled(texel) buffer array is not allowed for parameter %s", UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str())
+                "Unbound sampled(texel) buffer array is not allowed for parameter {}", UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str())
             );
             descCount = itr->second;
             runtimeArray[descriptorInfo.data.binding] = true;
@@ -160,7 +160,7 @@ void fillDescriptorsSet(
             auto itr = std::as_const(ShaderParameterUtility::unboundArrayResourcesCount()).find(attribName);
             fatalAssertf(
                 itr != ShaderParameterUtility::unboundArrayResourcesCount().cend(),
-                "Unbound array of images or imageArray is not allowed for parameter %s", UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str())
+                "Unbound array of images or imageArray is not allowed for parameter {}", UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str())
             );
             descCount = itr->second;
             runtimeArray[descriptorInfo.data.binding] = true;
@@ -200,7 +200,7 @@ void fillDescriptorsSet(
             auto itr = std::as_const(ShaderParameterUtility::unboundArrayResourcesCount()).find(attribName);
             fatalAssertf(
                 itr != ShaderParameterUtility::unboundArrayResourcesCount().cend(),
-                "Unbound array of textures or textureArray is not allowed for parameter %s", UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str())
+                "Unbound array of textures or textureArray is not allowed for parameter {}", UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str())
             );
             descCount = itr->second;
             runtimeArray[descriptorInfo.data.binding] = true;
@@ -240,7 +240,7 @@ void fillDescriptorsSet(
             auto itr = std::as_const(ShaderParameterUtility::unboundArrayResourcesCount()).find(attribName);
             fatalAssertf(
                 itr != ShaderParameterUtility::unboundArrayResourcesCount().cend(),
-                "Unbound array of sampled textures or sampled textureArray is not allowed for parameter %s",
+                "Unbound array of sampled textures or sampled textureArray is not allowed for parameter {}",
                 UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str())
             );
             descCount = itr->second;
@@ -952,7 +952,7 @@ void VulkanShaderParameters::init()
             else
             {
                 LOG_ERROR(
-                    "VulkanShaderParameters", "Allocation of descriptors set %d failed %s", descriptorsBody.set, getResourceName().getChar()
+                    "VulkanShaderParameters", "Allocation of descriptors set {} failed {}", descriptorsBody.set, getResourceName().getChar()
                 );
                 return;
             }

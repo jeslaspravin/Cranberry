@@ -33,7 +33,7 @@
  * public:
  *     virtual void printType(TypeToType<PrintType>) const
  *     {
- *         LOG("ScatterGenTest", "Type Info : %s", *typeInfoFrom<PrintType>());
+ *         LOG("ScatterGenTest", "Type Info : {}", *typeInfoFrom<PrintType>());
  *     }
  * };
  *
@@ -43,7 +43,7 @@
  * public:
  *     void printType(TypeToType<PrintType>) const
  *     {
- *         LOG("LinearGenTest", "Type Info : %s", *typeInfoFrom<PrintType>());
+ *         LOG("LinearGenTest", "Type Info : {}", *typeInfoFrom<PrintType>());
  *     }
  * };
  *

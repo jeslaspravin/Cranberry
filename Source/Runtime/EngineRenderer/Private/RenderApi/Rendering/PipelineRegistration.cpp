@@ -38,7 +38,7 @@ FORCE_INLINE PipelineBase *GraphicsPipelineFactoryRegistrant::operator() (
     }
     else
     {
-        fatalAssertf(getter.isBound(), "Invalid GraphicsPipelineConfig getter for shader %s", args.pipelineShader->getResourceName().getChar());
+        fatalAssertf(getter.isBound(), "Invalid GraphicsPipelineConfig getter for shader {}", args.pipelineShader->getResourceName().getChar());
         String pipelineName;
         pipeline = graphicsHelper->createGraphicsPipeline(graphicsInstance, getter.invoke(pipelineName, args.pipelineShader));
         pipeline->setResourceName(pipelineName);
@@ -92,7 +92,7 @@ PipelineFactory::create(IGraphicsInstance *graphicsInstance, const GraphicsHelpe
     {
         auto factoryItr = graphicsPipelineFactoriesRegistry().find(StringID(args.pipelineShader->getResourceName()));
         fatalAssertf(
-            factoryItr != graphicsPipelineFactoriesRegistry().end(), "Failed finding factory to create graphics pipeline for shader %s",
+            factoryItr != graphicsPipelineFactoriesRegistry().end(), "Failed finding factory to create graphics pipeline for shader {}",
             args.pipelineShader->getResourceName().getChar()
         );
 
@@ -102,7 +102,7 @@ PipelineFactory::create(IGraphicsInstance *graphicsInstance, const GraphicsHelpe
     {
         auto factoryItr = computePipelineFactoriesRegistry().find(StringID(args.pipelineShader->getResourceName()));
         fatalAssertf(
-            factoryItr != computePipelineFactoriesRegistry().end(), "Failed finding factory to create compute pipeline for shader %s",
+            factoryItr != computePipelineFactoriesRegistry().end(), "Failed finding factory to create compute pipeline for shader {}",
             args.pipelineShader->getResourceName().getChar()
         );
 

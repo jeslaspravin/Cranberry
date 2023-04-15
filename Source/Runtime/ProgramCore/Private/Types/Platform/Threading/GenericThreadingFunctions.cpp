@@ -20,30 +20,16 @@ namespace ThreadingHelpers
 
 void INTERNAL_printSystemThreadingInfo(SystemProcessorsInfo processorInfo, SystemProcessorsCacheInfo cacheInfo)
 {
-    const TChar *fmtStrProcInfo = TCHAR(
-    "\n+=======================================+\n"\
-    "|PROCESSOR INFO:                           \n"\
-    "|    Logical group count: %u               \n"\
-    "|    Physical processor count: %u          \n"\
-    "|    Core count: %u                        \n"\
-    "|    Logical processor count: %u           \n"\
-    "+=======================================+"
-    );
-    LOG("PlatformThreading", fmtStrProcInfo, processorInfo.logicalGroupsCount, processorInfo.physicalProcessorCount, processorInfo.coresCount,
-        processorInfo.logicalProcessorsCount);
+    LOG("PlatformThreading",
+        "\n+=======================================+\n"
+        "|PROCESSOR INFO:                           \n"
+        "|    Logical group count: {}               \n"
+        "|    Physical processor count: {}          \n"
+        "|    Core count: {}                        \n"
+        "|    Logical processor count: {}           \n"
+        "+=======================================+",
+        processorInfo.logicalGroupsCount, processorInfo.physicalProcessorCount, processorInfo.coresCount, processorInfo.logicalProcessorsCount);
 
-    const TChar *fmtStrCacheInfo = TCHAR(
-    "\n+========================================================================================+\n"\
-    "|PROCESSOR CACHE INFO:                                                                      \n"\
-    "|    Cache Line size: %u                                                                    \n"\
-    "|    L1:                                                                                    \n"\
-    "|%s                                                                                         \n"\
-    "|    L2:                                                                                    \n"\
-    "|%s                                                                                         \n"\
-    "|    L3:                                                                                    \n"\
-    "|%s                                                                                         \n"\
-    "+========================================================================================+"
-    );
     auto printCacheInfo = [](SystemProcessorsCacheInfo::CacheUnit cacheUnit, uint32 puShareCount, uint32 logicalProcessorCount) -> String
     {
         if (cacheUnit.bSplitDesign)
@@ -51,26 +37,34 @@ void INTERNAL_printSystemThreadingInfo(SystemProcessorsInfo processorInfo, Syste
             uint32 totalCacheSize
                 = ((cacheUnit.caches.iCacheByteSize + cacheUnit.caches.dCacheByteSize + cacheUnit.caches.tCacheByteSize) / puShareCount)
                   * logicalProcessorCount;
-            const TChar *localFmtStr = TCHAR(
-            "        Cache Unit Size: [Instruction:%ubytes Data:%ubytes Trace:%ubytes]\n"\
-            "|        Total Cache Size: %ubytes"
-            );
-            return StringFormat::printf(
-                localFmtStr, cacheUnit.caches.iCacheByteSize, cacheUnit.caches.dCacheByteSize, cacheUnit.caches.tCacheByteSize, totalCacheSize
+            return STR_FORMAT(
+                TCHAR(
+            "        Cache Unit Size: [Instruction:{}bytes Data:{}bytes Trace:{}bytes]\n"\
+            "|        Total Cache Size: {}bytes"
+            ), cacheUnit.caches.iCacheByteSize, cacheUnit.caches.dCacheByteSize, cacheUnit.caches.tCacheByteSize, totalCacheSize
             );
         }
         else
         {
             uint32 totalCacheSize = (cacheUnit.uCacheByteSize / puShareCount) * logicalProcessorCount;
-            const TChar *localFmtStr = TCHAR(
-            "        Cache Unit Size: %ubytes\n"\
-            "|        Total Cache Size: %ubytes"
-            );
-            return StringFormat::printf(localFmtStr, cacheUnit.uCacheByteSize, totalCacheSize);
+            return STR_FORMAT(TCHAR(
+            "        Cache Unit Size: {}bytes\n"\
+            "|        Total Cache Size: {}bytes"
+            ), cacheUnit.uCacheByteSize, totalCacheSize);
         }
     };
-    LOG("PlatformThreading", fmtStrCacheInfo, cacheInfo.cacheLineSize,
-        printCacheInfo(cacheInfo.unitL1ByteSize, cacheInfo.puSharingL1, processorInfo.logicalProcessorsCount),
+    LOG("PlatformThreading",
+        "\n+========================================================================================+\n"
+        "|PROCESSOR CACHE INFO:                                                                      \n"
+        "|    Cache Line size: {}                                                                    \n"
+        "|    L1:                                                                                    \n"
+        "|{}                                                                                         \n"
+        "|    L2:                                                                                    \n"
+        "|{}                                                                                         \n"
+        "|    L3:                                                                                    \n"
+        "|{}                                                                                         \n"
+        "+========================================================================================+",
+        cacheInfo.cacheLineSize, printCacheInfo(cacheInfo.unitL1ByteSize, cacheInfo.puSharingL1, processorInfo.logicalProcessorsCount),
         printCacheInfo(cacheInfo.unitL2ByteSize, cacheInfo.puSharingL2, processorInfo.logicalProcessorsCount),
         printCacheInfo(cacheInfo.unitL3ByteSize, cacheInfo.puSharingL3, processorInfo.logicalProcessorsCount));
 }

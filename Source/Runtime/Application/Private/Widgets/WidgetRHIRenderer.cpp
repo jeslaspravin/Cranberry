@@ -261,7 +261,7 @@ void WidgetRHIRenderer::drawWindowWidgetsRenderThread(
         renderManager->preparePipelineContext(&pipelineContext);
         if (!pipelineContext.getPipeline())
         {
-            LOG_ERROR("WidgetRHIRenderer", "Failed to find %s and its related pipelines!", pipelineContext.materialName);
+            LOG_ERROR("WidgetRHIRenderer", "Failed to find {} and its related pipelines!", pipelineContext.materialName);
             return;
         }
 

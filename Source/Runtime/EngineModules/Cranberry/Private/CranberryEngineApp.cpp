@@ -43,7 +43,7 @@ void CranberryEngineApp::onStart()
     fatalAssertf(engineClass, "Engine class not found!");
     // This will create and assigns gCBEEngine
     cbe::create(engineClass, TCHAR("CBEEngine"), coreObjModule->getTransientPackage(), cbe::EObjectFlagBits::ObjFlag_RootObject);
-    fatalAssertf(gCBEEngine, "Engine %s creation failed", engineClass->nameString);
+    fatalAssertf(gCBEEngine, "Engine {} creation failed", engineClass->nameString);
 
     gCBEEngine->onStart();
 
@@ -114,7 +114,7 @@ void tempTest()
 #if 0
     if (BasicPackagedObject *obj = cbe::load<BasicPackagedObject>(name))
     {
-        LOG("Test", "Loaded object %s nameVal %s", obj->getFullPath(), obj->nameVal);
+        LOG("Test", "Loaded object {} nameVal {}", obj->getFullPath(), obj->nameVal);
     }
     else
     {

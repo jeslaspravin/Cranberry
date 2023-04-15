@@ -40,7 +40,7 @@ class APPLICATION_EXPORT WidgetBase : public std::enable_shared_from_this<Widget
 {
 protected:
     WeakPtr<WidgetBase> parentWidget;
-#if DEBUG_BUILD
+#if DEBUG_VALIDATIONS
     // To ensure that rebuild never happens inside its rebuild
     bool bRebuildingGeom = false;
 #endif

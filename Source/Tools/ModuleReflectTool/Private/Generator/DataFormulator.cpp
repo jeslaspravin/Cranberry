@@ -43,8 +43,8 @@ void parseFailed(CXCursor cursor, SourceGeneratorContext *srcGenContext, const T
     // Just push and pop debug here to enable log level
     SCOPED_MUTE_LOG_SEVERITIES(Logger::Debug);
     LOG_ERROR(
-        "SourceGenerator", "%s error ParseFailed: %s() Reflection parsing failed - %s", clang_getCursorLocation(cursor), funcName,
-        StringFormat::printf(std::forward<FmtType>(fmtMsg), std::forward<Args>(args)...)
+        "SourceGenerator", "{} error ParseFailed: {}() Reflection parsing failed - {}", clang_getCursorLocation(cursor), funcName,
+        StringFormat::vFormat(std::forward<FmtType>(fmtMsg), std::forward<Args>(args)...)
     );
     srcGenContext->bGenerated = false;
 }
@@ -69,7 +69,7 @@ FORCE_INLINE void setTypeMetaInfo(MustacheContext &typeContext, const std::vecto
         metaFlagMasks.reserve(metaFlags.size());
         for (const String &metaFlag : metaFlags)
         {
-            metaFlagMasks.emplace_back(StringFormat::printf(TCHAR("INDEX_TO_FLAG_MASK(%s)"), metaFlag));
+            metaFlagMasks.emplace_back(STR_FORMAT(TCHAR("INDEX_TO_FLAG_MASK({})"), metaFlag));
         }
         typeContext.args[MetaFlagsTag.value] = String::join(metaFlagMasks.cbegin(), metaFlagMasks.cend(), TCHAR(" | "));
     }
@@ -199,7 +199,7 @@ void visitMemberField(CXCursor cursor, LocalContext &localCntxt)
 
     if (!ParserHelper::isValidFieldType(fieldType, cursor))
     {
-        parseFailed(cursor, localCntxt.srcGenContext, __func__, TCHAR("Invalid member field %s"), fieldName);
+        parseFailed(cursor, localCntxt.srcGenContext, __func__, TCHAR("Invalid member field {}"), fieldName);
         return;
     }
 
@@ -232,7 +232,7 @@ void visitMemberCppMethods(CXCursor cursor, LocalContext &localCntxt)
 
     if (!ParserHelper::isValidFunction(cursor))
     {
-        parseFailed(cursor, localCntxt.srcGenContext, __func__, TCHAR("Invalid function %s"), funcName);
+        parseFailed(cursor, localCntxt.srcGenContext, __func__, TCHAR("Invalid function {}"), funcName);
         return;
     }
 
@@ -242,7 +242,7 @@ void visitMemberCppMethods(CXCursor cursor, LocalContext &localCntxt)
     {
         parseFailed(
             cursor, localCntxt.srcGenContext, __func__,
-            TCHAR("Default functions/Constructors are not allowed for reflected types %s"), funcName
+            TCHAR("Default functions/Constructors are not allowed for reflected types {}"), funcName
             );
         return;
     }
@@ -332,7 +332,7 @@ void visitClassMember(CXCursor cursor, LocalContext &localCntxt)
         CXCursor baseClass = clang_getTypeDeclaration(clang_getCursorType(cursor));
         if (clang_Cursor_isNull(baseClass))
         {
-            parseFailed(cursor, localCntxt.srcGenContext, __func__, TCHAR("Cannot find declaration of base class %s"), cursorName);
+            parseFailed(cursor, localCntxt.srcGenContext, __func__, TCHAR("Cannot find declaration of base class {}"), cursorName);
         }
         else if (ParserHelper::isReflectedClass(baseClass))
         {
@@ -343,7 +343,7 @@ void visitClassMember(CXCursor cursor, LocalContext &localCntxt)
                 {
                     parseFailed(
                         cursor, localCntxt.srcGenContext, __func__,
-                        TCHAR("Multiple inheritance of %s found! and is not allowed for reflected classes, Use Interfaces "
+                        TCHAR("Multiple inheritance of {} found! and is not allowed for reflected classes, Use Interfaces "
                               "if possible"),
                         clang_getCursorSpelling(baseClass)
                     );
@@ -362,7 +362,7 @@ void visitClassMember(CXCursor cursor, LocalContext &localCntxt)
             {
                 parseFailed(
                     cursor, localCntxt.srcGenContext, __func__,
-                    TCHAR("Base class must be the first extended class[Before any interface %s]"), clang_getCursorSpelling(baseClass)
+                    TCHAR("Base class must be the first extended class[Before any interface {}]"), clang_getCursorSpelling(baseClass)
                     );
                 break;
             }
@@ -380,7 +380,7 @@ void visitClassMember(CXCursor cursor, LocalContext &localCntxt)
             }
             else
             {
-                parseFailed(cursor, localCntxt.srcGenContext, __func__, TCHAR("Invalid interface %s"), clang_getCursorSpelling(baseClass));
+                parseFailed(cursor, localCntxt.srcGenContext, __func__, TCHAR("Invalid interface {}"), clang_getCursorSpelling(baseClass));
             }
         }
         break;
@@ -509,7 +509,7 @@ void visitClasses(CXCursor cursor, SourceGeneratorContext *srcGenContext)
     {
         parseFailed(
             cursor, srcGenContext, __func__,
-            TCHAR("Interface %s must not be reflected, Remove GENERATED_CODES() and remove any field/function META_ANNOTATIONs"), clang_getTypeSpelling(clang_getCursorType(cursor))
+            TCHAR("Interface {} must not be reflected, Remove GENERATED_CODES() and remove any field/function META_ANNOTATIONs"), clang_getTypeSpelling(clang_getCursorType(cursor))
             );
         return;
     }
@@ -647,7 +647,7 @@ void generatePrereqTypes(CXType type, SourceGeneratorContext *srcGenContext)
         }
         else
         {
-            LOG_ERROR("SourceGenerator", "Type %s is not fully supported custom type", clang_getTypeSpelling(referredType));
+            LOG_ERROR("SourceGenerator", "Type {} is not fully supported custom type", clang_getTypeSpelling(referredType));
             srcGenContext->bGenerated = false;
             return;
         }
@@ -711,7 +711,7 @@ void generatePrereqTypes(CXType type, SourceGeneratorContext *srcGenContext)
         CXCursor typeDecl = clang_getTypeDeclaration(referredType);
         if (clang_Cursor_isNull(typeDecl))
         {
-            LOG_ERROR("SourceGenerator", "Type %s do not have any declaration and cannot be reflected", clang_getTypeSpelling(referredType));
+            LOG_ERROR("SourceGenerator", "Type {} do not have any declaration and cannot be reflected", clang_getTypeSpelling(referredType));
             srcGenContext->bGenerated = false;
             return;
         }
@@ -728,7 +728,7 @@ void generatePrereqTypes(CXType type, SourceGeneratorContext *srcGenContext)
         }
         else
         {
-            parseFailed(typeDecl, srcGenContext, __func__, TCHAR("Type %s declaration is not reflected"), clang_getTypeSpelling(referredType));
+            parseFailed(typeDecl, srcGenContext, __func__, TCHAR("Type {} declaration is not reflected"), clang_getTypeSpelling(referredType));
             return;
         }
     }

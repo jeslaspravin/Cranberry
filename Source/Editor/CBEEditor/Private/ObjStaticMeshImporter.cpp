@@ -61,13 +61,13 @@ void printErrors(uint32 errorCount, EImportErrorCodes errorCode)
     switch (errorCode)
     {
     case ObjSMImporterHelpers::DegenerateTextureCoords:
-        LOG_WARN("ObjStaticMeshImporter", "Incorrect texture coordinate, using world x, y as tangents[%u]", errorCount);
+        LOG_WARN("ObjStaticMeshImporter", "Incorrect texture coordinate, using world x, y as tangents[{}]", errorCount);
         break;
     case ObjSMImporterHelpers::DegenerateNormals:
-        LOG_WARN("ObjStaticMeshImporter", "Degenerate normals, Tangents might be invalid. Expect visual artifacts[%u]", errorCount);
+        LOG_WARN("ObjStaticMeshImporter", "Degenerate normals, Tangents might be invalid. Expect visual artifacts[{}]", errorCount);
         break;
     case ObjSMImporterHelpers::DegenerateTriangle:
-        LOG_WARN("ObjStaticMeshImporter", "Degenerate triangles found and they are removed[%u]", errorCount);
+        LOG_WARN("ObjStaticMeshImporter", "Degenerate triangles found and they are removed[{}]", errorCount);
         break;
     case ObjSMImporterHelpers::ErrorsCount:
     default:
@@ -733,21 +733,21 @@ std::vector<cbe::Object *> ObjStaticMeshImporter::tryImporting(const ImportOptio
     );
     if (!warning.empty())
     {
-        LOG_WARN("ObjStaticMeshImporter", "Tiny obj loader %s", UTF8_TO_TCHAR(warning.c_str()));
+        LOG_WARN("ObjStaticMeshImporter", "Tiny obj loader {}", UTF8_TO_TCHAR(warning.c_str()));
     }
     if (!error.empty())
     {
-        LOG_ERROR("ObjStaticMeshImporter", "Tiny obj loader %s", UTF8_TO_TCHAR(error.c_str()));
+        LOG_ERROR("ObjStaticMeshImporter", "Tiny obj loader {}", UTF8_TO_TCHAR(error.c_str()));
         return importedObjs;
     }
     if (!bIsSuccessful)
     {
-        LOG_ERROR("ObjStaticMeshImporter", "Loading %s with ObjStaticMeshImporter failed!", importOptions.filePath);
+        LOG_ERROR("ObjStaticMeshImporter", "Loading {} with ObjStaticMeshImporter failed!", importOptions.filePath);
         return importedObjs;
     }
     if (meshes.empty())
     {
-        LOG_WARN("ObjStaticMeshImporter", "No mesh found while loading %s with ObjStaticMeshImporter!", importOptions.filePath);
+        LOG_WARN("ObjStaticMeshImporter", "No mesh found while loading {} with ObjStaticMeshImporter!", importOptions.filePath);
         return importedObjs;
     }
 
@@ -792,7 +792,7 @@ std::vector<cbe::Object *> ObjStaticMeshImporter::tryImporting(const ImportOptio
     }
     if (bHadAnyErrors)
     {
-        LOG_WARN("ObjStaticMeshImporter", "Errors when loading mesh %s", importOptions.filePath);
+        LOG_WARN("ObjStaticMeshImporter", "Errors when loading mesh {}", importOptions.filePath);
         for (uint32 i = 0; i != ObjSMImporterHelpers::ErrorsCount; ++i)
         {
             if (meshIntermediate.errorsCounter[i] > 0)

@@ -334,7 +334,7 @@ public:
         }
         default:
         {
-            alertAlwaysf(!isSpaceCode(codepoint), "Unhandled space %lu", codepoint);
+            alertAlwaysf(!isSpaceCode(codepoint), "Unhandled space {}", codepoint);
             return false;
         }
         };
@@ -352,7 +352,7 @@ DEBUG_INLINE uint32 FontManagerContext::findFallbackCodepoint(FontIndex font)
             return codePt;
         }
     }
-    fatalAssertf(false, "No fall-back code point found for font at %d", font);
+    fatalAssertf(false, "No fall-back code point found for font at {}", font);
     return UNKNOWN_GLYPH;
 }
 
@@ -440,7 +440,7 @@ void FontManagerContext::updatePendingGlyphs()
     {
         alertAlwaysf(
             packedBins.size() <= ARRAY_LENGTH(textureAtlases),
-            "Packing fonts in unsuccessful in %d texture atlases extend atlas count if necessary", ARRAY_LENGTH(textureAtlases)
+            "Packing fonts in unsuccessful in {} texture atlases extend atlas count if necessary", ARRAY_LENGTH(textureAtlases)
         );
         static_assert(
             ARRAY_LENGTH(textureAtlases) <= std::numeric_limits<decltype(FontGlyph::texAtlasIdx)>::max(),
@@ -552,7 +552,7 @@ FontManager::FontIndex FontManager::addFont(const String &fontPath) const
     fontFile.setFileFlags(EFileFlags::Read);
     fontFile.setCreationAction(EFileFlags::OpenExisting);
     fontFile.setSharingMode(EFileSharing::ReadOnly);
-    fatalAssertf(fontFile.exists(), "Font file %s not found", fontPath);
+    fatalAssertf(fontFile.exists(), "Font file {} not found", fontPath);
 
     fontFile.openFile();
     std::vector<uint8> fontData;

@@ -155,7 +155,7 @@ int32 GraphicsPipelineBase::idxFromParam(GraphicsPipelineQueryParams queryParam)
     if (tempIdx >= config.allowedDrawModes.size())
     {
         LOG_WARN(
-            "GraphicsPipeline", "Not supported draw mode %d for pipeline of shader %s", tempIdx, pipelineShader->getResourceName().getChar()
+            "GraphicsPipeline", "Not supported draw mode {} for pipeline of shader {}", tempIdx, pipelineShader->getResourceName().getChar()
         );
     }
     idx += (tempIdx % config.allowedDrawModes.size()) * polyDeg;
@@ -170,7 +170,7 @@ int32 GraphicsPipelineBase::idxFromParam(GraphicsPipelineQueryParams queryParam)
     if (tempIdx >= config.supportedCullings.size())
     {
         LOG_WARN(
-            "GraphicsPipeline", "Not supported culling mode %d for pipeline of shader %s", tempIdx, pipelineShader->getResourceName().getChar()
+            "GraphicsPipeline", "Not supported culling mode {} for pipeline of shader {}", tempIdx, pipelineShader->getResourceName().getChar()
         );
     }
     idx += (tempIdx % config.supportedCullings.size()) * polyDeg;

@@ -59,7 +59,7 @@ LibHandle ModuleManager::loadFromAdditionalPaths(const TChar *modulePath) const
         }
         else
         {
-            LOG_WARN("ModuleManager", "Searched for %s library at %s", modulePath, lookAtPath);
+            LOG_WARN("ModuleManager", "Searched for {} library at {}", modulePath, lookAtPath);
         }
     }
     return nullptr;
@@ -69,7 +69,7 @@ ModulePtr ModuleManager::tryLoadModule(const TChar *moduleName)
 {
     ModulePtr retModule = nullptr;
 
-    LOG("ModuleManager", "Loading module %s", moduleName);
+    LOG("ModuleManager", "Loading module {}", moduleName);
 
     auto staticInitializerItr = getModuleInitializerList().find(moduleName);
     if (staticInitializerItr != getModuleInitializerList().end())
@@ -80,7 +80,7 @@ ModulePtr ModuleManager::tryLoadModule(const TChar *moduleName)
 #if STATIC_LINKED
     else
     {
-        fatalAssertf(!"Module initializer not found", "Module %s initializer not found", moduleName);
+        fatalAssertf(!"Module initializer not found", "Module {} initializer not found", moduleName);
         return existingModule;
     }
 #else  // STATIC_LINKED
@@ -89,14 +89,14 @@ ModulePtr ModuleManager::tryLoadModule(const TChar *moduleName)
         // Not specifying extension as they are auto appended by api to platform default
         LibHandle libPtr = getOrLoadLibrary(moduleName);
         // Check other paths for modules
-        fatalAssertf(libPtr, "Failed loading module %s", moduleName);
+        fatalAssertf(libPtr, "Failed loading module {}", moduleName);
 
         String moduleCreateFuncName = TCHAR("createModule_");
         moduleCreateFuncName.append(moduleName);
         Function<IModuleBase *> createFuncPtr(
             Function<IModuleBase *>::StaticDelegate(PlatformFunctions::getProcAddress(libPtr, moduleCreateFuncName.getChar()))
         );
-        fatalAssertf(createFuncPtr, "Failed find module create function(%s) for module %s", moduleCreateFuncName, moduleName);
+        fatalAssertf(createFuncPtr, "Failed find module create function({}) for module {}", moduleCreateFuncName, moduleName);
 
         retModule = ModulePtr(createFuncPtr());
     }
@@ -112,7 +112,7 @@ ModulePtr ModuleManager::tryLoadModule(const TChar *moduleName)
     }
     else
     {
-        LOG_ERROR("ModuleManager", "Failed loading module interface %s", moduleName);
+        LOG_ERROR("ModuleManager", "Failed loading module interface {}", moduleName);
     }
     return retModule;
 }
@@ -128,7 +128,7 @@ DEBUG_INLINE bool ModuleManager::tryUnloadModule(const TChar *moduleName)
         moduleInterface->release();
         loadedModuleInterfaces.erase(moduleName);
         std::erase(moduleLoadedOrder, moduleName);
-        LOG_DEBUG("ModuleManager", "Unloaded module %s", moduleName);
+        LOG_DEBUG("ModuleManager", "Unloaded module {}", moduleName);
         return true;
     }
     return false;
@@ -151,7 +151,7 @@ ModuleManager::ModuleManager()
         PlatformFunctions::getModuleInfo(procHandle, libPtr, data);
         data.name = PathFunctions::stripExtension(data.name);
         LOG_DEBUG(
-            "ModuleManager", "System loaded module name : %s, Image : %s, Module size : %d", data.name.getChar(), data.imgPath.getChar(),
+            "ModuleManager", "System loaded module name : {}, Image : {}, Module size : {}", data.name.getChar(), data.imgPath.getChar(),
             data.moduleSize
         );
         loadedLibraries[data.name].first = libPtr;
@@ -224,7 +224,7 @@ LibHandle ModuleManager::getOrLoadLibrary(const TChar *libNameOrPath)
         }
         if (library)
         {
-            LOG_DEBUG("ModuleManager", "Loaded Library %s from %s", moduleName, libNameOrPath);
+            LOG_DEBUG("ModuleManager", "Loaded Library {} from {}", moduleName, libNameOrPath);
 
             loadedLibraries[moduleName].first = library;
             PlatformFunctions::getModuleInfo(
@@ -285,7 +285,7 @@ WeakModulePtr ModuleManager::getOrLoadModule(const TChar *moduleName)
     if (!bool(retModule))
     {
         retModule = tryLoadModule(moduleName);
-        fatalAssertf(retModule, "Failed loading module interface %s", moduleName);
+        fatalAssertf(retModule, "Failed loading module interface {}", moduleName);
     }
     return retModule;
 }
@@ -296,7 +296,7 @@ IModuleBase *ModuleManager::getOrLoadModulePtr(const TChar *moduleName)
     if (retModule == nullptr)
     {
         ModulePtr modulePtr = tryLoadModule(moduleName);
-        fatalAssertf(modulePtr, "Failed loading module interface %s", moduleName);
+        fatalAssertf(modulePtr, "Failed loading module interface {}", moduleName);
         retModule = modulePtr.get();
     }
     return retModule;
@@ -322,7 +322,7 @@ void ModuleManager::unloadAll()
     {
         if (!tryUnloadModule(rItr->getChar()))
         {
-            LOG_DEBUG("ModuleManager", "Module %s is already unloaded in one of module that was unload", *rItr);
+            LOG_DEBUG("ModuleManager", "Module {} is already unloaded in one of module that was unload", *rItr);
             continue;
         }
     }
@@ -332,7 +332,7 @@ void ModuleManager::unloadAll()
     {
         onModuleUnload.invoke(modulePair.first);
         modulePair.second->release();
-        LOG_DEBUG("ModuleManager", "Unloaded module %s", modulePair.first);
+        LOG_DEBUG("ModuleManager", "Unloaded module {}", modulePair.first);
     }
 
 #if !STATIC_LINKED
@@ -340,13 +340,13 @@ void ModuleManager::unloadAll()
     for (auto rItr = localModuleLoadOrder.crbegin(); rItr != localModuleLoadOrder.crend(); ++rItr)
     {
         unloadLibrary(rItr->getChar());
-        LOG_DEBUG("ModuleManager", "Unloaded library %s", *rItr);
+        LOG_DEBUG("ModuleManager", "Unloaded library {}", *rItr);
     }
 #endif // STATIC_LINKED
     for (const std::pair<const String, std::pair<LibHandle, LibraryData>> &libPair : loadedLibraries)
     {
         PlatformFunctions::releaseLibrary(libPair.second.first);
-        LOG_DEBUG("ModuleManager", "Unloaded library %s", libPair.first);
+        LOG_DEBUG("ModuleManager", "Unloaded library {}", libPair.first);
     }
     loadedLibraries.clear();
 }
@@ -362,7 +362,7 @@ void ModuleManager::releaseModule(const TChar *moduleName)
         moduleInterface->release();
         loadedModuleInterfaces.erase(moduleName);
         std::erase(moduleLoadedOrder, moduleName);
-        LOG_DEBUG("ModuleManager", "Released module %s", moduleName);
+        LOG_DEBUG("ModuleManager", "Released module {}", moduleName);
     }
 }
 
@@ -388,7 +388,7 @@ std::vector<std::pair<LibHandle, LibraryData>> ModuleManager::getAllModuleData()
         }
 
         LOG_DEBUG(
-            "ModuleManager", "System loaded module name : %s, Image : %s, Module size : %d", data.name.getChar(), data.imgPath.getChar(),
+            "ModuleManager", "System loaded module name : {}, Image : {}, Module size : {}", data.name.getChar(), data.imgPath.getChar(),
             data.moduleSize
         );
         loadedLibraries[data.name].first = libPtr;

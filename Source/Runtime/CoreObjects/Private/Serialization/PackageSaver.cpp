@@ -140,7 +140,7 @@ EPackageLoadSaveResult PackageSaver::savePackage()
         String packagePath = package->getPackageFilePath();
         if (!FileHelper::writeBytes(archiveStreamPtr->getBuffer(), packagePath))
         {
-            LOG_ERROR("PackageSaver", "Failed to open file stream to save package %s at %s", package->getObjectData().name, packagePath);
+            LOG_ERROR("PackageSaver", "Failed to open file stream to save package {} at {}", package->getObjectData().name, packagePath);
             return EPackageLoadSaveResult::IOError;
         }
         CoreObjectDelegates::broadcastPackageSaved(package);

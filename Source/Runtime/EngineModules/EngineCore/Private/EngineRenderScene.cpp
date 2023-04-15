@@ -138,7 +138,7 @@ SceneRenderTexturePool::getTexture(IRenderCommandList *cmdList, ERendererIntermT
     }
     texture.rtTexture->init();
     LOG_VERBOSE(
-        "SceneRenderTexturePool", "Allocated new RT %s(%d, %d, %d) under type %s", texture.renderTargetResource()->getResourceName(),
+        "SceneRenderTexturePool", "Allocated new RT {}({}, {}, {}) under type {}", texture.renderTargetResource()->getResourceName(),
         texture.rtTexture->getImageSize().x, texture.rtTexture->getImageSize().y, texture.rtTexture->getImageSize().z,
         ERendererIntermTexture::toString(rtType)
     );
@@ -221,7 +221,7 @@ void SceneRenderTexturePool::clearUnused(IRenderCommandList *cmdList)
                 }
 
                 LOG_VERBOSE(
-                    "SceneRenderTexturePool", "Clearing Texture %s(%d, %d, %d) from type %s",
+                    "SceneRenderTexturePool", "Clearing Texture {}({}, {}, {}) from type {}",
                     intermTexture.renderTargetResource()->getResourceName(), intermTexture.rtTexture->getImageSize().x,
                     intermTexture.rtTexture->getImageSize().y, intermTexture.rtTexture->getImageSize().z,
                     ERendererIntermTexture::toString(ERendererIntermTexture::Type(i))

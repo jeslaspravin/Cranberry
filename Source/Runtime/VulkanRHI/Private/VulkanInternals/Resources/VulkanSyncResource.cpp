@@ -114,7 +114,7 @@ void VulkanTimelineSemaphore::resetSignal(uint64 value)
 
         if (vulkanDevice->vkSignalSemaphore(ownerDevice, &signalInfo) != VK_SUCCESS)
         {
-            LOG_ERROR("VulkanTimelineSemaphore", "Signaling to value %d failed", value);
+            LOG_ERROR("VulkanTimelineSemaphore", "Signaling to value {} failed", value);
         }
     }
 }
@@ -293,7 +293,7 @@ void VulkanEvent::reinitResources()
     }
     else
     {
-        LOG_ERROR("VulkanFence", "Failed recreating event %s", getResourceName());
+        LOG_ERROR("VulkanFence", "Failed recreating event {}", getResourceName());
     }
 }
 

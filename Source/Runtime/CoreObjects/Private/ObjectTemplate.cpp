@@ -70,7 +70,7 @@ ObjectArchive &ObjectTemplate::serialize(ObjectArchive &ar)
         // This must crash
         fatalAssertf(
             OBJECT_TEMPLATE_SERIALIZER_CUTOFF_VERSION >= dataVersion,
-            "Version of ObjectTemplate %u loaded from package %s is outdated, Minimum supported %u!", dataVersion,
+            "Version of ObjectTemplate {} loaded from package {} is outdated, Minimum supported {}!", dataVersion,
             getOuterMost()->getObjectData().path, OBJECT_TEMPLATE_SERIALIZER_CUTOFF_VERSION
         );
     }
@@ -88,7 +88,7 @@ ObjectArchive &ObjectTemplate::serialize(ObjectArchive &ar)
     {
         if (clazz == nullptr)
         {
-            LOG_ERROR("ObjectTemplate", "Failed to get class while serializing %s", getOuterMost()->getObjectData().path);
+            LOG_ERROR("ObjectTemplate", "Failed to get class while serializing {}", getOuterMost()->getObjectData().path);
             return ar;
         }
 
@@ -186,7 +186,7 @@ bool ObjectTemplate::copyFrom(ObjectTemplate *otherTemplate)
         Object *thisEntryObj = get(ObjectPathHelper::getFullPath(entry.first.toString().getChar(), this).getChar());
         if (thisEntryObj == nullptr)
         {
-            LOG_WARN("ObjectTemplate", "ObjectTemplate %s does not have sub-object named %s", getObjectData().path, entry.first);
+            LOG_WARN("ObjectTemplate", "ObjectTemplate {} does not have sub-object named {}", getObjectData().path, entry.first);
         }
         else
         {

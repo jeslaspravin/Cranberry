@@ -113,7 +113,7 @@ struct LinkObjPtrsFieldVisitable
         case EPropertyType::PairType:
         default:
             alertAlwaysf(
-                false, "Unhandled ptr to ptr Field name %s, type %s", propInfo.fieldProperty->nameString, *propInfo.thisProperty->typeInfo
+                false, "Unhandled ptr to ptr Field name {}, type {}", propInfo.fieldProperty->nameString, *propInfo.thisProperty->typeInfo
             );
             break;
         }
@@ -138,7 +138,7 @@ struct LinkObjPtrsFieldVisitable
         case EPropertyType::PairType:
         default:
             alertAlwaysf(
-                false, "Unhandled ptr to const ptr Field name %s, type %s", propInfo.fieldProperty->nameString, *propInfo.thisProperty->typeInfo
+                false, "Unhandled ptr to const ptr Field name {}, type {}", propInfo.fieldProperty->nameString, *propInfo.thisProperty->typeInfo
             );
             break;
         }
@@ -237,7 +237,7 @@ EObjectFlags PackageLoader::createContainedObject(PackageContainedData &containe
         cbe::Object *obj = cbe::createOrGet(
             containedData.clazz, objectName, outerObj, cbe::EObjectFlagBits::ObjFlag_PackageLoadPending | containedData.objectFlags
         );
-        alertAlwaysf(obj, "Package(%s) load failed to create object %s", packageName, containedData.objectPath);
+        alertAlwaysf(obj, "Package({}) load failed to create object {}", packageName, containedData.objectPath);
         containedData.object = obj;
     }
     return collectedFlags;
@@ -302,7 +302,7 @@ ObjectArchive &PackageLoader::serialize(cbe::Object *&obj)
         {
             cbe::Object *depObj = cbe::getOrLoad(dependentObjects[tableIdx].objectFullPath, dependentObjects[tableIdx].clazz);
             alertAlwaysf(
-                depObj, "Invalid dependent object[%s] in package %s", dependentObjects[tableIdx].objectFullPath, package->getObjectData().name
+                depObj, "Invalid dependent object[{}] in package {}", dependentObjects[tableIdx].objectFullPath, package->getObjectData().name
             );
             dependentObjects[tableIdx].object = depObj;
         }
@@ -338,7 +338,7 @@ void PackageLoader::prepareLoader()
     {
         std::vector<uint8> fileData;
         bool bRead = FileHelper::readBytes(fileData, packageFilePath);
-        fatalAssertf(bRead, "Package %s at %s cannot be read!", packageDatV.name, packageFilePath);
+        fatalAssertf(bRead, "Package {} at {} cannot be read!", packageDatV.name, packageFilePath);
         localStream.setBuffer(fileData);
         archiveStreamPtr = &localStream;
     }
@@ -352,7 +352,7 @@ void PackageLoader::prepareLoader()
 
     uint32 packageVersion = getCustomVersion(uint32(PACKAGE_CUSTOM_VERSION_ID));
     fatalAssertf(
-        packageVersion >= PACKAGE_SERIALIZER_CUTOFF_VERSION, "Package(%s) version %u is not supported. Minimum supported version is %u",
+        packageVersion >= PACKAGE_SERIALIZER_CUTOFF_VERSION, "Package({}) version {} is not supported. Minimum supported version is {}",
         packageDatV.name, packageVersion, PACKAGE_SERIALIZER_CUTOFF_VERSION
     );
 
@@ -363,7 +363,7 @@ void PackageLoader::prepareLoader()
         (*static_cast<ObjectArchive *>(this)) << packageMarker;
         if (packageMarker != PACKAGE_ARCHIVE_MARKER)
         {
-            LOG_WARN("PackageLoader", "Package marker not found in %s, Trying to load binary stream as marked package!", packageFilePath);
+            LOG_WARN("PackageLoader", "Package marker not found in {}, Trying to load binary stream as marked package!", packageFilePath);
             archiveStreamPtr->moveBackward(archiveStreamPtr->cursorPos() - packageHeaderStart);
         }
     }
@@ -379,7 +379,7 @@ void PackageLoader::prepareLoader()
 
     streamStartAt = archiveStreamPtr->cursorPos();
 
-    alertAlwaysf(!containedObjects.empty(), "Empty package %s at %s", packageDatV.name, packageFilePath);
+    alertAlwaysf(!containedObjects.empty(), "Empty package {} at {}", packageDatV.name, packageFilePath);
     CoreObjectDelegates::broadcastPackageScanned(this);
 }
 
@@ -400,7 +400,7 @@ EPackageLoadSaveResult PackageLoader::load()
         bool bRead = FileHelper::readBytes(fileData, packageFilePath);
         if (!bRead)
         {
-            alertAlwaysf(bRead, "Package %s at %s cannot be read!", packageName, packageFilePath);
+            alertAlwaysf(bRead, "Package {} at {} cannot be read!", packageName, packageFilePath);
             return EPackageLoadSaveResult::IOError;
         }
         localStream.setBuffer(fileData);
@@ -439,9 +439,9 @@ EPackageLoadSaveResult PackageLoader::load()
             {
                 alertAlwaysf(
                     serializedSize == containedData.streamSize,
-                    "Corrupted package %s for object %s consider using Custom version and handle versioning! Written out size for object %llu "
+                    "Corrupted package {} for object {} consider using Custom version and handle versioning! Written out size for object {} "
                     "is "
-                    "not same as read size %llu",
+                    "not same as read size {}",
                     packageName, containedData.objectPath, containedData.streamSize, (archiveStreamPtr->cursorPos() - containedData.streamStart)
                 );
                 // It is okay to continue as it is just warning

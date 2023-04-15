@@ -314,16 +314,15 @@ bool ProgramCmdLine::printHelp() const
         {
             if (allowedArg.shortArgName.empty())
             {
-                outHelp += StringFormat::printf(TCHAR("\n\"%s\"\n    - %s"), allowedArg.argName, allowedArg.argDescription);
+                outHelp += STR_FORMAT(TCHAR("\n\"{}\"\n    - {}"), allowedArg.argName, allowedArg.argDescription);
             }
             else
             {
-                outHelp += StringFormat::printf(
-                    TCHAR("\n\"%s\", \"%s\"\n    - %s"), allowedArg.argName, allowedArg.shortArgName, allowedArg.argDescription
-                );
+                outHelp
+                    += STR_FORMAT(TCHAR("\n\"{}\", \"{}\"\n    - {}"), allowedArg.argName, allowedArg.shortArgName, allowedArg.argDescription);
             }
         }
-        LOG("CmdLineHelp", "\n[HELP]\n%s\n", outHelp);
+        LOG("CmdLineHelp", "\n[HELP]\n{}\n", outHelp);
         return true;
     }
     return false;
@@ -341,7 +340,7 @@ void ProgramCmdLine::printCommandLine() const
     {
         cmdLine += TCHAR(" ") + String(cmdLineElements[i]);
     }
-    LOG("CommandLine", "%s%s", appName, cmdLine);
+    LOG("CommandLine", "{}{}", appName, cmdLine);
 }
 
 bool ProgramCmdLine::hasArg(const String &argName) const
@@ -380,7 +379,7 @@ bool ProgramCmdLine::getArg(std::vector<String> &outValues, const String &argNam
 
 String ProgramCmdLine::atIdx(uint32 idx) const
 {
-    fatalAssertf(cmdLineElements.size() > idx, "Cmd line value idx %d out of range %lu", idx, cmdLineElements.size());
+    fatalAssertf(cmdLineElements.size() > idx, "Cmd line value idx {} out of range {}", idx, cmdLineElements.size());
     return cmdLineElements[idx];
 }
 

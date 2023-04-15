@@ -203,7 +203,7 @@ public:
 
     reference operator[] (SizeT idx) const
     {
-        fatalAssertf(idx < length, "Invalid index %d", idx);
+        fatalAssertf(idx < length, "Invalid index {}", idx);
         return dataPtr[offset + idx];
     }
 

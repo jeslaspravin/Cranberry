@@ -178,7 +178,7 @@ void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT *context, bool bCl
     while (true);
     ::SymCleanup(processHandle);
 
-    LOG_ERROR("WindowsUnexpectedErrorHandler", "Error call trace : \n%s", stackTrace.str().c_str());
+    LOG_ERROR("WindowsUnexpectedErrorHandler", "Error call trace : \n{}", stackTrace.str().c_str());
 
     if (bCloseApp)
     {
@@ -277,7 +277,7 @@ long WindowsUnexpectedErrorHandler::handlerFilter(struct _EXCEPTION_POINTERS *ex
         MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&errorMsg, 0, NULL
     );
 
-    LOG_ERROR("WindowsUnexpectedErrorHandler", "Application encountered an error! Error : %s%s", errorMsg, errorStream.str().c_str());
+    LOG_ERROR("WindowsUnexpectedErrorHandler", "Application encountered an error! Error : {}{}", errorMsg, errorStream.str().c_str());
     ::LocalFree(errorMsg);
 
     getHandler()->unregisterFilter();

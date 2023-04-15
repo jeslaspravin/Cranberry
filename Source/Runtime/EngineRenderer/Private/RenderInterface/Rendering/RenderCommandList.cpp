@@ -582,7 +582,7 @@ void IRenderCommandList::copyPixelsTo(
         uint8 offset = formatInfo->getOffset(EPixelComponent(compIdx)) % 8;
         fatalAssertf(
             ((sizeof(uint32) * 8) - offset) >= formatInfo->componentSize[compIdx],
-            "Component %d of pixel format %s is going beyond 32bits mask after offset", compIdx, formatInfo->formatName
+            "Component {} of pixel format {} is going beyond 32bits mask after offset", compIdx, formatInfo->formatName
         );
 
         uint32 end = 1 << (formatInfo->componentSize[compIdx] - 1);
@@ -669,7 +669,7 @@ void IRenderCommandList::copyPixelsTo(
             uint8 offset = formatInfo->getOffset(EPixelComponent(compIdx)) % 8;
             fatalAssertf(
                 ((sizeof(uint32) * 8) - offset) >= formatInfo->componentSize[compIdx],
-                "Component %d of pixel format %s is going beyond 32bits mask after offset", compIdx, formatInfo->formatName
+                "Component {} of pixel format {} is going beyond 32bits mask after offset", compIdx, formatInfo->formatName
             );
 
             uint32 end = 1 << (formatInfo->componentSize[compIdx] - 1);
@@ -731,7 +731,7 @@ void IRenderCommandList::copyPixelsLinearMappedTo(
         uint8 offset = formatInfo->getOffset(EPixelComponent(compIdx)) % 8;
         fatalAssertf(
             ((sizeof(uint32) * 8) - offset) >= formatInfo->componentSize[compIdx],
-            "Component %d of pixel format %s is going beyond 32bits mask after offset", compIdx, formatInfo->formatName
+            "Component {} of pixel format {} is going beyond 32bits mask after offset", compIdx, formatInfo->formatName
         );
 
         uint32 end = 1 << (formatInfo->componentSize[compIdx] - 1);
@@ -782,7 +782,7 @@ void IRenderCommandList::copyToImage(ImageResourceRef dst, ArrayView<const Color
 {
     if (pixelData.size() < (dst->getImageSize().z * dst->getImageSize().y * dst->getImageSize().x) * dst->getLayerCount())
     {
-        LOG_ERROR("RenderCommandList", "Texel data count is not sufficient to fill all texels of %s", dst->getResourceName().getChar());
+        LOG_ERROR("RenderCommandList", "Texel data count is not sufficient to fill all texels of {}", dst->getResourceName().getChar());
         return;
     }
     CopyPixelsToImageInfo copyInfo;
@@ -801,7 +801,7 @@ void IRenderCommandList::copyToImageLinearMapped(ImageResourceRef dst, ArrayView
 {
     if (pixelData.size() < (dst->getImageSize().z * dst->getImageSize().y * dst->getImageSize().x) * dst->getLayerCount())
     {
-        LOG_ERROR("RenderCommandList", "Texel data count is not sufficient to fill all texels of %s", dst->getResourceName().getChar());
+        LOG_ERROR("RenderCommandList", "Texel data count is not sufficient to fill all texels of {}", dst->getResourceName().getChar());
         return;
     }
     CopyPixelsToImageInfo copyInfo;
@@ -838,7 +838,7 @@ struct PushConstCopier
         }
         else
         {
-            LOG_ERROR("RenderCommandList", "Cannot cast pushable constant %s", field->attributeName.c_str());
+            LOG_ERROR("RenderCommandList", "Cannot cast pushable constant {}", field->attributeName.c_str());
         }
     }
 };
@@ -852,7 +852,7 @@ void IRenderCommandList::cmdPushConstants(
     if (!entry.data.pushConstantField.bufferStructFields.empty())
     {
         LOG_WARN(
-            "RenderCommandList", "[Shader: %s, Attribute: %s]Using SoS in push constant in not recommended",
+            "RenderCommandList", "[Shader: {}, Attribute: {}]Using SoS in push constant in not recommended",
             contextPipeline.getPipeline()->getShaderResource()->getResourceName(), entry.attributeName.c_str()
         );
     }
@@ -876,7 +876,7 @@ void IRenderCommandList::cmdPushConstants(
                 {
                     LOG_WARN(
                         "RenderCommandList",
-                        "[Shader: %s, Attribute: %s] Array data is not supported in "
+                        "[Shader: {}, Attribute: {}] Array data is not supported in "
                         "push constants",
                         contextPipeline.getPipeline()->getShaderResource()->getResourceName(), fieldAttribName
                     );
@@ -901,7 +901,7 @@ void IRenderCommandList::cmdPushConstants(
         auto itr = nameToEntry.find(pushConst.first);
         if (itr == nameToEntry.end())
         {
-            LOG_ERROR("RenderCommandList", "Cannot find %s in pushable constants", pushConst.first);
+            LOG_ERROR("RenderCommandList", "Cannot find {} in pushable constants", pushConst.first);
             continue;
         }
 
@@ -985,7 +985,7 @@ void IRenderCommandList::cmdPushConstants(
         case EShaderInputAttribFormat::Undefined:
         default:
             LOG_ERROR(
-                "RenderCommandList", "[Shader: %s, Attribute: %s] Unsupported format %s in push constants",
+                "RenderCommandList", "[Shader: {}, Attribute: {}] Unsupported format {} in push constants",
                 contextPipeline.getPipeline()->getShaderResource()->getResourceName().getChar(), itr->second->attributeName.c_str(),
                 pushConst.second.type().name()
             );
@@ -1108,7 +1108,7 @@ bool ShaderParameters::setBuffer(StringID paramName, const void *bufferValue, ui
         }
         else
         {
-            LOG_ERROR("ShaderParameters", "Cannot set %s[%d] of %s", paramName, index, bufferName);
+            LOG_ERROR("ShaderParameters", "Cannot set {}[{}] of {}", paramName, index, bufferName);
         }
     }
     else

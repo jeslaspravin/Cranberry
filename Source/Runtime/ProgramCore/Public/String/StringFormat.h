@@ -72,10 +72,12 @@ concept HasStringFormatToStringImpl = requires(Type &&val) {
 
 // std::format related types and concepts
 using StdFormatContextType = std::conditional_t<IsTCharWide::value, std::wformat_context, std::format_context>;
-template <class Type>
+template <typename Type>
 concept HasStdFormatter = requires(Type value, StdFormatContextType &context) {
     std::declval<typename StdFormatContextType::template formatter_type<std::remove_cvref_t<Type>>>().format(value, context);
 };
+#define STR_FORMAT(Fmt, ...) StringFormat::lFormat<Fmt>(__VA_ARGS__)
+
 // Specialization to support String in std::format
 template <typename CharType>
 struct std::formatter<String, CharType> : std::formatter<BaseString, CharType>
@@ -231,26 +233,26 @@ private:
 
 public:
     template <typename FmtType, typename... Args>
-    DEBUG_INLINE static String printf(FmtType &&fmt, Args &&...args)
+    NODISCARD static String printf(FmtType &&fmt, Args &&...args)
     {
         return stringPrintf(getChar<FmtType>(std::forward<FmtType>(fmt)), toString<Args>(std::forward<Args>(args))...);
     }
     template <typename FmtType>
-    DEBUG_INLINE static String printf(FmtType &&fmt, va_list args)
+    NODISCARD static String printf(FmtType &&fmt, va_list args)
     {
         return stringPrintf(getChar<FmtType>(std::forward<FmtType>(fmt)), args);
     }
     template <StringLiteral Fmt, typename... Args>
-    constexpr static String format(Args &&...args)
+    NODISCARD constexpr static String lFormat(Args &&...args)
     {
         return std::format(Fmt.value, toFormatValue<Args>(std::forward<Args>(args))...);
     }
     template <typename FmtType, typename... Args>
-    DEBUG_INLINE static String vFormat(FmtType &&fmt, Args &&...args)
+    NODISCARD static String vFormat(FmtType &&fmt, Args &&...args)
     {
         return std::vformat(
             getChar<FmtType>(std::forward<FmtType>(fmt)),
-            std::make_format_args<StdFormatContextType>(toString<Args>(std::forward<Args>(args))...)
+            std::make_format_args<StdFormatContextType>(toFormatValue<Args>(std::forward<Args>(args))...)
         );
     }
 };

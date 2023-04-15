@@ -451,7 +451,7 @@ public:
         {
         case GridEntity::Entity:
         {
-            fatalAssertf(sceneData.size() > entity.idx, "Invalid index %d", entity.idx);
+            fatalAssertf(sceneData.size() > entity.idx, "Invalid index {}", entity.idx);
             AABB bound(
                 sceneData[entity.idx].meshAsset->bounds.minBound * sceneData[entity.idx].transform.getScale()
                     + sceneData[entity.idx].transform.getTranslation(),
@@ -463,14 +463,14 @@ public:
         }
         case GridEntity::PointLight:
         {
-            fatalAssertf(scenePointLights.size() > entity.idx, "Invalid index %d", entity.idx);
+            fatalAssertf(scenePointLights.size() > entity.idx, "Invalid index {}", entity.idx);
             AABB bound(scenePointLights[entity.idx].lightPos - Vector3(50), scenePointLights[entity.idx].lightPos + Vector3(50));
             bound.fixAABB();
             return bound;
         }
         case GridEntity::SpotLight:
         {
-            fatalAssertf(sceneSpotLights.size() > entity.idx, "Invalid index %d", entity.idx);
+            fatalAssertf(sceneSpotLights.size() > entity.idx, "Invalid index {}", entity.idx);
             AABB bound(
                 sceneSpotLights[entity.idx].transform.getTranslation() - Vector3(50),
                 sceneSpotLights[entity.idx].transform.getTranslation() + Vector3(50)
@@ -641,11 +641,11 @@ void ExperimentalEnginePBR::createDrawCmdsBuffer(IGraphicsInstance *graphicsInst
             // Resizing material parameters
             sceneShaderUniqParams[pipeMeshPairToBatchEntity.first]->resizeRuntimeBuffer(TCHAR("materials"), materialCount);
             totalDrawCalls += pipelineDrawCalls;
-            LOG("ExperimentalEnginePBR", "%s Pipeline's Material's count %d", pipeMeshPairToBatchEntity.first->materialName, materialCount);
-            LOG("ExperimentalEnginePBR", "%s Pipeline's instanced draw calls %d", pipeMeshPairToBatchEntity.first->materialName,
+            LOG("ExperimentalEnginePBR", "{} Pipeline's Material's count {}", pipeMeshPairToBatchEntity.first->materialName, materialCount);
+            LOG("ExperimentalEnginePBR", "{} Pipeline's instanced draw calls {}", pipeMeshPairToBatchEntity.first->materialName,
                 pipelineDrawCalls);
         }
-        LOG("ExperimentalEnginePBR", "Total instanced draw calls %d", totalDrawCalls);
+        LOG("ExperimentalEnginePBR", "Total instanced draw calls {}", totalDrawCalls);
 
         // Resize instance parameters
         instanceParameters->resizeRuntimeBuffer(TCHAR("instancesWrapper"), instanceCount);
@@ -1413,7 +1413,7 @@ void ExperimentalEnginePBR::createScene()
         PBRSceneEntity car;
         car.name = TCHAR("DodgeChallenger");
         car.meshAsset = static_cast<StaticMeshAsset *>(assetManager.getAsset(car.name));
-        fatalAssertf(car.meshAsset, "Failed finding car mesh %s", car.name.getChar());
+        fatalAssertf(car.meshAsset, "Failed finding car mesh {}", car.name.getChar());
         car.transform.setTranslation(Vector3(0, 2800, 0));
         for (uint32 batchIdx = 0; batchIdx < car.meshAsset->meshBatches.size(); ++batchIdx)
         {
@@ -3028,7 +3028,7 @@ void ExperimentalEnginePBR::tickEngine()
                              )
                              - windowOrigin;
         mouseCoord /= Vector2(ApplicationSettings::surfaceSize.get());
-        LOG_DEBUG("ExperimentalEnginePBR", "mouse coord (%f, %f)", mouseCoord.x(), mouseCoord.y());
+        LOG_DEBUG("ExperimentalEnginePBR", "mouse coord ({}, {})", mouseCoord.x(), mouseCoord.y());
         if (mouseCoord.x() >= 0 && mouseCoord.x() <= 1.0f && mouseCoord.y() >= 0 && mouseCoord.y() <= 1.0f)
         {
             Vector3 worldFwd = camera.screenToWorldFwd(mouseCoord);

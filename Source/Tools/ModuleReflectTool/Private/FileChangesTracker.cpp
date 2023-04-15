@@ -21,7 +21,7 @@ FileChangesTracker::FileChangesTracker(const String name, const String &director
     , folderPath(directory)
     , writePath(intermediateDir)
 {
-    fatalAssertf(FileSystemFunctions::dirExists(folderPath.getChar()), "Tracking base directory %s is not valid", folderPath);
+    fatalAssertf(FileSystemFunctions::dirExists(folderPath.getChar()), "Tracking base directory {} is not valid", folderPath);
     String manifestContent;
     String manifestFile = PathFunctions::combinePath(writePath, trackerManifestName);
     if (FileSystemFunctions::fileExists(manifestFile.getChar()) && FileHelper::readString(manifestContent, manifestFile))
@@ -30,7 +30,7 @@ FileChangesTracker::FileChangesTracker(const String name, const String &director
         for (StringView line : readLines)
         {
             std::vector<StringView> fileEntry = String::split(line, TCHAR("="));
-            fatalAssertf(fileEntry.size() == 2, "Cannot parse file timestamp from %.*s", line.length(), line.data());
+            fatalAssertf(fileEntry.size() == 2, "Cannot parse file timestamp from {}", line);
 
             fileLastTimestamp[fileEntry[0]] = std::stoll(String(fileEntry[1]));
         }
@@ -43,7 +43,7 @@ FileChangesTracker::~FileChangesTracker()
     int32 i = 0;
     for (const auto &fileEntry : fileLastTimestamp)
     {
-        manifestEntries[i] = StringFormat::printf(TCHAR("%s=%lld"), fileEntry.first, fileEntry.second);
+        manifestEntries[i] = STR_FORMAT(TCHAR("{}={}"), fileEntry.first, fileEntry.second);
         ++i;
     }
 

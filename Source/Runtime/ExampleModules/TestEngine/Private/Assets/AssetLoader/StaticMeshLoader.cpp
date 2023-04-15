@@ -582,11 +582,11 @@ StaticMeshLoader::StaticMeshLoader(const String &assetPath)
     );
     if (!warning.empty())
     {
-        LOG_WARN("StaticMeshLoader", "Tiny obj loader %s", UTF8_TO_TCHAR(warning.c_str()));
+        LOG_WARN("StaticMeshLoader", "Tiny obj loader {}", UTF8_TO_TCHAR(warning.c_str()));
     }
     if (!error.empty())
     {
-        LOG_ERROR("StaticMeshLoader", "Tiny obj loader %s", UTF8_TO_TCHAR(error.c_str()));
+        LOG_ERROR("StaticMeshLoader", "Tiny obj loader {}", UTF8_TO_TCHAR(error.c_str()));
         return;
     }
 

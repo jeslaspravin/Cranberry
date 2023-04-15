@@ -32,7 +32,7 @@ void VulkanBufferResource::reinitResources()
     BaseType::reinitResources();
     if (getResourceSize() == 0)
     {
-        LOG_ERROR("VulkanBufferResource", "Invalid resource %s", getObjectName().getChar());
+        LOG_ERROR("VulkanBufferResource", "Invalid resource {}", getObjectName().getChar());
         return;
     }
 
@@ -55,7 +55,7 @@ void VulkanBufferResource::reinitResources()
     }
     else
     {
-        LOG_ERROR("VulkanBufferResource", "Failed creating buffer %s", getObjectName().getChar());
+        LOG_ERROR("VulkanBufferResource", "Failed creating buffer {}", getObjectName().getChar());
     }
 }
 
@@ -178,8 +178,8 @@ void VulkanImageResource::reinitResources()
             {
                 LOG_WARN(
                     "VulkanImageResource",
-                    "Cube map image %s should have 6 multiple layers, current layer "
-                    "count %d",
+                    "Cube map image {} should have 6 multiple layers, current layer "
+                    "count {}",
                     getResourceName().getChar(), layerCount
                 );
                 layerCount = ((layerCount / 6) + 1) * 6;
@@ -260,7 +260,7 @@ void VulkanImageResource::reinitResources()
 
     if (getResourceSize() == 0)
     {
-        LOG_ERROR("VulkanImageResource", "Invalid resource %s", getObjectName().getChar());
+        LOG_ERROR("VulkanImageResource", "Invalid resource {}", getObjectName().getChar());
         return;
     }
 
@@ -293,7 +293,7 @@ void VulkanImageResource::reinitResources()
     }
     else
     {
-        LOG_ERROR("VulkanImageResource", "Failed creating image %s", getObjectName().getChar());
+        LOG_ERROR("VulkanImageResource", "Failed creating image {}", getObjectName().getChar());
     }
 }
 

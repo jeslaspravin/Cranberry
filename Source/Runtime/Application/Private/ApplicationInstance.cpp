@@ -155,7 +155,7 @@ void ApplicationInstance::startApp()
     startNextFrame();
 
     timeData.tickStart();
-    LOG("ApplicationInstance", "%s initialized in %0.3f seconds", applicationName, Time::asSeconds(timeData.initEndTick - timeData.startTick));
+    LOG("ApplicationInstance", "{} initialized in {:0.3} seconds", applicationName, Time::asSeconds(timeData.initEndTick - timeData.startTick));
 }
 
 bool ApplicationInstance::appTick()
@@ -209,5 +209,5 @@ void ApplicationInstance::exitApp()
     onExit();
     clearWidgets();
 
-    LOG("ApplicationInstance", "%s run time %.3f minutes", applicationName, Time::asMinutes(Time::timeNow() - timeData.startTick));
+    LOG("ApplicationInstance", "{} run time {:.3} minutes", applicationName, Time::asMinutes(Time::timeNow() - timeData.startTick));
 }

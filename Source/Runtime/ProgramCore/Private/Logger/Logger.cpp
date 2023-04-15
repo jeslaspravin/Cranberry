@@ -327,7 +327,7 @@ bool LoggerImpl::openNewLogFile()
     if (checkFile.exists())
     {
         uint64 lastWrite = checkFile.lastWriteTimeStamp();
-        String renameTo = StringFormat::printf(TCHAR("%s-%llu.log"), logFileName, lastWrite);
+        String renameTo = STR_FORMAT(TCHAR("{}-{}.log"), logFileName, lastWrite);
         checkFile.renameFile(renameTo);
 
         // Remove or clear old logs

@@ -214,7 +214,7 @@ void ImGuiManager::initialize(ImGuiManagerOptions opts)
     }
     else
     {
-        LOG_ERROR("ImGui", "Cannot find font file at %s", fontPath);
+        LOG_ERROR("ImGui", "Cannot find font file at {}", fontPath);
         fontConfig.OversampleH = 3;
         fontConfig.OversampleV = 3;
         fontConfig.RasterizerMultiply = 2;

@@ -156,10 +156,10 @@ SharedPtr<WgWindow> ApplicationInstance::createWindow(UInt2 size, const TChar *n
 {
     if (ApplicationSettings::renderingOffscreen || ApplicationSettings::computeOnly)
     {
-        LOG_ERROR("ApplicationInstance", "Window(%s) creation not allowed in this application %s", name, applicationName);
+        LOG_ERROR("ApplicationInstance", "Window({}) creation not allowed in this application {}", name, applicationName);
         return nullptr;
     }
-    fatalAssertf(jobSystem->isInThread(copat::EJobThreadType::MainThread), "Windows[%s] should be created or destroyed from main thread", name);
+    fatalAssertf(jobSystem->isInThread(copat::EJobThreadType::MainThread), "Windows[{}] should be created or destroyed from main thread", name);
 
     GenericAppWindow *window = windowManager->createWindow(size, name, parent ? parent->getAppWindow() : nullptr);
     SharedPtr<WgWindow> windowWidget = createWindowWidget(window);
@@ -170,7 +170,7 @@ SharedPtr<WgWindow> ApplicationInstance::createWindow(UInt2 size, const TChar *n
 void ApplicationInstance::destroyWindow(SharedPtr<WgWindow> window)
 {
     fatalAssertf(
-        jobSystem->isInThread(copat::EJobThreadType::MainThread), "Windows[%s] should be created or destroyed from main thread",
+        jobSystem->isInThread(copat::EJobThreadType::MainThread), "Windows[{}] should be created or destroyed from main thread",
         window->getAppWindow()->getWindowName()
     );
     debugAssert(window && window->getAppWindow());

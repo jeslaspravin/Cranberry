@@ -146,7 +146,7 @@ int32 main(int32 argsc, AChar **args)
             String moduleSrcDir;
             ProgramCmdLine::get().getArg(moduleSrcDir, ReflectToolCmdLineConst::MODULE_SRC_DIR);
             sw.stop();
-            LOG("ModuleReflectTool", "%s : Reflected in %0.2f seconds", PathFunctions::fileOrDirectoryName(moduleSrcDir), sw.duration());
+            LOG("ModuleReflectTool", "{} : Reflected in {:0.2} seconds", PathFunctions::fileOrDirectoryName(moduleSrcDir), sw.duration());
         }
     }
 

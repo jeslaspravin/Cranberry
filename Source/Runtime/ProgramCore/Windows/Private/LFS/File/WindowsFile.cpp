@@ -89,7 +89,7 @@ PlatformHandle openWindowsFile(const String &filePath, uint8 fileFlags, uint8 fi
 
     if (fileHandle == INVALID_HANDLE_VALUE)
     {
-        LOG_ERROR("WindowsFileHandle", "File handle creation/opening failed for %s", filePath.getChar());
+        LOG_ERROR("WindowsFileHandle", "File handle creation/opening failed for {}", filePath.getChar());
         return nullptr;
     }
     return fileHandle;
@@ -171,7 +171,7 @@ WindowsFile::~WindowsFile()
 {
     if (getFileHandle() != nullptr)
     {
-        LOG_WARN("WindowsFile", "File %s is not closed, Please close it before destroying", getFullPath().getChar());
+        LOG_WARN("WindowsFile", "File {} is not closed, Please close it before destroying", getFullPath().getChar());
         closeFile();
     }
 }
@@ -489,7 +489,7 @@ PlatformHandle WindowsFile::openOrCreateImpl()
         if (BIT_SET(fileFlags, EFileFlags::CreateNew))
         {
             setCreationAction(EFileFlags::OpenExisting);
-            LOG_WARN("WindowsFile", "EFileFlags::CreateNew is set on existing file %s", getFullPath());
+            LOG_WARN("WindowsFile", "EFileFlags::CreateNew is set on existing file {}", getFullPath());
         }
     }
     else // In this case OpenExisting and ClearExisting fails check and replace them
@@ -500,7 +500,7 @@ PlatformHandle WindowsFile::openOrCreateImpl()
             LOG_WARN(
                 "WindowsFile",
                 "EFileFlags::OpenExisting | EFileFlags::ClearExisting is set on non-existing "
-                "file %s",
+                "file {}",
                 getFullPath()
             );
         }

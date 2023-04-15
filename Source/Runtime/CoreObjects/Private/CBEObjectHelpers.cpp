@@ -24,7 +24,7 @@ namespace cbe
 {
 void ObjectAllocatorBase::constructDefault(void *objPtr, AllocIdx allocIdx, CBEClass clazz) const
 {
-    fatalAssertf(INTERNAL_isInMainThread(), "Defaults of class %s must be constructed inside main thread!", clazz->nameString);
+    fatalAssertf(INTERNAL_isInMainThread(), "Defaults of class {} must be constructed inside main thread!", clazz->nameString);
     // Direct call to object construction routine to skip getting allocator that happens when constructing using CBEObjectConstructionPolicy
     // Default ctor
     const GlobalFunctionWrapper *ctor = PropertyHelper::findMatchingCtor<void *>(clazz);
@@ -51,7 +51,7 @@ void INTERNAL_destroyCBEObject(Object *obj)
     debugAssert(objDatV);
 
     fatalAssertf(
-        INTERNAL_isInMainThread(), "Object[%s] of class %s must be destroyed inside main thread!", objDatV.name, objDatV.clazz->nameString
+        INTERNAL_isInMainThread(), "Object[{}] of class {} must be destroyed inside main thread!", objDatV.name, objDatV.clazz->nameString
     );
 
     CoreObjectDelegates::broadcastObjectDestroyed(obj);
@@ -140,7 +140,7 @@ struct DeepCopyFieldVisitable
     template <DeepCopyUnsupportedFundamentalOrSpecial Type>
     static void visit(const PropertyInfo &propInfo, void * /*userData*/)
     {
-        alertAlwaysf(false, "Why?! This isn't supposed to be invoked %s", propInfo.thisProperty->nameString);
+        alertAlwaysf(false, "Why?! This isn't supposed to be invoked {}", propInfo.thisProperty->nameString);
     }
 
     // above UnsupportedFundamentalOrSpecial takes precedence over below generic support
@@ -256,7 +256,7 @@ struct DeepCopyFieldVisitable
     template <std::same_as<const void> Type>
     static void visit(const PropertyInfo &propInfo, void *userData)
     {
-        alertAlwaysf(false, "Why?! This isn't supposed to be invoked %s", propInfo.thisProperty->nameString);
+        alertAlwaysf(false, "Why?! This isn't supposed to be invoked {}", propInfo.thisProperty->nameString);
     }
 
     template <std::same_as<void *> Type>
@@ -296,7 +296,7 @@ struct DeepCopyFieldVisitable
         case EPropertyType::PairType:
         default:
             alertAlwaysf(
-                false, "Unhandled ptr to ptr Field name %s, type %s", propInfo.fieldProperty->nameString, *propInfo.thisProperty->typeInfo
+                false, "Unhandled ptr to ptr Field name {}, type {}", propInfo.fieldProperty->nameString, *propInfo.thisProperty->typeInfo
             );
             break;
         }
@@ -362,7 +362,7 @@ bool copyObject(CopyObjectOptions options)
     if (options.fromObject->getType() != options.toObject->getType())
     {
         LOG_ERROR(
-            "DeepCopy", "Cannot copy %s of type %s to %s of type %s", options.fromObject->getObjectData().path,
+            "DeepCopy", "Cannot copy {} of type {} to {} of type {}", options.fromObject->getObjectData().path,
             options.fromObject->getType()->nameString, options.toObject->getObjectData().path, options.toObject->getType()->nameString
         );
         return false;
@@ -580,7 +580,7 @@ struct ReplaceObjRefsVisitable
     // Ignoring const types
     static void visit(const void * /*val*/, const PropertyInfo &propInfo, void * /*userData*/)
     {
-        alertAlwaysf(false, "Why?! This isn't supposed to be invoked %s", propInfo.thisProperty->nameString);
+        alertAlwaysf(false, "Why?! This isn't supposed to be invoked {}", propInfo.thisProperty->nameString);
     }
     static void visit(void **ptr, const PropertyInfo &propInfo, void *userData)
     {
@@ -609,7 +609,7 @@ struct ReplaceObjRefsVisitable
         case EPropertyType::PairType:
         default:
             alertAlwaysf(
-                false, "Unhandled ptr to ptr Field name %s, type %s", propInfo.fieldProperty->nameString, *propInfo.thisProperty->typeInfo
+                false, "Unhandled ptr to ptr Field name {}, type {}", propInfo.fieldProperty->nameString, *propInfo.thisProperty->typeInfo
             );
             break;
         }
@@ -728,7 +728,7 @@ struct FindObjRefsVisitable
     // Ignoring const types
     static void visit(const void * /*val*/, const PropertyInfo &propInfo, void * /*userData*/)
     {
-        alertAlwaysf(false, "Why?! This isn't supposed to be invoked %s", propInfo.thisProperty->nameString);
+        alertAlwaysf(false, "Why?! This isn't supposed to be invoked {}", propInfo.thisProperty->nameString);
     }
     static void visit(void **ptr, const PropertyInfo &propInfo, void *userData)
     {
@@ -757,7 +757,7 @@ struct FindObjRefsVisitable
         case EPropertyType::PairType:
         default:
             alertAlwaysf(
-                false, "Unhandled ptr to ptr Field name %s, type %s", propInfo.fieldProperty->nameString, *propInfo.thisProperty->typeInfo
+                false, "Unhandled ptr to ptr Field name {}, type {}", propInfo.fieldProperty->nameString, *propInfo.thisProperty->typeInfo
             );
             break;
         }

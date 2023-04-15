@@ -36,11 +36,11 @@ void AssetManager::loadUnderPath(const String &scanPath)
         {
             assetsRegistered[asset->assetHeader] = asset;
         }
-        LOG_DEBUG("AssetManager", "Loaded asset %s in %0.3f Seconds(not including gpu copy)", header.assetPath.getChar(), loadTime.thisLap());
+        LOG_DEBUG("AssetManager", "Loaded asset {} in {:0.3} Seconds(not including gpu copy)", header.assetPath.getChar(), loadTime.thisLap());
         loadTime.lap();
     }
     loadTime.stop();
-    LOG_DEBUG("AssetManager", "Loaded all assets in %0.3f Seconds(not including gpu copy)", loadTime.duration());
+    LOG_DEBUG("AssetManager", "Loaded all assets in {:0.3} Seconds(not including gpu copy)", loadTime.duration());
 }
 
 void AssetManager::loadUnderPathAsync(const String &scanPath)
@@ -68,7 +68,7 @@ void AssetManager::loadUnderPathAsync(const String &scanPath)
     }
 
     loadTime.stop();
-    LOG("AssetManager", "Loaded all assets in %0.3f Seconds(not including gpu copy)", loadTime.duration());
+    LOG("AssetManager", "Loaded all assets in {:0.3} Seconds(not including gpu copy)", loadTime.duration());
 }
 
 copat::JobSystemReturnableTask<std::vector<AssetBase *>, true, copat::EJobThreadType::WorkerThreads>
@@ -76,7 +76,7 @@ AssetManager::loadAssetAsync(AssetHeader header)
 {
     StopWatch loadTime;
     std::vector<AssetBase *> assets = loadAsset(header);
-    LOG_DEBUG("AssetManager", "Loaded asset %s in %0.3f Seconds(not including gpu copy)", header.assetPath.getChar(), loadTime.duration());
+    LOG_DEBUG("AssetManager", "Loaded asset {} in {:0.3} Seconds(not including gpu copy)", header.assetPath.getChar(), loadTime.duration());
     co_return std::move(assets);
 }
 
@@ -195,7 +195,7 @@ AssetBase *AssetManager::getOrLoadAsset(const AssetHeader &header)
     }
     if (!returnVal)
     {
-        LOG_ERROR("AssetManager", "Asset %s(%s) does not exists!", header.assetName, header.assetPath);
+        LOG_ERROR("AssetManager", "Asset {}({}) does not exists!", header.assetName, header.assetPath);
     }
     return returnVal;
 }
@@ -209,6 +209,6 @@ AssetBase *AssetManager::getAsset(const String &assetName) const
             return asset.second;
         }
     }
-    LOG_ERROR("AssetManager", "Asset %s does not exists!", assetName);
+    LOG_ERROR("AssetManager", "Asset {} does not exists!", assetName);
     return nullptr;
 }

@@ -214,7 +214,7 @@ public:
     {
         parseFmtStr();
     }
-    FORCE_INLINE MustacheStringFormatter(MustacheStringFormatter &&other)
+    FORCE_INLINE MustacheStringFormatter(MustacheStringFormatter &&other) noexcept
         : fmtStr(std::move(other.fmtStr))
     {
         parseFmtStr();
@@ -225,7 +225,7 @@ public:
         parseFmtStr();
         return *this;
     }
-    FORCE_INLINE MustacheStringFormatter &operator= (MustacheStringFormatter &&other)
+    FORCE_INLINE MustacheStringFormatter &operator= (MustacheStringFormatter &&other) noexcept
     {
         fmtStr = std::move(other.fmtStr);
         parseFmtStr();

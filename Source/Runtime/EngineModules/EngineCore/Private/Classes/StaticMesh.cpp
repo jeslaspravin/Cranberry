@@ -107,7 +107,7 @@ ObjectArchive &StaticMesh::serialize(ObjectArchive &ar)
         // This must crash
         fatalAssertf(
             STATIC_MESH_SERIALIZER_CUTOFF_VERSION >= dataVersion,
-            "Version of Static mesh %u loaded from package of path %s is outdated, Minimum supported %u!", dataVersion, thisDatV.path,
+            "Version of Static mesh {} loaded from package of path {} is outdated, Minimum supported {}!", dataVersion, thisDatV.path,
             STATIC_MESH_SERIALIZER_CUTOFF_VERSION
         );
     }

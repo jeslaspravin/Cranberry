@@ -211,7 +211,7 @@ bool VulkanDevice::collectDeviceExtensions(std::vector<const char *> &extensions
         if (extensionsString.find(mandatoryExt, 0) != std::string::npos)
         {
             extensions.push_back(mandatoryExt);
-            LOG_DEBUG("VulkanDevice", "Loading device extension %s", mandatoryExt);
+            LOG_DEBUG("VulkanDevice", "Loading device extension {}", mandatoryExt);
         }
     }
 
@@ -533,14 +533,14 @@ VulkanDevice::VulkanDevice(VkPhysicalDevice &&device)
 
         Vk::vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memoryProperties);
         LOG_DEBUG(
-            "VulkanDevice", "Found %d memory types and %d heaps in device %s", memoryProperties.memoryTypeCount,
+            "VulkanDevice", "Found {} memory types and {} heaps in device {}", memoryProperties.memoryTypeCount,
             memoryProperties.memoryHeapCount, properties.deviceName
         );
     }
 
-    LOG_DEBUG("VulkanDevice", "Found %d extensions and %d layers in device %s", extCount, layerCount, properties.deviceName);
+    LOG_DEBUG("VulkanDevice", "Found {} extensions and {} layers in device {}", extCount, layerCount, properties.deviceName);
     LOG_DEBUG(
-        "VulkanDevice", "Device API version %d.%d.%d Driver version %d.%d.%d", VK_VERSION_MAJOR(properties.apiVersion),
+        "VulkanDevice", "Device API version {}.{}.{} Driver version {}.{}.{}", VK_VERSION_MAJOR(properties.apiVersion),
         VK_VERSION_MINOR(properties.apiVersion), VK_VERSION_PATCH(properties.apiVersion), VK_VERSION_MAJOR(properties.driverVersion),
         VK_VERSION_MINOR(properties.driverVersion), VK_VERSION_PATCH(properties.driverVersion)
     );
@@ -549,7 +549,7 @@ VulkanDevice::VulkanDevice(VkPhysicalDevice &&device)
     Vk::vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, (uint32_t *)&queueCount, nullptr);
     queueFamiliesSupported.resize(queueCount);
     Vk::vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, (uint32_t *)&queueCount, queueFamiliesSupported.data());
-    LOG_DEBUG("VulkanDevice", "%s supports %d number of queue families", properties.deviceName, queueCount);
+    LOG_DEBUG("VulkanDevice", "{} supports {} number of queue families", properties.deviceName, queueCount);
 }
 
 #define MOVE_IMPL()                                                                                                                            \

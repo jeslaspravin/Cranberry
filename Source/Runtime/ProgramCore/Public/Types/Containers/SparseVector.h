@@ -122,13 +122,13 @@ public:
 
     reference operator[] (SizeType index) noexcept
     {
-        fatalAssertf(isValid(index), "Index %llu is invalid", index);
+        fatalAssertf(isValid(index), "Index {} is invalid", index);
         return elements[index];
     }
 
     const_reference operator[] (SizeType index) const noexcept
     {
-        fatalAssertf(isValid(index), "Index %llu is invalid", index);
+        fatalAssertf(isValid(index), "Index {} is invalid", index);
         return elements[index];
     }
 
@@ -160,7 +160,7 @@ public:
 
     void reset(SizeType index)
     {
-        fatalAssertf(isValid(index), "Index %llu is invalid", index);
+        fatalAssertf(isValid(index), "Index {} is invalid", index);
         if CONST_EXPR (std::is_destructible_v<ValueType>)
         {
             elements[index].~ElementType();

@@ -231,7 +231,7 @@ VulkanCmdBufferManager::~VulkanCmdBufferManager()
         if (cmdBuffer.second.cmdSyncInfoIdx != -1)
         {
             LOG_WARN(
-                "VulkanCmdBufferManager", "Command buffer %s is not finished, trying to finish it",
+                "VulkanCmdBufferManager", "Command buffer {} is not finished, trying to finish it",
                 cmdBuffer.second.cmdBuffer->getResourceName().getChar()
             );
             cmdFinished(cmdBuffer.second.cmdBuffer->getResourceName(), nullptr);
@@ -312,13 +312,13 @@ const GraphicsResource *VulkanCmdBufferManager::beginRecordOnceCmdBuffer(const S
             LOG_ERROR(
                 "VulkanCommandBufferManager",
                 "Trying to record a prerecorded command again is restricted Command = "
-                "[%s]",
+                "[{}]",
                 cmdName.getChar()
             );
             fatalAssertf(false, "Cannot record prerecorded command again");
             return cmdBufferItr->second.cmdBuffer;
         case ECmdState::Recording:
-            LOG_WARN("VulkanCommandBufferManager", "Command %s is already being recorded", cmdName.getChar());
+            LOG_WARN("VulkanCommandBufferManager", "Command {} is already being recorded", cmdName.getChar());
             return cmdBufferItr->second.cmdBuffer;
         case ECmdState::Idle:
         default:
@@ -369,14 +369,14 @@ const GraphicsResource *VulkanCmdBufferManager::beginReuseCmdBuffer(const String
         case ECmdState::Submitted:
             LOG_ERROR(
                 "VulkanCommandBufferManager",
-                "Trying to record a submitted command [%s] is restricted before it is "
+                "Trying to record a submitted command [{}] is restricted before it is "
                 "finished",
                 cmdName.getChar()
             );
             fatalAssertf(false, "Cannot record command while it is still executing");
             return cmdBufferItr->second.cmdBuffer;
         case ECmdState::Recording:
-            LOG_WARN("VulkanCommandBufferManager", "Command [%s] is already being recorded", cmdName.getChar());
+            LOG_WARN("VulkanCommandBufferManager", "Command [{}] is already being recorded", cmdName.getChar());
             return cmdBufferItr->second.cmdBuffer;
         case ECmdState::Recorded:
         case ECmdState::Idle:
@@ -404,7 +404,7 @@ void VulkanCmdBufferManager::startRenderPass(const GraphicsResource *cmdBuffer)
         if (cmdBufferItr != commandBuffers.end())
         {
             fatalAssertf(
-                cmdBufferItr->second.cmdState == ECmdState::Recording, "%s cmd buffer is not recording to start render pass",
+                cmdBufferItr->second.cmdState == ECmdState::Recording, "{} cmd buffer is not recording to start render pass",
                 cmdBufferItr->first.getChar()
             );
             cmdBufferItr->second.cmdState = ECmdState::RenderPass;
@@ -556,7 +556,7 @@ EQueueFunction VulkanCmdBufferManager::getQueueFamily(uint32 familyIdx) const
             return poolPair.first;
         }
     }
-    debugAssertf(false, "Invalide queue family index %u", familyIdx);
+    debugAssertf(false, "Invalide queue family index {}", familyIdx);
     return EQueueFunction::Generic;
 }
 
@@ -567,7 +567,7 @@ ECmdState VulkanCmdBufferManager::getState(const GraphicsResource *cmdBuffer) co
     {
         return cmdBufferItr->second.cmdState;
     }
-    LOG_DEBUG("VulkanCmdBufferManager", "Not available command buffer[%s] queried for state", cmdBuffer->getResourceName().getChar());
+    LOG_DEBUG("VulkanCmdBufferManager", "Not available command buffer[{}] queried for state", cmdBuffer->getResourceName().getChar());
     return ECmdState::Idle;
 }
 
@@ -728,7 +728,7 @@ void VulkanCmdBufferManager::submitCmds(EQueuePriority::Enum priority, ArrayView
     VkResult result = vDevice->vkQueueSubmit2KHR(
         vQueue, uint32(allSubmitInfo.size()), allSubmitInfo.data(), cmdsCompleteFence.reference<VulkanFence>()->fence
     );
-    fatalAssertf(result == VK_SUCCESS, "Failed submitting command to queue %s(result: %d)", queueRes->getResourceName().getChar(), result);
+    fatalAssertf(result == VK_SUCCESS, "Failed submitting command to queue {}(result: {})", queueRes->getResourceName().getChar(), result);
 
     for (uint32 cmdSubmitIdx = 0; cmdSubmitIdx != commands.size(); ++cmdSubmitIdx)
     {
@@ -859,7 +859,7 @@ void VulkanCmdBufferManager::submitCmd(EQueuePriority::Enum priority, const Comm
     VkResult result = vDevice->vkQueueSubmit2KHR(
         vQueue, 1, &cmdSubmitInfo, (cmdsCompleteFence.isValid() ? cmdsCompleteFence.reference<VulkanFence>()->fence : nullptr)
     );
-    fatalAssertf(result == VK_SUCCESS, "Failed submitting command to queue %s(result: %d)", queueRes->getResourceName().getChar(), result);
+    fatalAssertf(result == VK_SUCCESS, "Failed submitting command to queue {}(result: {})", queueRes->getResourceName().getChar(), result);
 
     bool bAnyNonTemp = false;
     int32 index = int32(cmdsSyncInfo.get());
@@ -914,7 +914,7 @@ void VulkanCmdBufferManager::submitCmds(
             {
                 LOG_ERROR(
                     "VulkanCommandBufferManager",
-                    "Reuse/One time record buffers are required to use advanced submit function, \"%s\" is temporary cmd buffer",
+                    "Reuse/One time record buffers are required to use advanced submit function, \"{}\" is temporary cmd buffer",
                     vCmdBuffer->getResourceName().getChar()
                 );
                 return;
@@ -942,7 +942,7 @@ void VulkanCmdBufferManager::submitCmds(
                     if (cmdBufferItr == commandBuffers.end() || cmdBufferItr->second.cmdState != ECmdState::Submitted)
                     {
                         LOG_ERROR(
-                            "VulkanCommandBufferManager", "Waiting on cmd buffer[%s] is invalid or not submitted",
+                            "VulkanCommandBufferManager", "Waiting on cmd buffer[{}] is invalid or not submitted",
                             waitOn.cmdBuffer->getResourceName().getChar()
                         );
                         return;
@@ -975,7 +975,7 @@ void VulkanCmdBufferManager::submitCmds(
             if (cmdBufferItr == commandBuffers.end() || cmdBufferItr->second.cmdState != ECmdState::Submitted)
             {
                 LOG_ERROR(
-                    "VulkanCommandBufferManager", "Waiting on cmd buffer[%s] is invalid or not submitted", waitOn->getResourceName().getChar()
+                    "VulkanCommandBufferManager", "Waiting on cmd buffer[{}] is invalid or not submitted", waitOn->getResourceName().getChar()
                 );
                 return;
             }
@@ -1034,7 +1034,7 @@ void VulkanCmdBufferManager::submitCmds(
         vQueue, uint32(allSubmitInfo.size()), allSubmitInfo.data(),
         (cmdsCompleteFence.isValid() ? cmdsCompleteFence.reference<VulkanFence>()->fence : nullptr)
     );
-    fatalAssertf(result == VK_SUCCESS, "Failed submitting command to queue %s(result: %d)", queueRes->getResourceName().getChar(), result);
+    fatalAssertf(result == VK_SUCCESS, "Failed submitting command to queue {}(result: {})", queueRes->getResourceName().getChar(), result);
 }
 
 void VulkanCmdBufferManager::submitCmd(
@@ -1057,7 +1057,7 @@ void VulkanCmdBufferManager::submitCmd(
         if (vCmdBuffer->bIsTempBuffer)
         {
             LOG_ERROR(
-                "VulkanCommandBufferManager", "Temporary buffers[%s] are required to use advanced submit function",
+                "VulkanCommandBufferManager", "Temporary buffers[{}] are required to use advanced submit function",
                 vCmdBuffer->getResourceName().getChar()
             );
             return;
@@ -1085,7 +1085,7 @@ void VulkanCmdBufferManager::submitCmd(
                 if (cmdBufferItr == commandBuffers.end() || cmdBufferItr->second.cmdState != ECmdState::Submitted)
                 {
                     LOG_ERROR(
-                        "VulkanCommandBufferManager", "Waiting on cmd buffer[%s] is invalid or not submitted",
+                        "VulkanCommandBufferManager", "Waiting on cmd buffer[{}] is invalid or not submitted",
                         waitOn.cmdBuffer->getResourceName().getChar()
                     );
                     return;
@@ -1117,7 +1117,7 @@ void VulkanCmdBufferManager::submitCmd(
         if (cmdBufferItr == commandBuffers.end() || cmdBufferItr->second.cmdState != ECmdState::Submitted)
         {
             LOG_ERROR(
-                "VulkanCommandBufferManager", "Waiting on cmd buffer[%s] is invalid or not submitted", waitOn->getResourceName().getChar()
+                "VulkanCommandBufferManager", "Waiting on cmd buffer[{}] is invalid or not submitted", waitOn->getResourceName().getChar()
             );
             return;
         }
@@ -1166,7 +1166,7 @@ void VulkanCmdBufferManager::submitCmd(
     VkResult result = vDevice->vkQueueSubmit2KHR(
         vQueue, 1, &cmdSubmitInfo, (cmdsCompleteFence.isValid() ? cmdsCompleteFence.reference<VulkanFence>()->fence : nullptr)
     );
-    fatalAssertf(result == VK_SUCCESS, "Failed submitting command to queue %s(result: %d)", queueRes->getResourceName().getChar(), result);
+    fatalAssertf(result == VK_SUCCESS, "Failed submitting command to queue {}(result: {})", queueRes->getResourceName().getChar(), result);
 }
 
 void VulkanCmdBufferManager::createPools()

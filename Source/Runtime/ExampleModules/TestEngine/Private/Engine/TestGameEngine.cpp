@@ -84,7 +84,7 @@ void TestGameEngine::startup(ApplicationInstance *appInst)
     onStartUp();
 
     timeData.tickStart();
-    LOG("GameEngine", "Engine initialized in %0.3f seconds", Time::asSeconds(timeData.initEndTick - timeData.startTick));
+    LOG("GameEngine", "Engine initialized in {:0.3} seconds", Time::asSeconds(timeData.initEndTick - timeData.startTick));
 }
 
 void TestGameEngine::quit()
@@ -105,7 +105,7 @@ void TestGameEngine::quit()
     // We are not yet ready for 100% multi threaded renderer
     RenderThreadEnqueuer::flushWaitRenderThread();
 
-    LOG("GameEngine", "Engine run time in %.3f minutes", Time::asMinutes(Time::timeNow() - timeData.startTick));
+    LOG("GameEngine", "Engine run time in {:.3} minutes", Time::asMinutes(Time::timeNow() - timeData.startTick));
 }
 
 void TestGameEngine::engineLoop()

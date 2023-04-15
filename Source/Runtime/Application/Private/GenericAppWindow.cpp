@@ -45,7 +45,7 @@ void GenericAppWindow::setParent(GenericAppWindow *window)
     }
     if (isValidWindow())
     {
-        LOG_ERROR("GenericAppWindow", "Cannot setup parent after window(%s) is created!", windowName);
+        LOG_ERROR("GenericAppWindow", "Cannot setup parent after window({}) is created!", windowName);
         return;
     }
 
@@ -65,7 +65,7 @@ void GenericAppWindow::updateWindow()
 void GenericAppWindow::destroyWindow()
 {
     // Must have been destroyed before parent is destroyed
-    debugAssertf(childWindows.empty(), "Child windows must be destroyed before parent %s", windowName);
+    debugAssertf(childWindows.empty(), "Child windows must be destroyed before parent {}", windowName);
     childWindows.clear();
     onWindowDeactived.clear();
     onWindowActivated.clear();

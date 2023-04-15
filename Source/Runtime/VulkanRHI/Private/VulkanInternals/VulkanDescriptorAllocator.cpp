@@ -302,7 +302,7 @@ VulkanDescriptorsSetAllocatorInfo &VulkanDescriptorsSetAllocator::findOrCreateAl
             {
                 LOG_VERBOSE(
                     "DescriptorsSetAllocator",
-                    "Found existing pool that supports query, obtained %d existing "
+                    "Found existing pool that supports query, obtained {} existing "
                     "Descriptors set",
                     uint32(tempSets.size())
                 );
@@ -540,7 +540,7 @@ bool VulkanDescriptorsSetAllocator::allocDescriptorsSets(
         if (chooseSets.size() != setsCount)
         {
             uint32 remainingSetsCount = setsCount - uint32(chooseSets.size());
-            LOG_DEBUG("DescriptorsSetAllocator", "Allocating remaining %d required sets", remainingSetsCount);
+            LOG_DEBUG("DescriptorsSetAllocator", "Allocating remaining {} required sets", remainingSetsCount);
 
             std::vector<VkDescriptorSetLayout> layouts;
             layouts.assign(remainingSetsCount, layout);

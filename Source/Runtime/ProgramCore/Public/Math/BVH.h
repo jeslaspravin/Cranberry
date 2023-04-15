@@ -171,8 +171,8 @@ template <typename StorageType>
 void BoundingVolume<StorageType>::addObject(ObjectIdxType objIdx, const GridCellIndex &atIdx)
 {
     GridCellStorage &objects = grid[atIdx];
-#if DEBUG_BUILD
-    alertAlwaysf(std::find(objects.cbegin(), objects.cend(), objIdx) == objects.cend(), "Object of index %llu duplicate insertion", objIdx);
+#if DEBUG_VALIDATIONS
+    alertAlwaysf(std::find(objects.cbegin(), objects.cend(), objIdx) == objects.cend(), "Object of index {} duplicate insertion", objIdx);
 #endif
     objects.emplace_back(objIdx);
 }
@@ -284,7 +284,7 @@ void BoundingVolume<StorageType>::reinitialize(const Vector3 &cellSize)
     }
 
     LOG_DEBUG(
-        "BVH", "Before correcting cell size global bounding box size is (%f, %f, %f)", globalBound.size().x(), globalBound.size().y(),
+        "BVH", "Before correcting cell size global bounding box size is ({}, {}, {})", globalBound.size().x(), globalBound.size().y(),
         globalBound.size().z()
     );
 
@@ -292,7 +292,7 @@ void BoundingVolume<StorageType>::reinitialize(const Vector3 &cellSize)
     volumeGrid.getBound(globalBound.minBound, globalBound.maxBound);
 
     LOG_DEBUG(
-        "BVH", "After correcting cell size global bounding box size is (%f, %f, %f)", globalBound.size().x(), globalBound.size().y(),
+        "BVH", "After correcting cell size global bounding box size is ({}, {}, {})", globalBound.size().x(), globalBound.size().y(),
         globalBound.size().z()
     );
 
@@ -319,7 +319,7 @@ void BoundingVolume<StorageType>::reinitialize(const Vector3 &cellSize)
             {
                 for (currentIdx[0] = minBoundIdx.idx[0]; currentIdx[0] <= maxBoundIdx[0]; currentIdx[0]++)
                 {
-                    // LOG_DEBUG("BVH", "Adding %d to (%d,%d,%d)", obj,
+                    // LOG_DEBUG("BVH", "Adding {} to ({},{},{})", obj,
                     // x, y, z);
                     addObject(objIdx, currentIdx);
                 }

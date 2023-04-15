@@ -43,9 +43,12 @@ void CoreObjectsDB::clear()
 CoreObjectsDB::NodeIdxType
 CoreObjectsDB::addObject(StringID objectId, StringView fullPath, StringView objName, CBEClass clazz, NodeIdxType parentNodeIdx)
 {
-    fatalAssertf(isMainThread(), "Add object %.*s must be done from main thread!", fullPath.length(), fullPath.data());
+    fatalAssertf(isMainThread(), "Add object {} must be done from main thread!", fullPath);
 
-    debugAssert(objectId.isValid() && !fullPath.empty() && !hasObject({ .objectPath = fullPath, .objectId = objectId }));
+#if DEBUG_VALIDATIONS
+    bool bUniqObject = !hasObject({ .objectPath = fullPath, .objectId = objectId });
+    debugAssert(objectId.isValid() && !fullPath.empty() && bUniqObject);
+#endif
 
     std::scoped_lock<SharedLockType> scopedLock(*dbLock);
 
@@ -59,8 +62,12 @@ CoreObjectsDB::addObject(StringID objectId, StringView fullPath, StringView objN
 
 CoreObjectsDB::NodeIdxType CoreObjectsDB::addRootObject(StringID objectId, StringView fullPath, StringView objName, CBEClass clazz)
 {
-    fatalAssertf(isMainThread(), "Add object %.*s must be done from main thread!", fullPath.length(), fullPath.data());
-    debugAssert(objectId.isValid() && !fullPath.empty() && !hasObject({ .objectPath = fullPath, .objectId = objectId }));
+    fatalAssertf(isMainThread(), "Add object {} must be done from main thread!", fullPath);
+
+#if DEBUG_VALIDATIONS
+    bool bUniqObject = !hasObject({ .objectPath = fullPath, .objectId = objectId });
+    debugAssert(objectId.isValid() && !fullPath.empty() && bUniqObject);
+#endif
 
     std::scoped_lock<SharedLockType> scopedLock(*dbLock);
 
@@ -74,7 +81,7 @@ CoreObjectsDB::NodeIdxType CoreObjectsDB::addRootObject(StringID objectId, Strin
 
 void CoreObjectsDB::removeObject(NodeIdxType nodeIdx)
 {
-    fatalAssertf(isMainThread(), "Remove object at node index %llu must be done from main thread!", nodeIdx);
+    fatalAssertf(isMainThread(), "Remove object at node index {} must be done from main thread!", nodeIdx);
     debugAssert(objectTree.isValid(nodeIdx));
 
     std::scoped_lock<SharedLockType> scopedLock(*dbLock);
@@ -88,7 +95,7 @@ void CoreObjectsDB::removeObject(NodeIdxType nodeIdx)
 
 void CoreObjectsDB::setObject(NodeIdxType nodeIdx, StringID newId, StringView newFullPath, StringView objName)
 {
-    fatalAssertf(isMainThread(), "Set object at node index %llu must be done from main thread!", nodeIdx);
+    fatalAssertf(isMainThread(), "Set object at node index {} must be done from main thread!", nodeIdx);
     debugAssert(objectTree.isValid(nodeIdx) && newId.isValid());
 
     std::scoped_lock<SharedLockType> scopedLock(*dbLock);
@@ -105,7 +112,7 @@ void CoreObjectsDB::setObject(NodeIdxType nodeIdx, StringID newId, StringView ne
 
 void CoreObjectsDB::setObjectParent(NodeIdxType nodeIdx, NodeIdxType parentNodeIdx)
 {
-    fatalAssertf(isMainThread(), "Set parent object for object with node index %llu must be done from main thread!", nodeIdx);
+    fatalAssertf(isMainThread(), "Set parent object for object with node index {} must be done from main thread!", nodeIdx);
     debugAssert(objectTree.isValid(nodeIdx));
 
     std::scoped_lock<SharedLockType> scopedLock(*dbLock);

@@ -64,7 +64,7 @@ void WindowsAppWindow::createWindow(const ApplicationInstance *appInstance)
 
     if (windowHandle == nullptr)
     {
-        LOG_ERROR("WindowsAppWindow", "Failed creating window, Error code %d", GetLastError());
+        LOG_ERROR("WindowsAppWindow", "Failed creating window, Error code {}", GetLastError());
         return;
     }
 
@@ -165,7 +165,7 @@ ShortRect WindowsAppWindow::windowClientRect() const
                                .bottom = (clientArea.bottom + clientOrigin.y) };
         fatalAssertf(
             clientBox.left < 0xFFFF && clientBox.top < 0xFFFF && clientBox.right < 0xFFFF && clientBox.bottom < 0xFFFF,
-            "Window client area(lefttop=[%d %d] rightbottom=[%d %d]) exceeded capacity of int16 change to int32 rectangle", clientBox.left,
+            "Window client area(lefttop=[{} {}] rightbottom=[{} {}]) exceeded capacity of int16 change to int32 rectangle", clientBox.left,
             clientBox.top, clientBox.right, clientBox.bottom
         );
         retVal.minBound = Short2(int16(clientBox.left), int16(clientBox.top));
@@ -182,7 +182,7 @@ ShortRect WindowsAppWindow::windowRect() const
     {
         fatalAssertf(
             windowRect.left < 0xFFFF && windowRect.top < 0xFFFF && windowRect.right < 0xFFFF && windowRect.bottom < 0xFFFF,
-            "Window rect area(lefttop=[%d %d] rightbottom=[%d %d]) exceeded capacity of int16 change to int32 rectangle", windowRect.left,
+            "Window rect area(lefttop=[{} {}] rightbottom=[{} {}]) exceeded capacity of int16 change to int32 rectangle", windowRect.left,
             windowRect.top, windowRect.right, windowRect.bottom
         );
 
@@ -201,20 +201,20 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         const WindowsAppWindow *const windowPtr
             = reinterpret_cast<const WindowsAppWindow *>(reinterpret_cast<LPCREATESTRUCTA>(lParam)->lpCreateParams);
         SetWindowLongPtrA(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(windowPtr));
-        LOG("WindowsAppWindow", "Created window %s", windowPtr->getWindowName().getChar());
+        LOG("WindowsAppWindow", "Created window {}", windowPtr->getWindowName().getChar());
         return 0;
     }
     case WM_DESTROY:
     {
         const WindowsAppWindow *const windowPtr = reinterpret_cast<const WindowsAppWindow *>(GetWindowLongPtrA(hwnd, GWLP_USERDATA));
-        LOG("WindowsAppWindow", "Destroying window %s", windowPtr->getWindowName().getChar());
+        LOG("WindowsAppWindow", "Destroying window {}", windowPtr->getWindowName().getChar());
         return 0;
     }
 
     case WM_CLOSE:
     {
         WindowsAppWindow *const windowPtr = reinterpret_cast<WindowsAppWindow *>(GetWindowLongPtrA(hwnd, GWLP_USERDATA));
-        LOG("WindowsAppWindow", "Quiting window %s", windowPtr->getWindowName().getChar());
+        LOG("WindowsAppWindow", "Quiting window {}", windowPtr->getWindowName().getChar());
 
         // This will trigger window destroyed event which can be used to kill engine
         windowPtr->pushEvent(
@@ -270,7 +270,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 WM_SIZE,
                 [windowPtr, lParam]()
                 {
-                    LOG("WindowsAppWindow", "Window %s Resized (%d, %d)", windowPtr->getWindowName().getChar(), LOWORD(lParam), HIWORD(lParam));
+                    LOG("WindowsAppWindow", "Window {} Resized ({}, {})", windowPtr->getWindowName().getChar(), LOWORD(lParam), HIWORD(lParam));
                     windowPtr->windowResizing(LOWORD(lParam), HIWORD(lParam));
                 }
             );
@@ -282,7 +282,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 WM_SIZE,
                 [windowPtr, lParam]()
                 {
-                    LOG_DEBUG("WindowsAppWindow", "Window %s Minimized", windowPtr->getWindowName().getChar());
+                    LOG_DEBUG("WindowsAppWindow", "Window {} Minimized", windowPtr->getWindowName().getChar());
                     debugAssert(LOWORD(lParam) == 0 && HIWORD(lParam) == 0);
                     windowPtr->windowResizing(0, 0);
                 }

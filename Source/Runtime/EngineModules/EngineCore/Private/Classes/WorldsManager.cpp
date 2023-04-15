@@ -30,7 +30,7 @@ World *WorldsManager::initWorld(World *world, bool bAsMainWorld)
         }
         unloadWorld(mainWorld);
 
-        LOG("WorldManager", "Initializing main world %s", worldDatV.path);
+        LOG("WorldManager", "Initializing main world {}", worldDatV.path);
         mainWorld = world;
         renderingWorld = mainWorld;
         playingWorld = mainWorld;
@@ -52,7 +52,7 @@ World *WorldsManager::initWorld(World *world, bool bAsMainWorld)
         return world;
     }
 
-    LOG("WorldManager", "Initializing world %s", worldDatV.path);
+    LOG("WorldManager", "Initializing world {}", worldDatV.path);
     otherWorlds[world] = { .renderScene = std::make_shared<EngineRenderScene>(world) };
     world->prepareForPlay();
     onWorldInitEvent().invoke(world, false);
@@ -84,7 +84,7 @@ void WorldsManager::unloadWorld(World *world)
     ObjectPrivateDataView worldDatV = world->getObjectData();
     if (isMainWorld(world))
     {
-        LOG("WorldManager", "Unloading main world %s", worldDatV.path);
+        LOG("WorldManager", "Unloading main world {}", worldDatV.path);
         onWorldUnloadEvent().invoke(mainWorld, true);
 #if EDITOR_BUILD
         editorWorld->beginDestroy();
@@ -100,7 +100,7 @@ void WorldsManager::unloadWorld(World *world)
     }
     else if (otherWorlds.contains(world))
     {
-        LOG("WorldManager", "Unloading world %s", worldDatV.path);
+        LOG("WorldManager", "Unloading world {}", worldDatV.path);
         onWorldUnloadEvent().invoke(world, false);
         world->beginDestroy();
         otherWorlds.erase(world);
@@ -111,7 +111,7 @@ void WorldsManager::unloadAllWorlds()
 {
     if (mainWorld)
     {
-        LOG("WorldManager", "Unloading main world %s", mainWorld->getObjectData().path);
+        LOG("WorldManager", "Unloading main world {}", mainWorld->getObjectData().path);
         onWorldUnloadEvent().invoke(mainWorld, true);
 #if EDITOR_BUILD
         editorWorld->beginDestroy();
@@ -127,7 +127,7 @@ void WorldsManager::unloadAllWorlds()
     }
     for (const std::pair<World *const, WorldInfo> &otherWorld : otherWorlds)
     {
-        LOG("WorldManager", "Unloading world %s", otherWorld.first->getObjectData().path);
+        LOG("WorldManager", "Unloading world {}", otherWorld.first->getObjectData().path);
         onWorldUnloadEvent().invoke(otherWorld.first, false);
         otherWorld.first->beginDestroy();
     }

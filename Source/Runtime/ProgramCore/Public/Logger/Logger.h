@@ -232,15 +232,15 @@ public:
 #if LOGGER_FORMAT_DIRECT
 
 #if ENABLE_VERBOSE_LOG
-#define LOG_VERBOSE(Category, Fmt, ...) Logger::verbose(CURRENT_SRC_LOC(), TCHAR(Category), StringFormat::format<TCHAR(Fmt)>(__VA_ARGS__))
+#define LOG_VERBOSE(Category, Fmt, ...) Logger::verbose(CURRENT_SRC_LOC(), TCHAR(Category), STR_FORMAT(TCHAR(Fmt), __VA_ARGS__))
 #else // ENABLE_VERBOSE_LOG
 #define LOG_VERBOSE(Category, Fmt, ...)
 #endif // ENABLE_VERBOSE_LOG
 
-#define LOG_DEBUG(Category, Fmt, ...) Logger::debug(CURRENT_SRC_LOC(), TCHAR(Category), StringFormat::format<TCHAR(Fmt)>(__VA_ARGS__))
-#define LOG(Category, Fmt, ...) Logger::log(CURRENT_SRC_LOC(), TCHAR(Category), StringFormat::format<TCHAR(Fmt)>(__VA_ARGS__))
-#define LOG_WARN(Category, Fmt, ...) Logger::warn(CURRENT_SRC_LOC(), TCHAR(Category), StringFormat::format<TCHAR(Fmt)>(__VA_ARGS__))
-#define LOG_ERROR(Category, Fmt, ...) Logger::error(CURRENT_SRC_LOC(), TCHAR(Category), StringFormat::format<TCHAR(Fmt)>(__VA_ARGS__))
+#define LOG_DEBUG(Category, Fmt, ...) Logger::debug(CURRENT_SRC_LOC(), TCHAR(Category), STR_FORMAT(TCHAR(Fmt), __VA_ARGS__))
+#define LOG(Category, Fmt, ...) Logger::log(CURRENT_SRC_LOC(), TCHAR(Category), STR_FORMAT(TCHAR(Fmt), __VA_ARGS__))
+#define LOG_WARN(Category, Fmt, ...) Logger::warn(CURRENT_SRC_LOC(), TCHAR(Category), STR_FORMAT(TCHAR(Fmt), __VA_ARGS__))
+#define LOG_ERROR(Category, Fmt, ...) Logger::error(CURRENT_SRC_LOC(), TCHAR(Category), STR_FORMAT(TCHAR(Fmt), __VA_ARGS__))
 
 #else // LOGGER_FORMAT_DIRECT
 

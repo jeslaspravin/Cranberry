@@ -252,7 +252,7 @@ bool ShaderParameterUtility::fillRefToBufParamInfo(
                             debugAssert(bufferStructField.data.totalSize != 0 && !currentField->isPointer());
                             fatalAssertf(
                                 !bHasRuntimeArray || (runtimeArrayOffset >= bufferStructField.data.offset),
-                                "Runtime array(offset : %d) must be the last member of SoA. Member %s offset %d", runtimeArrayOffset,
+                                "Runtime array(offset : {}) must be the last member of SoA. Member {} offset {}", runtimeArrayOffset,
                                 UTF8_TO_TCHAR(bufferStructField.attributeName.c_str()), bufferStructField.data.offset
                             );
                         }
@@ -290,7 +290,7 @@ bool ShaderParameterUtility::fillRefToBufParamInfo(
                             debugAssert(bufferInnerField.data.totalSize != 0 && !currentField->isPointer());
                             fatalAssertf(
                                 !bHasRuntimeArray || (runtimeArrayOffset >= bufferInnerField.data.offset),
-                                "Runtime array(offset : %d) must be the last member of SoA. Member %s offset %d", runtimeArrayOffset,
+                                "Runtime array(offset : {}) must be the last member of SoA. Member {} offset {}", runtimeArrayOffset,
                                 UTF8_TO_TCHAR(bufferInnerField.attributeName.c_str()), bufferInnerField.data.offset
                             );
                         }
@@ -366,7 +366,7 @@ uint32 ShaderParameterUtility::convertNamedSpecConstsToPerStage(
                 if (!stageSpecConst.attributeName.empty())
                 {
                     LOG_WARN(
-                        "ShaderSetParametersLayout", "No specialization const value found for %s, using default",
+                        "ShaderSetParametersLayout", "No specialization const value found for {}, using default",
                         UTF8_TO_TCHAR(stageSpecConst.attributeName.c_str())
                     );
                 }

@@ -124,12 +124,12 @@ Object *INTERNAL_create(CBEClass clazz, StringView name, Object *outerObj, EObje
 {
     if (clazz == nullptr)
     {
-        alertAlwaysf(false, "Invalid class type! when creating object %.*s", name.length(), name.data());
+        alertAlwaysf(false, "Invalid class type! when creating object {}", name);
         return nullptr;
     }
 
     // Validate inside main thread
-    fatalAssertf(INTERNAL_isInMainThread(), "Instance of any class %s must be constructed inside main thread!", clazz->nameString);
+    fatalAssertf(INTERNAL_isInMainThread(), "Instance of any class {} must be constructed inside main thread!", clazz->nameString);
 
     // If empty string then try create from class name
     String objectName = name.empty() ? clazz->nameString : name;
@@ -147,12 +147,12 @@ Object *INTERNAL_create(CBEClass clazz, StringView name, Object *outerObj, EObje
     {
         LOG_WARN(
             "ObjectHelper",
-            "Object with path %s already exists, If object path needs to be exactly same use createOrGet() to retrieve existing object",
+            "Object with path {} already exists, If object path needs to be exactly same use createOrGet() to retrieve existing object",
             objFullPath
         );
     }
 #endif // DEV_BUILD
-    fatalAssertf(clazz->allocFunc && clazz->destructor, "Abstract class %s cannot be instantiated!", clazz->nameString);
+    fatalAssertf(clazz->allocFunc && clazz->destructor, "Abstract class {} cannot be instantiated!", clazz->nameString);
 
     /**
      * **NOTICE**
@@ -180,7 +180,7 @@ Object *INTERNAL_create(CBEClass clazz, StringView name, Object *outerObj, EObje
         // Appending allocation ID and class name will make it unique
         SizeT uniqueNameId = uint32(clazz->name);
         HashUtility::combineSeeds(uniqueNameId, INTERNAL_ObjectCoreAccessors::getAllocIdx(object));
-        objectName = StringFormat::printf(TCHAR("%s_%llu"), objectName, uniqueNameId);
+        objectName = STR_FORMAT(TCHAR("{}_{}"), objectName, uniqueNameId);
     }
     INTERNAL_ObjectCoreAccessors::setOuterAndName(object, objectName, outerObj, clazz);
     INTERNAL_ObjectCoreAccessors::setAllocIdx(object, allocIdx);
@@ -190,7 +190,7 @@ Object *INTERNAL_create(CBEClass clazz, StringView name, Object *outerObj, EObje
 
     if (!INTERNAL_validateCreatedObject(object, objFlags))
     {
-        alertAlwaysf(false, "Object validation failed! Destroying %s", object->getObjectData().path);
+        alertAlwaysf(false, "Object validation failed! Destroying {}", object->getObjectData().path);
         INTERNAL_destroyCBEObject(object);
         object = nullptr;
     }

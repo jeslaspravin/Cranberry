@@ -106,7 +106,7 @@ void ShaderDescriptorParamType::wrapReflectedDescriptors(
     for (const DescEntrySubpassInput &descriptorInfo : reflectDescriptors.subpassInputs)
     {
         StringID attribName{ descriptorInfo.attributeName.c_str() };
-        LOG_WARN("DescriptorTypeParams", "Sub pass inputs are not supported yet %s", descriptorInfo.attributeName.c_str());
+        LOG_WARN("DescriptorTypeParams", "Sub pass inputs are not supported yet {}", descriptorInfo.attributeName.c_str());
     }
 }
 
@@ -203,7 +203,7 @@ const ShaderDescriptorParamType *ShaderSetParametersLayout::parameterDescription
         return foundParamItr->second;
     }
     LOG_ERROR(
-        "ShaderSetParametersLayout", "Parameter %s is not available in shader %s at set %u", paramName, respectiveShaderRes->getResourceName(),
+        "ShaderSetParametersLayout", "Parameter {} is not available in shader {} at set {}", paramName, respectiveShaderRes->getResourceName(),
         shaderSetID
     );
     return nullptr;
@@ -287,7 +287,7 @@ const ShaderDescriptorParamType *ShaderParametersLayout::parameterDescription(ui
         outSetIdx = foundParamItr->second.first;
         return foundParamItr->second.second;
     }
-    LOG_ERROR("ShaderParametersLayout", "Parameter %s is not available in shader %s", paramName, respectiveShaderRes->getResourceName());
+    LOG_ERROR("ShaderParametersLayout", "Parameter {} is not available in shader {}", paramName, respectiveShaderRes->getResourceName());
     return nullptr;
 }
 
@@ -468,7 +468,7 @@ void ShaderParameters::initParamsMaps(
                     if (bufferInitStride == 0)
                     {
                         LOG_DEBUG(
-                            "ShaderParameters", "Runtime array \"%s\" struct has 0 size and must be resized before init",
+                            "ShaderParameters", "Runtime array \"{}\" struct has 0 size and must be resized before init",
                             paramData.runtimeArray->paramName
                         );
                     }
@@ -746,7 +746,7 @@ void ShaderParameters::pullBufferParamUpdates(
                 {
                     LOG_WARN(
                         "ShaderParameters",
-                        "Setting value of parameter[%s] inside a struct[%s] in AoS[%s] will always set param value at struct index 0",
+                        "Setting value of parameter[{}] inside a struct[{}] in AoS[{}] will always set param value at struct index 0",
                         bufferUpdate.paramName, bufferUpdate.bufferName, outerBufferParamField->bufferField->paramName
                     );
                 }
@@ -804,7 +804,7 @@ void *ShaderParameters::getOuterPtrForPath(
     auto shaderBufferItr = shaderBuffers.find(pathNames.front());
     if (shaderBufferItr == shaderBuffers.cend())
     {
-        LOG_ERROR("ShaderParameters", "Cannot find bounding buffer param %s!", pathNames.front());
+        LOG_ERROR("ShaderParameters", "Cannot find bounding buffer param {}!", pathNames.front());
         return nullptr;
     }
     const BufferParametersData &boundBufferData = shaderBufferItr->second;
@@ -819,7 +819,7 @@ void *ShaderParameters::getOuterPtrForPath(
         }
         else
         {
-            LOG_ERROR("ShaderParameters", "Invalid pathNames[%s is not outer of %s]", pathNames[i - 1], pathNames[i]);
+            LOG_ERROR("ShaderParameters", "Invalid pathNames[{} is not outer of {}]", pathNames[i - 1], pathNames[i]);
             return nullptr;
         }
         const BufferParametersData::BufferParameter *bufferParam = outInnerBufferParams[i - 1];
@@ -830,23 +830,23 @@ void *ShaderParameters::getOuterPtrForPath(
             [[unlikely]]
         {
             LOG_ERROR(
-                "ShaderParameters", "Invalid index %u max size %u for param field %s", indices[i],
+                "ShaderParameters", "Invalid index {} max size {} for param field {}", indices[i],
                 (bufferParam->bufferField->size / bufferParam->bufferField->stride), pathNames[i]
             );
             return nullptr;
         }
     }
-#if DEBUG_BUILD
+#if DEBUG_VALIDATIONS
     fatalAssertf(
         BIT_NOT_SET(outInnerBufferParams.back()->bufferField->fieldDecorations, ShaderBufferField::IsStruct),
-        "Cannot set buffer %s using setFieldAtPath", pathNames.back()
+        "Cannot set buffer {} using setFieldAtPath", pathNames.back()
     );
     // 0th innerBufferParam will be filled after
     for (SizeT i = outInnerBufferParams.size() - 2; i > 0; --i)
     {
         fatalAssertf(
             BIT_SET(outInnerBufferParams[i]->bufferField->fieldDecorations, ShaderBufferField::IsStruct),
-            "Path to field is invalid![%s is not a struct]", pathNames[i + 1]
+            "Path to field is invalid![{} is not a struct]", pathNames[i + 1]
         );
     }
 #endif
@@ -859,7 +859,7 @@ void *ShaderParameters::getOuterPtrForPath(
                               : (outInnerBufferParams[0]->bufferField->size / outInnerBufferParams[0]->bufferField->stride);
         if (indices[1] >= maxCount) [[unlikely]]
         {
-            LOG_ERROR("ShaderParameters", "Invalid index %u max size %u for param field %s", indices[1], maxCount, pathNames[1]);
+            LOG_ERROR("ShaderParameters", "Invalid index {} max size {} for param field {}", indices[1], maxCount, pathNames[1]);
             return nullptr;
         }
     }
@@ -909,7 +909,7 @@ bool ShaderParameters::setFieldParam(StringID paramName, const FieldType &value,
     else
     {
         LOG_ERROR(
-            "ShaderParameters", "Cannot set %s[%d] of %s", paramName, index,
+            "ShaderParameters", "Cannot set {}[{}] of {}", paramName, index,
             bufferName.isValid() ? bufferName.toString()
                                  : TCHAR("Buffer not found")
             );
@@ -950,7 +950,7 @@ bool ShaderParameters::setFieldParam(StringID paramName, StringID bufferName, co
     }
     else
     {
-        LOG_ERROR("ShaderParameters", "Cannot set %s[%d] of %s", paramName, index, bufferName);
+        LOG_ERROR("ShaderParameters", "Cannot set {}[{}] of {}", paramName, index, bufferName);
     }
     return bValueSet;
 }
@@ -1006,7 +1006,7 @@ bool ShaderParameters::setFieldAtPath(ArrayView<const StringID> pathNames, Array
             return true;
         }
     }
-    LOG_ERROR("ShaderParameters", "Failed to set %s parameter", pathNames.back());
+    LOG_ERROR("ShaderParameters", "Failed to set {} parameter", pathNames.back());
     return false;
 }
 
@@ -1030,7 +1030,7 @@ FieldType ShaderParameters::getFieldParam(StringID paramName, uint32 index) cons
     else
     {
         LOG_ERROR(
-            "ShaderParameters", "Cannot get %s[%d] of %s", paramName, index,
+            "ShaderParameters", "Cannot get {}[{}] of {}", paramName, index,
             bufferName.isValid() ? bufferName.toString()
                                  : TCHAR("Buffer not found")
             );
@@ -1060,7 +1060,7 @@ FieldType ShaderParameters::getFieldParam(StringID paramName, StringID bufferNam
     }
     else
     {
-        LOG_ERROR("ShaderParameters", "Cannot get %s[%d] of %s", paramName, index, bufferName);
+        LOG_ERROR("ShaderParameters", "Cannot get {}[{}] of {}", paramName, index, bufferName);
     }
     return FieldType(0);
 }
@@ -1409,7 +1409,7 @@ uint32 ShaderParameters::getBufferRequiredSize(StringID bufferName) const
         const BufferParametersData &bufferData = bufferDataItr->second;
         debugAssertf(
             !bufferData.runtimeArray.has_value(),
-            "Runtime array requires count to calculated required buffer size! %s function will return assuming runtime array count as 1",
+            "Runtime array requires count to calculated required buffer size! {} function will return assuming runtime array count as 1",
             __func__
         );
         if (bufferData.runtimeArray.has_value())
@@ -1482,7 +1482,7 @@ void ShaderParameters::resizeRuntimeBuffer(StringID bufferName, uint32 minCount)
     auto bufferDataItr = shaderBuffers.find(bufferName);
     if (bufferDataItr == shaderBuffers.end())
     {
-        LOG_ERROR("ShaderParameters", "Buffer %s not found", bufferName);
+        LOG_ERROR("ShaderParameters", "Buffer {} not found", bufferName);
         return;
     }
 
@@ -1493,7 +1493,7 @@ void ShaderParameters::resizeRuntimeBuffer(StringID bufferName, uint32 minCount)
     );
     if (bufferDataItr->second.bIsExternal)
     {
-        LOG_ERROR("ShaderParameters", "External buffer assigned to %s cannot be resized", bufferNameString);
+        LOG_ERROR("ShaderParameters", "External buffer assigned to {} cannot be resized", bufferNameString);
         return;
     }
 

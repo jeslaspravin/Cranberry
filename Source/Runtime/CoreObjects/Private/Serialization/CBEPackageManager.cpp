@@ -89,7 +89,7 @@ Object *load(String objectPath, CBEClass clazz)
         }
         if (objPath.empty())
         {
-            LOG_ERROR("ObjectHelper", "Object %s is not found in any packages!", objectPath);
+            LOG_ERROR("ObjectHelper", "Object {} is not found in any packages!", objectPath);
             return nullptr;
         }
 
@@ -100,12 +100,12 @@ Object *load(String objectPath, CBEClass clazz)
     PackageLoader *objectPackageLoader = packageManager.getPackageLoader(packagePath.getChar());
     if (!objectPackageLoader)
     {
-        LOG_WARN("ObjectHelper", "ObjectLoader for object %s is not found", objectPath);
+        LOG_WARN("ObjectHelper", "ObjectLoader for object {} is not found", objectPath);
         packageManager.refreshPackages();
         objectPackageLoader = packageManager.getPackageLoader(packagePath.getChar());
         if (!objectPackageLoader)
         {
-            LOG_ERROR("ObjectHelper", "Object %s is not found in any packages!", objectPath);
+            LOG_ERROR("ObjectHelper", "Object {} is not found in any packages!", objectPath);
             return nullptr;
         }
     }
@@ -121,12 +121,12 @@ Object *load(String objectPath, CBEClass clazz)
         EPackageLoadSaveResult loadResult = objectPackageLoader->load();
         if (CBEPACKAGE_SAVELOAD_ERROR(loadResult))
         {
-            fatalAssertf(CBEPACKAGE_SAVELOAD_SUCCESS(loadResult), "Loading package %s failed", packageObjDatV.name);
+            fatalAssertf(CBEPACKAGE_SAVELOAD_SUCCESS(loadResult), "Loading package {} failed", packageObjDatV.name);
             return nullptr;
         }
         else if (!CBEPACKAGE_SAVELOAD_SUCCESS(loadResult))
         {
-            LOG_WARN("ObjectHelper", "Loaded package %s(For object %s) with few minor errors", packagePath, objectPath);
+            LOG_WARN("ObjectHelper", "Loaded package {}(For object {}) with few minor errors", packagePath, objectPath);
         }
     }
 
@@ -153,7 +153,7 @@ Object *getOrLoad(String objectPath, CBEClass clazz)
         }
         if (objPath.empty())
         {
-            LOG_ERROR("ObjectHelper", "Object %s is not found in any packages!", objectPath);
+            LOG_ERROR("ObjectHelper", "Object {} is not found in any packages!", objectPath);
             return nullptr;
         }
         objectPath = objPath;
@@ -189,7 +189,7 @@ bool save(Object *obj)
     }
     if (!package)
     {
-        LOG_WARN("ObjectHelper", "Object %s cannot be saved due to invalid package", obj->getObjectData().path);
+        LOG_WARN("ObjectHelper", "Object {} cannot be saved due to invalid package", obj->getObjectData().path);
         return false;
     }
     ObjectPrivateDataView packageDatV = package->getObjectData();
@@ -198,12 +198,12 @@ bool save(Object *obj)
     EPackageLoadSaveResult saveResult = saver.savePackage();
     if (CBEPACKAGE_SAVELOAD_ERROR(saveResult))
     {
-        LOG_ERROR("ObjectHelper", "Failed to save package %s", packageDatV.name);
+        LOG_ERROR("ObjectHelper", "Failed to save package {}", packageDatV.name);
         return false;
     }
     else if (!CBEPACKAGE_SAVELOAD_SUCCESS(saveResult))
     {
-        LOG_WARN("ObjectHelper", "Saved package %s with minor warnings", packageDatV.name);
+        LOG_WARN("ObjectHelper", "Saved package {} with minor warnings", packageDatV.name);
     }
     CLEAR_BITS(INTERNAL_ObjectCoreAccessors::getFlags(obj), EObjectFlagBits::ObjFlag_PackageDirty);
 

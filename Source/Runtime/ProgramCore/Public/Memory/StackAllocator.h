@@ -140,7 +140,7 @@ public:
             const SizeType bspAfterFree = SizeType(UPtrInt(ptr) - basePtr);
             void *expectedPtr = (void *)(basePtr + (bsp - size));
             debugAssertf(
-                ptr == expectedPtr, "Out of order freeing allocated stack memory! Freeing ptr %llu expected ptr %llu", UPtrInt(ptr), expectedPtr
+                ptr == expectedPtr, "Out of order freeing allocated stack memory! Freeing ptr {} expected ptr {}", UPtrInt(ptr), expectedPtr
             );
             // If bsp already went below the freeing pointer's stack pointer, Do nothing.
             if (bsp >= (bspAfterFree + size))
@@ -303,7 +303,7 @@ public:
     {
         alignAllocSize(size, alignment);
         debugAssertf(
-            alignment <= MAX_SUPPORTED_ALIGNMENT, "StackAllocator does not support alignment %u greater than %u", alignment,
+            alignment <= MAX_SUPPORTED_ALIGNMENT, "StackAllocator does not support alignment {} greater than {}", alignment,
             MAX_SUPPORTED_ALIGNMENT
         );
 

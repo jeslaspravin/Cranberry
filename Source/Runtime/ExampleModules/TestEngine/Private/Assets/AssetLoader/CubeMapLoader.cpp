@@ -67,7 +67,7 @@ HDRLoader::HDRLoader(const String &assetPath)
 
         if (texelData == nullptr)
         {
-            LOG_ERROR("HDRLoader", "Failed loading image[%s] - %s", textureName.getChar(), STB::lastFailure());
+            LOG_ERROR("HDRLoader", "Failed loading image[{}] - {}", textureName.getChar(), STB::lastFailure());
             bLoaded = false;
         }
         else
@@ -85,7 +85,7 @@ HDRLoader::HDRLoader(const String &assetPath)
     }
     else
     {
-        LOG_ERROR("HDRLoader", "Failed opening texture file - %s", textureFile.getFileName().getChar());
+        LOG_ERROR("HDRLoader", "Failed opening texture file - {}", textureFile.getFileName().getChar());
         bLoaded = false;
     }
 }
@@ -112,7 +112,7 @@ AssetBase *AssetLoaderLibrary::loadCubeMap(const String &assetPath)
     }
     else
     {
-        fatalAssertf(false, "Invalid Cube map asset %s", assetPath.getChar());
+        fatalAssertf(false, "Invalid Cube map asset {}", assetPath.getChar());
         return nullptr;
     }
 

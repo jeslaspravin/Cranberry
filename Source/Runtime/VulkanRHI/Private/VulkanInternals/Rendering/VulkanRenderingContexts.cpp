@@ -98,7 +98,7 @@ void VulkanGlobalRenderingContext::initializeApiContext()
                     LOG_ERROR(
                         "VulkanGlobalRenderingContext",
                         "Default shader must contain all the permutations, Missing "
-                        "for [%s %s]",
+                        "for [{} {}]",
                         EVertexType::toString(vertUsage).getChar(), ERenderPassFormat::toString(renderPassUsage).getChar()
                     );
                     fatalAssertf(defaultShader, "Default shader missing!");
@@ -324,7 +324,7 @@ VkPipelineLayout VulkanGraphicsHelper::createPipelineLayout(class IGraphicsInsta
     VkPipelineLayout pipelineLayout;
     if (device->vkCreatePipelineLayout(device->logicalDevice, &layoutCreateInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
     {
-        LOG_ERROR("VulkanGraphicsHelper", "Pipeline layout creation failed for shader %s", shaderResource->getResourceName().getChar());
+        LOG_ERROR("VulkanGraphicsHelper", "Pipeline layout creation failed for shader {}", shaderResource->getResourceName().getChar());
         pipelineLayout = nullptr;
     }
     else

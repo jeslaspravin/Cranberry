@@ -119,7 +119,7 @@ void EditorEngine::selectionChanged(Object *newSelection)
     else
     {
         selectedActor = nullptr;
-        LOG_WARN("EditorEngine", "Selection %s is not handled properly!", newSelection->getObjectData().path);
+        LOG_WARN("EditorEngine", "Selection {} is not handled properly!", newSelection->getObjectData().path);
     }
 }
 

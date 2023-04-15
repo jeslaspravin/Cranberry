@@ -114,7 +114,7 @@ public:
     void setAllocIdx(NodeIdxType nodeIdx, ObjectAllocIdx allocIdx)
     {
         SharedLockObjectsDB scopedLock(this);
-        fatalAssertf(isMainThread(), "Set allocIdx for object with node index %llu must be done from main thread!", nodeIdx);
+        fatalAssertf(isMainThread(), "Set allocIdx for object with node index {} must be done from main thread!", nodeIdx);
         debugAssert(objectTree.isValid(nodeIdx));
 
         objectTree[nodeIdx].allocIdx = allocIdx;
@@ -272,7 +272,7 @@ private:
             const ObjectData &objData = db->objectTree[itr->second];
             if (objData.path.isEqual(query.objectPath))
             {
-                alertAlwaysf(!bDuplicatePathFound, "Objects with duplicate names found %s", objData.path);
+                alertAlwaysf(!bDuplicatePathFound, "Objects with duplicate names found {}", objData.path);
                 bDuplicatePathFound = true;
                 if (classFilter(query, objData))
                 {

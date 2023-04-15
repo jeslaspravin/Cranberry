@@ -219,7 +219,7 @@ bool ActorPrefab::copyFrom(ActorPrefab *otherPrefab)
     if (!bCopiedActorTemplate)
     {
         LOG_ERROR(
-            "ActorPrefab", "Cannot copy mismatched actor templates[To: %s, From: %s]", getObjectData().path, otherPrefab->getObjectData().path
+            "ActorPrefab", "Cannot copy mismatched actor templates[To: {}, From: {}]", getObjectData().path, otherPrefab->getObjectData().path
         );
         return false;
     }
@@ -263,7 +263,7 @@ bool ActorPrefab::copyFrom(ActorPrefab *otherPrefab)
         if (!bIsCopied)
         {
             LOG_ERROR(
-                "ActorPrefab", "Failed to copy component templates[To: %s, From: %s]", thisComp->getObjectData().path, otherCompDatV.path
+                "ActorPrefab", "Failed to copy component templates[To: {}, From: {}]", thisComp->getObjectData().path, otherCompDatV.path
             );
             return false;
         }
@@ -290,7 +290,7 @@ bool ActorPrefab::copyFrom(ActorPrefab *otherPrefab)
         if (compOverrideItr == componentOverrides.end())
         {
             LOG_ERROR(
-                "ActorPrefab", "Cannot find component override entry for %s", getTemplateToOverride(otherOverrides)->getObjectData().path
+                "ActorPrefab", "Cannot find component override entry for {}", getTemplateToOverride(otherOverrides)->getObjectData().path
             );
             return false;
         }
@@ -468,7 +468,7 @@ void ActorPrefab::removeComponent(Object *comp)
     auto compTemplateItr = std::find(components.begin(), components.end(), compTemplate);
     if (compTemplateItr == components.end())
     {
-        LOG("ActorPrefab", "Component %s is already removed", comp->getObjectData().name);
+        LOG("ActorPrefab", "Component {} is already removed", comp->getObjectData().name);
         return;
     }
 
@@ -564,7 +564,7 @@ ObjectArchive &ActorPrefab::serialize(ObjectArchive &ar)
         // This must crash
         fatalAssertf(
             ACTOR_PREFAB_SERIALIZER_CUTOFF_VERSION >= dataVersion,
-            "Version of ActorPrefab %u loaded from package %s is outdated, Minimum supported %u!", dataVersion, getObjectData().path,
+            "Version of ActorPrefab {} loaded from package {} is outdated, Minimum supported {}!", dataVersion, getObjectData().path,
             ACTOR_PREFAB_SERIALIZER_CUTOFF_VERSION
         );
     }
@@ -585,7 +585,7 @@ void ActorPrefab::onPostSerialize(const ObjectArchive &ar)
         {
             componentOverrides.clear();
         }
-        alertAlwaysf(actorClass && actorTemplate, "Missing actor class/Template for actor prefab %s", getObjectData().path);
+        alertAlwaysf(actorClass && actorTemplate, "Missing actor class/Template for actor prefab {}", getObjectData().path);
         std::erase(components, nullptr);
         std::erase_if(
             componentOverrides,
@@ -720,7 +720,7 @@ void ActorPrefab::initializeActor(ActorPrefab *inPrefab)
         else
         {
             fatalAssertf(
-                false, "Why?? Component %s of type %s is not a valid component", comp->getObjectData().name, comp->getType()->nameString
+                false, "Why?? Component {} of type {} is not a valid component", comp->getObjectData().name, comp->getType()->nameString
             );
         }
     };
@@ -749,7 +749,7 @@ void ActorPrefab::createComponentOverride(ComponentOverrideInfo &overrideInfo, b
     ObjectTemplate *compTemplateObj = getTemplateToOverride(overrideInfo);
     TransformComponent *tfComponent = compTemplateObj->getTemplateAs<TransformComponent>();
 
-#if DEBUG_BUILD
+#if DEBUG_VALIDATIONS
     ActorPrefab *actorPrefab = prefabFromCompTemplate(compTemplateObj);
     LogicComponent *logicComponent = compTemplateObj->getTemplateAs<LogicComponent>();
     debugAssert(compTemplateObj && (logicComponent || tfComponent) && actorPrefab && actorPrefab != this);

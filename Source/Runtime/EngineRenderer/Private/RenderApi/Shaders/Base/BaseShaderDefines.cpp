@@ -95,7 +95,7 @@ EVertexType::Type UniqueUtilityShaderConfig::vertexUsage() const
         }
     }
 
-    LOG_ERROR("UniqueUtilityShader", "not supported vertex format for Utility shader %s", getResourceName().getChar());
+    LOG_ERROR("UniqueUtilityShader", "not supported vertex format for Utility shader {}", getResourceName().getChar());
     return EVertexType::Simple2;
 }
 

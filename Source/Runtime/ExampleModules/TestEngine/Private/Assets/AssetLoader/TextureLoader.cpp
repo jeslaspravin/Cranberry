@@ -40,7 +40,7 @@ TextureLoader::TextureLoader(const String &texturePath)
 
         if (texelData == nullptr)
         {
-            LOG_ERROR("Texture Loader", "Failed loading image[%s] - %s", textureName.getChar(), STB::lastFailure());
+            LOG_ERROR("Texture Loader", "Failed loading image[{}] - {}", textureName.getChar(), STB::lastFailure());
             bLoaded = false;
         }
         else
@@ -71,7 +71,7 @@ TextureLoader::TextureLoader(const String &texturePath)
     }
     else
     {
-        LOG_ERROR("Texture Loader", "Failed opening texture file - %s", textureFile.getFileName().getChar());
+        LOG_ERROR("Texture Loader", "Failed opening texture file - {}", textureFile.getFileName().getChar());
         bLoaded = false;
     }
 }
@@ -116,8 +116,8 @@ bool TextureLoader::isNormalTexture(const uint8 *texels) const
     {
         isNormal = true;
         LOG("Texture Loader",
-            "Texture %s with Max Red Green lum %u Max RG weight %0.3f, Max Blue lum %u Max B "
-            "weight %0.3f is determined as normal texture",
+            "Texture {} with Max Red Green lum {} Max RG weight {:0.3}, Max Blue lum {} Max B "
+            "weight {:0.3} is determined as normal texture",
             textureName.getChar(), rgMaxLum, rgMaxWeight, blueMaxLum, blueMaxWeight);
     }
 
@@ -136,10 +136,10 @@ bool TextureLoader::isNormalTexture(const uint8 *texels) const
         normalizedPixs += (channelsCount >= 3 && Math::isEqual(1.0f, pixelLen, 0.1f) && texel.z() > 0.0f) ? 1 : 0;
     }
     const float normalizedPixFrac = float(normalizedPixs) / pixelsCount;
-    LOG_DEBUG("Texture Loader", "Normalization ratio %0.2f for texture %s", normalizedPixFrac, textureName.getChar());
+    LOG_DEBUG("Texture Loader", "Normalization ratio {:0.2} for texture {}", normalizedPixFrac, textureName.getChar());
     if (normalizedPixFrac > 0.25f)
     {
-        LOG("Texture Loader", "Texture %s is marked as normal map, Normalization ratio %0.2f", textureName.getChar(), normalizedPixFrac);
+        LOG("Texture Loader", "Texture {} is marked as normal map, Normalization ratio {:0.2}", textureName.getChar(), normalizedPixFrac);
         isNormal = true;
     }
 #endif
@@ -149,7 +149,7 @@ bool TextureLoader::isNormalTexture(const uint8 *texels) const
         isNormal = true;
         LOG_DEBUG(
             "Texture Loader",
-            "Texture %s is determined as normal texture based on suffix _N, Please rename "
+            "Texture {} is determined as normal texture based on suffix _N, Please rename "
             "texture if not intended",
             textureName.getChar()
         );

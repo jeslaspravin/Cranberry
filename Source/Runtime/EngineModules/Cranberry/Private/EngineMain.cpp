@@ -77,7 +77,7 @@ int wWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, PWSTR pCmdLine, i
 
     String cmdLine{ WCHAR_TO_TCHAR(pCmdLine) };
     Logger::initialize();
-    LOG_DEBUG("CommandLine", "Command [%s]", cmdLine.getChar());
+    LOG_DEBUG("CommandLine", "Command [{}]", cmdLine.getChar());
 
     int32 exitCode = appMain(cmdLine, hInstance);
 

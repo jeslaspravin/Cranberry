@@ -111,7 +111,7 @@ copat::JobSystemTask RenderManager::destroy()
         for (const GraphicsResource *resource : resourceLeak)
         {
             LOG_ERROR(
-                "GraphicsResourceLeak", "\tType:%s, Resource Name %s", resource->getType()->getName(), resource->getResourceName().getChar()
+                "GraphicsResourceLeak", "\tType:{}, Resource Name {}", resource->getType()->getName(), resource->getResourceName().getChar()
             );
         }
     }

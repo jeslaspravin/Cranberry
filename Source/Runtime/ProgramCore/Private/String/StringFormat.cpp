@@ -131,7 +131,7 @@ MustacheFormatArg &MustacheFormatArg::operator= (const MustacheFormatArg &arg)
     return *this;
 }
 
-#define FORMAT_FUNDAMENTALS(Specifier, VarName) StringFormat::printf(TCHAR(Specifier), value.fundamentalVals.##VarName)
+#define FORMAT_FUNDAMENTALS(VarName) STR_FORMAT(TCHAR("{}"), value.fundamentalVals.##VarName)
 String MustacheFormatArg::toString() const
 {
     switch (type)
@@ -140,34 +140,34 @@ String MustacheFormatArg::toString() const
         return (value.fundamentalVals.boolVal) ? TCHAR("true") : TCHAR("false");
         break;
     case MustacheFormatArg::UInt8:
-        return FORMAT_FUNDAMENTALS("%hhu", uint8Val);
+        return FORMAT_FUNDAMENTALS(uint8Val);
         break;
     case MustacheFormatArg::UInt16:
-        return FORMAT_FUNDAMENTALS("%hu", uint16Val);
+        return FORMAT_FUNDAMENTALS(uint16Val);
         break;
     case MustacheFormatArg::UInt32:
-        return FORMAT_FUNDAMENTALS("%u", uint32Val);
+        return FORMAT_FUNDAMENTALS(uint32Val);
         break;
     case MustacheFormatArg::UInt64:
-        return FORMAT_FUNDAMENTALS("%llu", uint64Val);
+        return FORMAT_FUNDAMENTALS(uint64Val);
         break;
     case MustacheFormatArg::Int8:
-        return FORMAT_FUNDAMENTALS("%hhd", int8Val);
+        return FORMAT_FUNDAMENTALS(int8Val);
         break;
     case MustacheFormatArg::Int16:
-        return FORMAT_FUNDAMENTALS("%hd", int16Val);
+        return FORMAT_FUNDAMENTALS(int16Val);
         break;
     case MustacheFormatArg::Int32:
-        return FORMAT_FUNDAMENTALS("%d", int32Val);
+        return FORMAT_FUNDAMENTALS(int32Val);
         break;
     case MustacheFormatArg::Int64:
-        return FORMAT_FUNDAMENTALS("%lld", int64Val);
+        return FORMAT_FUNDAMENTALS(int64Val);
         break;
     case MustacheFormatArg::Float:
-        return FORMAT_FUNDAMENTALS("%f", floatVal);
+        return FORMAT_FUNDAMENTALS(floatVal);
         break;
     case MustacheFormatArg::Double:
-        return FORMAT_FUNDAMENTALS("%f", doubleVal);
+        return FORMAT_FUNDAMENTALS(doubleVal);
         break;
     case MustacheFormatArg::Getter:
         return value.argGetter.invoke();
@@ -266,7 +266,7 @@ void MustacheStringFormatter::parseFmtStr()
         }
         else if (isSectionClose(matchStr))
         {
-            fatalAssertf(sectAndIdxStack.back().first == argName, "Section tag %s is not closed", sectAndIdxStack.back().first);
+            fatalAssertf(sectAndIdxStack.back().first == argName, "Section tag {} is not closed", sectAndIdxStack.back().first);
             sections[sectAndIdxStack.back().second].childCount = uint32(sections.size() - (sectAndIdxStack.back().second + 1));
             sections[sectAndIdxStack.back().second].sectionEndIdx = i;
             sectAndIdxStack.pop_back();
@@ -315,7 +315,7 @@ String MustacheStringFormatter::formatBasic(const FormatArgsMap &formatArgs) con
         else if (formatArgItr == formatArgs.cend()) // Match's FormatArg not found so we skip and
                                                     // wont change final string size here
         {
-            LOG_WARN("StringFormat", "Format Arg not found for Arg Name %s", argName);
+            LOG_WARN("StringFormat", "Format Arg not found for Arg Name {}", argName);
             outSegments.emplace_back(FormatSegment{ backSegmentLength, uint64(match.prefix().length() + wholesubmatch.length()) });
         }
         else
@@ -449,7 +449,7 @@ void MustacheStringFormatter::renderSection(
                 // if negate condition unbound cannot be executed
                 LOG_ERROR(
                     "MustacheStringFormatter",
-                    "Section formatter function found for section {{%s}}, but it is "
+                    "Section formatter function found for section {{{}}}, but it is "
                     "unbound!",
                     matchStr
                 );
@@ -498,7 +498,7 @@ uint32 MustacheStringFormatter::renderTag(
         auto partialItr = partials.find(argName);
         if (partialItr == partials.cend())
         {
-            LOG_ERROR("MustacheStringFormatter", "Could not find any partial for partial tag {{%s}}", matchStr);
+            LOG_ERROR("MustacheStringFormatter", "Could not find any partial for partial tag {{{}}}", matchStr);
         }
         else
         {
@@ -514,7 +514,7 @@ uint32 MustacheStringFormatter::renderTag(
                 return matchIdx == section.sectionStartIdx;
             }
         );
-        fatalAssertf(itr != sections.cend(), "Section %s not found in sections list", argName);
+        fatalAssertf(itr != sections.cend(), "Section {} not found in sections list", argName);
         uint32 sectionIdx = uint32(std::distance(sections.cbegin(), itr));
         renderSection(outStr, sectionIdx, context, partials);
 
@@ -525,7 +525,7 @@ uint32 MustacheStringFormatter::renderTag(
         auto arg = context.args.find(argName);
         if (arg == context.args.end())
         {
-            LOG_ERROR("MustacheStringFormatter", "Could not find format arg for tag {{%s}}", matchStr);
+            LOG_ERROR("MustacheStringFormatter", "Could not find format arg for tag {{{}}}", matchStr);
         }
         else
         {

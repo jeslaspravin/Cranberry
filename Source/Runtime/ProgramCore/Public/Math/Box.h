@@ -240,7 +240,7 @@ public:
     void boundCorners(const ArrayView<T> &corners) const
     {
         uint32 totalCorners = Math::pow(2, d);
-        fatalAssertf(corners.size() >= totalCorners, "Corners must be greater or equal to %d", totalCorners);
+        fatalAssertf(corners.size() >= totalCorners, "Corners must be greater or equal to {}", totalCorners);
 
         const T boundCenter = center();
         const T boundHalfExtend = size() * 0.5f;

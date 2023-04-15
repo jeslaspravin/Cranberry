@@ -96,7 +96,7 @@ bool WindowsMouseDevice::registerWindow(const GenericAppWindow *window) const
 
     if (!RegisterRawInputDevices(&mouseDevice, 1, sizeof(decltype(mouseDevice))))
     {
-        LOG_WARN("WindowsMouseDevice", "Failed registering mouse for window %s", window->getWindowName().getChar());
+        LOG_WARN("WindowsMouseDevice", "Failed registering mouse for window {}", window->getWindowName().getChar());
         return false;
     }
     return true;
@@ -184,7 +184,7 @@ bool WindowsKeyboardDevice::sendInRaw(const void *rawInput)
     if (winRawInput->data.keyboard.VKey == 0xFF)
     {
         LOG_WARN(
-            "WindowsKeyboardDevice", "Possible multibyte key that is not handled properly : %d, Flags : %d",
+            "WindowsKeyboardDevice", "Possible multibyte key that is not handled properly : {}, Flags : {}",
             winRawInput->data.keyboard.MakeCode, winRawInput->data.keyboard.Flags
         );
         return true;
@@ -216,7 +216,7 @@ bool WindowsKeyboardDevice::registerWindow(const GenericAppWindow *window) const
 
     if (!RegisterRawInputDevices(&keyboardDevice, 1, sizeof(decltype(keyboardDevice))))
     {
-        LOG_WARN("WindowsKeyboardDevice", "Failed registering keyboard for window %s", window->getWindowName().getChar());
+        LOG_WARN("WindowsKeyboardDevice", "Failed registering keyboard for window {}", window->getWindowName().getChar());
         return false;
     }
     return true;

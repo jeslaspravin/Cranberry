@@ -74,7 +74,7 @@ void SourceGenerator::writeGeneratedFiles()
         if (!FileHelper::writeString(headerContent, srcInfo->generatedHeaderPath))
         {
             LOG_ERROR(
-                "SourceGenerator", "Could not write generated header(%s) for header %s", srcInfo->generatedHeaderPath, srcInfo->headerIncl
+                "SourceGenerator", "Could not write generated header({}) for header {}", srcInfo->generatedHeaderPath, srcInfo->headerIncl
             );
             bHasAnyError = true;
             continue;
@@ -96,7 +96,7 @@ void SourceGenerator::writeGeneratedFiles()
         String sourceContent = sourceGenTemplates[GeneratorConsts::REFLECTSOURCE_TEMPLATE].render(sourceContext, sourceGenTemplates);
         if (!FileHelper::writeString(sourceContent, srcInfo->generatedTUPath))
         {
-            LOG_ERROR("SourceGenerator", "Could not write generated sources(%s) for header %s", srcInfo->generatedTUPath, srcInfo->headerIncl);
+            LOG_ERROR("SourceGenerator", "Could not write generated sources({}) for header {}", srcInfo->generatedTUPath, srcInfo->headerIncl);
             bHasAnyError = true;
             continue;
         }

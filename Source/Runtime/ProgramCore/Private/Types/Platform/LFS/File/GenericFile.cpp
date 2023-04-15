@@ -35,7 +35,7 @@ void GenericFile::setPath(const String &fPath)
     }
     else // No directory separator found so it must be just file name
     {
-        LOG_ERROR("File", "File path \"%s\" is invalid", fPathTmp);
+        LOG_ERROR("File", "File path \"{}\" is invalid", fPathTmp);
         debugAssert(!"File path is invalid");
     }
 }

@@ -87,7 +87,7 @@ void WgImGui::drawWidget(ShortRect clipBound, WidgetGeomId thisId, const WidgetG
 
     Short2 widgetSize = geomTree[thisId].box.size();
     Short2 textureSize = window->applyDpiScale(widgetSize);
-    debugAssertf(widgetSize.x >= 0 && widgetSize.y >= 0, "Widget size is invalid [%d, %d]", widgetSize.x, widgetSize.y);
+    debugAssertf(widgetSize.x >= 0 && widgetSize.y >= 0, "Widget size is invalid [{}, {}]", widgetSize.x, widgetSize.y);
     bool bRegenRt = false;
     bool bFlushCmdBuffers = false;
     uint32 bufferingCount = uint32(swapchainBuffered.size());
@@ -427,8 +427,10 @@ void WgImGui::deleteRTDeferred(WgRenderTarget rt, RenderManager *renderMan)
         // Clear RT's Framebuffer
         const IRenderTargetTexture *rtPtr = &rt;
         renderMan->clearExternInitRtsFramebuffer({ &rtPtr, 1 });
+
+        std::vector<ImageResourceRef> attachments{ rt.renderTargetResource(), rt.renderResource() };
         debugAssertf(
-            !renderMan->getGlobalRenderingContext()->hasAnyFbUsingRts({ rt.renderTargetResource(), rt.renderResource() }),
+            !renderMan->getGlobalRenderingContext()->hasAnyFbUsingRts(attachments),
             "Some framebuffer are missed when clearing ImGui RT, RT might never gets cleared!"
         );
     }

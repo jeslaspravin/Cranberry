@@ -124,7 +124,7 @@ bool WidgetDrawContext::canAddMoreVerts(uint32 vertsCount) const { return (verti
 
 void WidgetBase::rebuildWidgetGeometry(WidgetGeomId thisId, WidgetGeomTree &geomTree)
 {
-#if DEBUG_BUILD
+#if DEBUG_VALIDATIONS
     debugAssertf(!bRebuildingGeom, "Recursively calling rebuildWidgetGeometry of same widget!");
     bRebuildingGeom = true;
 #endif
@@ -141,7 +141,7 @@ void WidgetBase::rebuildWidgetGeometry(WidgetGeomId thisId, WidgetGeomTree &geom
     }
     rebuildGeometry(thisId, geomTree);
 
-#if DEBUG_BUILD
+#if DEBUG_VALIDATIONS
     debugAssertf(bRebuildingGeom, "Recursively calling rebuildWidgetGeometry of same widget!");
     bRebuildingGeom = false;
 #endif

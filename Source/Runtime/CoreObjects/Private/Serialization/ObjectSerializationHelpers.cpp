@@ -45,7 +45,7 @@ struct ReadFieldVisitable
     template <UnsupportedFundamentalOrSpecial Type>
     static void visit(Type * /*val*/, const PropertyInfo &propInfo, void * /*userData*/)
     {
-        alertAlwaysf(false, "Why?! This isn't supposed to be invoked %s", propInfo.thisProperty->nameString);
+        alertAlwaysf(false, "Why?! This isn't supposed to be invoked {}", propInfo.thisProperty->nameString);
     }
 
     // above UnsupportedFundamentalOrSpecial takes precedence over below generic support
@@ -178,7 +178,7 @@ struct ReadFieldVisitable
     // Ignoring const types
     static void visit(const void *, const PropertyInfo &propInfo, void *)
     {
-        alertAlwaysf(false, "Why?! This isn't supposed to be invoked %s", propInfo.thisProperty->nameString);
+        alertAlwaysf(false, "Why?! This isn't supposed to be invoked {}", propInfo.thisProperty->nameString);
     }
     static void visit(void **ptr, const PropertyInfo &propInfo, void *userData)
     {
@@ -207,7 +207,7 @@ struct ReadFieldVisitable
         case EPropertyType::PairType:
         default:
             alertAlwaysf(
-                false, "Unhandled ptr to ptr Field name %s, type %s", propInfo.fieldProperty->nameString, *propInfo.thisProperty->typeInfo
+                false, "Unhandled ptr to ptr Field name {}, type {}", propInfo.fieldProperty->nameString, *propInfo.thisProperty->typeInfo
             );
             break;
         }
@@ -232,7 +232,7 @@ struct WriteFieldVisitable
     template <UnsupportedFundamentalOrSpecial Type>
     static void visit(Type * /*val*/, const PropertyInfo &propInfo, void * /*userData*/)
     {
-        alertAlwaysf(false, "Why?! This isn't supposed to be invoked %s", propInfo.thisProperty->nameString);
+        alertAlwaysf(false, "Why?! This isn't supposed to be invoked {}", propInfo.thisProperty->nameString);
     }
 
     // above UnsupportedFundamentalOrSpecial takes precedence over below generic support
@@ -320,7 +320,7 @@ struct WriteFieldVisitable
     // Ignoring const types
     static void visit(const void *, const PropertyInfo &propInfo, void *)
     {
-        alertAlwaysf(false, "Why?! This isn't supposed to be invoked %s", propInfo.thisProperty->nameString);
+        alertAlwaysf(false, "Why?! This isn't supposed to be invoked {}", propInfo.thisProperty->nameString);
     }
     static void visit(void **ptr, const PropertyInfo &propInfo, void *userData)
     {
@@ -343,7 +343,7 @@ struct WriteFieldVisitable
         case EPropertyType::PairType:
         default:
             alertAlwaysf(
-                false, "Unhandled ptr to ptr Field name %s, type %s", propInfo.fieldProperty->nameString, *propInfo.thisProperty->typeInfo
+                false, "Unhandled ptr to ptr Field name {}, type {}", propInfo.fieldProperty->nameString, *propInfo.thisProperty->typeInfo
             );
             break;
         }
@@ -472,7 +472,7 @@ ObjectArchive &serializeObjectFieldsHelper(cbe::Object *obj, ObjectArchive &ar, 
         uint32 objectFieldSerVersion = ar.getCustomVersion((uint32)(FIELDS_SER_CUSTOM_VERSION_ID));
         fatalAssertf(
             objectFieldSerVersion >= OBJECTFIELD_SER_CUTOFF_VERSION,
-            "Unsupport version %d of serialized object fields of object %s! Minimum supported version %d", objectFieldSerVersion,
+            "Unsupport version {} of serialized object fields of object {}! Minimum supported version {}", objectFieldSerVersion,
             obj->getObjectData().path, OBJECTFIELD_SER_CUTOFF_VERSION
         );
         return readFieldsHelper(obj, obj->getType(), ar);
@@ -503,7 +503,7 @@ ObjectArchive &ObjectSerializationHelpers::serializeStructFields(void *structObj
         uint32 objectFieldSerVersion = ar.getCustomVersion((uint32)(FIELDS_SER_CUSTOM_VERSION_ID));
         fatalAssertf(
             objectFieldSerVersion >= OBJECTFIELD_SER_CUTOFF_VERSION,
-            "Unsupport version %d of serialized fields of object/struct! Minimum supported version %d", objectFieldSerVersion,
+            "Unsupport version {} of serialized fields of object/struct! Minimum supported version {}", objectFieldSerVersion,
             OBJECTFIELD_SER_CUTOFF_VERSION
         );
         return readFieldsHelper(structObj, structType, ar);

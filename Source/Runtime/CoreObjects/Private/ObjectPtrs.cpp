@@ -79,7 +79,7 @@ Object *ObjectPath::getObject() const
         // 0 is for default mostly and it will always be valid
         if (!(allocIdx == 0 || foundObjAllocIdx == allocIdx))
         {
-            LOG_WARN("ObjectPath", "Object %s[allocIdx %llu] does not matches allocation index %llu", fullPath, allocIdx, foundObjAllocIdx);
+            LOG_WARN("ObjectPath", "Object {}[allocIdx {}] does not matches allocation index {}", fullPath, allocIdx, foundObjAllocIdx);
         }
         return obj;
     }

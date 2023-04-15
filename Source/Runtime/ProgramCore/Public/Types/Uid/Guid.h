@@ -87,17 +87,17 @@ public:
     };
 
 public:
-    CONST_EXPR CBEGuid()
+    constexpr CBEGuid()
         : parts{ 0, 0, 0, 0 }
     {}
     // Generates Guid to valid value
     CBEGuid(EInitType);
-    CONST_EXPR CBEGuid(uint32 inA, uint32 inB, uint32 inC, uint32 inD)
+    constexpr CBEGuid(uint32 inA, uint32 inB, uint32 inC, uint32 inD)
         : parts{ inA, inB, inC, inD }
     {}
 
     // Equality
-    CONST_EXPR std::strong_ordering operator<=> (const CBEGuid &rhs) const noexcept
+    constexpr std::strong_ordering operator<=> (const CBEGuid &rhs) const noexcept
     {
         for (int32 i = 0; i < ARRAY_LENGTH(components); ++i)
         {
@@ -109,7 +109,7 @@ public:
         return std::strong_ordering::equal;
     }
     // Better than xor based equality
-    CONST_EXPR bool operator== (const CBEGuid &rhs) const noexcept
+    constexpr bool operator== (const CBEGuid &rhs) const noexcept
     {
         return parts.a == rhs.parts.a && parts.b == rhs.parts.b && parts.c == rhs.parts.c && parts.d == rhs.parts.d;
     }
@@ -123,7 +123,7 @@ public:
     NODISCARD static CBEGuid parse(const String &str);
     NODISCARD static CBEGuid parseFormat(const String &str, EGuidFormat format);
     template <typename CharType>
-    NODISCARD CONST_EXPR static CBEGuid parse(const CharType *str, SizeT len)
+    NODISCARD constexpr static CBEGuid parse(const CharType *str, SizeT len)
     {
         switch (len)
         {
@@ -146,12 +146,12 @@ public:
         return {};
     }
     template <typename CharType>
-    NODISCARD CONST_EXPR static CBEGuid parse(const CharType *str)
+    NODISCARD constexpr static CBEGuid parse(const CharType *str)
     {
         return parse(str, TCharStr::length(str));
     }
     template <typename CharType>
-    NODISCARD CONST_EXPR static CBEGuid parseFormat(const CharType *str, SizeT len, EGuidFormat format)
+    NODISCARD constexpr static CBEGuid parseFormat(const CharType *str, SizeT len, EGuidFormat format)
     {
         switch (format)
         {
@@ -173,7 +173,7 @@ public:
         return {};
     }
     template <typename CharType>
-    NODISCARD CONST_EXPR static CBEGuid parseFormat(const CharType *str, EGuidFormat format)
+    NODISCARD constexpr static CBEGuid parseFormat(const CharType *str, EGuidFormat format)
     {
         return parseFormat(str, TCharStr::length(str), format);
     }
@@ -193,7 +193,7 @@ struct PROGRAMCORE_EXPORT std::hash<CBEGuid>
 template <typename CharType>
 struct CBEGuid::ParseFromFormat<CBEGuid::DigitsOnly, CharType>
 {
-    NODISCARD CONST_EXPR CBEGuid operator() (const CharType *str, SizeT len) const
+    NODISCARD constexpr CBEGuid operator() (const CharType *str, SizeT len) const
     {
         // AAAAAAAABBBBBBBBCCCCCCCCDDDDDDDD
         if (len != 32)
@@ -218,7 +218,7 @@ struct CBEGuid::ParseFromFormat<CBEGuid::DigitsOnly, CharType>
 template <typename CharType>
 struct CBEGuid::ParseFromFormat<CBEGuid::DWordWithHyphen, CharType>
 {
-    NODISCARD CONST_EXPR CBEGuid operator() (const CharType *str, SizeT len) const
+    NODISCARD constexpr CBEGuid operator() (const CharType *str, SizeT len) const
     {
         // AAAAAAAA-BBBBBBBB-CCCCCCCC-DDDDDDDD
         if (len != 35)
@@ -243,7 +243,7 @@ struct CBEGuid::ParseFromFormat<CBEGuid::DWordWithHyphen, CharType>
 template <typename CharType>
 struct CBEGuid::ParseFromFormat<CBEGuid::HexValues, CharType>
 {
-    NODISCARD CONST_EXPR CBEGuid operator() (const CharType *str, SizeT len) const
+    NODISCARD constexpr CBEGuid operator() (const CharType *str, SizeT len) const
     {
         // {0xAAAAAAAA,0xBBBB,0xBBBB,{0xCC,0xCC,0xCC,0xCC,0xDD,0xDD,0xDD,0xDD}}
         if (len != 68)
@@ -275,7 +275,7 @@ struct CBEGuid::ParseFromFormat<CBEGuid::HexValues, CharType>
 template <typename CharType>
 struct CBEGuid::ParseFromFormat<CBEGuid::DigitsWithHyphen, CharType>
 {
-    NODISCARD CONST_EXPR CBEGuid operator() (const CharType *str, SizeT len) const
+    NODISCARD constexpr CBEGuid operator() (const CharType *str, SizeT len) const
     {
         // AAAAAAAA-BBBB-BBBB-CCCC-CCCCDDDDDDDD
         if (len != 36)
@@ -302,7 +302,7 @@ struct CBEGuid::ParseFromFormat<CBEGuid::DigitsWithHyphen, CharType>
 template <typename CharType>
 struct CBEGuid::ParseFromFormat<CBEGuid::DigitsInBraces, CharType>
 {
-    NODISCARD CONST_EXPR CBEGuid operator() (const CharType *str, SizeT len) const
+    NODISCARD constexpr CBEGuid operator() (const CharType *str, SizeT len) const
     {
         // {AAAAAAAA-BBBB-BBBB-CCCC-CCCCDDDDDDDD}
         if (len != 38)
@@ -316,7 +316,7 @@ struct CBEGuid::ParseFromFormat<CBEGuid::DigitsInBraces, CharType>
 template <typename CharType>
 struct CBEGuid::ParseFromFormat<CBEGuid::DigitsInParans, CharType>
 {
-    NODISCARD CONST_EXPR CBEGuid operator() (const CharType *str, SizeT len) const
+    NODISCARD constexpr CBEGuid operator() (const CharType *str, SizeT len) const
     {
         // (AAAAAAAA-BBBB-BBBB-CCCC-CCCCDDDDDDDD)
         if (len != 38)

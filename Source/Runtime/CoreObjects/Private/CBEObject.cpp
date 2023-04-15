@@ -145,9 +145,9 @@ void INTERNAL_ObjectCoreAccessors::setOuterAndName(Object *object, StringView ne
 
     String newObjPath = ObjectPathHelper::getFullPath(newName, outer);
     StringID newSid(newObjPath);
+    const bool bNewNameIsUnique = !objectsDb.hasObject({ .objectPath = newObjPath.getChar(), .objectId = newSid });
     fatalAssertf(
-        !objectsDb.hasObject({ .objectPath = newObjPath.getChar(), .objectId = newSid }),
-        "Object cannot be renamed to another existing object! [Old name: %s, New name: %.*s]", objectDatV.name, newName.length(), newName.data()
+        bNewNameIsUnique, "Object cannot be renamed to another existing object! [Old name: {}, New name: {}]", objectDatV.name, newName
     );
 
     if (objectDatV.isValid())
@@ -286,7 +286,7 @@ String ObjectPathHelper::computeObjectPath(const cbe::Object *object, const cbe:
     }
     if (outerIdx != stopAt->getDbIdx())
     {
-        debugAssertf(stopAt == nullptr, "Object %s is not subobject of %s", objectDatV.path, stopAt->getObjectData().path);
+        debugAssertf(stopAt == nullptr, "Object {} is not subobject of {}", objectDatV.path, stopAt->getObjectData().path);
         return String(objectDatV.name) + ObjectPathHelper::RootObjectSeparator
                + String::join(outers.crbegin(), outers.crend(), ObjectPathHelper::ObjectObjectSeparator);
     }

@@ -244,7 +244,7 @@ void GlobalRenderingContextBase::initShaderPipelines(
             }
             GraphicsPipelineBase *graphicsPipeline
                 = static_cast<GraphicsPipelineBase *>(pipelineFactory->create(graphicsInstanceCache, graphicsHelperCache, { shader }));
-            fatalAssertf(graphicsPipeline, "Graphics pipeline creation failed for shader %s", shader->getResourceName());
+            fatalAssertf(graphicsPipeline, "Graphics pipeline creation failed for shader {}", shader->getResourceName());
 
             // Check if there is set 3(Per variant shader parameters)
             GraphicsResource *perVariantLayout = nullptr;
@@ -520,7 +520,7 @@ void GlobalRenderingContextBase::preparePipelineContext(
         = rawShaderObjects.find(StringID(pipelineContext->materialName));
     if (shaderDataCollectionItr == rawShaderObjects.cend())
     {
-        LOG_ERROR("GlobalRenderingContext", "Requested material %s is not found", pipelineContext->materialName);
+        LOG_ERROR("GlobalRenderingContext", "Requested material {} is not found", pipelineContext->materialName);
         return;
     }
 
@@ -548,7 +548,7 @@ void GlobalRenderingContextBase::preparePipelineContext(
             fb = getOrCreateFramebuffer(renderpassProps, pipelineContext->frameAttachments);
         }
         fatalAssertf(
-            fb != nullptr, "Framebuffer is invalid[Shader : %s, Render pass format : %s]", pipelineContext->materialName,
+            fb != nullptr, "Framebuffer is invalid[Shader : {}, Render pass format : {}]", pipelineContext->materialName,
             ERenderPassFormat::toString(pipelineContext->renderpassFormat)
         );
         pipelineContext->framebuffer = fb;
@@ -614,7 +614,7 @@ const PipelineBase *GlobalRenderingContextBase::getDefaultPipeline(
     std::unordered_map<StringID, ShaderDataCollection>::const_iterator shaderDataCollectionItr = rawShaderObjects.find(StringID(shaderName));
     if (shaderDataCollectionItr == rawShaderObjects.cend())
     {
-        LOG_ERROR("GlobalRenderingContext", "Requested shader %s is not found", shaderName);
+        LOG_ERROR("GlobalRenderingContext", "Requested shader {} is not found", shaderName);
         return nullptr;
     }
 

@@ -101,13 +101,13 @@ void VulkanShaderResource::init()
 
     fatalAssertf(
         shaderFile.exists() && reflectionFile.exists(),
-        "Shader and reflection files are mandatory in shader %s[Shader file %s, Reflection file %s]", getResourceName().getChar(),
+        "Shader and reflection files are mandatory in shader {}[Shader file {}, Reflection file {}]", getResourceName().getChar(),
         shaderFile.getFileName().getChar(), reflectionFile.getFileName().getChar()
     );
     shaderFile.openFile();
     reflectionFile.openFile();
     LOG_DEBUG(
-        "VulkanShaderResource", "Loading from shader file %s and reflection file %s", shaderFile.getFileName().getChar(),
+        "VulkanShaderResource", "Loading from shader file {} and reflection file {}", shaderFile.getFileName().getChar(),
         reflectionFile.getFileName().getChar()
     );
 

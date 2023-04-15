@@ -100,7 +100,7 @@ FORCE_INLINE VkPipelineBindPoint VulkanCommandList::getPipelineBindPoint(const P
         return VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_COMPUTE;
     }
 
-    LOG_ERROR("VulkanPipeline", "Invalid pipeline %s", pipeline->getResourceName().getChar());
+    LOG_ERROR("VulkanPipeline", "Invalid pipeline {}", pipeline->getResourceName().getChar());
     return VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_MAX_ENUM;
 }
 
@@ -405,7 +405,7 @@ void VulkanCommandList::
     if (dst->getType()->isChildOf(graphicsHelperCache->writeOnlyBufferType())
         || dst->getType()->isChildOf(graphicsHelperCache->writeOnlyTexelsType()))
     {
-        LOG_ERROR("VulkanCommandList", "Copy to buffer(%s) that is write only is not allowed", dst->getResourceName().getChar());
+        LOG_ERROR("VulkanCommandList", "Copy to buffer({}) that is write only is not allowed", dst->getResourceName().getChar());
         return;
     }
     debugAssert((dst->getResourceSize() - dstOffset) >= size);
@@ -897,7 +897,7 @@ void VulkanCommandList::presentImage(
     // for (const GraphicsResource *cmdBuffer : swapchainFrameWrites)
     //{
     //    SemaphoreRef cmdSignal = cmdBufferManager.cmdSignalSemaphore(cmdBuffer);
-    //    fatalAssertf(cmdSignal.isValid(), "Invalid signalling semaphore for cmd buffer %s!", cmdBuffer->getResourceName());
+    //    fatalAssertf(cmdSignal.isValid(), "Invalid signalling semaphore for cmd buffer {}!", cmdBuffer->getResourceName());
     //    waitSemaphores.emplace_back(cmdSignal);
     //}
 
@@ -1335,7 +1335,7 @@ void VulkanCommandList::cmdTransitionLayouts(const GraphicsResource *cmdBuffer, 
             }
             else
             {
-                LOG_ERROR("VulkanCommandList", "Barrier is applied on image(%s) that is only read so far", image->getResourceName().getChar());
+                LOG_ERROR("VulkanCommandList", "Barrier is applied on image({}) that is only read so far", image->getResourceName().getChar());
             }
         }
 
@@ -1430,7 +1430,7 @@ void VulkanCommandList::cmdClearDepth(
 void VulkanCommandList::cmdBarrierResources(const GraphicsResource *cmdBuffer, ArrayView<const ShaderParametersRef> descriptorsSets)
 {
     fatalAssertf(
-        !cmdBufferManager.isInRenderPass(cmdBuffer), "%s cmd buffer is inside render pass, it is not supported",
+        !cmdBufferManager.isInRenderPass(cmdBuffer), "{} cmd buffer is inside render pass, it is not supported",
         cmdBuffer->getResourceName().getChar()
     );
 
@@ -2342,7 +2342,7 @@ void VulkanCommandList::cmdPushConstants(
     }
     else
     {
-        LOG_ERROR("VulkanPipeline", "Invalid pipeline %s", contextPipeline.getPipeline()->getResourceName().getChar());
+        LOG_ERROR("VulkanPipeline", "Invalid pipeline {}", contextPipeline.getPipeline()->getResourceName().getChar());
         debugAssert(false);
         return;
     }
@@ -2388,7 +2388,7 @@ void VulkanCommandList::cmdBindDescriptorsSetInternal(
     }
     else
     {
-        LOG_ERROR("VulkanPipeline", "Invalid pipeline %s", contextPipeline->getResourceName().getChar());
+        LOG_ERROR("VulkanPipeline", "Invalid pipeline {}", contextPipeline->getResourceName().getChar());
         debugAssert(false);
         return;
     }
@@ -2442,7 +2442,7 @@ void VulkanCommandList::cmdBindDescriptorsSetsInternal(
     }
     else
     {
-        LOG_ERROR("VulkanPipeline", "Invalid pipeline %s", contextPipeline->getResourceName().getChar());
+        LOG_ERROR("VulkanPipeline", "Invalid pipeline {}", contextPipeline->getResourceName().getChar());
         debugAssert(false);
         return;
     }
@@ -2647,7 +2647,7 @@ void VulkanCommandList::cmdEndBufferMarker(const GraphicsResource *commandBuffer
 
 void VulkanCommandList::copyToImage(ImageResourceRef dst, ArrayView<const class Color> pixelData, const CopyPixelsToImageInfo &copyInfo)
 {
-    fatalAssertf(dst->isValid(), "Invalid image resource %s", dst->getResourceName().getChar());
+    fatalAssertf(dst->isValid(), "Invalid image resource {}", dst->getResourceName().getChar());
     if (EPixelDataFormat::isDepthFormat(dst->imageFormat()) || EPixelDataFormat::isFloatingFormat(dst->imageFormat()))
     {
         LOG_ERROR("VulkanCommandList", "Depth/Float format is not supported for copying from Color data");
@@ -2678,7 +2678,7 @@ void VulkanCommandList::copyToImage(ImageResourceRef dst, ArrayView<const class 
 
 void VulkanCommandList::copyToImage(ImageResourceRef dst, ArrayView<const class LinearColor> pixelData, const CopyPixelsToImageInfo &copyInfo)
 {
-    fatalAssertf(dst->isValid(), "Invalid image resource %s", dst->getResourceName().getChar());
+    fatalAssertf(dst->isValid(), "Invalid image resource {}", dst->getResourceName().getChar());
     const EPixelDataFormat::PixelFormatInfo *formatInfo = EPixelDataFormat::getFormatInfo(dst->imageFormat());
     if (EPixelDataFormat::isDepthFormat(dst->imageFormat())
         && (formatInfo->componentSize[0] != 32 || EPixelDataFormat::isStencilFormat(dst->imageFormat())))
@@ -2715,7 +2715,7 @@ void VulkanCommandList::copyToImageLinearMapped(
     ImageResourceRef dst, ArrayView<const class Color> pixelData, const CopyPixelsToImageInfo &copyInfo
 )
 {
-    fatalAssertf(dst->isValid(), "Invalid image resource %s", dst->getResourceName().getChar());
+    fatalAssertf(dst->isValid(), "Invalid image resource {}", dst->getResourceName().getChar());
     if (EPixelDataFormat::isDepthFormat(dst->imageFormat()) || EPixelDataFormat::isFloatingFormat(dst->imageFormat()))
     {
         LOG_ERROR("VulkanCommandList", "Depth/Float format is not supported for copying from Color data");

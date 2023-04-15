@@ -42,7 +42,7 @@ using StringStream = std::basic_stringstream<BaseString::value_type, BaseString:
 #endif
 
 #if USING_WIDE_UNICODE
-#error "Cannot support wide char as Logging uses %s as format specifier and it needs to be changed to %ls or %s depending on Wide or not \
+#error "Cannot support wide char as LOGging uses {} as format specifier and it needs to be changed to {} or {} depending on Wide or not \
 Or replace StringFormat::printf to use std::format"
 #endif
 

@@ -84,7 +84,7 @@ private:
         // reference/pointer combination
         fatalAssertf(
             propInfo.thisProperty->typeInfo->innerType == nullptr || propInfo.thisProperty->typeInfo->innerType->innerType == nullptr,
-            "Qualification for property %s is not allowed for field types in field %s", propInfo.thisProperty->nameString,
+            "Qualification for property {} is not allowed for field types in field {}", propInfo.thisProperty->nameString,
             propInfo.fieldProperty->nameString
         );
 

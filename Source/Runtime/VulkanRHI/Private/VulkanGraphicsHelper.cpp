@@ -290,7 +290,7 @@ void VulkanGraphicsHelper::presentImage(
         {
             if (results[i] != VK_SUCCESS && results[i] != VK_SUBOPTIMAL_KHR)
             {
-                LOG_ERROR("VulkanPresenting", "Failed presenting for window %s", canvases[i]->getResourceName().getChar());
+                LOG_ERROR("VulkanPresenting", "Failed presenting for window {}", canvases[i]->getResourceName().getChar());
             }
         }
     }
@@ -396,7 +396,7 @@ VkBuffer VulkanGraphicsHelper::createBuffer(
 
         if ((formatProps.bufferFeatures & requiredFeatures) != requiredFeatures)
         {
-            LOG_ERROR("NewBufferCreation", "Required format %s for buffer is not supported by device", imageFormatInfo->formatName);
+            LOG_ERROR("NewBufferCreation", "Required format {} for buffer is not supported by device", imageFormatInfo->formatName);
             return buffer;
         }
     }
@@ -603,7 +603,7 @@ VulkanGraphicsHelper::createImage(IGraphicsInstance *graphicsInstance, VkImageCr
     {
         LOG_ERROR(
             "NewImageCreation",
-            "Image size (%d, %d, %d) is exceeding the maximum size (%d, %d, %d) supported by "
+            "Image size ({}, {}, {}) is exceeding the maximum size ({}, {}, {}) supported by "
             "device",
             createInfo.extent.width, createInfo.extent.height, createInfo.extent.depth, imageFormatProperties.maxExtent.width,
             imageFormatProperties.maxExtent.height, imageFormatProperties.maxExtent.depth
@@ -615,7 +615,7 @@ VulkanGraphicsHelper::createImage(IGraphicsInstance *graphicsInstance, VkImageCr
     {
         LOG_WARN(
             "NewImageCreation",
-            "Image layer count %d is exceeding the maximum layer count %d supported by "
+            "Image layer count {} is exceeding the maximum layer count {} supported by "
             "device, using max limit",
             createInfo.arrayLayers, imageFormatProperties.maxArrayLayers
         );
@@ -626,7 +626,7 @@ VulkanGraphicsHelper::createImage(IGraphicsInstance *graphicsInstance, VkImageCr
     {
         LOG_WARN(
             "NewImageCreation",
-            "Image mip levels %d is exceeding the maximum mip levels %d supported by device, "
+            "Image mip levels {} is exceeding the maximum mip levels {} supported by device, "
             "using max limit",
             createInfo.mipLevels, imageFormatProperties.maxMipLevels
         );
@@ -765,7 +765,7 @@ ESamplerFiltering::Type VulkanGraphicsHelper::clampFiltering(
             requiredFeature |= VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_IMG;
             break;
         default:
-            LOG_ERROR("VulkanGraphicsHelper", "not supported filtering mode %s", ESamplerFiltering::filterName(choosenFiltering).getChar());
+            LOG_ERROR("VulkanGraphicsHelper", "not supported filtering mode {}", ESamplerFiltering::filterName(choosenFiltering).getChar());
             choosenFiltering = ESamplerFiltering::Type(choosenFiltering - 1);
             continue;
         }
@@ -962,7 +962,7 @@ VkShaderModule VulkanGraphicsHelper::createShaderModule(IGraphicsInstance *graph
     VkShaderModule shaderModule;
     if (device->vkCreateShaderModule(device->logicalDevice, &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
     {
-        LOG_ERROR("VulkanGraphicsHelper", "failure in creating shader module[Shader size : %d]", size);
+        LOG_ERROR("VulkanGraphicsHelper", "failure in creating shader module[Shader size : {}]", size);
         shaderModule = nullptr;
     }
     return shaderModule;

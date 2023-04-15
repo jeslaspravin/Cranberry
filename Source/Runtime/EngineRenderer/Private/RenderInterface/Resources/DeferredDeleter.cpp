@@ -84,14 +84,14 @@ void DeferredDeleter::update()
                 }
                 else
                 {
-                    alertAlwaysf(false, "Unsupported type(%s) for deferred deletion resource", res.resource->getType()->getName());
+                    alertAlwaysf(false, "Unsupported type({}) for deferred deletion resource", res.resource->getType()->getName());
                     deleteResource(res);
                     return true;
                 }
             }
             else if (!res.deleter.isBound())
             {
-                alertAlwaysf(false, "Unsupported type(%s) for deferred deletion");
+                alertAlwaysf(false, "Deleting resource or the deleter delegate must be bound!");
                 return true;
             }
 

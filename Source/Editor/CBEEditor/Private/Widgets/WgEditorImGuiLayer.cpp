@@ -161,8 +161,7 @@ void WgEditorImGuiLayer::aboutWindow()
 
             int32 major, minor, patch;
             appInstance->getVersion(major, minor, patch);
-            static const std::string versionText
-                = TCHAR_TO_UTF8(StringFormat::printf(TCHAR("Version %d.%d.%d"), major, minor, patch).getChar());
+            static const std::string versionText = TCHAR_TO_UTF8(STR_FORMAT(TCHAR("Version {}.{}.{}"), major, minor, patch).getChar());
 
             static const ImVec2 totalSize = ImGui::CalcTextSize(cpyRightText);
             static const ImVec2 appNameTextSize = ImGui::CalcTextSize(appNameText);

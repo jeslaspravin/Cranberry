@@ -42,7 +42,7 @@ void printDiagnostics(CXDiagnostic diagnostic, uint32 formatOptions)
     const uint32 childDiagsNum = clang_getNumDiagnosticsInSet(childDiags);
 
     CXStringRef diagnosticStr(new CXStringWrapper(clang_formatDiagnostic(diagnostic, formatOptions)));
-    LOG_WARN("Diagnostics", "%s", diagnosticStr);
+    LOG_WARN("Diagnostics", "{}", diagnosticStr);
     for (uint32 i = 0; i < childDiagsNum; ++i)
     {
         auto childDiagnostic = clang_getDiagnosticInSet(childDiags, i);
@@ -82,29 +82,29 @@ void printJustTypeInfo(CXType type)
     switch (canonicalType.kind)
     {
     case CXType_RValueReference:
-        LOG("CppReflectionParser", "Type %s is a r-value, Referred type %s(Is POD %d)", typeName, clang_getTypeSpelling(innerType),
+        LOG("CppReflectionParser", "Type {} is a r-value, Referred type {}(Is POD {})", typeName, clang_getTypeSpelling(innerType),
             clang_isPODType(innerType));
         break;
     case CXType_LValueReference:
-        LOG("CppReflectionParser", "Type %s is a l-value, Referred type %s(Is POD %d)", typeName, clang_getTypeSpelling(innerType),
+        LOG("CppReflectionParser", "Type {} is a l-value, Referred type {}(Is POD {})", typeName, clang_getTypeSpelling(innerType),
             clang_isPODType(innerType));
         break;
     case CXType_Pointer:
     {
         int32 bIsInnerTypeConst = clang_isConstQualifiedType(innerType);
-        LOG("CppReflectionParser", "Type %s - Inner type is %s and is const? %s(Is POD %d)", typeName, clang_getTypeSpelling(innerType),
+        LOG("CppReflectionParser", "Type {} - Inner type is {} and is const? {}(Is POD {})", typeName, clang_getTypeSpelling(innerType),
             !!(bIsInnerTypeConst) ? "true" : "false", clang_isPODType(innerType));
         break;
     }
     case CXType_ConstantArray:
-        LOG("CppReflectionParser", "Type %s container element count %d", typeName, clang_getNumElements(type));
+        LOG("CppReflectionParser", "Type {} container element count {}", typeName, clang_getNumElements(type));
     case CXType_IncompleteArray:
     case CXType_DependentSizedArray:
     case CXType_Vector:
     case CXType_VariableArray:
     {
         int32 bIsInnerTypeConst = clang_isConstQualifiedType(innerType);
-        LOG("CppReflectionParser", "Type %s - Inner type is %s and is const? %s(Is POD %d)", typeName, clang_getTypeSpelling(innerType),
+        LOG("CppReflectionParser", "Type {} - Inner type is {} and is const? {}(Is POD {})", typeName, clang_getTypeSpelling(innerType),
             !!(bIsInnerTypeConst) ? "true" : "false", clang_isPODType(innerType));
         break;
     }
@@ -119,17 +119,17 @@ void printVariableTypeInfo(CXCursor cursor, SourceParsedInfo &srcParsedInfo, CXT
 
     // The type can be considered const if its container is const or the type itself is const
     int32 bIsOuterTypeConst = clang_isConstQualifiedType(fieldCanonicalType);
-    LOG("CppReflectionParser", "Field %s - Is const? %s", fieldName, !!(bIsOuterTypeConst) ? "true" : "false");
+    LOG("CppReflectionParser", "Field {} - Is const? {}", fieldName, !!(bIsOuterTypeConst) ? "true" : "false");
 
     // Inner type will be different in case of atomic type or pointer or array or vector or complex
     CXCursor innerTypeCursor = cursor;
     switch (fieldCanonicalType.kind)
     {
     case CXType_RValueReference:
-        LOG("CppReflectionParser", "Field %s is a r-value", fieldName);
+        LOG("CppReflectionParser", "Field {} is a r-value", fieldName);
         break;
     case CXType_LValueReference:
-        LOG("CppReflectionParser", "Field %s is a l-value", fieldName);
+        LOG("CppReflectionParser", "Field {} is a l-value", fieldName);
         break;
     case CXType_Pointer:
     {
@@ -140,18 +140,18 @@ void printVariableTypeInfo(CXCursor cursor, SourceParsedInfo &srcParsedInfo, CXT
         if (!!clang_isPODType(fieldCanonicalType))
         {
             int32 bIsInnerTypeConst = clang_isConstQualifiedType(innerType);
-            LOG("CppReflectionParser", "Field %s - Inner type %s is const? %s", fieldName, clang_getTypeSpelling(innerType),
+            LOG("CppReflectionParser", "Field {} - Inner type {} is const? {}", fieldName, clang_getTypeSpelling(innerType),
                 !!(bIsInnerTypeConst) ? "true" : "false");
         }
         else
         {
             innerTypeCursor = clang_getTypeDeclaration(innerType);
         }
-        LOG("CppReflectionParser", "Field %s - pointer inner type is %s", fieldName, clang_getTypeSpelling(innerType));
+        LOG("CppReflectionParser", "Field {} - pointer inner type is {}", fieldName, clang_getTypeSpelling(innerType));
         break;
     }
     case CXType_ConstantArray:
-        LOG("CppReflectionParser", "Field %s - container element count %d", fieldName, clang_getNumElements(fieldType));
+        LOG("CppReflectionParser", "Field {} - container element count {}", fieldName, clang_getNumElements(fieldType));
     case CXType_IncompleteArray:
     case CXType_DependentSizedArray:
     case CXType_Vector:
@@ -163,14 +163,14 @@ void printVariableTypeInfo(CXCursor cursor, SourceParsedInfo &srcParsedInfo, CXT
         if (!!clang_isPODType(fieldCanonicalType))
         {
             int32 bIsInnerTypeConst = clang_isConstQualifiedType(innerType);
-            LOG("CppReflectionParser", "Field %s - Element type %s is const? %s", fieldName, clang_getTypeSpelling(innerType),
+            LOG("CppReflectionParser", "Field {} - Element type {} is const? {}", fieldName, clang_getTypeSpelling(innerType),
                 !!(bIsInnerTypeConst) ? "true" : "false");
         }
         else
         {
             innerTypeCursor = clang_getTypeDeclaration(innerType);
         }
-        LOG("CppReflectionParser", "Field %s - container element type is %s", fieldName, clang_getTypeSpelling(innerType));
+        LOG("CppReflectionParser", "Field {} - container element type is {}", fieldName, clang_getTypeSpelling(innerType));
         break;
     }
     default:
@@ -183,7 +183,7 @@ void printVariableTypeInfo(CXCursor cursor, SourceParsedInfo &srcParsedInfo, CXT
         innerCanonicalType = clang_getCursorType(clang_getCanonicalCursor(innerTypeCursor));
 
         int32 bIsInnerTypeConst = clang_isConstQualifiedType(innerCanonicalType);
-        LOG("CppReflectionParser", "Field %s - Inner type %s is const? %s", fieldName, clang_getTypeSpelling(innerCanonicalType),
+        LOG("CppReflectionParser", "Field {} - Inner type {} is const? {}", fieldName, clang_getTypeSpelling(innerCanonicalType),
             !!(bIsInnerTypeConst) ? "true" : "false");
     }
 
@@ -202,7 +202,7 @@ void printVariableTypeInfo(CXCursor cursor, SourceParsedInfo &srcParsedInfo, CXT
                 // canonical type instead CXCursor innerMostDeclTypeCursor =
                 // clang_getCanonicalCursor(c);
                 CXType innerMostType = clang_getCanonicalType(clang_getCursorType(c));
-                LOG("CppReflectionParser", "printVariableTypeInfo() : Field's innermost canonical type is %s",
+                LOG("CppReflectionParser", "printVariableTypeInfo() : Field's innermost canonical type is {}",
                     clang_getTypeSpelling(innerMostType));
                 break;
             }
@@ -237,9 +237,9 @@ void printFunctionSignature(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
     String functionParams;
     // print return type's param
     printJustTypeInfo(funcRetType);
-    LOG("CppReflectionParser", "Return type unqualified name %s", ParserHelper::getNonConstTypeName(funcRetType, clang_getNullCursor()));
+    LOG("CppReflectionParser", "Return type unqualified name {}", ParserHelper::getNonConstTypeName(funcRetType, clang_getNullCursor()));
     {
-        LOG("CppReflectionParser", "Function %s Arguments info ---->", functionName);
+        LOG("CppReflectionParser", "Function {} Arguments info ---->", functionName);
         std::vector<String> paramStrs;
         int32 i = 0;
         for (CXCursor c : paramsCursor)
@@ -249,7 +249,7 @@ void printFunctionSignature(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
             CXStringRef paramTypeName(new CXStringWrapper(clang_getTypeSpelling(paramType)));
             CXStringRef paramName(new CXStringWrapper(clang_getCursorSpelling(c)));
 
-            LOG("CppReflectionParser", "Argument %d Name %s Type %s(Unqualified %s)", i, paramName, paramTypeName,
+            LOG("CppReflectionParser", "Argument {} Name {} Type {}(Unqualified {})", i, paramName, paramTypeName,
                 ParserHelper::getNonConstTypeName(paramType, c));
             printJustTypeInfo(paramType);
 
@@ -261,7 +261,7 @@ void printFunctionSignature(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
         functionParams = String::join(paramStrs.cbegin(), paramStrs.cend(), TCHAR(", "));
     }
 
-    LOG("CppReflectionParser", "Function %s Signature is %s %s::%s(%s)", functionName, clang_getTypeSpelling(funcRetType), functionPath,
+    LOG("CppReflectionParser", "Function {} Signature is {} {}::{}({})", functionName, clang_getTypeSpelling(funcRetType), functionPath,
         functionName, functionParams);
 }
 
@@ -799,7 +799,7 @@ void visitTUCusor(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
     {
         CXStringRef cursorSpelling(new CXStringWrapper(clang_getCursorSpelling(cursor)));
         CXStringRef cursorKindSpelling(new CXStringWrapper(clang_getCursorKindSpelling(cursorKind)));
-        LOG("CppReflectionParser", "Cursor '%s' of kind '%s'", cursorSpelling, cursorKindSpelling);
+        LOG("CppReflectionParser", "Cursor '{}' of kind '{}'", cursorSpelling, cursorKindSpelling);
     }
 }
 
@@ -808,7 +808,7 @@ void visitNameSpace(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
     // Since we just need namespace's name string alone
     CXStringRef namespaceName(new CXStringWrapper(clang_getCursorSpelling(cursor)));
     CXStringRef displayName(new CXStringWrapper(clang_getCursorDisplayName(cursor)));
-    LOG("CppReflectionParser", "Namespace %s starts - Display name %s", namespaceName, displayName);
+    LOG("CppReflectionParser", "Namespace {} starts - Display name {}", namespaceName, displayName);
     srcParsedInfo.namespaceList.push_back(UTF8_TO_TCHAR(clang_getCString(namespaceName->str)));
 
     clang_visitChildren(
@@ -822,7 +822,7 @@ void visitNameSpace(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
     );
 
     srcParsedInfo.namespaceList.pop_back();
-    LOG("CppReflectionParser", "Namespace %s ends", namespaceName);
+    LOG("CppReflectionParser", "Namespace {} ends", namespaceName);
 }
 
 void visitMacroDefinition(CXCursor cursor, SourceParsedInfo & /*srcParsedInfo*/)
@@ -834,7 +834,7 @@ void visitMacroDefinition(CXCursor cursor, SourceParsedInfo & /*srcParsedInfo*/)
     CXToken *token = clang_getToken(tu, cursorSrcLoc);
     CXStringRef tokenStr(new CXStringWrapper(clang_getTokenSpelling(tu, *token)));
     CXStringRef macroName(new CXStringWrapper(clang_getCursorSpelling(cursor)));
-    LOG("CppReflectionParser", "Macro %s defined as %s", macroName, tokenStr);
+    LOG("CppReflectionParser", "Macro {} defined as {}", macroName, tokenStr);
 
     // TODO(Jeslas) : Find how to get macro's value and arguments if the cursor is function like macro
     clang_disposeTokens(tu, token, 1);
@@ -849,7 +849,7 @@ void visitMacroExpansion(CXCursor cursor, SourceParsedInfo & /*srcParsedInfo*/)
     CXToken *token = clang_getToken(tu, cursorSrcLoc);
     CXStringRef tokenStr(new CXStringWrapper(clang_getTokenSpelling(tu, *token)));
     CXStringRef macroName(new CXStringWrapper(clang_getCursorSpelling(cursor)));
-    LOG("CppReflectionParser", "Macro %s expanded as %s", macroName, tokenStr);
+    LOG("CppReflectionParser", "Macro {} expanded as {}", macroName, tokenStr);
 
     // TODO(Jeslas) : Find how to get macro's expanded value and arguments passed in if the cursor is
     // function like macro
@@ -872,12 +872,12 @@ void visitIncludes(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
             // Gives the cached resolved path and file name
             inclsFilePath = new CXStringWrapper(clang_getFileName(includeFile));
         }
-        LOG("CppReflectionParser", "\"%s\" include file resolved from %s", inclsName, inclsFilePath);
+        LOG("CppReflectionParser", "\"{}\" include file resolved from {}", inclsName, inclsFilePath);
     }
     else
     {
         srcParsedInfo.includes.emplace_back(UTF8_TO_TCHAR(clang_getCString(inclsName->str)));
-        LOG_ERROR("CppReflectionParser", "\"%s\" include file could not be resolved", inclsName);
+        LOG_ERROR("CppReflectionParser", "\"{}\" include file could not be resolved", inclsName);
     }
 }
 
@@ -886,7 +886,7 @@ void visitClasses(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
     // Since class defines new namespace for declared variables
     CXStringRef className(new CXStringWrapper(clang_getCursorSpelling(cursor)));
     CXStringRef classDispName(new CXStringWrapper(clang_getCursorDisplayName(cursor)));
-    LOG("CppReflectionParser", "Class %s starts - Display name %s", className, classDispName);
+    LOG("CppReflectionParser", "Class {} starts - Display name {}", className, classDispName);
     srcParsedInfo.namespaceList.push_back(UTF8_TO_TCHAR(clang_getCString(className->str)));
     String currAccessSpecifier = srcParsedInfo.scopeAccessSpecifier;
     srcParsedInfo.scopeAccessSpecifier = TCHAR("private");
@@ -894,12 +894,12 @@ void visitClasses(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
     // Below statement also returns type name with namespace so we do not need to keep track of namespace
     // String classPathName = ParserHelper::getNonConstTypeName(clang_getCursorType(cursor), cursor);
     String classPathName = String::join(srcParsedInfo.namespaceList.cbegin(), srcParsedInfo.namespaceList.cend(), TCHAR("::"));
-    LOG("CppReflectionParser", "Class full path name %s", classPathName);
+    LOG("CppReflectionParser", "Class full path name {}", classPathName);
 
     int32 bIsAbstract = clang_CXXRecord_isAbstract(cursor);
     if (!!bIsAbstract)
     {
-        LOG("CppReflectionParser", "Class %s is abstract", className);
+        LOG("CppReflectionParser", "Class {} is abstract", className);
     }
 
     clang_visitChildren(
@@ -914,7 +914,7 @@ void visitClasses(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
 
     srcParsedInfo.scopeAccessSpecifier = currAccessSpecifier;
     srcParsedInfo.namespaceList.pop_back();
-    LOG("CppReflectionParser", "Class %s ends", className);
+    LOG("CppReflectionParser", "Class {} ends", className);
 }
 
 void visitClassMember(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
@@ -940,7 +940,7 @@ void visitClassMember(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
 
         fatalAssertf(
             tokensCount > 1,
-            "Tokens must be atleast 2(Got %d) in case of access specifiers 'public' and "
+            "Tokens must be atleast 2(Got {}) in case of access specifiers 'public' and "
             "(':' or 'class/struct name')",
             tokensCount
         );
@@ -955,14 +955,14 @@ void visitClassMember(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
         // To check if base type is abstract we need cursor of that type declaration, We get base
         // type by getting cursor's type
         int32 bIsBaseAbstract = clang_CXXRecord_isAbstract(clang_getTypeDeclaration(clang_getCursorType(cursor)));
-        LOG("CppReflectionParser", "Inherited from %s(%s and %s) with %s access specifier", cursorName,
+        LOG("CppReflectionParser", "Inherited from {}({} and {}) with {} access specifier", cursorName,
             (!!bIsBaseAbstract) ? TCHAR("Abstract")
                                 : TCHAR("Non-Abstract"), (!!bIsBaseVirtual) ? TCHAR("Virtual") : TCHAR("Non-Virtual"), access);
         break;
     }
     case CXCursor_AnnotateAttr:
         // Cursor spelling contains content of annotation
-        LOG("CppReflectionParser", "[Access : %s] Annotated as %s", srcParsedInfo.scopeAccessSpecifier, cursorName);
+        LOG("CppReflectionParser", "[Access : {}] Annotated as {}", srcParsedInfo.scopeAccessSpecifier, cursorName);
         break;
     case CXCursor_CXXAccessSpecifier:
     {
@@ -987,7 +987,7 @@ void visitClassMember(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
             }
         }
 #endif
-        LOG("CppReflectionParser", "Previous access %s new access is %s", srcParsedInfo.scopeAccessSpecifier, access);
+        LOG("CppReflectionParser", "Previous access {} new access is {}", srcParsedInfo.scopeAccessSpecifier, access);
         srcParsedInfo.scopeAccessSpecifier = access;
         break;
     }
@@ -999,7 +999,7 @@ void visitClassMember(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
         CXType type = clang_getTypedefDeclUnderlyingType(cursor);
         // Since this typedef/using decl might be type alias by itself get its canonical type
         type = clang_getCanonicalType(type);
-        LOG("CppReflectionParser", "%s type is being aliased as %s", clang_getTypeSpelling(type), cursorName);
+        LOG("CppReflectionParser", "{} type is being aliased as {}", clang_getTypeSpelling(type), cursorName);
         break;
     }
     case CXCursor_FriendDecl:
@@ -1098,7 +1098,7 @@ void visitClassFriendDecl(CXCursor cursor, SourceParsedInfo &srcParsedInfo, CXTr
         }
         clang_disposeTokens(tu, tokens, tokensCount);
     }
-    LOG("CppReflectionParser", "[Access : %s] %s(%s) is a friend of class %s", srcParsedInfo.scopeAccessSpecifier, friendedType, friendDeclStr,
+    LOG("CppReflectionParser", "[Access : {}] {}({}) is a friend of class {}", srcParsedInfo.scopeAccessSpecifier, friendedType, friendDeclStr,
         srcParsedInfo.namespaceList.back());
 }
 
@@ -1107,19 +1107,19 @@ void visitStructs(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
     // Since struct defines new namespace for declared variables
     CXStringRef structName(new CXStringWrapper(clang_getCursorSpelling(cursor)));
     CXStringRef structDispName(new CXStringWrapper(clang_getCursorDisplayName(cursor)));
-    LOG("CppReflectionParser", "Struct %s starts - Display name %s", structName, structDispName);
+    LOG("CppReflectionParser", "Struct {} starts - Display name {}", structName, structDispName);
     srcParsedInfo.namespaceList.push_back(UTF8_TO_TCHAR(clang_getCString(structName->str)));
     String currAccessSpecifier = srcParsedInfo.scopeAccessSpecifier;
     srcParsedInfo.scopeAccessSpecifier = TCHAR("public");
 
     String structPathName = String::join(srcParsedInfo.namespaceList.cbegin(), srcParsedInfo.namespaceList.cend(), TCHAR("::"));
-    LOG("CppReflectionParser", "Struct full path name %s", structPathName);
+    LOG("CppReflectionParser", "Struct full path name {}", structPathName);
 
     // Since cursor is struct declaration
     int32 bIsAbstract = clang_CXXRecord_isAbstract(cursor);
     if (!!bIsAbstract)
     {
-        LOG("CppReflectionParser", "Struct %s is abstract", structName);
+        LOG("CppReflectionParser", "Struct {} is abstract", structName);
     }
 
     clang_visitChildren(
@@ -1134,7 +1134,7 @@ void visitStructs(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
 
     srcParsedInfo.scopeAccessSpecifier = currAccessSpecifier;
     srcParsedInfo.namespaceList.pop_back();
-    LOG("CppReflectionParser", "Struct %s ends", structName);
+    LOG("CppReflectionParser", "Struct {} ends", structName);
 }
 
 void visitStructMember(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
@@ -1160,7 +1160,7 @@ void visitStructMember(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
 
         fatalAssertf(
             tokensCount > 1,
-            "Tokens must be atleast 2(Got %d) in case of access specifiers 'public' and "
+            "Tokens must be atleast 2(Got {}) in case of access specifiers 'public' and "
             "(':' or 'class/struct name')",
             tokensCount
         );
@@ -1175,14 +1175,14 @@ void visitStructMember(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
         // To check if base type is abstract we need cursor of that type declaration, We get base
         // type by getting cursor's type
         int32 bIsBaseAbstract = clang_CXXRecord_isAbstract(clang_getTypeDeclaration(clang_getCursorType(cursor)));
-        LOG("CppReflectionParser", "Inherited from %s(%s and %s) with %s access specifier", cursorName,
+        LOG("CppReflectionParser", "Inherited from {}({} and {}) with {} access specifier", cursorName,
             (!!bIsBaseAbstract) ? TCHAR("Abstract")
                                 : TCHAR("Non-Abstract"), (!!bIsBaseVirtual) ? TCHAR("Virtual") : TCHAR("Non-Virtual"), access);
         break;
     }
     case CXCursor_AnnotateAttr:
         // Cursor spelling contains content of annotation
-        LOG("CppReflectionParser", "[Access : %s] Annotated as %s", srcParsedInfo.scopeAccessSpecifier, cursorName);
+        LOG("CppReflectionParser", "[Access : {}] Annotated as {}", srcParsedInfo.scopeAccessSpecifier, cursorName);
         break;
     case CXCursor_TypeAliasDecl:
     case CXCursor_TypedefDecl:
@@ -1192,7 +1192,7 @@ void visitStructMember(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
         CXType type = clang_getTypedefDeclUnderlyingType(cursor);
         // Since this typedef/using decl might be type alias by itself get its canonical type
         type = clang_getCanonicalType(type);
-        LOG("CppReflectionParser", "%s type is being aliased as %s", clang_getTypeSpelling(type), cursorName);
+        LOG("CppReflectionParser", "{} type is being aliased as {}", clang_getTypeSpelling(type), cursorName);
         break;
     }
     case CXCursor_FieldDecl:
@@ -1214,14 +1214,14 @@ void visitEnums(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
 {
     CXStringRef enumName(new CXStringWrapper(clang_getCursorSpelling(cursor)));
     CXStringRef enumDispName(new CXStringWrapper(clang_getCursorDisplayName(cursor)));
-    LOG("CppReflectionParser", "Enum %s : Display name %s", enumName, enumDispName);
+    LOG("CppReflectionParser", "Enum {} : Display name {}", enumName, enumDispName);
     srcParsedInfo.namespaceList.push_back(UTF8_TO_TCHAR(clang_getCString(enumName->str)));
 
     String enumPathName = String::join(srcParsedInfo.namespaceList.cbegin(), srcParsedInfo.namespaceList.cend(), TCHAR("::"));
-    LOG("CppReflectionParser", "Enum %s - Full path name %s", enumName, enumPathName);
+    LOG("CppReflectionParser", "Enum {} - Full path name {}", enumName, enumPathName);
 
     int32 bIsScopedEnum = clang_EnumDecl_isScoped(cursor);
-    LOG("CppReflectionParser", "Enum %s : Is scoped enum(Strongly typed with Class)? %s", enumName,
+    LOG("CppReflectionParser", "Enum {} : Is scoped enum(Strongly typed with Class)? {}", enumName,
         (!!bIsScopedEnum) ? TCHAR("true") : TCHAR("false"));
 
     clang_visitChildren(
@@ -1235,12 +1235,12 @@ void visitEnums(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
             {
             case CXCursor_AnnotateAttr:
                 // Cursor spelling contains content of annotation
-                LOG("CppReflectionParser", "visitEnums() : Enum %s - Annotated as %s", enumName, cursorName);
+                LOG("CppReflectionParser", "visitEnums() : Enum {} - Annotated as {}", enumName, cursorName);
                 break;
             case CXCursor_EnumConstantDecl:
             {
                 int64 enumVal = clang_getEnumConstantDeclValue(c);
-                LOG("CppReflectionParser", "visitEnums() : Enum %s - Value(name %s, value %ld)", enumName, cursorName, enumVal);
+                LOG("CppReflectionParser", "visitEnums() : Enum {} - Value(name {}, value {})", enumName, cursorName, enumVal);
                 return CXChildVisit_Recurse;
             }
             default:
@@ -1259,10 +1259,10 @@ void visitMemberField(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
 {
     CXStringRef fieldName(new CXStringWrapper(clang_getCursorSpelling(cursor)));
     CXStringRef fieldDispName(new CXStringWrapper(clang_getCursorDisplayName(cursor)));
-    LOG("CppReflectionParser", "Field %s - Display name %s", fieldName, fieldDispName);
+    LOG("CppReflectionParser", "Field {} - Display name {}", fieldName, fieldDispName);
 
     String fieldPathName = String::join(srcParsedInfo.namespaceList.cbegin(), srcParsedInfo.namespaceList.cend(), TCHAR("::"));
-    LOG("CppReflectionParser", "Field %s - Base path name %s", fieldName, fieldPathName);
+    LOG("CppReflectionParser", "Field {} - Base path name {}", fieldName, fieldPathName);
 
     CXType fieldType = clang_getCursorType(cursor);
     CXType fieldCanonicalType = clang_getCanonicalType(fieldType);
@@ -1273,11 +1273,11 @@ void visitMemberField(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
     {
         typeName = new CXStringWrapper(clang_getTypeSpelling(fieldType));
     }
-    LOG("CppReflectionParser", "Field %s - Field typename %s, Canonical typename %s, Type kind %s", fieldName, typeName, canonicalTypeName,
+    LOG("CppReflectionParser", "Field {} - Field typename {}, Canonical typename {}, Type kind {}", fieldName, typeName, canonicalTypeName,
         typeKindName);
     if (fieldType.kind == CXType_LValueReference)
     {
-        LOG_ERROR("CppReflectionParser", "Field %s - Having reference member field is not good!", fieldName);
+        LOG_ERROR("CppReflectionParser", "Field {} - Having reference member field is not good!", fieldName);
         return;
     }
 
@@ -1292,7 +1292,7 @@ void visitMemberField(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
             {
             case CXCursor_AnnotateAttr:
                 // Cursor spelling contains content of annotation
-                LOG("CppReflectionParser", "visitMemberField() : Field %s - Annotated as %s", fieldName, cursorName);
+                LOG("CppReflectionParser", "visitMemberField() : Field {} - Annotated as {}", fieldName, cursorName);
                 break;
             default:
                 CppReflectionParser::visitTUCusor(c, *(SourceParsedInfo *)(clientData));
@@ -1310,10 +1310,10 @@ void visitVariableDecl(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
 {
     CXStringRef varName(new CXStringWrapper(clang_getCursorSpelling(cursor)));
     CXStringRef varDispName(new CXStringWrapper(clang_getCursorDisplayName(cursor)));
-    LOG("CppReflectionParser", "Variable %s - Display name %s", varName, varDispName);
+    LOG("CppReflectionParser", "Variable {} - Display name {}", varName, varDispName);
 
     String fieldPathName = String::join(srcParsedInfo.namespaceList.cbegin(), srcParsedInfo.namespaceList.cend(), TCHAR("::"));
-    LOG("CppReflectionParser", "Variable %s - Base path name %s", varName, fieldPathName);
+    LOG("CppReflectionParser", "Variable {} - Base path name {}", varName, fieldPathName);
 
     CXType fieldType = clang_getCursorType(cursor);
     CXType fieldCanonicalType = clang_getCanonicalType(fieldType);
@@ -1324,7 +1324,7 @@ void visitVariableDecl(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
     {
         typeName = new CXStringWrapper(clang_getTypeSpelling(fieldType));
     }
-    LOG("CppReflectionParser", "Variable %s - Variable typename %s, Canonical typename %s, Type kind %s", varName, typeName, canonicalTypeName,
+    LOG("CppReflectionParser", "Variable {} - Variable typename {}, Canonical typename {}, Type kind {}", varName, typeName, canonicalTypeName,
         typeKindName);
 
     clang_visitChildren(
@@ -1338,7 +1338,7 @@ void visitVariableDecl(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
             {
             case CXCursor_AnnotateAttr:
                 // Cursor spelling contains content of annotation
-                LOG("CppReflectionParser", "visitVariableDecl() : Field %s - Annotated as %s", fieldName, cursorName);
+                LOG("CppReflectionParser", "visitVariableDecl() : Field {} - Annotated as {}", fieldName, cursorName);
                 break;
             default:
                 CppReflectionParser::visitTUCusor(c, *(SourceParsedInfo *)(clientData));
@@ -1356,10 +1356,10 @@ void visitNonMemberFunctions(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
 {
     CXStringRef funcName(new CXStringWrapper(clang_getCursorSpelling(cursor)));
     CXStringRef funcDispName(new CXStringWrapper(clang_getCursorDisplayName(cursor)));
-    LOG("CppReflectionParser", "Function %s - Display name %s", funcName, funcDispName);
+    LOG("CppReflectionParser", "Function {} - Display name {}", funcName, funcDispName);
 
     String funcPathName = String::join(srcParsedInfo.namespaceList.cbegin(), srcParsedInfo.namespaceList.cend(), TCHAR("::"));
-    LOG("CppReflectionParser", "Function %s - Base path name %s", funcName, funcPathName);
+    LOG("CppReflectionParser", "Function {} - Base path name {}", funcName, funcPathName);
 
     clang_visitChildren(
         cursor,
@@ -1372,7 +1372,7 @@ void visitNonMemberFunctions(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
             {
             case CXCursor_AnnotateAttr:
                 // Cursor spelling contains content of annotation
-                LOG("CppReflectionParser", "visitNonMemberFunctions() : Function %s - Annotated as %s", funcName, cursorName);
+                LOG("CppReflectionParser", "visitNonMemberFunctions() : Function {} - Annotated as {}", funcName, cursorName);
                 break;
             case CXCursor_ParmDecl:
                 // Since we handle this in print function signature
@@ -1393,16 +1393,16 @@ void visitMemberCppMethods(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
 {
     CXStringRef funcName(new CXStringWrapper(clang_getCursorSpelling(cursor)));
     CXStringRef funcDispName(new CXStringWrapper(clang_getCursorDisplayName(cursor)));
-    LOG("CppReflectionParser", "Function %s - Display name %s", funcName, funcDispName);
+    LOG("CppReflectionParser", "Function {} - Display name {}", funcName, funcDispName);
 
     String funcPathName = String::join(srcParsedInfo.namespaceList.cbegin(), srcParsedInfo.namespaceList.cend(), TCHAR("::"));
-    LOG("CppReflectionParser", "Function %s - Base path name %s", funcName, funcPathName);
+    LOG("CppReflectionParser", "Function {} - Base path name {}", funcName, funcPathName);
 
     int32 bIsPureVirtual = clang_CXXMethod_isPureVirtual(cursor);
     int32 bIsVirtual = clang_CXXMethod_isVirtual(cursor);
     int32 bIsStatic = clang_CXXMethod_isStatic(cursor);
     int32 bIsConst = clang_CXXMethod_isConst(cursor);
-    LOG("CppReflectionParser", "Function %s - %s%s", funcName,
+    LOG("CppReflectionParser", "Function {} - {}{}", funcName,
         (!!bIsStatic) ? TCHAR("Static and ")
                       : (!!bIsConst)
         ? TCHAR("Const and ")
@@ -1415,7 +1415,7 @@ void visitMemberCppMethods(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
         // Gives up-to only one level
         clang_getOverriddenCursors(cursor, &baseCursors, &numOverrides);
         uint32 levelFromThisOverride = 1;
-        LOG("CppReflectionParser", "Function %s - Overrides following methods ---->", funcName);
+        LOG("CppReflectionParser", "Function {} - Overrides following methods ---->", funcName);
         std::vector<ArrayView<CXCursor>> currOverridenCursors{ ArrayView<CXCursor>(baseCursors, numOverrides) };
         while (!currOverridenCursors.empty())
         {
@@ -1431,7 +1431,7 @@ void visitMemberCppMethods(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
                     // clang_Type_getClassType(clang_getCursorType(overridenCursors[i]));
                     // Semantic parent gives place where this cursor is declared in
                     CXType overridenClassType = clang_getCursorType(clang_getCursorSemanticParent(overridenCursors[i]));
-                    LOG("CppReflectionParser", "Function %s - (Level %d) method %s of %s", funcName, levelFromThisOverride,
+                    LOG("CppReflectionParser", "Function {} - (Level {}) method {} of {}", funcName, levelFromThisOverride,
                         clang_getCursorSpelling(overridenCursors[i]), clang_getTypeSpelling(overridenClassType));
 
                     // Add overrides of this base class's function
@@ -1459,7 +1459,7 @@ void visitMemberCppMethods(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
     CXRefQualifierKind methodCalledRefKind = clang_Type_getCXXRefQualifier(clang_getCursorType(cursor));
     if (methodCalledRefKind != CXRefQualifier_None)
     {
-        LOG("CppReflectionParser", "Function %s can be called from %s-value reference only", funcName,
+        LOG("CppReflectionParser", "Function {} can be called from {}-value reference only", funcName,
             (methodCalledRefKind == CXRefQualifier_LValue) ? TCHAR("l") : TCHAR("r"));
     }
 
@@ -1473,14 +1473,14 @@ void visitMemberCppMethods(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
             switch (cursorKind)
             {
             case CXCursor_CXXFinalAttr:
-                LOG("CppReflectionParser", "visitMemberCppMethods() : Function %s - virtual is made final", funcName);
+                LOG("CppReflectionParser", "visitMemberCppMethods() : Function {} - virtual is made final", funcName);
                 break;
             case CXCursor_CXXOverrideAttr:
-                LOG("CppReflectionParser", "visitMemberCppMethods() : Function %s - Has attribute override", funcName);
+                LOG("CppReflectionParser", "visitMemberCppMethods() : Function {} - Has attribute override", funcName);
                 break;
             case CXCursor_AnnotateAttr:
                 // Cursor spelling contains content of annotation
-                LOG("CppReflectionParser", "visitMemberCppMethods() : Function %s - Annotated as %s", funcName, cursorName);
+                LOG("CppReflectionParser", "visitMemberCppMethods() : Function {} - Annotated as {}", funcName, cursorName);
                 break;
             case CXCursor_ParmDecl:
                 // Since we handle this in print function signature
@@ -1586,7 +1586,7 @@ int32 globalMod(int32 &reminder, int32 dividend, int32 divisor)
 void testTypesAndProperties()
 {
     LOG("Test",
-        "Test type info \n%s\n%s\n%s\n%s\n%s\n%s\n%s"
+        "Test type info \n{}\n{}\n{}\n{}\n{}\n{}\n{}"
         // Referenced variable is const
         ,
         *typeInfoFrom<const int32 &>(),
@@ -1600,7 +1600,7 @@ void testTypesAndProperties()
         // Const reference to pointer to const variable
         ,
         *typeInfoFrom<int32 const *const &>(), *typeInfoFrom<int32 const *const &&>(), *typeInfoFrom<std::vector<int32> &>());
-    LOG("Test", "Test type info %d, %d, %d", *typeInfoFrom<const int32 &>() == *typeInfoFrom<const int32 &&>(),
+    LOG("Test", "Test type info {}, {}, {}", *typeInfoFrom<const int32 &>() == *typeInfoFrom<const int32 &&>(),
         *typeInfoFrom<const int32 *>() == *typeInfoFrom<int32 const *const &>(),
         *typeInfoFrom<int32 const *const &>() == *typeInfoFrom<int32 const *const &&>());
 
@@ -1618,8 +1618,8 @@ void testTypesAndProperties()
     GlobalFieldWrapperImpl<String> globalValProp(&SampleCode::globalVal);
 
     LOG("Test",
-        "Before setting values : \n    normalInt %d\n    normatString %s\n    intPtr 0x%llx(%d)\n    "
-        "constIntPtr 0x%llx(%d)\n    staticVal %s\n    globalVal %s",
+        "Before setting values : \n    normalInt {}\n    normatString {}\n    intPtr 0x{:x}({})\n    "
+        "constIntPtr 0x{:x}({})\n    staticVal {}\n    globalVal {}",
         *normalIntProp.getAsType<int32>(testDataProps).vPtr, *normalStrProp.getAsType<String>(testDataProps).vPtr,
         (intPtrProp.getAsType<int32 *>(testDataProps)) ? reinterpret_cast<uint64>(*intPtrProp.getAsType<int32 *>(testDataProps).vPtr) : 0,
         (intPtrProp.getAsType<int32 *>(testDataProps) && *intPtrProp.getAsType<int32 *>(testDataProps).vPtr)
@@ -1651,8 +1651,8 @@ void testTypesAndProperties()
     globalValProp.setFromType<String>(TCHAR("This is global static"));
 
     LOG("Test",
-        "After setting values : \n    normalInt %d\n    normatString %s\n    intPtr 0x%llx(%d)\n    "
-        "constIntPtr 0x%llx(%d)\n    staticVal %s\n    globalVal %s",
+        "After setting values : \n    normalInt {}\n    normatString {}\n    intPtr 0x{:x}({})\n    "
+        "constIntPtr 0x{:x}({})\n    staticVal {}\n    globalVal {}",
         *normalIntProp.getAsType<int32>(testDataProps).vPtr, *normalStrProp.getAsType<String>(testDataProps).vPtr,
         (intPtrProp.getAsType<int32 *>(testDataProps)) ? reinterpret_cast<uint64>(*intPtrProp.getAsType<int32 *>(testDataProps).vPtr) : 0,
         (intPtrProp.getAsType<int32 *>(testDataProps) && *intPtrProp.getAsType<int32 *>(testDataProps).vPtr)
@@ -1671,8 +1671,8 @@ void testTypesAndProperties()
 
     modifierFunc.invokeVoid(testDataProps, 34);
     LOG("Test",
-        "After Modify values : \n    normalInt %d\n    normatString %s\n    intPtr 0x%llx(%d)\n    "
-        "constIntPtr 0x%llx(%d)\n    staticVal %s\n    globalVal %s",
+        "After Modify values : \n    normalInt {}\n    normatString {}\n    intPtr 0x{:x}({})\n    "
+        "constIntPtr 0x{:x}({})\n    staticVal {}\n    globalVal {}",
         *normalIntProp.getAsType<int32>(testDataProps).vPtr, *normalStrProp.getAsType<String>(testDataProps).vPtr,
         (intPtrProp.getAsType<int32 *>(testDataProps)) ? reinterpret_cast<uint64>(*intPtrProp.getAsType<int32 *>(testDataProps).vPtr) : 0,
         (intPtrProp.getAsType<int32 *>(testDataProps) && *intPtrProp.getAsType<int32 *>(testDataProps).vPtr)
@@ -1689,7 +1689,7 @@ void testTypesAndProperties()
     int32 q = 0;
     int32 r = 0;
     modFunc.invoke(q, r, 4, 3);
-    LOG("Test", "Quotient %d, Remainder %d, Dividend %d, Divisor %d", q, r, 4, 3);
+    LOG("Test", "Quotient {}, Remainder {}, Dividend {}, Divisor {}", q, r, 4, 3);
 }
 
 void testRegex()
@@ -1720,13 +1720,13 @@ void testRegex()
         while (std::regex_search(startItr, testStr.cend(), matches, searchPattern))
         {
             allMatches.push_back(matches);
-            LOG("Test", "Matched n = %d", matches.size());
-            LOG("Test", "Prefix : %s", matches.prefix().str());
+            LOG("Test", "Matched n = {}", matches.size());
+            LOG("Test", "Prefix : {}", matches.prefix().str());
             for (auto& match : matches)
             {
-                LOG("Test", "Match : %s", match.str());
+                LOG("Test", "Match : {}", match.str());
             }
-            LOG("Test", "suffix : %s", matches.suffix().str());
+            LOG("Test", "suffix : {}", matches.suffix().str());
             startItr = matches.suffix().first;
         }
 
@@ -1734,7 +1734,7 @@ void testRegex()
         {
             const StringSubmatch& submatch = match[match.size() - 1];
             const StringSubmatch& wholesubmatch = match[0];
-            LOG("Test", "Must replace with value of %s, from index %d to %d"
+            LOG("Test", "Must replace with value of {}, from index {} to {}"
                 , submatch.str(), std::distance(testStr.cbegin(), wholesubmatch.first), std::distance(testStr.cbegin(), wholesubmatch.second));
         }
 #endif
@@ -1753,10 +1753,10 @@ void testRegex()
     };
     MustacheStringFormatter peps{ testStr };
     MustacheStringFormatter mustacheTest{ testStr2 };
-    LOG("Test", "Mustache formatted \n%s \n\tand another \n%s", peps.formatBasic(args), peps.formatBasic(args2));
+    LOG("Test", "Mustache formatted \n{} \n\tand another \n{}", peps.formatBasic(args), peps.formatBasic(args2));
 
     MustacheContext context1{ .sectionContexts = { { TCHAR("Run"), { MustacheContext{ .args = args }, MustacheContext{ .args = args2 } } } } };
-    LOG("Test", "Mustache rendered \n%s",
+    LOG("Test", "Mustache rendered \n{}",
         mustacheTest.render(
             context1,
             {
@@ -1804,7 +1804,7 @@ void testRegex()
                   .sectionFormatters
                   = { { TCHAR("MSectFormat"), MustacheSectionFormatter::createObject(&dynDataTest, &TestDynamicFormatData::customFormat) } }
     };
-    LOG("Test", "Mustache render dynamically modified recursive loop \n%s",
+    LOG("Test", "Mustache render dynamically modified recursive loop \n{}",
         sectFormatter.render(
             context2,
             {
@@ -1812,7 +1812,7 @@ void testRegex()
     }
             ));
 
-    LOG("Test", "%s", PropertyHelper::getValidSymbolName(TCHAR("class <Niown>>")));
+    LOG("Test", "{}", PropertyHelper::getValidSymbolName(TCHAR("class <Niown>>")));
 }
 
 class TestPropertyClass
@@ -1846,14 +1846,14 @@ public:
         : newNameStr(newName)
     {}
 
-    void printNewNameStr() const { LOG("TestPropertyClass", "New Name str %s", newNameStr); }
+    void printNewNameStr() const { LOG("TestPropertyClass", "New Name str {}", newNameStr); }
 
     void setNewNameStr(const String &newName) { newNameStr = newName; }
 
     static void incAndPrintInt()
     {
         staticInteger++;
-        LOG("TestPropertyClass", "New int value %d", staticInteger);
+        LOG("TestPropertyClass", "New int value {}", staticInteger);
     }
 };
 int32 TestPropertyClass::staticInteger = 8235;
@@ -2060,7 +2060,7 @@ void testPropertySystem()
                     += String(TCHAR(", ")) + ctor->funcParamsProp[i].typeProperty->nameString + TCHAR(" ") + ctor->funcParamsProp[i].nameString;
             }
         }
-        LOG("Test", "Class %s: CTor %s(%s)", prop->name, ctor->name, args);
+        LOG("Test", "Class {}: CTor {}({})", prop->name, ctor->name, args);
     }
     for (const FunctionProperty *memFunc : prop->memberFunctions)
     {
@@ -2076,11 +2076,11 @@ void testPropertySystem()
                     + memFunc->funcParamsProp[i].typeProperty->nameString + TCHAR(" ") + memFunc->funcParamsProp[i].nameString;
             }
         }
-        LOG("Test", "Class %s: Func %s %s(%s)", prop->nameString, memFunc->funcReturnProp->nameString, memFunc->nameString, args);
+        LOG("Test", "Class {}: Func {} {}({})", prop->nameString, memFunc->funcReturnProp->nameString, memFunc->nameString, args);
     }
     for (const FieldProperty *memField : prop->memberFields)
     {
-        LOG("Test", "Class %s: Field %s %s;", prop->nameString, memField->field->nameString, memField->nameString);
+        LOG("Test", "Class {}: Field {} {};", prop->nameString, memField->field->nameString, memField->nameString);
     }
     TestPropertyClass *object = nullptr;
     if (static_cast<const GlobalFunctionWrapper *>(prop->constructors[0]->funcPtr)

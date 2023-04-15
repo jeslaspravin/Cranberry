@@ -19,7 +19,7 @@ String PathFunctions::toRelativePath(const String &absPath, const String &relToP
 {
     std::filesystem::path absolutePath(absPath.getChar());
     std::filesystem::path relativeToPath(relToPath.getChar());
-    fatalAssertf(relativeToPath.is_absolute(), "Relative to path %s must be absolute path", relToPath);
+    fatalAssertf(relativeToPath.is_absolute(), "Relative to path {} must be absolute path", relToPath);
     if (absolutePath.is_relative())
     {
         return absPath;
@@ -29,7 +29,7 @@ String PathFunctions::toRelativePath(const String &absPath, const String &relToP
     std::error_code errorCode;
     std::filesystem::path relPath = std::filesystem::relative(absolutePath, relativeToPath, errorCode);
     fatalAssertf(
-        errorCode.value() == 0, "Error %s when making [%s] as relative to %s", UTF8_TO_TCHAR(errorCode.message().c_str()), absPath, relToPath
+        errorCode.value() == 0, "Error {} when making [{}] as relative to {}", UTF8_TO_TCHAR(errorCode.message().c_str()), absPath, relToPath
     );
     return WCHAR_TO_TCHAR(relPath.c_str());
 }
