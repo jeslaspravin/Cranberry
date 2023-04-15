@@ -33,8 +33,7 @@ struct META_ANNOTATE(DisableCtor) ObjectPath
 {
     GENERATED_CODES()
 
-    META_ANNOTATE()
-    ObjectAllocIdx allocIdx;
+    ObjectDbIdx dbIdx;
 
     META_ANNOTATE()
     String packagePath;

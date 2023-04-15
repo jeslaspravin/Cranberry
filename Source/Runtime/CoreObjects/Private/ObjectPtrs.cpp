@@ -15,9 +15,9 @@
 namespace cbe
 {
 
-ObjectPath &ObjectPath::operator= (const TChar *fullPath)
+ObjectPath &ObjectPath::operator= (const TChar *fullPath) noexcept
 {
-    allocIdx = 0;
+    dbIdx = CoreObjectsDB::InvalidDbIdx;
 
     StringView outerPathView, objectNameView;
     packagePath = ObjectPathHelper::getPathComponents(outerPathView, objectNameView, fullPath);
@@ -27,18 +27,18 @@ ObjectPath &ObjectPath::operator= (const TChar *fullPath)
     Object *obj = get(fullPath);
     if (cbe::isValidFast(obj))
     {
-        allocIdx = INTERNAL_ObjectCoreAccessors::getAllocIdx(obj);
+        dbIdx = obj->getDbIdx();
     }
     return *this;
 }
-ObjectPath &ObjectPath::operator= (Object *obj)
+ObjectPath &ObjectPath::operator= (Object *obj) noexcept
 {
     if (!cbe::isValidFast(obj))
     {
         reset();
         return *this;
     }
-    allocIdx = INTERNAL_ObjectCoreAccessors::getAllocIdx(obj);
+    dbIdx = obj->getDbIdx();
 
     StringView objFullPath = obj->getObjectData().path;
     StringView outerPathView, objectNameView;
@@ -49,7 +49,7 @@ ObjectPath &ObjectPath::operator= (Object *obj)
     return *this;
 }
 
-ObjectPath::ObjectPath(Object *outerObj, const TChar *objectName)
+ObjectPath::ObjectPath(Object *outerObj, const TChar *objectName) noexcept
 {
     if (!cbe::isValidFast(outerObj) && TCharStr::empty(objectName))
     {
@@ -68,22 +68,47 @@ String ObjectPath::getFullPath() const
 Object *ObjectPath::getObject() const
 {
     const String fullPath = getFullPath();
-    Object *obj = get(fullPath.getChar());
+
+    const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
+    Object *obj = nullptr;
+    if (dbIdx != CoreObjectsDB::InvalidDbIdx)
+    {
+        obj = objectsDb.getObject(dbIdx);
+    }
+    else
+    {
+        obj = objectsDb.getObject(objectsDb.getObjectNodeIdx({ .objectPath = fullPath, .objectId = fullPath.getChar() }));
+    }
     if (!cbe::isValidFast(obj))
     {
         obj = load(fullPath, nullptr);
     }
-    if (cbe::isValidFast(obj))
+
+    return obj;
+}
+
+void ObjectPath::refreshCache()
+{
+    const String fullPath = getFullPath();
+
+    const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
+    // If dbIdx is valid value check if the obj is valid and clear dbIdx if not
+    if (dbIdx != CoreObjectsDB::InvalidDbIdx)
     {
-        const ObjectAllocIdx foundObjAllocIdx = INTERNAL_ObjectCoreAccessors::getAllocIdx(obj);
-        // 0 is for default mostly and it will always be valid
-        if (!(allocIdx == 0 || foundObjAllocIdx == allocIdx))
-        {
-            LOG_WARN("ObjectPath", "Object {}[allocIdx {}] does not matches allocation index {}", fullPath, allocIdx, foundObjAllocIdx);
-        }
-        return obj;
+        Object *obj = objectsDb.getObject(dbIdx);
+        dbIdx = cbe::isValidFast(obj) ? obj->getDbIdx() : CoreObjectsDB::InvalidDbIdx;
     }
-    return nullptr;
+    // Invalid dbIdx check if we can get the object from the db
+    if (dbIdx == CoreObjectsDB::InvalidDbIdx)
+    {
+        dbIdx = objectsDb.getObjectNodeIdx({ .objectPath = fullPath, .objectId = fullPath.getChar() });
+    }
+    // If still invalid dbIdx try loading as the last step
+    if (dbIdx == CoreObjectsDB::InvalidDbIdx)
+    {
+        Object *obj = load(fullPath, nullptr);
+        dbIdx = obj ? obj->getDbIdx() : CoreObjectsDB::InvalidDbIdx;
+    }
 }
 
 } // namespace cbe

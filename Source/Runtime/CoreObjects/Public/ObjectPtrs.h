@@ -17,69 +17,72 @@
 namespace cbe
 {
 
-// TODO(Jeslas) : ASAP update WeakObjPtr and ObjectPath codes to work with new ObjectDbIdx
-
 template <ObjectType PtrType>
 class WeakObjPtr
 {
+public:
+    using ValueType = PtrType;
+    using PointerType = ValueType *;
+
+    using value_type = ValueType;
+    using pointer_type = PointerType;
+
 private:
-    ObjectAllocIdx allocIdx = 0;
-    NameString objectPath;
+    ObjectDbIdx dbIdx = CoreObjectsDB::InvalidDbIdx;
+    PointerType objPtr = nullptr;
 
     friend std::hash<WeakObjPtr<PtrType>>;
 
 public:
     WeakObjPtr() = default;
 
-    WeakObjPtr(PtrType *ptr)
+    WeakObjPtr(PointerType ptr) noexcept
     {
         if (cbe::isValid(ptr))
         {
-            ObjectPrivateDataView ptrDatV = ptr->getObjectData();
-            allocIdx = ptrDatV.allocIdx;
-            objectPath = ptrDatV.path;
+            dbIdx = ptr->getDbIdx();
+            objPtr = ptr;
         }
     }
 
     // Explicit copy and move constructor needed as compiler generates them without matching template
     // constructors
-    WeakObjPtr(WeakObjPtr &&weakPtr)
-        : allocIdx(weakPtr.allocIdx)
-        , objectPath(weakPtr.objectPath)
+    WeakObjPtr(WeakObjPtr &&weakPtr) noexcept
+        : dbIdx(weakPtr.dbIdx)
+        , objPtr(weakPtr.objPtr)
     {
         weakPtr.detachRef();
     }
-    WeakObjPtr(const WeakObjPtr &weakPtr)
-        : allocIdx(weakPtr.allocIdx)
-        , objectPath(weakPtr.objectPath)
+    WeakObjPtr(const WeakObjPtr &weakPtr) noexcept
+        : dbIdx(weakPtr.dbIdx)
+        , objPtr(weakPtr.objPtr)
     {}
     template <class InPtrType>
-    WeakObjPtr(WeakObjPtr<InPtrType> &&weakPtr)
+    WeakObjPtr(WeakObjPtr<InPtrType> &&weakPtr) noexcept
     {
-        if (PtrType *ptr = weakPtr.getAs<PtrType>())
+        if (PointerType ptr = weakPtr.getAs<ValueType>())
         {
-            WeakObjPtr(ptr);
+            this->operator= (ptr);
         }
         weakPtr.detachRef();
     }
     template <class InPtrType>
-    WeakObjPtr(const WeakObjPtr<InPtrType> &weakPtr)
+    WeakObjPtr(const WeakObjPtr<InPtrType> &weakPtr) noexcept
     {
-        if (PtrType *ptr = weakPtr.getAs<PtrType>())
+        if (PointerType ptr = weakPtr.getAs<ValueType>())
         {
-            WeakObjPtr(ptr);
+            this->operator= (ptr);
         }
     }
 
     ~WeakObjPtr() { reset(); }
 
-    WeakObjPtr &operator= (PtrType *ptr)
+    WeakObjPtr &operator= (PointerType ptr) noexcept
     {
         if (cbe::isValid(ptr))
         {
-            ObjectPrivateDataView ptrDatV = ptr->getObjectData();
-            allocIdx = ptrDatV.allocIdx;
-            objectPath = ptrDatV.path;
+            dbIdx = ptr->getDbIdx();
+            objPtr = ptr;
         }
         else
         {
@@ -90,46 +93,46 @@ public:
 
     // Explicit copy and move assignment needed as compiler generates them without matching template
     // assignments
-    FORCE_INLINE WeakObjPtr &operator= (WeakObjPtr &&weakPtr)
+    FORCE_INLINE WeakObjPtr &operator= (WeakObjPtr &&weakPtr) noexcept
     {
         if (this != &weakPtr)
         {
-            allocIdx = weakPtr.allocIdx;
-            objectPath = weakPtr.objectPath;
+            dbIdx = weakPtr.dbIdx;
+            objPtr = weakPtr.objPtr;
             weakPtr.detachRef();
         }
         return *this;
     }
-    FORCE_INLINE WeakObjPtr &operator= (const WeakObjPtr &weakPtr)
+    FORCE_INLINE WeakObjPtr &operator= (const WeakObjPtr &weakPtr) noexcept
     {
-        allocIdx = weakPtr.allocIdx;
-        objectPath = weakPtr.objectPath;
+        dbIdx = weakPtr.dbIdx;
+        objPtr = weakPtr.objPtr;
         return *this;
     }
-    template <class InPtrType>
-    FORCE_INLINE WeakObjPtr &operator= (WeakObjPtr<InPtrType> &&weakPtr)
+    template <class InType>
+    FORCE_INLINE WeakObjPtr &operator= (WeakObjPtr<InType> &&weakPtr) noexcept
     {
         if (this != &weakPtr)
         {
-            if (PtrType *ptr = weakPtr.getAs<PtrType>())
+            if (PointerType ptr = weakPtr.getAs<ValueType>())
             {
-                *this = ptr;
+                this->operator= (ptr);
                 weakPtr.detachRef();
             }
         }
         return *this;
     }
-    template <class InPtrType>
-    FORCE_INLINE WeakObjPtr &operator= (const WeakObjPtr<InPtrType> &weakPtr)
+    template <class InType>
+    FORCE_INLINE WeakObjPtr &operator= (const WeakObjPtr<InType> &weakPtr) noexcept
     {
-        if (PtrType *ptr = weakPtr.getAs<PtrType>())
+        if (PointerType ptr = weakPtr.getAs<ValueType>())
         {
-            *this = ptr;
+            this->operator= (ptr);
         }
         return *this;
     }
 
-    FORCE_INLINE PtrType *operator->() const { return get(); }
+    FORCE_INLINE PointerType operator->() const { return get(); }
 
     FORCE_INLINE bool operator!= (const WeakObjPtr &rhs) const { return !(*this == rhs); }
     template <typename Type>
@@ -137,14 +140,11 @@ public:
     {
         return !(*this == rhs);
     }
-    FORCE_INLINE bool operator== (const WeakObjPtr &rhs) const
-    {
-        return allocIdx == rhs.allocIdx && objectPath == rhs.objectPath && objectPath.toString().isEqual(rhs.objectPath.toString());
-    }
+    FORCE_INLINE bool operator== (const WeakObjPtr &rhs) const { return dbIdx == rhs.dbIdx && objPtr == rhs.objPtr; }
     template <typename Type>
     FORCE_INLINE bool operator== (const WeakObjPtr<Type> &rhs) const
     {
-        return allocIdx == rhs.allocIdx && objectPath == rhs.objectPath && objectPath.toString().isEqual(rhs.objectPath.toString());
+        return dbIdx == rhs.dbIdx && objPtr == rhs.objPtr;
     }
     template <typename Type>
     FORCE_INLINE bool operator== (Type *rhs) const
@@ -152,14 +152,11 @@ public:
         return get() == rhs;
     }
 
-    FORCE_INLINE bool operator< (const WeakObjPtr &rhs) const
-    {
-        return objectPath == rhs.objectPath ? allocIdx < rhs.allocIdx : objectPath < rhs.objectPath;
-    }
+    FORCE_INLINE bool operator< (const WeakObjPtr &rhs) const { return dbIdx == rhs.dbIdx ? objPtr < rhs.objPtr : dbIdx < rhs.dbIdx; }
     template <typename Type>
     FORCE_INLINE bool operator< (const WeakObjPtr<Type> &rhs) const
     {
-        return objectPath == rhs.objectPath ? allocIdx < rhs.allocIdx : objectPath < rhs.objectPath;
+        return dbIdx == rhs.dbIdx ? objPtr < rhs.objPtr : dbIdx < rhs.dbIdx;
     }
 
     template <typename AsType>
@@ -168,44 +165,41 @@ public:
         return cast<AsType>(get());
     }
     // For compliance with SharedPtr
-    FORCE_INLINE PtrType *get() const
+    FORCE_INLINE PointerType get() const
     {
-        if (!objectPath.isValid())
+        if (!isValid())
         {
             return nullptr;
         }
-        return static_cast<PtrType *>(cbe::get(StringID(objectPath), objectPath.toString().getChar()));
+        return static_cast<PointerType>(objPtr);
     }
 
     // Checks if set objectId is valid now
     FORCE_INLINE bool isValid() const
     {
-        if (!objectPath.isValid())
+        if (!isSet())
         {
             return false;
         }
-        Object *obj = cbe::get(StringID(objectPath), objectPath.toString().getChar());
-        if (cbe::isValidFast(obj))
-        {
-            return INTERNAL_ObjectCoreAccessors::getAllocIdx(obj) == allocIdx;
-        }
-        return false;
+        const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
+        Object *obj = objectsDb.getObject(dbIdx);
+        return obj == objPtr && cbe::isValidAlloc(objPtr);
     }
     FORCE_INLINE explicit operator bool () const { return isValid(); }
 
     // Check if this WeakPtr is set
-    FORCE_INLINE bool isSet() const { return objectPath.isValid(); }
+    FORCE_INLINE bool isSet() const { return dbIdx != CoreObjectsDB::InvalidDbIdx && objPtr != nullptr; }
 
-    FORCE_INLINE void swap(WeakObjPtr<PtrType> &weakPtr)
+    FORCE_INLINE void swap(WeakObjPtr<ValueType> &weakPtr)
     {
-        std::swap(allocIdx, weakPtr.allocIdx);
-        std::swap(objectPath, weakPtr.objectPath);
+        std::swap(dbIdx, weakPtr.dbIdx);
+        std::swap(objPtr, weakPtr.objPtr);
     }
 
     FORCE_INLINE void reset()
     {
-        allocIdx = 0;
-        objectPath = NameString();
+        dbIdx = CoreObjectsDB::InvalidDbIdx;
+        objPtr = nullptr;
     }
 
     // Detaches current ref counted resource without decrementing ref counter, Do not use it
@@ -217,7 +211,7 @@ using WeakObjectPtr = WeakObjPtr<Object>;
 struct COREOBJECTS_EXPORT ObjectPath
 {
 public:
-    ObjectAllocIdx allocIdx = 0;
+    ObjectDbIdx dbIdx = CoreObjectsDB::InvalidDbIdx;
     String packagePath;
     String outerPath;
     String objectName;
@@ -228,15 +222,15 @@ public:
     ObjectPath &operator= (const ObjectPath &) = default;
     ObjectPath &operator= (ObjectPath &&) = default;
 
-    explicit ObjectPath(const TChar *fullPath) { (*this) = fullPath; }
-    explicit ObjectPath(Object *obj) { (*this) = obj; }
-    ObjectPath &operator= (const TChar *fullPath);
-    ObjectPath &operator= (Object *obj);
+    explicit ObjectPath(const TChar *fullPath) noexcept { (*this) = fullPath; }
+    explicit ObjectPath(Object *obj) noexcept { (*this) = obj; }
+    ObjectPath &operator= (const TChar *fullPath) noexcept;
+    ObjectPath &operator= (Object *obj) noexcept;
 
-    ObjectPath(Object *outerObj, const TChar *objectName);
+    ObjectPath(Object *outerObj, const TChar *objectName) noexcept;
 
     FORCE_INLINE bool operator!= (const ObjectPath &rhs) const { return !(*this == rhs); }
-    FORCE_INLINE bool operator== (const ObjectPath &rhs) const { return allocIdx == rhs.allocIdx && getFullPath() == rhs.getFullPath(); }
+    FORCE_INLINE bool operator== (const ObjectPath &rhs) const { return dbIdx == rhs.dbIdx && getFullPath() == rhs.getFullPath(); }
     template <typename Type>
     FORCE_INLINE bool operator== (Type *rhs) const
     {
@@ -244,7 +238,7 @@ public:
     }
     FORCE_INLINE bool operator< (const ObjectPath &rhs) const
     {
-        return allocIdx == rhs.allocIdx ? getFullPath() < rhs.getFullPath() : allocIdx < rhs.allocIdx;
+        return dbIdx == rhs.dbIdx ? getFullPath() < rhs.getFullPath() : dbIdx < rhs.dbIdx;
     }
 
     const String &getPackagePath() const { return packagePath; }
@@ -263,18 +257,41 @@ public:
     // Checks if set objectId is valid now, Without loading
     FORCE_INLINE bool isValid() const
     {
-        Object *obj = cbe::get(getFullPath().getChar());
-        if (cbe::isValidFast(obj))
+        const String fullPath = getFullPath();
+
+        const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
+        ObjectPrivateDataView objDatV;
+        if (dbIdx != CoreObjectsDB::InvalidDbIdx)
         {
-            return INTERNAL_ObjectCoreAccessors::getAllocIdx(obj) == allocIdx;
+            objDatV = objectsDb.getObjectData(dbIdx);
         }
-        return false;
+        else
+        {
+            objDatV = objectsDb.getObjectData(objectsDb.getObjectNodeIdx({ .objectPath = fullPath, .objectId = fullPath.getChar() }));
+        }
+        return objDatV && TCharStr::isEqual(objDatV.path, fullPath.getChar());
     }
     FORCE_INLINE explicit operator bool () const { return isValid(); }
     FORCE_INLINE void reset()
     {
-        allocIdx = 0;
+        dbIdx = CoreObjectsDB::InvalidDbIdx;
         packagePath = outerPath = objectName = TCHAR("");
+    }
+
+    // Tries to refresh the cached dbIdx and updates it if it is outdated
+    void refreshCache();
+    FORCE_INLINE bool isValidCache() const
+    {
+        const String fullPath = getFullPath();
+
+        const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
+        ObjectPrivateDataView objDatV = ObjectPrivateDataView::getInvalid();
+        if (dbIdx != CoreObjectsDB::InvalidDbIdx)
+        {
+            objDatV = objectsDb.getObjectData(dbIdx);
+        }
+
+        return objDatV && TCharStr::isEqual(objDatV.path, fullPath.getChar());
     }
 };
 
@@ -283,17 +300,11 @@ public:
 template <typename Type>
 struct std::hash<cbe::WeakObjPtr<Type>>
 {
-    NODISCARD size_t operator() (const cbe::WeakObjPtr<Type> &ptr) const noexcept
-    {
-        return HashUtility::hashAllReturn(ptr.objectId, ptr.allocIdx);
-    }
+    NODISCARD size_t operator() (const cbe::WeakObjPtr<Type> &ptr) const noexcept { return HashUtility::hashAllReturn(ptr.dbIdx, ptr.objPtr); }
 };
 
 template <>
 struct std::hash<cbe::ObjectPath>
 {
-    NODISCARD size_t operator() (const cbe::ObjectPath &ptr) const noexcept
-    {
-        return HashUtility::hashAllReturn(ptr.allocIdx, ptr.getFullPath());
-    }
+    NODISCARD size_t operator() (const cbe::ObjectPath &ptr) const noexcept { return HashUtility::hashAllReturn(ptr.dbIdx, ptr.getFullPath()); }
 };
