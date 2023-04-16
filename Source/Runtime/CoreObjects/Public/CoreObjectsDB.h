@@ -49,17 +49,6 @@ class COREOBJECTS_EXPORT CoreObjectsDB
 {
 public:
     using NodeIdxType = ObjectDbIdx;
-    struct ObjectData
-    {
-        String path;
-        EObjectFlags flags = 0;
-        // Below 2 can be used to retrieve object from allocator directly
-        CBEClass clazz;
-        ObjectAllocIdx allocIdx = 0;
-        // Offset of name start index in path
-        uint32 nameOffset = 0;
-        StringID sid;
-    };
 
     // This is just to avoid including std::mutex header
     class COREOBJECTS_EXPORT SharedLockObjectsDB
@@ -84,6 +73,18 @@ public:
     };
 
 private:
+    struct ObjectData
+    {
+        String path;
+        EObjectFlags flags = 0;
+        // Below 2 can be used to retrieve object from allocator directly
+        CBEClass clazz;
+        ObjectAllocIdx allocIdx = 0;
+        // Offset of name start index in path
+        uint32 nameOffset = 0;
+        StringID sid;
+    };
+
     using SharedLockType = std::shared_mutex;
     using ObjectIDToNodeIdx = std::unordered_multimap<StringID, NodeIdxType>;
     using ObjectTreeType = FlatTree<ObjectData, NodeIdxType>;

@@ -24,6 +24,8 @@ private:
     CoreObjectGC gc;
     CBEPackageManager packMan;
 
+    static CoreObjectsDB *objsDbPtr;
+
 public:
     /* IModuleBase overrides */
     void init() override;
@@ -36,6 +38,9 @@ public:
     /* Overrides ends */
 
     static CoreObjectsModule *get();
-    FORCE_INLINE static CoreObjectsDB &objectsDB() { return get()->objsDb; }
+    FORCE_INLINE static CoreObjectsDB &objectsDB()
+    {
+        return objsDbPtr ? *objsDbPtr : static_cast<CoreObjectsModule *>(ICoreObjectsModule::get())->objsDb;
+    }
     FORCE_INLINE static CBEPackageManager &packageManager() { return get()->packMan; }
 };

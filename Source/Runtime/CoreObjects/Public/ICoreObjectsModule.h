@@ -27,5 +27,6 @@ public:
     virtual const CoreObjectsDB &getObjectsDB() const = 0;
     virtual CoreObjectGC &getGC() = 0;
     virtual cbe::Package *getTransientPackage() const = 0;
+
     static ICoreObjectsModule *get();
 };
