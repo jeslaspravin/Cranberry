@@ -12,6 +12,7 @@
 #pragma once
 
 #include "Serialization/ArchiveTypes.h"
+#include "Types/CompilerDefines.h"
 #include "Types/xxHash/xxHashInclude.hpp"
 
 #if DEV_BUILD
@@ -20,8 +21,8 @@
 #define HAS_STRINGID_CONSTEXPR 0
 #define ENABLE_STRID_DEBUG 1
 #else // DEV_BUILD
-#define STRINGID_FUNCQUALIFIER CONST_EXPR
-#define STRINGID_CONSTEXPR CONST_EXPR
+#define STRINGID_FUNCQUALIFIER constexpr
+#define STRINGID_CONSTEXPR constexpr
 #define HAS_STRINGID_CONSTEXPR 1
 #define ENABLE_STRID_DEBUG 0
 #endif // DEV_BUILD
@@ -32,9 +33,12 @@
 
 #if ENABLE_STRID_DEBUG
 #include <unordered_map>
+#include <unordered_set>
 #endif
 
 class StringID;
+struct DebugStringIDsData;
+
 inline namespace Literals
 {
 NODISCARD STRINGID_FUNCQUALIFIER StringID operator"" _sid (const TChar *str, SizeT len) noexcept;
@@ -48,6 +52,8 @@ public:
 private:
     IDType id = 0;
 
+    friend DebugStringIDsData;
+
     friend STRINGID_FUNCQUALIFIER StringID Literals::operator"" _sid (const TChar *str, SizeT len) noexcept;
     template <ArchiveTypeName ArchiveType>
     friend ArchiveType &operator<< (ArchiveType &archive, StringID &value);
@@ -59,9 +65,10 @@ public:
 
 private:
 #if ENABLE_STRID_DEBUG
+    using DebugStringsMap = std::unordered_map<IDType, std::unordered_set<String>>;
+
     // Holds pointer to debugStringsDB which will be used by debug to visualize string
-    const std::unordered_map<IDType, String> *debugStrings = nullptr;
-    static std::unordered_map<IDType, String> &debugStringDB();
+    static DebugStringsMap *debugStrings;
     static const TChar *findDebugString(IDType strId);
     void insertDbgStr(StringView str);
 
@@ -73,14 +80,15 @@ private:
     explicit StringID(IDType strId)
         : id(strId)
     {
-        debugStrings = &debugStringDB();
+        const TChar *debugStr = findDebugString(id);
+        CompilerHacks::ignoreUnused(debugStr);
     }
 #else
-    CONST_EXPR StringID(IDType strId)
+    constexpr StringID(IDType strId)
         : id(strId)
     {}
 
-    CONST_EXPR void insertDbgStr(StringView) {}
+    constexpr void insertDbgStr(StringView) {}
 #endif
 
     STRINGID_FUNCQUALIFIER void initFromAChar(const AChar *str)
@@ -90,13 +98,13 @@ private:
     }
 
 public:
-    CONST_EXPR StringID() = default;
-    CONST_EXPR StringID(const StringID &) = default;
-    CONST_EXPR StringID(StringID &&) = default;
-    CONST_EXPR StringID &operator= (const StringID &) = default;
-    CONST_EXPR StringID &operator= (StringID &&) = default;
+    constexpr StringID() = default;
+    constexpr StringID(const StringID &) = default;
+    constexpr StringID(StringID &&) = default;
+    constexpr StringID &operator= (const StringID &) = default;
+    constexpr StringID &operator= (StringID &&) = default;
 
-    CONST_EXPR explicit StringID(EInitType)
+    constexpr explicit StringID(EInitType)
         : id(0)
     {}
     // Additional constructors
@@ -136,9 +144,9 @@ public:
         return *this;
     }
     // Equality
-    CONST_EXPR std::strong_ordering operator<=> (const StringID &rhs) const noexcept { return id <=> rhs.id; }
+    constexpr std::strong_ordering operator<=> (const StringID &rhs) const noexcept { return id <=> rhs.id; }
     // Since the == operator is necessary even though spaceship is defined for hash map
-    CONST_EXPR bool operator== (const StringID &rhs) const noexcept { return id == rhs.id; }
+    constexpr bool operator== (const StringID &rhs) const noexcept { return id == rhs.id; }
 
     /**
      * toString will return id integer as string in release build

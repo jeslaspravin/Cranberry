@@ -15,31 +15,54 @@
 
 #if ENABLE_STRID_DEBUG
 
-static std::shared_mutex stringDbLock;
+#include "Logger/Logger.h"
 
-std::unordered_map<StringID::IDType, String> &StringID::debugStringDB()
+struct DebugStringIDsData
 {
-    static std::unordered_map<StringID::IDType, String> singletonStringDB;
+    std::shared_mutex lock;
+    StringID::DebugStringsMap stringsDb;
+
+    DebugStringIDsData() { StringID::debugStrings = &stringsDb; }
+    MAKE_TYPE_NONCOPY_NONMOVE(DebugStringIDsData)
+    ~DebugStringIDsData() { StringID::debugStrings = nullptr; }
+};
+
+DebugStringIDsData &debugStringDB()
+{
+    static DebugStringIDsData singletonStringDB;
     return singletonStringDB;
 }
 
 const TChar *StringID::findDebugString(IDType strId)
 {
-    std::shared_lock<std::shared_mutex> readLock{ stringDbLock };
-    auto itr = debugStringDB().find(strId);
-    if (itr == debugStringDB().cend())
+    DebugStringIDsData &stringsDbData = debugStringDB();
+
+    std::shared_lock<std::shared_mutex> readLock{ stringsDbData.lock };
+    auto itr = stringsDbData.stringsDb.find(strId);
+    if (itr == stringsDbData.stringsDb.cend())
     {
         return nullptr;
     }
-    return itr->second.getChar();
+    if (itr->second.size() > 1)
+    {
+        LOG("StringID", "StringID {} has overlaps with values {}", strId, itr->second);
+    }
+    return itr->second.cbegin()->getChar();
 }
 
 void StringID::insertDbgStr(StringView str)
 {
-    std::unique_lock<std::shared_mutex> writeLock{ stringDbLock };
-    debugStrings = &debugStringDB();
-    debugStringDB().insert({ id, str });
+    if (str.empty())
+    {
+        return;
+    }
+    DebugStringIDsData &stringsDbData = debugStringDB();
+
+    std::unique_lock<std::shared_mutex> writeLock{ stringsDbData.lock };
+    stringsDbData.stringsDb[id].insert(str);
 }
+
+StringID::DebugStringsMap *StringID::debugStrings = nullptr;
 
 #endif // DEV_BUILD
 
