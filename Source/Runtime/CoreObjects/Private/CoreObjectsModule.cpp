@@ -23,6 +23,7 @@ ICoreObjectsModule *ICoreObjectsModule::get()
 {
     return ModuleManager::get()->getOrLoadModulePtr<ICoreObjectsModule>(TCHAR(MACRO_TO_STRING(MODULE_NAME)));
 }
+const CoreObjectsDB &ICoreObjectsModule::objectsDB() { return CoreObjectsModule::objectsDB(); }
 
 CoreObjectsDB *CoreObjectsModule::objsDbPtr = nullptr;
 
@@ -44,8 +45,6 @@ void CoreObjectsModule::release()
 
     objsDbPtr = nullptr;
 }
-
-const CoreObjectsDB &CoreObjectsModule::getObjectsDB() const { return objsDb; }
 
 cbe::Package *CoreObjectsModule::getTransientPackage() const { return cbe::getDefaultObject<cbe::Package>(); }
 

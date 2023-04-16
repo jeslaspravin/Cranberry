@@ -213,7 +213,7 @@ bool ActorPrefab::copyFrom(ActorPrefab *otherPrefab)
     {
         return false;
     }
-    const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
+    const CoreObjectsDB &objectsDb = ICoreObjectsModule::objectsDB();
 
     bool bCopiedActorTemplate = actorTemplate->copyFrom(otherPrefab->actorTemplate);
     if (!bCopiedActorTemplate)
@@ -744,7 +744,7 @@ bool ActorPrefab::isNativeComponent(Object *obj) const { return obj && PropertyH
 
 void ActorPrefab::createComponentOverride(ComponentOverrideInfo &overrideInfo, bool bReplaceReferences)
 {
-    const CoreObjectsDB &objsDb = ICoreObjectsModule::get()->getObjectsDB();
+    const CoreObjectsDB &objsDb = ICoreObjectsModule::objectsDB();
 
     ObjectTemplate *compTemplateObj = getTemplateToOverride(overrideInfo);
     TransformComponent *tfComponent = compTemplateObj->getTemplateAs<TransformComponent>();

@@ -181,7 +181,7 @@ public:
         {
             return false;
         }
-        const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
+        const CoreObjectsDB &objectsDb = ICoreObjectsModule::objectsDB();
         Object *obj = objectsDb.getObject(dbIdx);
         return obj == objPtr && cbe::isValidAlloc(objPtr);
     }

@@ -44,7 +44,7 @@ FORCE_INLINE bool isValid(const Object *obj)
     // of valid objects in objects db
     ObjectDbIdx dbIdx = obj->getDbIdx();
 
-    const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
+    const CoreObjectsDB &objectsDb = ICoreObjectsModule::objectsDB();
     ObjectPrivateDataView objectDatV = objectsDb.getObjectData(dbIdx);
 
     if (objectDatV && NO_BITS_SET(objectDatV.flags, EObjectFlagBits::ObjFlag_MarkedForDelete | EObjectFlagBits::ObjFlag_GCPurge))
@@ -63,7 +63,7 @@ FORCE_INLINE bool isValidFast(const Object *obj)
     }
     ObjectDbIdx dbIdx = obj->getDbIdx();
 
-    const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
+    const CoreObjectsDB &objectsDb = ICoreObjectsModule::objectsDB();
     ObjectPrivateDataView objectDatV = objectsDb.getObjectData(dbIdx);
 
     return objectDatV && NO_BITS_SET(objectDatV.flags, EObjectFlagBits::ObjFlag_MarkedForDelete | EObjectFlagBits::ObjFlag_GCPurge);
@@ -77,7 +77,7 @@ FORCE_INLINE bool isValidAlloc(const Object *obj)
     }
     ObjectDbIdx dbIdx = obj->getDbIdx();
 
-    const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
+    const CoreObjectsDB &objectsDb = ICoreObjectsModule::objectsDB();
     ObjectPrivateDataView objectDatV = objectsDb.getObjectData(dbIdx);
 
     if (objectDatV && NO_BITS_SET(objectDatV.flags, EObjectFlagBits::ObjFlag_MarkedForDelete | EObjectFlagBits::ObjFlag_GCPurge))
@@ -141,7 +141,7 @@ Object *INTERNAL_create(CBEClass clazz, StringView name, Object *outerObj, EObje
     }
     NameString objFullPath = NameString(ObjectPathHelper::getFullPath(objectName, outerObj));
 
-    const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
+    const CoreObjectsDB &objectsDb = ICoreObjectsModule::objectsDB();
 #if DEV_BUILD
     if (objectsDb.hasObject({ .objectPath = objFullPath.toString().getChar(), .objectId = StringID(objFullPath) }))
     {
@@ -215,7 +215,7 @@ template <typename... CtorArgs>
 Object *createOrGet(CBEClass clazz, StringView name, Object *outerObj, EObjectFlags flags = 0, CtorArgs... ctorArgs)
 {
     String objFullPath = ObjectPathHelper::getFullPath(name, outerObj);
-    const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
+    const CoreObjectsDB &objectsDb = ICoreObjectsModule::objectsDB();
     CoreObjectsDB::NodeIdxType objNodeIdx
         = objectsDb.getObjectNodeIdx({ .objectPath = objFullPath.getChar(), .objectId = objFullPath.getChar() });
     if (objectsDb.hasObject(objNodeIdx))
@@ -241,11 +241,11 @@ ClassType *createOrGet(StringView name, Object *outerObj, EObjectFlags flags = 0
 
 FORCE_INLINE Object *get(const TChar *objectFullPath)
 {
-    return ICoreObjectsModule::get()->getObjectsDB().getObject({ .objectPath = objectFullPath, .objectId = objectFullPath });
+    return ICoreObjectsModule::objectsDB().getObject({ .objectPath = objectFullPath, .objectId = objectFullPath });
 }
 FORCE_INLINE Object *get(StringID objectID, const TChar *objectFullPath)
 {
-    return ICoreObjectsModule::get()->getObjectsDB().getObject({ .objectPath = objectFullPath, .objectId = objectID });
+    return ICoreObjectsModule::objectsDB().getObject({ .objectPath = objectFullPath, .objectId = objectID });
 }
 
 template <typename ClassType>

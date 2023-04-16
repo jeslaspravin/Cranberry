@@ -32,7 +32,6 @@ public:
     void release() override;
 
     /* ICoreObjectsModule overrides */
-    const CoreObjectsDB &getObjectsDB() const override;
     cbe::Package *getTransientPackage() const override;
     CoreObjectGC &getGC() override;
     /* Overrides ends */

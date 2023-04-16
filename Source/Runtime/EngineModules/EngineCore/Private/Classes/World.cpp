@@ -225,7 +225,7 @@ bool World::copyFrom(World *otherWorld)
         LOG_ERROR("World", "Cannot copy a playing world to another playing world");
         return false;
     }
-    const CoreObjectsDB &objsDb = ICoreObjectsModule::get()->getObjectsDB();
+    const CoreObjectsDB &objsDb = ICoreObjectsModule::objectsDB();
 
     bool bAllCopied = true;
     std::unordered_set<ActorPrefab *> prefabsToRemove(actorPrefabs.cbegin(), actorPrefabs.cend());
@@ -323,7 +323,7 @@ bool World::mergeWorld(World *otherWorld, bool bMoveActors)
         LOG_ERROR("World", "Cannot merge a playing world to another playing world");
         return false;
     }
-    const CoreObjectsDB &objsDb = ICoreObjectsModule::get()->getObjectsDB();
+    const CoreObjectsDB &objsDb = ICoreObjectsModule::objectsDB();
 
     uint64 duplicateCounter = 0;
     auto getUniqPrefabName = [&duplicateCounter, this](String otherPrefabName) -> String

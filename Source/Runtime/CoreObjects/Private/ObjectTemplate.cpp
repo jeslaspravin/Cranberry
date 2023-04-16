@@ -219,7 +219,6 @@ void ObjectTemplate::createTemplate(CBEClass clazz, const TChar *name)
     }
     debugAssert(templateObj->getOuter() == this);
 
-    // TODO(Jeslas) : ASAP Replace ICoreObjectsModule::get()->getObjectsDb() to CoreObjectsModule::objectsDb()
     const CoreObjectsDB &objectsDb = CoreObjectsModule::objectsDB();
     std::vector<Object *> subObjs;
     objectsDb.getSubobjects(subObjs, templateObj->getDbIdx());
