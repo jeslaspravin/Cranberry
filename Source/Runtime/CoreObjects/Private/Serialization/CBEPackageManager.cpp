@@ -73,11 +73,12 @@ cbe::Package *Package::createPackage(const String &relativePath, const String &c
     return package;
 }
 
-Object *load(String objectPath, CBEClass clazz)
+COREOBJECTS_EXPORT Object *load(StringView objectPath, CBEClass clazz)
 {
     CBEPackageManager &packageManager = CoreObjectsModule::packageManager();
 
-    String packagePath = ObjectPathHelper::getPackagePath(objectPath.getChar());
+    StringView packagePath = ObjectPathHelper::getPackagePath(objectPath);
+    StringID packagePathId{ packagePath };
     // If no package path, find a package that has this object name or path
     if (packagePath.empty())
     {
@@ -97,12 +98,12 @@ Object *load(String objectPath, CBEClass clazz)
         objectPath = objPath;
     }
 
-    PackageLoader *objectPackageLoader = packageManager.getPackageLoader(packagePath.getChar());
+    PackageLoader *objectPackageLoader = packageManager.getPackageLoader(packagePathId);
     if (!objectPackageLoader)
     {
         LOG_WARN("ObjectHelper", "ObjectLoader for object {} is not found", objectPath);
         packageManager.refreshPackages();
-        objectPackageLoader = packageManager.getPackageLoader(packagePath.getChar());
+        objectPackageLoader = packageManager.getPackageLoader(packagePathId);
         if (!objectPackageLoader)
         {
             LOG_ERROR("ObjectHelper", "Object {} is not found in any packages!", objectPath);
@@ -130,17 +131,16 @@ Object *load(String objectPath, CBEClass clazz)
         }
     }
 
-    CoreObjectsDB::NodeIdxType objNodeIdx
-        = objectsDb.getObjectNodeIdx({ .objectPath = objectPath.getChar(), .objectId = objectPath.getChar() });
+    CoreObjectsDB::NodeIdxType objNodeIdx = objectsDb.getObjectNodeIdx({ .objectPath = objectPath, .objectId = StringID(objectPath) });
     Object *obj = objectsDb.getObject(objNodeIdx);
     ObjectPrivateDataView objectDatV = objectsDb.getObjectData(objNodeIdx);
     debugAssert(obj && BIT_NOT_SET(objectDatV.flags, EObjectFlagBits::ObjFlag_PackageLoadPending));
     return obj;
 }
 
-Object *getOrLoad(String objectPath, CBEClass clazz)
+Object *getOrLoad(StringView objectPath, CBEClass clazz)
 {
-    String packagePath = ObjectPathHelper::getPackagePath(objectPath.getChar());
+    StringView packagePath = ObjectPathHelper::getPackagePath(objectPath);
     // If no package path, find a package that has this object name or path
     if (packagePath.empty())
     {
@@ -160,8 +160,7 @@ Object *getOrLoad(String objectPath, CBEClass clazz)
     }
 
     const CoreObjectsDB &objectsDb = CoreObjectsModule::objectsDB();
-    CoreObjectsDB::NodeIdxType objNodeIdx
-        = objectsDb.getObjectNodeIdx({ .objectPath = objectPath.getChar(), .objectId = objectPath.getChar() });
+    CoreObjectsDB::NodeIdxType objNodeIdx = objectsDb.getObjectNodeIdx({ .objectPath = objectPath, .objectId = StringID(objectPath) });
     Object *obj = objectsDb.getObject(objNodeIdx);
     ObjectPrivateDataView objectDatV = objectsDb.getObjectData(objNodeIdx);
     if (!obj || BIT_SET(objectDatV.flags, EObjectFlagBits::ObjFlag_PackageLoadPending))
@@ -221,7 +220,7 @@ CBEPackageManager::~CBEPackageManager()
     }
 }
 
-void CBEPackageManager::registerContentRoot(const String &contentDir)
+void CBEPackageManager::registerContentRoot(StringView contentDir)
 {
     String cleanContentDir = PathFunctions::asGenericPath(contentDir);
     if (contentDirs.insert(cleanContentDir).second)
@@ -234,7 +233,7 @@ void CBEPackageManager::registerContentRoot(const String &contentDir)
     }
 }
 
-void CBEPackageManager::unregisterContentRoot(const String &contentDir)
+void CBEPackageManager::unregisterContentRoot(StringView contentDir)
 {
     String cleanContentDir = PathFunctions::asGenericPath(contentDir);
     contentDirs.erase(cleanContentDir);
@@ -276,7 +275,7 @@ void CBEPackageManager::onObjectDeleted(cbe::Object *obj)
     }
 }
 
-String CBEPackageManager::findObject(const String &objectPath, CBEClass clazz) const
+String CBEPackageManager::findObject(StringView objectPath, CBEClass clazz) const
 {
     if (clazz == nullptr)
     {
@@ -330,7 +329,7 @@ void CBEPackageManager::refreshPackages()
     }
 }
 
-void CBEPackageManager::readPackagesIn(const String &contentDir)
+void CBEPackageManager::readPackagesIn(StringView contentDir)
 {
     std::vector<String> packageFiles = FileSystemFunctions::listFiles(contentDir, true, String("*.") + cbe::PACKAGE_EXT);
     for (const String &packageFile : packageFiles)
@@ -339,7 +338,7 @@ void CBEPackageManager::readPackagesIn(const String &contentDir)
     }
 }
 
-void CBEPackageManager::removePackagesFrom(const String &contentDir)
+void CBEPackageManager::removePackagesFrom(StringView contentDir)
 {
     for (auto itr = packageToLoader.begin(); itr != packageToLoader.end();)
     {
@@ -356,7 +355,7 @@ void CBEPackageManager::removePackagesFrom(const String &contentDir)
     }
 }
 
-void CBEPackageManager::setupPackage(const String &packageFilePath, const String &contentDir)
+void CBEPackageManager::setupPackage(StringView packageFilePath, StringView contentDir)
 {
     String packagePath = ObjectPathHelper::packagePathFromFilePath(packageFilePath, contentDir);
     cbe::Package *package = cbe::Package::createPackage(PathFunctions::toRelativePath(packageFilePath, contentDir), contentDir, true);

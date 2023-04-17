@@ -30,12 +30,12 @@ private:
     CoreObjectDelegates() = default;
 
 public:
-    using ContentDirectoryEvent = Event<CoreObjectDelegates, const String &>;
+    using ContentDirectoryEvent = Event<CoreObjectDelegates, StringView>;
     static ContentDirectoryEvent onContentDirectoryAdded;
     static ContentDirectoryEvent onContentDirectoryRemoved;
 
-    FORCE_INLINE static void broadcastContentDirectoryAdded(const String &contentDir) { onContentDirectoryAdded.invoke(contentDir); }
-    FORCE_INLINE static void broadcastContentDirectoryRemoved(const String &contentDir) { onContentDirectoryRemoved.invoke(contentDir); }
+    FORCE_INLINE static void broadcastContentDirectoryAdded(StringView contentDir) { onContentDirectoryAdded.invoke(contentDir); }
+    FORCE_INLINE static void broadcastContentDirectoryRemoved(StringView contentDir) { onContentDirectoryRemoved.invoke(contentDir); }
 
     using PackageLoaderEvent = Event<CoreObjectDelegates, PackageLoader *>;
     using PackageEvent = Event<CoreObjectDelegates, cbe::Object *>;

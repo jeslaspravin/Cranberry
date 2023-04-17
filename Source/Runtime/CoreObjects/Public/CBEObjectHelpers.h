@@ -112,7 +112,7 @@ FORCE_INLINE bool INTERNAL_validateCreatedObject(Object *, EObjectFlags flags) {
  * This must be used if constructed() must be delayed without setting any neccessary flags
  *
  * @param CBEClass clazz
- * @param const String & name
+ * @param StringView  name
  * @param Object * outerObj
  * @param EObjectFlags flags
  * @param CtorArgs && ...ctorArgs
@@ -239,32 +239,32 @@ ClassType *createOrGet(StringView name, Object *outerObj, EObjectFlags flags = 0
     );
 }
 
-FORCE_INLINE Object *get(const TChar *objectFullPath)
+FORCE_INLINE Object *get(StringView objectFullPath)
 {
-    return ICoreObjectsModule::objectsDB().getObject({ .objectPath = objectFullPath, .objectId = objectFullPath });
+    return ICoreObjectsModule::objectsDB().getObject({ .objectPath = objectFullPath, .objectId = StringID(objectFullPath) });
 }
-FORCE_INLINE Object *get(StringID objectID, const TChar *objectFullPath)
+FORCE_INLINE Object *get(StringID objectID, StringView objectFullPath)
 {
-    return ICoreObjectsModule::objectsDB().getObject({ .objectPath = objectFullPath, .objectId = objectID });
+    return ICoreObjectsModule::objectsDB().getObject({ .objectPath = objectFullPath, .objectId = StringID(objectID) });
 }
 
 template <typename ClassType>
-ClassType *get(const TChar *objectFullPath)
+ClassType *get(StringView objectFullPath)
 {
     Object *obj = get(objectFullPath);
     return cast<ClassType>(obj);
 }
 
-COREOBJECTS_EXPORT Object *load(String objectPath, CBEClass clazz);
-COREOBJECTS_EXPORT Object *getOrLoad(String objectPath, CBEClass clazz);
+COREOBJECTS_EXPORT Object *load(StringView objectPath, CBEClass clazz);
+COREOBJECTS_EXPORT Object *getOrLoad(StringView objectPath, CBEClass clazz);
 template <typename ClassType>
-ClassType *load(const String &objectPath)
+ClassType *load(StringView objectPath)
 {
     Object *obj = load(objectPath, ClassType::staticType());
     return cast<ClassType>(obj);
 }
 template <typename ClassType>
-ClassType *getOrLoad(const String &objectPath)
+ClassType *getOrLoad(StringView objectPath)
 {
     Object *obj = getOrLoad(objectPath, ClassType::staticType());
     return cast<ClassType>(obj);
