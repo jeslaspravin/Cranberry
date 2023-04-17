@@ -41,7 +41,8 @@ struct DebugStringIDsData;
 
 inline namespace Literals
 {
-NODISCARD STRINGID_FUNCQUALIFIER StringID operator"" _sid (const TChar *str, SizeT len) noexcept;
+template <StringLiteral str>
+NODISCARD STRINGID_FUNCQUALIFIER StringID operator"" _sid () noexcept;
 }
 
 class PROGRAMCORE_EXPORT StringID
@@ -54,7 +55,8 @@ private:
 
     friend DebugStringIDsData;
 
-    friend STRINGID_FUNCQUALIFIER StringID Literals::operator"" _sid (const TChar *str, SizeT len) noexcept;
+    template <StringLiteral str>
+    friend STRINGID_FUNCQUALIFIER StringID Literals::operator"" _sid () noexcept;
     template <ArchiveTypeName ArchiveType>
     friend ArchiveType &operator<< (ArchiveType &archive, StringID &value);
 
@@ -173,12 +175,14 @@ public:
 
 inline namespace Literals
 {
-NODISCARD STRINGID_FUNCQUALIFIER StringID operator"" _sid (const TChar *str, SizeT len) noexcept
+
+template <StringLiteral str>
+NODISCARD STRINGID_FUNCQUALIFIER StringID operator"" _sid () noexcept
 {
 #if ENABLE_STRID_DEBUG
-    return StringID(STRINGID_HASHFUNC(str, StringID::IDType(len), StringID::Seed), str, len);
+    return StringID(STRINGID_HASHFUNC<str>(StringID::Seed), str.value, decltype(str)::Count);
 #else  // DEV_BUILD
-    return StringID(STRINGID_HASHFUNC(str, StringID::IDType(len), StringID::Seed));
+    return StringID(STRINGID_HASHFUNC<str>(StringID::Seed));
 #endif // DEV_BUILD
 }
 } // namespace Literals
