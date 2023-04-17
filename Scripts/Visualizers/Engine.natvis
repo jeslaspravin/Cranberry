@@ -11,6 +11,7 @@ To enable:
 Schema can be found at %VsInstallDirectory%\2xxx\Community\Xml\Schemas\1033\natvis.xsd
 
 More information at: https://docs.microsoft.com/en-us/visualstudio/debugger/create-custom-views-of-native-objects?view=vs-2019
+Format specifiers: https://learn.microsoft.com/en-us/visualstudio/debugger/format-specifiers-in-cpp
 -->
 
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
@@ -27,14 +28,14 @@ More information at: https://docs.microsoft.com/en-us/visualstudio/debugger/crea
 
   <Type Name="Matrix2" Priority="High">
     <DisplayString>{value}</DisplayString>
-    <Expand HideRawView="1">
+    <Expand HideRawView="true">
       <Item Name="col 1">value.value[0]</Item>
       <Item Name="col 2">value.value[1]</Item>
     </Expand>
   </Type>
   <Type Name="Matrix3" Priority="High">
     <DisplayString>{value}</DisplayString>
-    <Expand HideRawView="1">
+    <Expand HideRawView="true">
       <Item Name="col 1">value.value[0]</Item>
       <Item Name="col 2">value.value[1]</Item>
       <Item Name="col 3">value.value[2]</Item>
@@ -42,7 +43,7 @@ More information at: https://docs.microsoft.com/en-us/visualstudio/debugger/crea
   </Type>
   <Type Name="Matrix4" Priority="High">
     <DisplayString>{value}</DisplayString>
-    <Expand HideRawView="1">
+    <Expand HideRawView="true">
       <Item Name="col 1">value.value[0]</Item>
       <Item Name="col 2">value.value[1]</Item>
       <Item Name="col 3">value.value[2]</Item>
@@ -52,7 +53,7 @@ More information at: https://docs.microsoft.com/en-us/visualstudio/debugger/crea
   
   <Type Name="Rotation" Priority="High">
     <DisplayString>{value}</DisplayString>
-    <Expand HideRawView="1">
+    <Expand HideRawView="true">
       <Item Name="roll">value.x,g</Item>
       <Item Name="pitch">value.y,g</Item>
       <Item Name="yaw">value.z,g</Item>
@@ -65,7 +66,7 @@ More information at: https://docs.microsoft.com/en-us/visualstudio/debugger/crea
 
   <Type Name="Quat" Priority="High">
     <DisplayString>{x,g}i + {y,g}j + {z,g}k + {w,g}</DisplayString>
-    <Expand HideRawView="1">
+    <Expand HideRawView="true">
       <CustomListItems MaxItemsPerView="1">
         <!-- calculate length using fast inverse sqrt -->
         <Variable Name="k" InitialValue="x*x+y*y+z*z+w*w"/>
@@ -91,7 +92,7 @@ More information at: https://docs.microsoft.com/en-us/visualstudio/debugger/crea
 
   <Type Name="Color" Priority="High">
     <DisplayString>{colorValue}</DisplayString>
-    <Expand HideRawView="1">
+    <Expand HideRawView="true">
       <Synthetic Name="[rgba]">
         <DisplayString>
           <!-- hex RGBA color -->
@@ -112,7 +113,7 @@ More information at: https://docs.microsoft.com/en-us/visualstudio/debugger/crea
   
   <Type Name="LinearColor" Priority="High">
     <DisplayString>{colorValue}</DisplayString>
-    <Expand HideRawView="1">
+    <Expand HideRawView="true">
       <Synthetic Name="[rgba]">
         <DisplayString>
           <!-- hex RGBA color -->
@@ -160,7 +161,7 @@ More information at: https://docs.microsoft.com/en-us/visualstudio/debugger/crea
   </Type> -->
   <Type Name="BitArray&lt;*&gt;">
     <DisplayString>size={bitsCount}</DisplayString>
-    <Expand HideRawView="1">
+    <Expand HideRawView="true">
       <IndexListItems>
         <Size>bits._Mypair._Myval2._Mylast - bits._Mypair._Myval2._Myfirst</Size>
         <ValueNode>bits._Mypair._Myval2._Myfirst[$i],b</ValueNode>
@@ -193,7 +194,7 @@ More information at: https://docs.microsoft.com/en-us/visualstudio/debugger/crea
     <Intrinsic Name="debugStrs" Expression="ProgramCore.dll!StringID::debugStrings"/>
     <DisplayString Condition="id == 0">Invalid</DisplayString>
     <DisplayString>{id}</DisplayString>
-    <Expand HideRawView="1">
+    <Expand HideRawView="true">
       <CustomListItems Condition="debugStrs() != nullptr &amp;&amp; id != 0" Optional="true">
         <Variable Name="pNode" InitialValue="debugStrs()-&gt;_List._Mypair._Myval2._Myhead-&gt;_Next" />
         <Size>1</Size>
@@ -216,10 +217,10 @@ More information at: https://docs.microsoft.com/en-us/visualstudio/debugger/crea
     <DisplayString>Name: {nameString,na}, Type: {type}</DisplayString>
   </Type>
   <Type Name="FieldProperty">
-    <DisplayString>FieldName: {nameString,na}, TypeName: {field->nameString,na}</DisplayString>
+    <DisplayString>{accessor,en} {nameString,sb} : {field->nameString,sb}</DisplayString>
   </Type>
   <Type Name="FunctionProperty">
-    <DisplayString>FuncName: {nameString,na}</DisplayString>
+    <DisplayString>{accessor,en} {nameString,sb}() : {funcReturnProp->nameString,sb}</DisplayString>
   </Type>
 
   <Type Name="cbe::Object" Inheritable="false">
@@ -236,7 +237,7 @@ More information at: https://docs.microsoft.com/en-us/visualstudio/debugger/crea
     <DisplayString Condition="objectsDb() != nullptr">{objectsDbDataFirst() + dbIdx,na}</DisplayString>
     <DisplayString>{dbIdx}</DisplayString>    
 
-    <Expand HideRawView="1">
+    <Expand HideRawView="true">
       <ExpandedItem Optional="true">objectsDbDataFirst() + dbIdx</ExpandedItem>
     </Expand>
   </Type>
@@ -264,7 +265,7 @@ More information at: https://docs.microsoft.com/en-us/visualstudio/debugger/crea
     <DisplayString Condition="isLongPath()">{path._Mypair._Myval2._Bx._Ptr,na}</DisplayString>
     <StringView Condition="isShortPath()">path._Mypair._Myval2._Bx._Buf,na</StringView>
     <StringView Condition="isLongPath()">path._Mypair._Myval2._Bx._Ptr,na</StringView>
-    <Expand HideRawView="1">
+    <Expand HideRawView="true">
       <Item Name="name" Condition="isShortPath()">path._Mypair._Myval2._Bx._Buf + nameOffset</Item>
       <Item Name="name" Condition="isLongPath()">path._Mypair._Myval2._Bx._Ptr + nameOffset</Item>
       <Item Name="path" Condition="isShortPath()">path._Mypair._Myval2._Bx._Buf</Item>
@@ -273,6 +274,8 @@ More information at: https://docs.microsoft.com/en-us/visualstudio/debugger/crea
       <Item Name="allocIdx">allocIdx</Item>
       <Item Name="sid">sid</Item>
       <Item Name="class">clazz</Item>
+      <Item Name="dbIdx" Condition="isValidDbIdx(thisDbIdx())" Optional="true">thisDbIdx()</Item>
+      <Item Name="dbIdx" Condition="!isValidDbIdx(thisDbIdx())" Optional="true">InvalidDbIdx</Item>
       <Item Name="outer" Condition="isValidDbIdx(thisDbIdx()) &amp;&amp; isValidDbIdx(parentDbIdx())" Optional="true">objectsDbDataFirst() + parentDbIdx()</Item>
     </Expand>
   </Type>
