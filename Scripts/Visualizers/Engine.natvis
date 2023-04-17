@@ -190,19 +190,24 @@ Format specifiers: https://learn.microsoft.com/en-us/visualstudio/debugger/forma
     </Loop>
   </CustomListItems>-->
   
+  <!-- Std_UnorderedMap_Int_OperatorBracket_idx(debugStrs(), id) does not seem to work -->
   <Type Name="StringID">
     <Intrinsic Name="debugStrs" Expression="ProgramCore.dll!StringID::debugStrings"/>
+    <Intrinsic Name="debugStrsSize" Expression="debugStrs()-&gt;_List._Mypair._Myval2._Mysize"/>
     <DisplayString Condition="id == 0">Invalid</DisplayString>
     <DisplayString>{id}</DisplayString>
     <Expand HideRawView="true">
       <CustomListItems Condition="debugStrs() != nullptr &amp;&amp; id != 0" Optional="true">
         <Variable Name="pNode" InitialValue="debugStrs()-&gt;_List._Mypair._Myval2._Myhead-&gt;_Next" />
+        <Variable Name="i" InitialValue="0" />
         <Size>1</Size>
-        <Loop Condition="pNode != nullptr">
+        <Loop Condition="pNode != nullptr &amp;&amp; i &lt; debugStrsSize()">
           <If Condition="pNode->_Myval.first == id">
             <Item Name="string">pNode->_Myval.second</Item>
+            <Break/>
           </If>
           <Exec>pNode = pNode->_Next</Exec>
+          <Exec>i++</Exec>
         </Loop>
       </CustomListItems>
       <Item Name="id">id</Item>
