@@ -89,7 +89,7 @@ bool ParserHelper::parseMeta(std::vector<String> &possibleFlags, std::vector<Par
         }
         ch++;
     }
-    
+
     String possibleMetaFlag{ start };
     possibleMetaFlag.trim();
     if (!possibleMetaFlag.empty())

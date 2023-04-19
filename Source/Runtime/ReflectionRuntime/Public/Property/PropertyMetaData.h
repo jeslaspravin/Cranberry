@@ -76,7 +76,7 @@ enum EFunctionMetaFlags : uint64
  * {
  *     int32 idx;
  *     String str;
- * 
+ *
  *     SecondTest(const ReflectTypeInfo *type, int32 i)
  *         : PropertyMetaDataBase{ type }
  *         , idx(i)
@@ -86,10 +86,10 @@ enum EFunctionMetaFlags : uint64
  *         , str(s)
  *     {}
  * };
- * 
+ *
  */
 struct PropertyMetaDataBase
 {
 public:
-    const ReflectTypeInfo * metaType = nullptr;
+    const ReflectTypeInfo *metaType = nullptr;
 };

@@ -106,7 +106,7 @@ function (reflect_target)
 endfunction()
 
 macro (generate_reflection)
-    # ${CMAKE_CURRENT_SOURCE_DIR}; ${CMAKE_CURRENT_LIST_DIR} both points to same in this case
+    # ${CMAKE_CURRENT_SOURCE_DIR}; ${CMAKE_CURRENT_LIST_DIR} both points to same in this case, and more over list will always gives this files dir while source points to included file's dir
     determine_reflect_gen_files(gen_files ${target_name} "${CMAKE_CURRENT_LIST_DIR}" "${CMAKE_CURRENT_BINARY_DIR}")
     list (LENGTH gen_files gen_files_count)
     if (${gen_files_count} GREATER 0)
