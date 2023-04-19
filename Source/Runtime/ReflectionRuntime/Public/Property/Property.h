@@ -13,6 +13,7 @@
 
 #include "ReflectionRuntimeExports.h"
 #include "Reflections/Functions.h"
+#include "Types/Containers/ArrayView.h"
 #include "String/StringID.h"
 #include "Types/HashTypes.h"
 
@@ -22,7 +23,7 @@
 
 class BaseFieldWrapper;
 class BaseFunctionWrapper;
-class PropertyMetaDataBase;
+struct PropertyMetaDataBase;
 struct ReflectTypeInfo;
 class ClassProperty;
 class IReflectionRuntimeModule;
@@ -61,7 +62,7 @@ public:
 protected:
     const PropertyMetaDataBase *getMetaData(const ReflectTypeInfo *typeInfo) const;
     uint64 getMetaFlags() const;
-    void setMetaData(const std::vector<const PropertyMetaDataBase *> &propertyMeta, uint64 propertyMetaFlags);
+    void setMetaData(ArrayView<const PropertyMetaDataBase *> propertyMeta, uint64 propertyMetaFlags);
 
 public:
     BaseProperty(const StringID &propNameID, const TChar *propName, EPropertyType propType);
@@ -134,7 +135,7 @@ public:
         return this;
     }
 
-    FieldProperty *setPropertyMetaData(const std::vector<const PropertyMetaDataBase *> &propertyMeta, uint64 propertyMetaFlags);
+    FieldProperty *setPropertyMetaData(ArrayView<const PropertyMetaDataBase *> propertyMeta, uint64 propertyMetaFlags);
 
     // Get functions
     template <class MetaType>
@@ -200,7 +201,7 @@ public:
         return this;
     }
 
-    FunctionProperty *setPropertyMetaData(const std::vector<const PropertyMetaDataBase *> &propertyMeta, uint64 propertyMetaFlags);
+    FunctionProperty *setPropertyMetaData(ArrayView<const PropertyMetaDataBase *> propertyMeta, uint64 propertyMetaFlags);
 
     // Get functions
     template <class MetaType>
@@ -302,7 +303,7 @@ public:
         return this;
     }
 
-    ClassProperty *setPropertyMetaData(const std::vector<const PropertyMetaDataBase *> &propertyMeta, uint64 propertyMetaFlags);
+    ClassProperty *setPropertyMetaData(ArrayView<const PropertyMetaDataBase *> propertyMeta, uint64 propertyMetaFlags);
 
     // Get functions
     template <class MetaType>
@@ -338,9 +339,9 @@ public:
 
     EnumProperty *addEnumField(
         const StringID &fieldNameID, const TChar *fieldName, uint64 fieldValue, uint64 metaFlags,
-        std::vector<const PropertyMetaDataBase *> fieldMetaData
+        ArrayView<const PropertyMetaDataBase *> fieldMetaData
     );
-    EnumProperty *setPropertyMetaData(const std::vector<const PropertyMetaDataBase *> &propertyMeta, uint64 propertyMetaFlags);
+    EnumProperty *setPropertyMetaData(ArrayView<const PropertyMetaDataBase *> propertyMeta, uint64 propertyMetaFlags);
 
     // Get functions
     template <class MetaType>

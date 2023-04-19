@@ -512,7 +512,7 @@ const BaseProperty *ReflectionRuntimeModule::getType(const ReflectTypeInfo *type
 }
 
 void ReflectionRuntimeModule::setMetaData(
-    const BaseProperty *forProperty, const std::vector<const PropertyMetaDataBase *> &propertyMeta, uint64 propertyMetaFlags
+    const BaseProperty *forProperty, ArrayView<const PropertyMetaDataBase *> propertyMeta, uint64 propertyMetaFlags
 )
 {
     std::vector<std::pair<PropertyMetaDataKey, const PropertyMetaDataBase *>> initializerList;
@@ -520,7 +520,7 @@ void ReflectionRuntimeModule::setMetaData(
     for (const PropertyMetaDataBase *metaData : propertyMeta)
     {
         initializerList.push_back({
-            {forProperty, metaData->metaType()},
+            {forProperty, metaData->metaType},
             metaData
         });
     }
@@ -597,10 +597,6 @@ void ReflectionRuntimeModule::release()
     dbOtherTypes.clear();
 
     // Clear all meta data
-    for (const auto &propertyMetaData : propertiesMetaData)
-    {
-        delete propertyMetaData.second;
-    }
     propertiesMetaFlags.clear();
     propertiesMetaData.clear();
 }

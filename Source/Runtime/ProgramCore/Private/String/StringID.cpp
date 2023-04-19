@@ -24,7 +24,11 @@ struct DebugStringIDsData
 
     DebugStringIDsData() { StringID::debugStrings = &stringsDb; }
     MAKE_TYPE_NONCOPY_NONMOVE(DebugStringIDsData)
-    ~DebugStringIDsData() { StringID::debugStrings = nullptr; }
+    ~DebugStringIDsData()
+    {
+        std::unique_lock<std::shared_mutex> writeLock{ lock };
+        StringID::debugStrings = nullptr;
+    }
 };
 
 DebugStringIDsData &debugStringDB()

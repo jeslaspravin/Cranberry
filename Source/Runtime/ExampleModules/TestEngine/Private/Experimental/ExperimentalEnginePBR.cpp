@@ -85,6 +85,7 @@
 
 #include "Widgets/WidgetDrawContext.h"
 #include "Widgets/WidgetWindow.h"
+#include "IReflectionRuntime.h"
 
 struct PBRSceneEntity
 {
@@ -3665,7 +3666,11 @@ void ExperimentalEnginePBR::drawSelectionWidget(class ImGuiDrawInterface * /*dra
     }
 }
 
-void ExperimentalEnginePBR::tempTest() {}
+void ExperimentalEnginePBR::tempTest()
+{
+    ModuleManager::get()->getOrLoadModule(TCHAR("RTTIExample"));
+    IReflectionRuntimeModule::get()->getClassType(STRID("BerrySecond"));
+}
 
 void ExperimentalEnginePBR::tempTestPerFrame()
 {

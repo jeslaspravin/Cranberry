@@ -139,7 +139,7 @@ public:
     virtual void onPostLoad() {}
     virtual void onPostSerialize(const ObjectArchive & /*ar*/) {}
     virtual ObjectArchive &serialize(ObjectArchive &ar) { return ar; }
-} META_ANNOTATE(BaseType; NoExport);
+} META_ANNOTATE(BaseType, NoExport);
 } // namespace cbe
 
 COMPILER_PRAGMA(COMPILER_POP_WARNING)

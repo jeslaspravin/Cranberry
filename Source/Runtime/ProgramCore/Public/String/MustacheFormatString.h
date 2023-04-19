@@ -163,9 +163,16 @@ struct MustacheContext
 // There is no escaping of HTML tags happens, Everything is not escaped
 // No support to replace delimiters
 // only supports {{ }} for delimiters
-// Supports sections branching and loops, Also supports section function formatter(You can use another
-// function to invoke formatter with provided context or create new context for render) Supports not
-// branch Supports partials Supports comments
+// Supports sections branching and loops
+// Supports section formatter delegates(You can use another function to invoke formatter with provided context or create new context for render)
+// Supports not branch
+// Supports partials
+// Supports comments
+//
+// Additionally when ever there is a sectionContexts(Loop), supports indexing those loops
+// Loop indices are populated with argument __$idx0__, __$idx1__ ... __idx<N>__ for N level nested loop
+//
+
 class PROGRAMCORE_EXPORT MustacheStringFormatter
 {
 private:
@@ -184,6 +191,8 @@ private:
     std::vector<StringMatch> allMatches;
     std::vector<Section> sections;
     void parseFmtStr();
+
+    constexpr static const TChar *INDEX_FMT = TCHAR("__idx%u__");
 
     FORCE_INLINE bool isASection(const String &tagName) const { return tagName.startsWith(TCHAR('#')) || tagName.startsWith(TCHAR('^')); }
     FORCE_INLINE bool isANotSection(const String &tagName) const { return tagName.startsWith(TCHAR('^')); }

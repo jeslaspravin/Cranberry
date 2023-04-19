@@ -21,7 +21,7 @@ struct ReflectTypeInfo;
 #define META_FLAG_ENTRY_FIRST(Flag) CLASSMETA_##Flag
 #define META_FLAG_ENTRY(Flag) , CLASSMETA_##Flag
 /*
- * Meta flags for struct and class types
+ * Meta flags for struct and class types, Flags must be shifted using INDEX_TO_FLAG_MASK() before testing against uint64
  */
 enum EClassMetaFlags : uint64
 {
@@ -33,7 +33,7 @@ enum EClassMetaFlags : uint64
 #define META_FLAG_ENTRY_FIRST(Flag) ENUMMETA_##Flag
 #define META_FLAG_ENTRY(Flag) , ENUMMETA_##Flag
 /*
- * Meta flags for enum and its fields
+ * Meta flags for enum and its fields, Flags must be shifted using INDEX_TO_FLAG_MASK() before testing against uint64
  */
 enum EEnumMetaFlags : uint64
 {
@@ -45,7 +45,7 @@ enum EEnumMetaFlags : uint64
 #define META_FLAG_ENTRY_FIRST(Flag) FIELDMETA_##Flag
 #define META_FLAG_ENTRY(Flag) , FIELDMETA_##Flag
 /*
- * Meta flags for fields
+ * Meta flags for fields, Flags must be shifted using INDEX_TO_FLAG_MASK() before testing against uint64
  */
 enum EFieldMetaFlags : uint64
 {
@@ -57,7 +57,7 @@ enum EFieldMetaFlags : uint64
 #define META_FLAG_ENTRY_FIRST(Flag) FUNCMETA_##Flag
 #define META_FLAG_ENTRY(Flag) , FUNCMETA_##Flag
 /*
- * Meta flags for functions
+ * Meta flags for functions, Flags must be shifted using INDEX_TO_FLAG_MASK() before testing against uint64
  */
 enum EFunctionMetaFlags : uint64
 {
@@ -66,9 +66,30 @@ enum EFunctionMetaFlags : uint64
 #undef META_FLAG_ENTRY_FIRST
 #undef META_FLAG_ENTRY
 
-class REFLECTIONRUNTIME_EXPORT PropertyMetaDataBase
+/**
+ * Must be simple pod type without any custom constructor.
+ * However if you intend to add custom constructor
+ * Be sure to have "const ReflectTypeInfo *type" as first parameter and pass it along to PropertyMetaDataBase{ type }
+ *
+ * Example :
+ * struct SecondTest : public PropertyMetaDataBase
+ * {
+ *     int32 idx;
+ *     String str;
+ * 
+ *     SecondTest(const ReflectTypeInfo *type, int32 i)
+ *         : PropertyMetaDataBase{ type }
+ *         , idx(i)
+ *     {}
+ *     SecondTest(const ReflectTypeInfo *type, String s)
+ *         : PropertyMetaDataBase{ type }
+ *         , str(s)
+ *     {}
+ * };
+ * 
+ */
+struct PropertyMetaDataBase
 {
 public:
-    virtual ~PropertyMetaDataBase() = default;
-    virtual const ReflectTypeInfo *metaType() const = 0;
+    const ReflectTypeInfo * metaType = nullptr;
 };

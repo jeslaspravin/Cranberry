@@ -4,6 +4,8 @@
 #include "Property/ContainerProperty.h"
 #include "Types/CoreMiscDefines.h"
 
+#include <array>
+
 /* Generated codes do not modify here */
     
 #ifdef HEADER_FILE_ID
@@ -11,6 +13,10 @@
 #endif
 
 #define HEADER_FILE_ID {{HeaderFileId}}
+
+template <SizeT N>
+using MetaDataArray = std::array<const PropertyMetaDataBase *, N>;
+using MetaDataArrayView = ArrayView<const PropertyMetaDataBase *>;
 
 struct HEADER_FILE_ID
 {
@@ -30,13 +36,16 @@ struct HEADER_FILE_ID
     }
     
     {{#AllRegisterTypes}}
-    static {{PropertyTypeName}}* create_{{SanitizedName}}();{{^NoInit}}
-    static void init_{{SanitizedName}}({{PropertyTypeName}}* typeProperty);{{/NoInit}}
+    static {{PropertyTypeName}}* create_{{SanitizedName}}();
+    {{^NoInit}}
+    static void init_{{SanitizedName}}({{PropertyTypeName}}* typeProperty);
+    {{/NoInit}}
     {{/AllRegisterTypes}}
     
     {{#Classes}}{{^IsAbstract}}{{^DisableCtor}}
     template <typename... Args>
-    static {{TypeName}}* {{SanitizedName}}_CTor(void* ptr, Args... args);{{/DisableCtor}}{{/IsAbstract}}{{/Classes}}
+    static {{TypeName}}* {{SanitizedName}}_CTor(void* ptr, Args... args);
+    {{/DisableCtor}}{{/IsAbstract}}{{/Classes}}
 } COMBINE(HEADER_FILE_ID, _autoinit);
 
 HEADER_FILE_ID::HEADER_FILE_ID()
@@ -115,19 +124,43 @@ EnumProperty* HEADER_FILE_ID::create_{{SanitizedName}}()
 }
 void HEADER_FILE_ID::init_{{SanitizedName}}(EnumProperty* typeProperty)
 {
-    typeProperty->setPropertyMetaData({ {{TypeMetaData}} }, {{TypeMetaFlags}});
-{{!Now the Enum's section context contains context for enum fields}}
-{{#EnumFields}}    typeProperty->addEnumField(STRID("{{EnumFieldName}}"), TCHAR("{{EnumFieldName}}"), {{EnumFieldValue}}, {{EnumFieldMetaFlags}}, { {{EnumFieldMetaData}} });
-{{/EnumFields}}    
+    {{#TypeMetaDataCount}}
+    MetaDataArray<{{TypeMetaDataCount}}> typeMetaData;
+    {{#TypeMetaData}}
+    static {{MetaDataTypeName}} typeMetaData_{{__idx1__}}{ typeInfoFrom<{{MetaDataTypeName}}>(), {{MetaDataCtorArgs}} };
+    typeMetaData[{{__idx1__}}] = &typeMetaData_{{__idx1__}};
+    {{/TypeMetaData}}
+    typeProperty->setPropertyMetaData(typeMetaData, {{TypeMetaFlags}});
+    {{/TypeMetaDataCount}}{{^TypeMetaDataCount}}
+    typeProperty->setPropertyMetaData({}, {{TypeMetaFlags}});
+    {{/TypeMetaDataCount}}
+    
+    {{!Now the Enum's section context contains context for enum fields}}
+    {{#EnumFields}}
+    MetaDataArrayView enFieldsMetaDataView_{{__idx1__}};
+    {{#EnumFieldMetaDataCount}}
+    MetaDataArray<{{EnumFieldMetaDataCount}}> enFieldsMetaData_{{__idx1__}};
+    enFieldsMetaDataView_{{__idx1__}} = enFieldsMetaData_{{__idx1__}};
+    {
+        {{#EnumFieldMetaData}}
+        static {{MetaDataTypeName}} enFieldMetaData_{{__idx2__}}{ typeInfoFrom<{{MetaDataTypeName}}>(), {{MetaDataCtorArgs}} };
+        enFieldsMetaData_{{__idx1__}}[{{__idx2__}}] = &enFieldMetaData_{{__idx2__}};
+        {{/EnumFieldMetaData}}
+    }
+    {{/EnumFieldMetaDataCount}}
+    typeProperty->addEnumField(STRID("{{EnumFieldName}}"), TCHAR("{{EnumFieldName}}"), {{EnumFieldValue}}, {{EnumFieldMetaFlags}}, enFieldsMetaDataView_{{__idx1__}});
+    {{/EnumFields}}
 }
 {{/EnumTypes}}
 
-{{#Classes}}{{^IsAbstract}}{{^DisableCtor}}
+{{#Classes}}
+{{^IsAbstract}}{{^DisableCtor}}
 template <typename... Args>
 static {{TypeName}}* HEADER_FILE_ID::{{SanitizedName}}_CTor(void* ptr, Args... args)
 {
     return CtorPolicyHelper::constructObject<typename COMBINE({{TypeName}}::, CONSTRUCTION_POLICY_TYPEDEF_NAME), {{TypeName}}, Args...>(ptr, std::forward<Args>(args)...);
-}{{/DisableCtor}}{{/IsAbstract}}
+}
+{{/DisableCtor}}{{/IsAbstract}}
 
 ClassProperty* HEADER_FILE_ID::create_{{SanitizedName}}()
 {
@@ -135,55 +168,132 @@ ClassProperty* HEADER_FILE_ID::create_{{SanitizedName}}()
 }
 void HEADER_FILE_ID::init_{{SanitizedName}}(ClassProperty* typeProperty)
 {
-    typeProperty->setPropertyMetaData({ {{TypeMetaData}} }, {{TypeMetaFlags}});
-{{!Now the Class's section context contains context for class fields}}
-{{#BaseClassTypeName}}
-    typeProperty->setBaseClass(IReflectionRuntimeModule::getType<{{BaseClassTypeName}}>());{{/BaseClassTypeName}}
-{{#InterfaceTypes}}
-    typeProperty->addInterface(TCHAR("{{InterfaceTypeName}}"), MI_VTABLE_OFFSET({{TypeName}}, {{InterfaceTypeName}}), typeInfoFrom<{{InterfaceTypeName}}>());{{/InterfaceTypes}}
-{{^IsAbstract}}{{^DisableCtor}}{{#Ctors}}
+    {{#TypeMetaDataCount}}
+    MetaDataArray<{{TypeMetaDataCount}}> typeMetaData;
+    {{#TypeMetaData}}
+    static {{MetaDataTypeName}} typeMetaData_{{__idx1__}}{ typeInfoFrom<{{MetaDataTypeName}}>(), {{MetaDataCtorArgs}} };
+    typeMetaData[{{__idx1__}}] = &typeMetaData_{{__idx1__}};
+    {{/TypeMetaData}}
+    typeProperty->setPropertyMetaData(typeMetaData, {{TypeMetaFlags}});
+    {{/TypeMetaDataCount}}{{^TypeMetaDataCount}}
+    typeProperty->setPropertyMetaData({}, {{TypeMetaFlags}});
+    {{/TypeMetaDataCount}}
+
+    {{!Now the Class's section context contains context for class fields}}
+    {{#BaseClassTypeName}}
+    typeProperty->setBaseClass(IReflectionRuntimeModule::getType<{{BaseClassTypeName}}>());
+    {{/BaseClassTypeName}}
+
+    {{#InterfaceTypes}}
+    typeProperty->addInterface(TCHAR("{{InterfaceTypeName}}"), MI_VTABLE_OFFSET({{TypeName}}, {{InterfaceTypeName}}), typeInfoFrom<{{InterfaceTypeName}}>());
+    {{/InterfaceTypes}}
+
+    {{^IsAbstract}}{{^DisableCtor}}{{#Ctors}}
+    MetaDataArrayView ctorsMetaDataView_{{__idx1__}};
+    {{#CtorMetaDataCount}}
+    MetaDataArray<{{CtorMetaDataCount}}> ctorsMetaData_{{__idx1__}};
+    ctorsMetaDataView_{{__idx1__}} = ctorsMetaData_{{__idx1__}};
+    {
+        {{#CtorMetaData}}
+        static {{MetaDataTypeName}} ctorMetaData_{{__idx2__}}{ typeInfoFrom<{{MetaDataTypeName}}>(), {{MetaDataCtorArgs}} };
+        ctorsMetaData_{{__idx1__}}[{{__idx2__}}] = &ctorMetaData_{{__idx2__}};
+        {{/CtorMetaData}}
+    }
+    {{/CtorMetaDataCount}}
     typeProperty->addCtorPtr()
                 ->setFieldAccessor(EPropertyAccessSpecifier::{{AccessSpecifier}}){{#ParamsListContext}}
                 ->addFunctionParamProperty(STRID("{{ParamName}}"), TCHAR("{{ParamName}}"), IReflectionRuntimeModule::getType<{{ParamTypeName}}>()){{/ParamsListContext}}
                 ->setFunctionReturnProperty(IReflectionRuntimeModule::getType<{{TypeName}}*>())
-                ->setPropertyMetaData({ {{CtorMetaData}} }, {{CtorMetaFlags}})
+                ->setPropertyMetaData(ctorsMetaDataView_{{__idx1__}}, {{CtorMetaFlags}})
                 ->constructFuncPointer<GlobalFunctionWrapperImpl<{{TypeName}} *, void *{{#ParamsList}}, {{ParamsList}}{{/ParamsList}}>>(&ThisType::{{SanitizedName}}_CTor<{{ParamsList}}>);{{!Section ParamList is used to skip `,` in template ParamList}}
-{{/Ctors}}{{^Ctors}}{{!If no ctors then just create default ctor}}
+    {{/Ctors}}
+    {{^Ctors}}{{!If no ctors then just create default ctor}}
     typeProperty->addCtorPtr()
                 ->setFieldAccessor(EPropertyAccessSpecifier::Public)
                 ->setFunctionReturnProperty(IReflectionRuntimeModule::getType<{{TypeName}}*>())
                 ->constructFuncPointer<GlobalFunctionWrapperImpl<{{TypeName}} *, void *>>(&ThisType::{{SanitizedName}}_CTor<>);
-{{/Ctors}}
+    {{/Ctors}}
     typeProperty->setDtorPtr(&ThisType::COMBINE(HEADER_FILE_ID, _DTor)<{{TypeName}}>);
     typeProperty->setAllocFuncPtr(&ThisType::COMBINE(HEADER_FILE_ID, _AllocFunc)<{{TypeName}}>);
-{{/DisableCtor}}{{/IsAbstract}}{{#MemberFuncs}}
+    {{/DisableCtor}}{{/IsAbstract}}
+
+    {{#MemberFuncs}}
+    MetaDataArrayView mFnsMetaDataView_{{__idx1__}};
+    {{#FuncMetaDataCount}}
+    MetaDataArray<{{FuncMetaDataCount}}> mFnsMetaData_{{__idx1__}};
+    mFnsMetaDataView_{{__idx1__}} = mFnsMetaData_{{__idx1__}};
+    {
+        {{#FuncMetaData}}
+        static {{MetaDataTypeName}} mFnMetaData_{{__idx2__}}{ typeInfoFrom<{{MetaDataTypeName}}>(), {{MetaDataCtorArgs}} };
+        mFnsMetaData_{{__idx1__}}[{{__idx2__}}] = &mFnMetaData_{{__idx2__}};
+        {{/FuncMetaData}}
+    }
+    {{/FuncMetaDataCount}}
     typeProperty->addMemberFunc(STRID("{{FunctionName}}"), TCHAR("{{FunctionName}}"))
                 ->setFieldAccessor(EPropertyAccessSpecifier::{{AccessSpecifier}}){{#ParamsListContext}}
                 ->addFunctionParamProperty(STRID("{{ParamName}}"), TCHAR("{{ParamName}}"), IReflectionRuntimeModule::getType<{{ParamTypeName}}>()){{/ParamsListContext}}
                 ->setFunctionReturnProperty(IReflectionRuntimeModule::getType<{{ReturnTypeName}}>())
-                ->setPropertyMetaData({ {{FuncMetaData}} }, {{FuncMetaFlags}})
+                ->setPropertyMetaData(mFnsMetaDataView_{{__idx1__}}, {{FuncMetaFlags}})
                 ->constructFuncPointer<MemberFunctionWrapperImpl<{{#FuncConst}}const {{/FuncConst}}{{TypeName}}, {{ReturnTypeName}}{{#ParamsList}}, {{ParamsList}}{{/ParamsList}}>>(&{{TypeName}}::{{FunctionName}});{{!Section ParamList is used to skip `,` in template ParamList}}
-{{/MemberFuncs}}{{#StaticFuncs}}
+    {{/MemberFuncs}}
+
+    {{#StaticFuncs}}
+    MetaDataArrayView sFnsMetaDataView_{{__idx1__}};
+    {{#FuncMetaDataCount}}
+    MetaDataArray<{{FuncMetaDataCount}}> sFnsMetaData_{{__idx1__}};
+    sFnsMetaDataView_{{__idx1__}} = sFnsMetaData_{{__idx1__}};
+    {
+        {{#FuncMetaData}}
+        static {{MetaDataTypeName}} sFnMetaData_{{__idx2__}}{ typeInfoFrom<{{MetaDataTypeName}}>(), {{MetaDataCtorArgs}} };
+        sFnsMetaData_{{__idx1__}}[{{__idx2__}}] = &sFnMetaData_{{__idx2__}};
+        {{/FuncMetaData}}
+    }
+    {{/FuncMetaDataCount}}
     typeProperty->addStaticFunc(STRID("{{FunctionName}}"), TCHAR("{{FunctionName}}"))
                 ->setFieldAccessor(EPropertyAccessSpecifier::{{AccessSpecifier}}){{#ParamsListContext}}
                 ->addFunctionParamProperty(STRID("{{ParamName}}"), TCHAR("{{ParamName}}"), IReflectionRuntimeModule::getType<{{ParamTypeName}}>()){{/ParamsListContext}}
                 ->setFunctionReturnProperty(IReflectionRuntimeModule::getType<{{ReturnTypeName}}>())
-                ->setPropertyMetaData({ {{FuncMetaData}} }, {{FuncMetaFlags}})
+                ->setPropertyMetaData(sFnsMetaDataView_{{__idx1__}}, {{FuncMetaFlags}})
                 ->constructFuncPointer<GlobalFunctionWrapperImpl<{{ReturnTypeName}}{{#ParamsList}}, {{ParamsList}}{{/ParamsList}}>>(&{{TypeName}}::{{FunctionName}});{{!Section ParamList is used to skip `,` in template ParamList}}
-{{/StaticFuncs}}
-{{#MemberFields}}
+    {{/StaticFuncs}}
+
+    {{#MemberFields}}
+    MetaDataArrayView mFldsMetaDataView_{{__idx1__}};
+    {{#FieldMetaDataCount}}
+    MetaDataArray<{{FieldMetaDataCount}}> mFldsMetaData_{{__idx1__}};
+    mFldsMetaDataView_{{__idx1__}} = mFldsMetaData_{{__idx1__}};
+    {
+        {{#FieldMetaData}}
+        static {{MetaDataTypeName}} mFldMetaData_{{__idx2__}}{ typeInfoFrom<{{MetaDataTypeName}}>(), {{MetaDataCtorArgs}} };
+        mFldsMetaData_{{__idx1__}}[{{__idx2__}}] = &mFldMetaData_{{__idx2__}};
+        {{/FieldMetaData}}
+    }
+    {{/FieldMetaDataCount}}
     typeProperty->addMemberField(STRID("{{FieldName}}"), TCHAR("{{FieldName}}"))
                 ->setFieldAccessor(EPropertyAccessSpecifier::{{AccessSpecifier}})
                 ->setField(IReflectionRuntimeModule::getType<{{FieldTypeName}}>())
-                ->setPropertyMetaData({ {{FieldMetaData}} }, {{FieldMetaFlags}})
+                ->setPropertyMetaData(mFldsMetaDataView_{{__idx1__}}, {{FieldMetaFlags}})
                 ->constructFieldPtr<MemberFieldWrapperImpl<{{TypeName}}, {{FieldTypeName}}>>(&{{TypeName}}::{{FieldName}});
-{{/MemberFields}}{{#StaticFields}}
+    {{/MemberFields}}
+
+    {{#StaticFields}}
+    MetaDataArrayView sFldsMetaDataView_{{__idx1__}};
+    {{#FieldMetaDataCount}}
+    MetaDataArray<{{FieldMetaDataCount}}> sFldsMetaData_{{__idx1__}};
+    sFldsMetaDataView_{{__idx1__}} = sFldsMetaData_{{__idx1__}};
+    {
+        {{#FieldMetaData}}
+        static {{MetaDataTypeName}} sFldMetaData_{{__idx2__}}{ typeInfoFrom<{{MetaDataTypeName}}>(), {{MetaDataCtorArgs}} };
+        sFldsMetaData_{{__idx1__}}[{{__idx2__}}] = &sFldMetaData_{{__idx2__}};
+        {{/FieldMetaData}}
+    }
+    {{/FieldMetaDataCount}}
     typeProperty->addStaticField(STRID("{{FieldName}}"), TCHAR("{{FieldName}}"))
                 ->setFieldAccessor(EPropertyAccessSpecifier::{{AccessSpecifier}})
                 ->setField(IReflectionRuntimeModule::getType<{{FieldTypeName}}>())
-                ->setPropertyMetaData({ {{FieldMetaData}} }, {{FieldMetaFlags}})
+                ->setPropertyMetaData(sFldsMetaDataView_{{__idx1__}}, {{FieldMetaFlags}})
                 ->constructFieldPtr<GlobalFieldWrapperImpl<{{FieldTypeName}}>>(&{{TypeName}}::{{FieldName}});
-{{/StaticFields}}
+    {{/StaticFields}}
 }
 {{/Classes}}
 

@@ -5,7 +5,6 @@ set(private_modules
     EngineRenderer
     Application
     CoreObjects
-    RTTIExample
 )
 if (${Cranberry_STATIC_MODULES})
     if(${WIN32} OR ${LINUX})

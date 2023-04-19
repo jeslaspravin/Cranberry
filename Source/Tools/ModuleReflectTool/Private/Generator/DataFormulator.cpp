@@ -49,16 +49,22 @@ void parseFailed(CXCursor cursor, SourceGeneratorContext *srcGenContext, const T
     srcGenContext->bGenerated = false;
 }
 
-template <StringLiteral MetaDataTag, StringLiteral MetaFlagsTag>
-FORCE_INLINE void setTypeMetaInfo(MustacheContext &typeContext, const std::vector<String> &metaData, const std::vector<String> &metaFlags)
+template <StringLiteral MetaDataTag, StringLiteral MetaDataCountTag, StringLiteral MetaFlagsTag>
+void setTypeMetaInfo(MustacheContext &typeContext, const std::vector<ParsedMetaData> &metaData, const std::vector<String> &metaFlags)
 {
-    std::vector<String> metaDataInitList(metaData.size());
-    for (uint32 i = 0; i < metaData.size(); ++i)
+    std::vector<MustacheContext> &metaDataContexts = typeContext.sectionContexts[MetaDataTag.value];
+    if (!metaData.empty())
     {
-        metaDataInitList[i] = TCHAR("new " + metaData[i]);
+        typeContext.args[MetaDataCountTag.value] = metaData.size();
+        metaDataContexts.reserve(metaData.size());
+        for (const ParsedMetaData &parsedMeta : metaData)
+        {
+            MustacheContext &context = metaDataContexts.emplace_back();
+            context.args[GeneratorConsts::METADATATYPENAME_TAG] = parsedMeta.metaType;
+            context.args[GeneratorConsts::METADATACTORARGS_TAG.Literal.value] = parsedMeta.ctorArgs;
+        }
     }
 
-    typeContext.args[MetaDataTag.value] = String::join(metaDataInitList.cbegin(), metaDataInitList.cend(), TCHAR(", "));
     if (metaFlags.empty())
     {
         typeContext.args[MetaFlagsTag.value] = TCHAR("0");
@@ -106,8 +112,14 @@ void visitEnums(CXCursor cursor, SourceGeneratorContext *srcGenContext)
     MustacheContext &enumCntxt = srcGenContext->enumTypes.emplace_back();
 
     const String enumMetaStr = ParserHelper::getCursorMetaString(cursor);
-    std::vector<String> metaFlags, metaData, buildFlags;
-    ParserHelper::parseEnumMeta(metaFlags, metaData, buildFlags, enumMetaStr);
+    std::vector<String> metaFlags, buildFlags;
+    std::vector<ParsedMetaData> metaData;
+    bool bMetaParsed = ParserHelper::parseEnumMeta(metaFlags, metaData, buildFlags, enumMetaStr);
+    if (!bMetaParsed)
+    {
+        parseFailed(cursor, srcGenContext, __func__, TCHAR("Error when parsing meta annotations"));
+        return;
+    }
 
     // Why getting from canonical type? Because it gives name with all the scopes prefixed. We do not
     // have to handle parent namespace or types
@@ -121,7 +133,9 @@ void visitEnums(CXCursor cursor, SourceGeneratorContext *srcGenContext)
     allRegisterdTypeCntxt.args[GeneratorConsts::PROPERTYTYPENAME_TAG] = GeneratorConsts::ENUMPROPERTY;
     allRegisterdTypeCntxt.args[GeneratorConsts::REGISTERFUNCNAME_TAG] = GeneratorConsts::REGISTERENUMFACTORY_FUNC;
 
-    setTypeMetaInfo<GeneratorConsts::TYPEMETADATA_TAG.Literal, GeneratorConsts::TYPEMETAFLAGS_TAG.Literal>(enumCntxt, metaData, metaFlags);
+    setTypeMetaInfo<
+        GeneratorConsts::TYPEMETADATA_SECTION_TAG.Literal, GeneratorConsts::TYPEMETADATACOUNT_TAG.Literal,
+        GeneratorConsts::TYPEMETAFLAGS_TAG.Literal>(enumCntxt, metaData, metaFlags);
     enumCntxt.args[GeneratorConsts::TYPENAME_TAG] = enumTypeName;
     enumCntxt.args[GeneratorConsts::SANITIZEDNAME_TAG] = sanitizedTypeName;
 
@@ -149,16 +163,23 @@ void visitEnums(CXCursor cursor, SourceGeneratorContext *srcGenContext)
             {
                 uint64 enumVal = clang_getEnumConstantDeclUnsignedValue(c);
                 String enumConstMetaStr = ParserHelper::getCursorMetaString(c);
-                std::vector<String> enumConstMetaFlags, enumConstMetaData, buildFlags;
-                ParserHelper::parseEnumMeta(enumConstMetaFlags, enumConstMetaData, buildFlags, enumConstMetaStr);
+                std::vector<String> enumConstMetaFlags, buildFlags;
+                std::vector<ParsedMetaData> enumConstMetaData;
+                bool bMetaParsed = ParserHelper::parseEnumMeta(enumConstMetaFlags, enumConstMetaData, buildFlags, enumConstMetaStr);
+                if (!bMetaParsed)
+                {
+                    parseFailed(c, localCntxt->srcGenContext, __func__, TCHAR("Error when parsing meta annotations"));
+                    return CXChildVisit_Break;
+                }
+
                 // Write enum constant context
                 MustacheContext &enumConstContext
                     = localCntxt->parentContext->sectionContexts[GeneratorConsts::ENUMFIELDS_SECTION_TAG].emplace_back();
                 enumConstContext.args[GeneratorConsts::ENUMFIELDNAME_TAG] = cursorName;
                 enumConstContext.args[GeneratorConsts::ENUMFIELDVALUE_TAG] = enumVal;
-                setTypeMetaInfo<GeneratorConsts::ENUMFIELDMETADATA_TAG.Literal, GeneratorConsts::ENUMFIELDMETAFLAGS_TAG.Literal>(
-                    enumConstContext, enumConstMetaData, enumConstMetaFlags
-                );
+                setTypeMetaInfo<
+                    GeneratorConsts::ENUMFIELDMETADATA_SECTION_TAG.Literal, GeneratorConsts::ENUMFIELDMETADATACOUNT_TAG.Literal,
+                    GeneratorConsts::ENUMFIELDMETAFLAGS_TAG.Literal>(enumConstContext, enumConstMetaData, enumConstMetaFlags);
 
                 // Check and set if can be used as flags, Only if each enum const value has one
                 // flag set and it does not overlap with any other flags it can be used as flags
@@ -204,8 +225,14 @@ void visitMemberField(CXCursor cursor, LocalContext &localCntxt)
     }
 
     const String fieldMetaStr = ParserHelper::getCursorMetaString(cursor);
-    std::vector<String> metaFlags, metaData, buildFlags;
-    ParserHelper::parseFieldMeta(metaFlags, metaData, buildFlags, fieldMetaStr);
+    std::vector<String> metaFlags, buildFlags;
+    std::vector<ParsedMetaData> metaData;
+    bool bMetaParsed = ParserHelper::parseFieldMeta(metaFlags, metaData, buildFlags, fieldMetaStr);
+    if (!bMetaParsed)
+    {
+        parseFailed(cursor, localCntxt.srcGenContext, __func__, TCHAR("Error when parsing meta annotations"));
+        return;
+    }
 
     // Generate prerequisite types
     generatePrereqTypes(fieldType, localCntxt.srcGenContext);
@@ -214,7 +241,9 @@ void visitMemberField(CXCursor cursor, LocalContext &localCntxt)
     MustacheContext &context = (clang_getCursorKind(cursor) == CXCursor_FieldDecl)
                                    ? localCntxt.parentContext->sectionContexts[GeneratorConsts::MEMBERFIELDS_SECTION_TAG].emplace_back()
                                    : localCntxt.parentContext->sectionContexts[GeneratorConsts::STATICFIELDS_SECTION_TAG].emplace_back();
-    setTypeMetaInfo<GeneratorConsts::FIELDMETADATA_TAG.Literal, GeneratorConsts::FIELDMETAFLAGS_TAG.Literal>(context, metaData, metaFlags);
+    setTypeMetaInfo<
+        GeneratorConsts::FIELDMETADATA_SECTION_TAG.Literal, GeneratorConsts::FIELDMETADATACOUNT_TAG.Literal,
+        GeneratorConsts::FIELDMETAFLAGS_TAG.Literal>(context, metaData, metaFlags);
     context.args[GeneratorConsts::FIELDNAME_TAG] = fieldName;
     context.args[GeneratorConsts::FIELDTYPENAME_TAG] = typeName;
     context.args[GeneratorConsts::ACCESSSPECIFIER_TAG] = ParserHelper::accessSpecifierName(cursor);
@@ -250,8 +279,14 @@ void visitMemberCppMethods(CXCursor cursor, LocalContext &localCntxt)
     int32 bIsStatic = clang_CXXMethod_isStatic(cursor);
     int32 bIsConst = clang_CXXMethod_isConst(cursor);
     const String funcMetaStr = ParserHelper::getCursorMetaString(cursor);
-    std::vector<String> metaFlags, metaData, buildFlags;
-    ParserHelper::parseFunctionMeta(metaFlags, metaData, buildFlags, funcMetaStr);
+    std::vector<String> metaFlags, buildFlags;
+    std::vector<ParsedMetaData> metaData;
+    bool bMetaParsed = ParserHelper::parseFunctionMeta(metaFlags, metaData, buildFlags, funcMetaStr);
+    if (!bMetaParsed)
+    {
+        parseFailed(cursor, localCntxt.srcGenContext, __func__, TCHAR("Error when parsing meta annotations"));
+        return;
+    }
 
     CXType funcRetType = clang_getCursorResultType(cursor);
     uint32 paramsCount = clang_Cursor_getNumArguments(cursor);
@@ -273,9 +308,9 @@ void visitMemberCppMethods(CXCursor cursor, LocalContext &localCntxt)
     if (clang_getCursorKind(cursor) == CXCursor_Constructor)
     {
         MustacheContext &context = localCntxt.parentContext->sectionContexts[GeneratorConsts::CONSTRUCTORS_SECTION_TAG].emplace_back();
-        setTypeMetaInfo<GeneratorConsts::CONSTRUCTORMETADATA_TAG.Literal, GeneratorConsts::CONSTRUCTORMETAFLAGS_TAG.Literal>(
-            context, metaData, metaFlags
-        );
+        setTypeMetaInfo<
+            GeneratorConsts::CTORMETADATA_SECTION_TAG.Literal, GeneratorConsts::CTORMETADATACOUNT_TAG.Literal,
+            GeneratorConsts::CTORMETAFLAGS_TAG.Literal>(context, metaData, metaFlags);
         // For now only class has any valid next pointer, If struct also needs it then we must handle
         // it differently
         if (localCntxt.pNext != nullptr)
@@ -299,7 +334,9 @@ void visitMemberCppMethods(CXCursor cursor, LocalContext &localCntxt)
         MustacheContext &context = (bIsStatic)
                                        ? localCntxt.parentContext->sectionContexts[GeneratorConsts::STATICFUNCS_SECTION_TAG].emplace_back()
                                        : localCntxt.parentContext->sectionContexts[GeneratorConsts::MEMBERFUNCS_SECTION_TAG].emplace_back();
-        setTypeMetaInfo<GeneratorConsts::FUNCMETADATA_TAG.Literal, GeneratorConsts::FUNCMETAFLAGS_TAG.Literal>(context, metaData, metaFlags);
+        setTypeMetaInfo<
+            GeneratorConsts::FUNCMETADATA_SECTION_TAG.Literal, GeneratorConsts::FUNCMETADATACOUNT_TAG.Literal,
+            GeneratorConsts::FUNCMETAFLAGS_TAG.Literal>(context, metaData, metaFlags);
         context.args[GeneratorConsts::FUNCTIONNAME_TAG] = funcName;
         context.args[GeneratorConsts::FUNCCONST_BRANCH_TAG] = bIsConst;
         context.args[GeneratorConsts::RETURNTYPENAME_TAG] = returnTypeName;
@@ -413,8 +450,14 @@ void visitStructs(CXCursor cursor, SourceGeneratorContext *srcGenContext)
     MustacheContext &structCntxt = srcGenContext->classTypes.emplace_back();
 
     const String classMetaStr = ParserHelper::getCursorMetaString(cursor);
-    std::vector<String> metaFlags, metaData, buildFlags;
-    ParserHelper::parseClassMeta(metaFlags, metaData, buildFlags, classMetaStr);
+    std::vector<String> metaFlags, buildFlags;
+    std::vector<ParsedMetaData> metaData;
+    bool bMetaParsed = ParserHelper::parseClassMeta(metaFlags, metaData, buildFlags, classMetaStr);
+    if (!bMetaParsed)
+    {
+        parseFailed(cursor, srcGenContext, __func__, TCHAR("Error when parsing meta annotations"));
+        return;
+    }
 
     // Why getting from canonical type? Because it gives name with all the scopes prefixed. We do not
     // have to handle parent namespace or types
@@ -452,7 +495,9 @@ void visitStructs(CXCursor cursor, SourceGeneratorContext *srcGenContext)
     allRegisterdTypeCntxt.args[GeneratorConsts::PROPERTYTYPENAME_TAG] = GeneratorConsts::CLASSPROPERTY;
     allRegisterdTypeCntxt.args[GeneratorConsts::REGISTERFUNCNAME_TAG] = GeneratorConsts::REGISTERSTRUCTFACTORY_FUNC;
 
-    setTypeMetaInfo<GeneratorConsts::TYPEMETADATA_TAG.Literal, GeneratorConsts::TYPEMETAFLAGS_TAG.Literal>(structCntxt, metaData, metaFlags);
+    setTypeMetaInfo<
+        GeneratorConsts::TYPEMETADATA_SECTION_TAG.Literal, GeneratorConsts::TYPEMETADATACOUNT_TAG.Literal,
+        GeneratorConsts::TYPEMETAFLAGS_TAG.Literal>(structCntxt, metaData, metaFlags);
     structCntxt.args[GeneratorConsts::ISABSTRACT_TAG] = bIsAbstract;
     structCntxt.args[GeneratorConsts::DISABLECTOR_TAG] = bDisableCtor;
     structCntxt.args[GeneratorConsts::TYPENAME_TAG] = structCanonicalTypeName;
@@ -502,8 +547,14 @@ void visitClasses(CXCursor cursor, SourceGeneratorContext *srcGenContext)
     MustacheContext &classCntxt = srcGenContext->classTypes.emplace_back();
 
     const String classMetaStr = ParserHelper::getCursorMetaString(cursor);
-    std::vector<String> metaFlags, metaData, buildFlags;
-    ParserHelper::parseClassMeta(metaFlags, metaData, buildFlags, classMetaStr);
+    std::vector<String> metaFlags, buildFlags;
+    std::vector<ParsedMetaData> metaData;
+    bool bMetaParsed = ParserHelper::parseClassMeta(metaFlags, metaData, buildFlags, classMetaStr);
+    if (!bMetaParsed)
+    {
+        parseFailed(cursor, srcGenContext, __func__, TCHAR("Error when parsing meta annotations"));
+        return;
+    }
     // If reflected class then it cannot be an interface. Marking as interface and reflecting must be a mistake
     if (std::find(buildFlags.cbegin(), buildFlags.cend(), GeneratorConsts::INTERFACE_FLAG.toString()) != buildFlags.cend())
     {
@@ -547,7 +598,9 @@ void visitClasses(CXCursor cursor, SourceGeneratorContext *srcGenContext)
     allRegisterdTypeCntxt.args[GeneratorConsts::PROPERTYTYPENAME_TAG] = GeneratorConsts::CLASSPROPERTY;
     allRegisterdTypeCntxt.args[GeneratorConsts::REGISTERFUNCNAME_TAG] = GeneratorConsts::REGISTERCLASSFACTORY_FUNC;
 
-    setTypeMetaInfo<GeneratorConsts::TYPEMETADATA_TAG.Literal, GeneratorConsts::TYPEMETAFLAGS_TAG.Literal>(classCntxt, metaData, metaFlags);
+    setTypeMetaInfo<
+        GeneratorConsts::TYPEMETADATA_SECTION_TAG.Literal, GeneratorConsts::TYPEMETADATACOUNT_TAG.Literal,
+        GeneratorConsts::TYPEMETAFLAGS_TAG.Literal>(classCntxt, metaData, metaFlags);
     classCntxt.args[GeneratorConsts::ISABSTRACT_TAG] = bIsAbstract;
     classCntxt.args[GeneratorConsts::DISABLECTOR_TAG] = bDisableCtor;
     classCntxt.args[GeneratorConsts::TYPENAME_TAG] = classCanonicalTypeName;

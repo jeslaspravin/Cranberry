@@ -23,7 +23,7 @@ class EnumProperty;
 class BaseProperty;
 class StringID;
 class TypedProperty;
-class PropertyMetaDataBase;
+struct PropertyMetaDataBase;
 
 // Has to separate init and create to avoid race condition between creating a property and using the
 // created property on property that is created in this property init

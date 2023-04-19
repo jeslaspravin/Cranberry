@@ -19,6 +19,16 @@
 #include "Types/Platform/LFS/PlatformLFS.h"
 #include "Types/Platform/LFS/PathFunctions.h"
 
+// "(\\\r?\n)\1+" to "$1"
+// Replaces all extra \\r\n and compresses the generated code
+const StringRegex hCompressRegex{ TCHAR("(\\\\\\r?\\n)\\1+"), std::regex_constants::ECMAScript };
+const TChar *hCompressFmt = TCHAR("$1");
+
+// " *(\r?\n)(?: *\1){2,}" to "$1$1"
+// Replaces all extra \r\n, \t and compresses the generated code
+const StringRegex cppCompressRegex{ TCHAR(" *(\\r?\\n)(?: *\\1){2,}"), std::regex_constants::ECMAScript };
+const TChar *cppCompressFmt = TCHAR("$1$1");
+
 FORCE_INLINE std::vector<String> SourceGenerator::getTemplateFiles()
 {
     return FileSystemFunctions::listFiles(TCHAR(TEMPLATES_DIR), true, TCHAR("*.mustache"));
@@ -71,6 +81,7 @@ void SourceGenerator::writeGeneratedFiles()
         headerContext.args[GeneratorConsts::EXPORT_SYMBOL_MACRO] = moduleExpMacro;
 
         String headerContent = sourceGenTemplates[GeneratorConsts::REFLECTHEADER_TEMPLATE].render(headerContext, sourceGenTemplates);
+        headerContent = std::regex_replace(headerContent, hCompressRegex, hCompressFmt);
         if (!FileHelper::writeString(headerContent, srcInfo->generatedHeaderPath))
         {
             LOG_ERROR(
@@ -94,6 +105,7 @@ void SourceGenerator::writeGeneratedFiles()
         sourceContext.sectionContexts[GeneratorConsts::CLASSTYPES_SECTION_TAG] = srcGenCntxt.classTypes;
 
         String sourceContent = sourceGenTemplates[GeneratorConsts::REFLECTSOURCE_TEMPLATE].render(sourceContext, sourceGenTemplates);
+        sourceContent = std::regex_replace(sourceContent, cppCompressRegex, cppCompressFmt);
         if (!FileHelper::writeString(sourceContent, srcInfo->generatedTUPath))
         {
             LOG_ERROR("SourceGenerator", "Could not write generated sources({}) for header {}", srcInfo->generatedTUPath, srcInfo->headerIncl);

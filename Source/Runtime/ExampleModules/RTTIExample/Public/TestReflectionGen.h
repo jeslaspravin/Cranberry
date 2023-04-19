@@ -15,10 +15,30 @@
 #include "RTTIExampleExports.h"
 #include "ReflectionMacros.h"
 #include "Types/CompilerDefines.h"
+#include "Property/PropertyMetaData.h"
 #include <set>
 #include <unordered_map>
 
 #include "TestReflectionGen.gen.h"
+
+struct TestPropertyMeta : public PropertyMetaDataBase
+{
+    String helloWorld;
+};
+struct SecondTest : public PropertyMetaDataBase
+{
+    int32 idx;
+    String str;
+
+    SecondTest(const ReflectTypeInfo *type, int32 i)
+        : PropertyMetaDataBase{ type }
+        , idx(i)
+    {}
+    SecondTest(const ReflectTypeInfo *type, String s)
+        : PropertyMetaDataBase{ type }
+        , str(s)
+    {}
+};
 
 class TestConstructionPolicy
 {
@@ -67,7 +87,11 @@ COMPILER_PRAGMA(COMPILER_DISABLE_WARNING(WARN_UNINITIALIZED))
 
 namespace TestNS
 {
-class META_ANNOTATE_API(RTTIEXAMPLE_EXPORT, BaseType) BerryObject
+class META_ANNOTATE_API(
+    RTTIEXAMPLE_EXPORT, BaseType,
+    TestPropertyMeta{
+        TCHAR("This is me testing property gen adkklfasdlkf adfh k adl adas dadf ssdfasf asdrfes s ssd sAear d adfe d sdf a  adj adkl ") }
+    ) BerryObject
 {
     GENERATED_CODES();
 
@@ -134,10 +158,10 @@ public:
     META_ANNOTATE()
     TestNS::BerryObject *ptrObject;
 
-    META_ANNOTATE()
+    META_ANNOTATE(Transient, TestPropertyMeta(TCHAR("TestStr")), SecondTest(1234))
     TestNS::BerryObject::ETestEnumClassScoped options;
 
-    META_ANNOTATE()
+    META_ANNOTATE(Transient, TestPropertyMeta(TCHAR("Another string")), SecondTest(TCHAR("Why me God!")))
     std::map<uint64, BerrySecondData> idxToBerrySec;
 
     META_ANNOTATE()

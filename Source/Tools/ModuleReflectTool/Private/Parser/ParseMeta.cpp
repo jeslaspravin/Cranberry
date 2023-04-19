@@ -18,36 +18,102 @@
 #define META_FLAG_ENTRY_FIRST(Flag) TCHAR(#Flag)
 #define META_FLAG_ENTRY(Flag) , TCHAR(#Flag)
 
-// TODO(Jeslas) : Change ; to something better
-std::vector<String> ParserHelper::parseMeta(std::vector<String> &metaData, const String &annotatedStr)
+bool ParserHelper::parseMeta(std::vector<String> &possibleFlags, std::vector<ParsedMetaData> &metaData, const String &annotatedStr)
 {
-    std::vector<String> metaFlags;
-    // We do ; termination for meta specifiers atleast for now just to make sure parsing is easier and
-    // simple
-    for (const StringView &metaView : String::split(annotatedStr, TCHAR(";")))
+    bool bSuccess = true;
+    const TChar *ch = annotatedStr.c_str();
+    const TChar *start = ch;
+    while (*ch != '\0')
     {
-        String meta{ metaView };
-        if (PropertyHelper::isValidFunctionCall(meta.trim()))
+        switch (*ch)
         {
-            metaData.emplace_back(std::move(meta));
-        }
-        else
+        case ',':
         {
-            metaFlags.emplace_back(std::move(meta));
+            String possibleMetaFlag{ start, SizeT(ch - start) };
+            possibleMetaFlag.trim();
+            if (!possibleMetaFlag.empty())
+            {
+                possibleFlags.emplace_back(std::move(possibleMetaFlag));
+            }
+            start = ch + 1;
+            break;
         }
+        case '{':
+        case '(':
+        {
+            // Inside a block
+            int32 nestingCount = 1;
+            const TChar *argsCh = ch + 1;
+            while (*argsCh != '\0')
+            {
+                if (*argsCh == '{' || *argsCh == '(')
+                {
+                    nestingCount++;
+                }
+                else if (*argsCh == '}' || *argsCh == ')')
+                {
+                    nestingCount--;
+                    if (nestingCount == 0)
+                    {
+                        break;
+                    }
+                }
+                argsCh++;
+            }
+
+            if (nestingCount == 0)
+            {
+                ParsedMetaData &metaDataInfo = metaData.emplace_back(StringView(start, ch), StringView(ch + 1, argsCh));
+                metaDataInfo.metaType.trim();
+                metaDataInfo.ctorArgs.trim();
+                ch = argsCh;
+                start = ch + 1;
+            }
+            else
+            {
+                LOG_ERROR(
+                    "ParserHelper", "MetaData block not properly terminated - {}\"{}...\"", StringView(start, ch), StringView(ch, argsCh)
+                );
+                bSuccess = false;
+            }
+
+            break;
+        }
+        case '}':
+        case ')':
+            LOG_ERROR("ParserHelper", "Inappropriate closing braces at - {}\"{}\"{}", StringView(start, ch), *ch, StringView(ch + 1));
+            bSuccess = false;
+            break;
+        default:
+            break;
+        }
+        ch++;
     }
-    return metaFlags;
+    
+    String possibleMetaFlag{ start };
+    possibleMetaFlag.trim();
+    if (!possibleMetaFlag.empty())
+    {
+        possibleFlags.emplace_back(std::move(possibleMetaFlag));
+    }
+
+    return bSuccess;
 }
 
-void ParserHelper::parseClassMeta(
-    std::vector<String> &metaFlags, std::vector<String> &metaData, std::vector<String> &buildFlags, const String &annotatedStr
+bool ParserHelper::parseClassMeta(
+    std::vector<String> &metaFlags, std::vector<ParsedMetaData> &metaData, std::vector<String> &buildFlags, const String &annotatedStr
 )
 {
     static const std::unordered_set<String> TYPE_META_FLAGS{
         FOR_EACH_CLASS_META_FLAGS_UNIQUE_FIRST_LAST(META_FLAG_ENTRY_FIRST, META_FLAG_ENTRY, META_FLAG_ENTRY)
     };
 
-    std::vector<String> flags = parseMeta(metaData, annotatedStr);
+    std::vector<String> flags;
+    bool bSuccess = parseMeta(flags, metaData, annotatedStr);
+    if (!bSuccess)
+    {
+        return false;
+    }
     for (const String &metaFlag : flags)
     {
         if (TYPE_META_FLAGS.contains(metaFlag))
@@ -59,17 +125,23 @@ void ParserHelper::parseClassMeta(
             buildFlags.emplace_back(metaFlag);
         }
     }
+    return true;
 }
 
-void ParserHelper::parseFieldMeta(
-    std::vector<String> &metaFlags, std::vector<String> &metaData, std::vector<String> &buildFlags, const String &annotatedStr
+bool ParserHelper::parseFieldMeta(
+    std::vector<String> &metaFlags, std::vector<ParsedMetaData> &metaData, std::vector<String> &buildFlags, const String &annotatedStr
 )
 {
     static const std::unordered_set<String> TYPE_META_FLAGS{
         FOR_EACH_FIELD_META_FLAGS_UNIQUE_FIRST_LAST(META_FLAG_ENTRY_FIRST, META_FLAG_ENTRY, META_FLAG_ENTRY)
     };
 
-    std::vector<String> flags = parseMeta(metaData, annotatedStr);
+    std::vector<String> flags;
+    bool bSuccess = parseMeta(flags, metaData, annotatedStr);
+    if (!bSuccess)
+    {
+        return false;
+    }
     for (const String &metaFlag : flags)
     {
         if (TYPE_META_FLAGS.contains(metaFlag))
@@ -81,17 +153,23 @@ void ParserHelper::parseFieldMeta(
             buildFlags.emplace_back(metaFlag);
         }
     }
+    return true;
 }
 
-void ParserHelper::parseFunctionMeta(
-    std::vector<String> &metaFlags, std::vector<String> &metaData, std::vector<String> &buildFlags, const String &annotatedStr
+bool ParserHelper::parseFunctionMeta(
+    std::vector<String> &metaFlags, std::vector<ParsedMetaData> &metaData, std::vector<String> &buildFlags, const String &annotatedStr
 )
 {
     static const std::unordered_set<String> TYPE_META_FLAGS{
         FOR_EACH_FUNC_META_FLAGS_UNIQUE_FIRST_LAST(META_FLAG_ENTRY_FIRST, META_FLAG_ENTRY, META_FLAG_ENTRY)
     };
 
-    std::vector<String> flags = parseMeta(metaData, annotatedStr);
+    std::vector<String> flags;
+    bool bSuccess = parseMeta(flags, metaData, annotatedStr);
+    if (!bSuccess)
+    {
+        return false;
+    }
     for (const String &metaFlag : flags)
     {
         if (TYPE_META_FLAGS.contains(metaFlag))
@@ -103,17 +181,23 @@ void ParserHelper::parseFunctionMeta(
             buildFlags.emplace_back(metaFlag);
         }
     }
+    return true;
 }
 
-void ParserHelper::parseEnumMeta(
-    std::vector<String> &metaFlags, std::vector<String> &metaData, std::vector<String> &buildFlags, const String &annotatedStr
+bool ParserHelper::parseEnumMeta(
+    std::vector<String> &metaFlags, std::vector<ParsedMetaData> &metaData, std::vector<String> &buildFlags, const String &annotatedStr
 )
 {
     static const std::unordered_set<String> TYPE_META_FLAGS{
         FOR_EACH_ENUM_META_FLAGS_UNIQUE_FIRST_LAST(META_FLAG_ENTRY_FIRST, META_FLAG_ENTRY, META_FLAG_ENTRY)
     };
 
-    std::vector<String> flags = parseMeta(metaData, annotatedStr);
+    std::vector<String> flags;
+    bool bSuccess = parseMeta(flags, metaData, annotatedStr);
+    if (!bSuccess)
+    {
+        return false;
+    }
     for (const String &metaFlag : flags)
     {
         if (TYPE_META_FLAGS.contains(metaFlag))
@@ -125,6 +209,7 @@ void ParserHelper::parseEnumMeta(
             buildFlags.emplace_back(metaFlag);
         }
     }
+    return true;
 }
 #undef META_FLAG_ENTRY_FIRST
 #undef META_FLAG_ENTRY

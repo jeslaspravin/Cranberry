@@ -458,6 +458,14 @@ void MustacheStringFormatter::renderSection(
         // If sectionArgs are found and they are valid then we render the tags inside section
         else if (additionalContextsItr != context.sectionContexts.cend() && !additionalContextsItr->second.empty())
         {
+            String indexArg = StringFormat::printf(INDEX_FMT, 0);
+            uint32 idx = 1;
+            while (context.args.contains(indexArg))
+            {
+                indexArg = StringFormat::printf(INDEX_FMT, idx);
+                idx++;
+            }
+            idx = 0;
             for (const MustacheContext &additionalContext : additionalContextsItr->second)
             {
                 // First additionalArgs to allow overriding default args
@@ -466,8 +474,11 @@ void MustacheStringFormatter::renderSection(
                 newContext.sectionContexts.insert(context.sectionContexts.cbegin(), context.sectionContexts.cend());
                 newContext.sectionFormatters.insert(context.sectionFormatters.cbegin(), context.sectionFormatters.cend());
 
+                newContext.args[indexArg] = idx;
+
                 // Render all inner tags for each section contexts
                 renderSectionInner(outStr, section, newContext, partials);
+                idx++;
             }
         }
         // If section representing arg is true, Gives valid result and can render output

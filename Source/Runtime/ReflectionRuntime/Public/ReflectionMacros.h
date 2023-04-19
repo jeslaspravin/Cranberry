@@ -99,7 +99,7 @@ public:                                                                         
 #define OVERRIDE_CONSTRUCTION_POLICY(PolicyTypeName) using OVERRIDEN_CONSTRUCTION_POLICY_ALIAS = uint32;
 
 #define META_ANNOTATE(...) __attribute__((annotate(#__VA_ARGS__)))
-#define META_ANNOTATE_API(API_EXPORT, ...) META_ANNOTATE(NoExport; __VA_ARGS__)
+#define META_ANNOTATE_API(API_EXPORT, ...) META_ANNOTATE(NoExport, __VA_ARGS__)
 #else
 #define GENERATED_CODES() COMBINE_GENERATED_CODES(HEADER_FILE_ID, __LINE__, _GENERATED_CODES)
 #define OVERRIDE_CONSTRUCTION_POLICY(PolicyTypeName) using CONSTRUCTION_POLICY_TYPEDEF_NAME = PolicyTypeName;

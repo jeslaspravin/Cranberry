@@ -168,9 +168,7 @@ bool ParserHelper::shouldReflectHeader(const String &headerFilePath, const std::
     // GENERATED_CODES() macro expansion If anyone of above matches then we consider that header for
     // reflection compiling, Further validations will be done there
     static const StringRegex searchPattern(
-        TCHAR("(#include *[<\"]{1}.*\\.gen\\.h[>\"]{1}|.*META_ANNOTATE.*\\(.*\\)[ \t]*.*|[ "
-              "\t]*GENERATED_CODES\\(\\))"),
-        std::regex_constants::ECMAScript
+        TCHAR("(#include *[<\"]{1}.*\\.gen\\.h[>\"]{1}|.*META_ANNOTATE.*\\(.*\\)[ \t]*.*|[ \t]*GENERATED_CODES\\(\\))"), std::regex_constants::ECMAScript
     );
 
     bool bGenReflection = false;
@@ -204,10 +202,8 @@ bool ParserHelper::shouldReflectHeader(const String &headerFilePath, const std::
                 {
                     SCOPED_MUTE_LOG_SEVERITIES(Logger::Debug);
                     LOG_ERROR(
-                        "ParserHelper",
-                        "{}({},0): {}() Generated header include {} must be last include of "
-                        "the header file",
-                        headerFilePath, genInclLine, __func__, checkHeader
+                        "ParserHelper", "{}({},0): {}() Generated header include {} must be last include of the header file", headerFilePath,
+                        genInclLine, __func__, checkHeader
                     );
                     bGenReflection = false;
                     std::exit(-1);
@@ -366,9 +362,15 @@ bool ParserHelper::isInterfaceClass(CXCursor declCursor)
             {
                 // If reflected then we must have annotated
                 bValid[0] = true;
-                std::vector<String> metaTemp;
+                std::vector<ParsedMetaData> metaTemp;
+                std::vector<String> metaFlagsTemp;
                 std::vector<String> buildFlags;
-                parseClassMeta(metaTemp, metaTemp, buildFlags, CXStringWrapper(clang_getCursorSpelling(c)).toString());
+                bool bMetaParsed = parseClassMeta(metaFlagsTemp, metaTemp, buildFlags, CXStringWrapper(clang_getCursorSpelling(c)).toString());
+                if (!bMetaParsed)
+                {
+                    LOG_ERROR("ParserHelper", "Found error when parsing meta data, Possibly a code breaking! Validate if false positive!");
+                }
+
                 bValid[2] = std::find(buildFlags.cbegin(), buildFlags.cend(), GeneratorConsts::INTERFACE_FLAG.toString()) != buildFlags.cend();
             }
             // If generated type alias/typedef decl is present

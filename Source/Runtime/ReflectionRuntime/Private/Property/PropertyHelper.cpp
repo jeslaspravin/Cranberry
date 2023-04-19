@@ -38,8 +38,17 @@ bool PropertyHelper::isValidSymbolName(StringView inValue)
 
 bool PropertyHelper::isValidFunctionCall(StringView inValue)
 {
+    // Start with valid symbol then open and close bracets followed by space or ;
+    // \s - any white space incl \n, \S all non white space chars
+    static const StringRegex matchPattern(COMBINE(VALID_SYMBOL_REGEX_PATTERN, "\\s*\\([\\s\\S]*\\)[ ;]?"), std::regex_constants::ECMAScript);
+    return std::regex_match(inValue.cbegin(), inValue.cend(), matchPattern);
+}
+
+bool PropertyHelper::isValidConstructionCall(StringView inValue)
+{
     // Start with valid symbol then open and close braces followed by space or ;
-    static const StringRegex matchPattern(COMBINE(VALID_SYMBOL_REGEX_PATTERN, " *\\(.*\\)[ ;]*"), std::regex_constants::ECMAScript);
+    // \s - any white space incl \n, \S all non white space chars
+    static const StringRegex matchPattern(COMBINE(VALID_SYMBOL_REGEX_PATTERN, "\\s*[({][\\s\\S]*[)}][ ;]?"), std::regex_constants::ECMAScript);
     return std::regex_match(inValue.cbegin(), inValue.cend(), matchPattern);
 }
 

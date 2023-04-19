@@ -15,6 +15,7 @@
 #include "String/StringID.h"
 #include "Types/HashTypes.h"
 #include "Types/Containers/FlatTree.h"
+#include "Types/Containers/ArrayView.h"
 
 #include <unordered_map>
 
@@ -66,7 +67,7 @@ private:
     std::unordered_map<const BaseProperty *, uint64> propertiesMetaFlags;
 
 public:
-    void setMetaData(const BaseProperty *forProperty, const std::vector<const PropertyMetaDataBase *> &propertyMeta, uint64 propertyMetaFlags);
+    void setMetaData(const BaseProperty *forProperty, ArrayView<const PropertyMetaDataBase *> propertyMeta, uint64 propertyMetaFlags);
 
     /* IReflectionRuntimeModule finals */
     const ClassProperty *getStructType(const ReflectTypeInfo *typeInfo) final;

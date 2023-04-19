@@ -70,6 +70,7 @@ public:
     static String getValidSymbolName(StringView inValue);
     static bool isValidSymbolName(StringView inValue);
     static bool isValidFunctionCall(StringView inValue);
+    static bool isValidConstructionCall(StringView inValue);
 
     FORCE_INLINE static bool isMapType(const String &typeName)
     {
