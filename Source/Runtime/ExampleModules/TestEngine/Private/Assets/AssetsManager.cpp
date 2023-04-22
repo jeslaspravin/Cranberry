@@ -71,7 +71,7 @@ void AssetManager::loadUnderPathAsync(const String &scanPath)
     LOG("AssetManager", "Loaded all assets in {:0.3} Seconds(not including gpu copy)", loadTime.duration());
 }
 
-copat::JobSystemReturnableTask<std::vector<AssetBase *>, true, copat::EJobThreadType::WorkerThreads>
+copat::JobSystemReturnableTask<std::vector<AssetBase *>, true, copat::EJobThreadType::WorkerThreads, copat::EJobPriority::Priority_Normal>
 AssetManager::loadAssetAsync(AssetHeader header)
 {
     StopWatch loadTime;

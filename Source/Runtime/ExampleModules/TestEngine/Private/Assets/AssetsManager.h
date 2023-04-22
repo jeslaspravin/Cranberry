@@ -31,7 +31,8 @@ private:
     void loadUnderPath(const String &scanPath);
     void loadUnderPathAsync(const String &scanPath);
     std::vector<AssetBase *> loadAsset(const AssetHeader &header);
-    copat::JobSystemReturnableTask<std::vector<AssetBase *>, true, copat::EJobThreadType::WorkerThreads> loadAssetAsync(AssetHeader header);
+    copat::JobSystemReturnableTask<std::vector<AssetBase *>, true, copat::EJobThreadType::WorkerThreads, copat::EJobPriority::Priority_Normal>
+    loadAssetAsync(AssetHeader header);
 
 public:
     AssetManager() = default;

@@ -3263,7 +3263,7 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface *drawInterface)
             if (ImGui::Button("New Window"))
             {
                 copat::fireAndForget(
-                    [this]() -> copat::JobSystemEnqTask<copat::EJobThreadType::MainThread>
+                    [this]() -> copat::JobSystemMainThreadTask
                     {
                         static int32 count = 1;
                         TestWidget::WgArguments args;
