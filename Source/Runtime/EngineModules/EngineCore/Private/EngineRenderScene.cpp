@@ -1237,7 +1237,7 @@ void EngineRenderScene::syncWorldCompsRenderThread(
     }
 }
 
-copat::NormalFuncAwaiter EngineRenderScene::recreateSceneVertexBuffers(
+copat::JobSystemFuncAwaiter EngineRenderScene::recreateSceneVertexBuffers(
     IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
 )
 {
@@ -1425,7 +1425,7 @@ copat::NormalFuncAwaiter EngineRenderScene::recreateSceneVertexBuffers(
     bVertexUpdating = false;
 }
 
-copat::NormalFuncAwaiter EngineRenderScene::recreateMaterialBuffers(
+copat::JobSystemFuncAwaiter EngineRenderScene::recreateMaterialBuffers(
     IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
 )
 {
@@ -1576,7 +1576,7 @@ copat::NormalFuncAwaiter EngineRenderScene::recreateMaterialBuffers(
     bMaterialsUpdating = false;
 }
 
-copat::NormalFuncAwaiter EngineRenderScene::recreateInstanceBuffers(
+copat::JobSystemFuncAwaiter EngineRenderScene::recreateInstanceBuffers(
     IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
 )
 {

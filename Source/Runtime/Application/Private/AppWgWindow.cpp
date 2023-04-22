@@ -80,7 +80,7 @@ SharedPtr<WgWindow> WidgetBase::findWidgetParentWindow(SharedPtr<WidgetBase> wid
 /// ApplicationInstance Implementations
 //////////////////////////////////////////////////////////////////////////
 
-copat::NormalFuncAwaiter enqExitApp()
+copat::JobSystemFuncAwaiter enqExitApp()
 {
     co_await copat::SwitchJobThreadAwaiter<copat::EJobThreadType::MainThread>{};
     IApplicationModule::get()->getApplication()->requestExit();

@@ -106,6 +106,20 @@ void CranberryEngineApp::onRendererStateEvent(ERenderStateEvent /*state*/) {}
 #include "EditorHelpers.h"
 #include "Profiler/ProgramProfiler.hpp"
 
+struct TestA
+{
+    int32 a;
+    int32 b;
+
+    TestA() = default;
+    // Copy
+    TestA(const TestA &other)
+    {
+        a = other.a;
+        b = other.b;
+    }
+};
+
 void tempTest()
 {
     String dir = Paths::contentDirectory();

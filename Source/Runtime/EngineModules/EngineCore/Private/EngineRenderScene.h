@@ -29,7 +29,7 @@
 struct DrawIndexedIndirectCommand;
 namespace copat
 {
-struct NormalFuncAwaiter;
+struct JobSystemFuncAwaiter;
 }
 
 namespace ERendererIntermTexture
@@ -322,11 +322,11 @@ private:
         const GraphicsHelperAPI *graphicsHelper
     );
     // Adds new mesh's vertex and index buffer, resizes the corresponding scene buffers to upload them
-    copat::NormalFuncAwaiter
+    copat::JobSystemFuncAwaiter
     recreateSceneVertexBuffers(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
-    copat::NormalFuncAwaiter
+    copat::JobSystemFuncAwaiter
     recreateMaterialBuffers(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
-    copat::NormalFuncAwaiter
+    copat::JobSystemFuncAwaiter
     recreateInstanceBuffers(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
     void createNextDrawList(
         const RenderSceneViewParams &viewParams, IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
