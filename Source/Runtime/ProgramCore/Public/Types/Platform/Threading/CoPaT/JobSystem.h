@@ -67,7 +67,7 @@ public:
     JobSystem *ownerJobSystem = nullptr;
 
     // It is okay to have as array as each queue will be aligned 2x the Cache line size
-    SpecialThreadQueueType specialQueues[COUNT];
+    SpecialThreadQueueType specialQueues[COUNT * Priority_MaxPriority];
     SpecialJobReceivedEvent specialJobEvents[COUNT];
     std::latch allSpecialsFinishedEvent{ COUNT };
 
@@ -90,29 +90,35 @@ public:
     void initialize(JobSystem *jobSystem) noexcept;
     void shutdown() noexcept;
 
-    void enqueueJob(std::coroutine_handle<> coro, EJobThreadType enqueueToThread, SpecialQHazardToken *fromThreadTokens) noexcept
+    void enqueueJob(
+        std::coroutine_handle<> coro, EJobThreadType enqueueToThread, EJobPriority priority, SpecialQHazardToken *fromThreadTokens
+    ) noexcept
     {
         // We must not enqueue at shutdown
         COPAT_ASSERT(!allSpecialsFinishedEvent.try_wait());
-        const u32 idx = threadTypeToIdx(enqueueToThread);
+        const u32 threadIdx = threadTypeToIdx(enqueueToThread);
+        const u32 queueArrayIdx = pAndTTypeToIdx(threadIdx, priority);
         if (fromThreadTokens)
         {
-            specialQueues[idx].enqueue(coro.address(), fromThreadTokens[idx]);
+            specialQueues[queueArrayIdx].enqueue(coro.address(), fromThreadTokens[queueArrayIdx]);
         }
         else
         {
-            specialQueues[idx].enqueue(coro.address());
+            specialQueues[queueArrayIdx].enqueue(coro.address());
         }
 
-        specialJobEvents[idx].notify();
+        specialJobEvents[threadIdx].notify();
     }
 
-    SpecialThreadQueueType *getThreadJobsQueue(u32 idx) noexcept { return &specialQueues[idx]; }
-    SpecialJobReceivedEvent *getJobEvent(u32 idx) noexcept { return &specialJobEvents[idx]; }
+    SpecialThreadQueueType *getThreadJobsQueue(u32 threadIdx, EJobPriority priority) noexcept
+    {
+        return &specialQueues[pAndTTypeToIdx(threadIdx, priority)];
+    }
+    SpecialJobReceivedEvent *getJobEvent(u32 threadIdx) noexcept { return &specialJobEvents[threadIdx]; }
     void onSpecialThreadExit() noexcept { allSpecialsFinishedEvent.count_down(); }
 
     /**
-     * Allocates COUNT number of enqueue tokens, One for each special thread to be used for en queuing job from threads
+     * Allocates COUNT number of enqueue tokens, One for each special thread to be used for en queuing job from threads for each priority
      */
     SpecialQHazardToken *allocateEnqTokens() noexcept
     {
@@ -123,16 +129,28 @@ public:
             return tokens;
         }
 
-        for (u32 specialThreadIdx = 0; specialThreadIdx < COUNT; ++specialThreadIdx)
+        for (u32 threadIdx = 0; threadIdx < COUNT; ++threadIdx)
         {
-            new (tokens + specialThreadIdx) SpecialQHazardToken(getThreadJobsQueue(specialThreadIdx)->getHazardToken());
+            for (EJobPriority priority = Priority_Critical; priority < Priority_MaxPriority; priority = EJobPriority(priority + 1))
+            {
+                new (tokens + pAndTTypeToIdx(threadIdx, priority))
+                    SpecialQHazardToken(getThreadJobsQueue(threadIdx, priority)->getHazardToken());
+            }
         }
         return tokens;
     }
 
 private:
     static constexpr u32 threadTypeToIdx(EJobThreadType threadType) { return u32(threadType) - (u32(EJobThreadType::MainThread) + 1); }
-    static constexpr EJobThreadType idxToThreadType(u32 idx) { return EJobThreadType(idx + 1 + u32(EJobThreadType::MainThread)); }
+    static constexpr EJobThreadType idxToThreadType(u32 threadIdx) { return EJobThreadType(threadIdx + 1 + u32(EJobThreadType::MainThread)); }
+    // Index to job priority and thread type index
+    static constexpr u32 idxToTTypeAndP(u32 idx, EJobPriority &outPriority)
+    {
+        outPriority = idx % Priority_MaxPriority;
+        return idx / Priority_MaxPriority;
+    }
+    // Priority and thread type idx combined to get index in linear array
+    static constexpr u32 pAndTTypeToIdx(u32 threadIdx, EJobPriority priority) { return threadIdx * Priority_MaxPriority + priority; }
 
     template <u32 Idx>
     void initializeSpecialThread() noexcept;
@@ -156,9 +174,9 @@ public:
     void initialize(JobSystem *) {}
     void shutdown() {}
 
-    void enqueueJob(std::coroutine_handle<>, EJobThreadType, SpecialQHazardToken *) {}
+    void enqueueJob(std::coroutine_handle<>, EJobThreadType, EJobPriority, SpecialQHazardToken *) {}
 
-    SpecialThreadQueueType *getThreadJobsQueue(u32) { return nullptr; }
+    SpecialThreadQueueType *getThreadJobsQueue(u32, EJobPriority) { return nullptr; }
     SpecialJobReceivedEvent *getJobEvent(u32) { return nullptr; }
     void onSpecialThreadExit() {}
 
@@ -180,16 +198,11 @@ public:
     struct PerThreadData
     {
         EJobThreadType threadType;
-        WorkerQHazardToken workerEnqDqToken;
-        SpecialQHazardToken mainEnqToken;
+        WorkerQHazardToken workerEnqDqToken[Priority_MaxPriority];
+        SpecialQHazardToken mainEnqToken[Priority_MaxPriority];
         SpecialQHazardToken *specialThreadTokens;
 
-        PerThreadData(WorkerQHazardToken &&workerQToken, SpecialQHazardToken &&mainQToken, SpecialThreadsPoolType &specialThreadPool)
-            : threadType(EJobThreadType::WorkerThreads)
-            , workerEnqDqToken(std::forward<WorkerThreadQueueType::HazardToken>(workerQToken))
-            , mainEnqToken(std::forward<SpecialThreadQueueType::HazardToken>(mainQToken))
-            , specialThreadTokens(specialThreadPool.allocateEnqTokens())
-        {}
+        PerThreadData(WorkerThreadQueueType *workerQs, SpecialThreadQueueType *mainQs, SpecialThreadsPoolType &specialThreadPool);
     };
 
 #define NOSPECIALTHREAD_ENUM_FIRST(ThreadType) No##ThreadType = BitMasksStart,
@@ -223,7 +236,7 @@ private:
     u32 threadingConstraints = EThreadingConstraint::NoConstraints;
 
     u32 workersCount;
-    WorkerThreadQueueType workerJobs;
+    WorkerThreadQueueType workerJobs[Priority_MaxPriority];
     // Binary semaphore wont work if two jobs arrive at same time, and one of 2 just ends up waiting until another job arrives
     // std::binary_semaphore workerJobEvent{0};
     std::counting_semaphore<2 * MAX_SUPPORTED_WORKERS> workerJobEvent;
@@ -232,7 +245,7 @@ private:
     // For waiting until all workers are finished
     std::latch workersFinishedEvent;
 
-    SpecialThreadQueueType mainThreadJobs;
+    SpecialThreadQueueType mainThreadJobs[Priority_MaxPriority];
     // 0 will be used by main thread loop itself while 1 will be used by worker threads to run until shutdown is called
     std::atomic_flag bExitMain[2];
     // Main thread tick function type, This function gets ticked in main thread for every loop and then main job queue will be emptied
@@ -255,7 +268,10 @@ public:
     void exitMain() noexcept { bExitMain[0].test_and_set(std::memory_order::release); }
     void shutdown() noexcept;
 
-    void enqueueJob(std::coroutine_handle<> coro, EJobThreadType enqueueToThread = EJobThreadType::WorkerThreads) noexcept;
+    void enqueueJob(
+        std::coroutine_handle<> coro, EJobThreadType enqueueToThread = EJobThreadType::WorkerThreads,
+        EJobPriority priority = EJobPriority::Priority_Normal
+    ) noexcept;
 
     EJobThreadType getCurrentThreadType() const noexcept
     {
@@ -292,10 +308,24 @@ private:
         tlData->threadType = SpecialThreadType;
         while (true)
         {
-            while (void *coroPtr = specialThreadsPool.getThreadJobsQueue(SpecialThreadIdx)->dequeue())
+            // Execute all tasks in Higher priority to lower priority order
+            void *coroPtr = nullptr;
+            for (EJobPriority priority = Priority_Critical; priority < Priority_MaxPriority && coroPtr == nullptr;
+                 priority = EJobPriority(priority + 1))
+            {
+                coroPtr = specialThreadsPool.getThreadJobsQueue(SpecialThreadIdx, priority)->dequeue();
+            }
+            while (coroPtr)
             {
                 COPAT_PROFILER_SCOPE(COPAT_PROFILER_CHAR("CopatSpecialJob"));
                 std::coroutine_handle<>::from_address(coroPtr).resume();
+
+                coroPtr = nullptr;
+                for (EJobPriority priority = Priority_Critical; priority < Priority_MaxPriority && coroPtr == nullptr;
+                     priority = EJobPriority(priority + 1))
+                {
+                    coroPtr = specialThreadsPool.getThreadJobsQueue(SpecialThreadIdx, priority)->dequeue();
+                }
             }
 
             if (bExitMain[1].test(std::memory_order::relaxed))
@@ -306,7 +336,8 @@ private:
             specialThreadsPool.getJobEvent(SpecialThreadIdx)->wait();
         }
         specialThreadsPool.onSpecialThreadExit();
-        memDelete(tlData);
+
+        CoPaTMemAlloc::memFree(tlData);
     }
 };
 
@@ -362,9 +393,8 @@ void SpecialThreadsPool<SpecialThreadsCount>::EnqueueTokensAllocator::initialize
         CoPaTMemAlloc::memFree(hazardTokens);
         hazardTokens = nullptr;
     }
-    totalTokens = totalThreads;
-    hazardTokens
-        = (SpecialQHazardToken *)(CoPaTMemAlloc::memAlloc(sizeof(SpecialQHazardToken) * totalThreads * COUNT, alignof(SpecialQHazardToken)));
+    totalTokens = totalThreads * COUNT * Priority_MaxPriority;
+    hazardTokens = (SpecialQHazardToken *)(CoPaTMemAlloc::memAlloc(sizeof(SpecialQHazardToken) * totalTokens, alignof(SpecialQHazardToken)));
     stackTop.store(0, std::memory_order::relaxed);
 }
 
@@ -381,7 +411,7 @@ void SpecialThreadsPool<SpecialThreadsCount>::EnqueueTokensAllocator::release() 
 template <u32 SpecialThreadsCount>
 SpecialQHazardToken *SpecialThreadsPool<SpecialThreadsCount>::EnqueueTokensAllocator::allocate() noexcept
 {
-    u32 tokenIdx = stackTop.fetch_add(COUNT, std::memory_order::acq_rel);
+    u32 tokenIdx = stackTop.fetch_add(COUNT * Priority_MaxPriority, std::memory_order::acq_rel);
     if (tokenIdx < totalTokens)
     {
         return hazardTokens + tokenIdx;

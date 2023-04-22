@@ -135,13 +135,17 @@ public:
         HazardPointer(HazardPointersManager &manager)
             : record(manager.acquireRecord())
         {}
-        HazardPointer(HazardPointer &&other)
+        HazardPointer(HazardPointer &&other) noexcept
             : record(other.record)
         {
             other.record = nullptr;
         }
-        HazardPointer &operator= (HazardPointer &&other)
+        HazardPointer &operator= (HazardPointer &&other) noexcept
         {
+            if (record)
+            {
+                record->free();
+            }
             record = other.record;
             other.record = nullptr;
             return *this;

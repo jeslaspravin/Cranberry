@@ -35,7 +35,23 @@ public:
     void await_suspend(std::coroutine_handle<PromiseType> h) const noexcept
     {
         COPAT_ASSERT(h.promise().enqToJobSystem);
-        h.promise().enqToJobSystem->enqueueJob(h, SwitchToThread);
+        h.promise().enqToJobSystem->enqueueJob(h, SwitchToThread, h.promise().jobPriority);
+    }
+    constexpr void await_resume() const noexcept {}
+};
+
+struct YieldAwaiter
+{
+public:
+    YieldAwaiter() = default;
+
+    // Even if nothing is awaiting it is still better to suspend as something might await on it after it if finished
+    constexpr bool await_ready() const noexcept { return false; }
+    template <JobSystemPromiseType PromiseType>
+    void await_suspend(std::coroutine_handle<PromiseType> h) const noexcept
+    {
+        COPAT_ASSERT(h.promise().enqToJobSystem);
+        h.promise().enqToJobSystem->enqueueJob(h, h.promise().enqToJobSystem->getCurrentThreadType(), h.promise().jobPriority);
     }
     constexpr void await_resume() const noexcept {}
 };
@@ -44,6 +60,7 @@ class JobSystemPromiseBase
 {
 public:
     JobSystem *enqToJobSystem = nullptr;
+    EJobPriority jobPriority = EJobPriority::Priority_Normal;
 
 private:
     std::coroutine_handle<> continuation = nullptr;
@@ -70,8 +87,9 @@ public:
     };
 
 public:
-    JobSystemPromiseBase(JobSystem *jobSystem)
+    JobSystemPromiseBase(JobSystem *jobSystem, EJobPriority priority)
         : enqToJobSystem(jobSystem)
+        , jobPriority(priority)
     {}
 
     bool trySetContinuation(std::coroutine_handle<> newContinuation) noexcept
@@ -104,6 +122,7 @@ class JobSystemPromiseBaseMC
 {
 public:
     JobSystem *enqToJobSystem = nullptr;
+    EJobPriority jobPriority = EJobPriority::Priority_Normal;
 
 private:
     ContinuationEventChain eventChain;
@@ -114,8 +133,9 @@ private:
     SpinLock continuationLock;
 
 public:
-    JobSystemPromiseBaseMC(JobSystem *jobSystem)
+    JobSystemPromiseBaseMC(JobSystem *jobSystem, EJobPriority priority)
         : enqToJobSystem(jobSystem)
+        , jobPriority(priority)
     {}
 
     ~JobSystemPromiseBaseMC()
@@ -221,7 +241,7 @@ public:
  * scheduled in appropriate thread at initial suspend InMainThread - Determines the thread in which initial_suspend queues this coroutine Task
  * that is not shareable ie) more than one copy cannot exist
  */
-template <typename RetType, typename BasePromiseType, bool EnqAtInitialSuspend, EJobThreadType EnqueueInThread>
+template <typename RetType, typename BasePromiseType, bool EnqAtInitialSuspend, EJobThreadType EnqueueInThread, EJobPriority Priority>
 class JobSystemTaskType
 {
 public:
@@ -272,22 +292,29 @@ public:
     public:
         RetTypeStorage returnStore;
         using BasePromiseType::enqToJobSystem;
+        using BasePromiseType::jobPriority;
 
     public:
         /**
          * User provided JobSystem. First argument of coroutine function must be JobSystem & or JobSystem *
          */
-        template <typename... FunctionParams>
-        PromiseType(JobSystem &jobSystem, FunctionParams... params)
-            : BasePromiseType(&jobSystem)
+        PromiseType(JobSystem &jobSystem, auto...)
+            : BasePromiseType(&jobSystem, Priority)
         {}
-        template <typename... FunctionParams>
-        PromiseType(JobSystem *jobSystem, FunctionParams... params)
-            : BasePromiseType(jobSystem)
+        PromiseType(JobSystem *jobSystem, auto...)
+            : BasePromiseType(jobSystem, Priority)
         {}
-
+        PromiseType(JobSystem &jobSystem, EJobPriority priority, auto...)
+            : BasePromiseType(&jobSystem, priority)
+        {}
+        PromiseType(JobSystem *jobSystem, EJobPriority priority, auto...)
+            : BasePromiseType(jobSystem, priority)
+        {}
+        PromiseType(EJobPriority priority, auto...)
+            : BasePromiseType(JobSystem::get(), priority)
+        {}
         PromiseType()
-            : BasePromiseType(JobSystem::get())
+            : BasePromiseType(JobSystem::get(), Priority)
         {}
 
         JobSystemTaskType get_return_object() noexcept { return JobSystemTaskType{ std::coroutine_handle<PromiseType>::from_promise(*this) }; }
@@ -296,7 +323,7 @@ public:
             if constexpr (EnqAtInitialSuspend)
             {
                 COPAT_ASSERT(enqToJobSystem);
-                enqToJobSystem->enqueueJob(std::coroutine_handle<PromiseType>::from_promise(*this), EnqueueInThread);
+                enqToJobSystem->enqueueJob(std::coroutine_handle<PromiseType>::from_promise(*this), EnqueueInThread, jobPriority);
                 return std::suspend_always{};
             }
             else
@@ -326,8 +353,8 @@ public:
 /**
  * Specialization for void return type
  */
-template <typename BasePromiseType, bool EnqAtInitialSuspend, EJobThreadType EnqueueInThread>
-class JobSystemTaskType<void, BasePromiseType, EnqAtInitialSuspend, EnqueueInThread>
+template <typename BasePromiseType, bool EnqAtInitialSuspend, EJobThreadType EnqueueInThread, EJobPriority Priority>
+class JobSystemTaskType<void, BasePromiseType, EnqAtInitialSuspend, EnqueueInThread, Priority>
 {
 public:
     class PromiseType;
@@ -374,22 +401,29 @@ public:
     {
     public:
         using BasePromiseType::enqToJobSystem;
+        using BasePromiseType::jobPriority;
 
     public:
         /**
          * User provided JobSystem. First argument of coroutine function must be JobSystem & or JobSystem *
          */
-        template <typename... FunctionParams>
-        PromiseType(JobSystem &jobSystem, FunctionParams...)
-            : BasePromiseType(&jobSystem)
+        PromiseType(JobSystem &jobSystem, auto...)
+            : BasePromiseType(&jobSystem, Priority)
         {}
-        template <typename... FunctionParams>
-        PromiseType(JobSystem *jobSystem, FunctionParams...)
-            : BasePromiseType(jobSystem)
+        PromiseType(JobSystem *jobSystem, auto...)
+            : BasePromiseType(jobSystem, Priority)
         {}
-
+        PromiseType(JobSystem &jobSystem, EJobPriority priority, auto...)
+            : BasePromiseType(&jobSystem, priority)
+        {}
+        PromiseType(JobSystem *jobSystem, EJobPriority priority, auto...)
+            : BasePromiseType(jobSystem, priority)
+        {}
+        PromiseType(EJobPriority priority, auto...)
+            : BasePromiseType(JobSystem::get(), priority)
+        {}
         PromiseType()
-            : BasePromiseType(JobSystem::get())
+            : BasePromiseType(JobSystem::get(), Priority)
         {}
 
         JobSystemTaskType get_return_object() noexcept { return JobSystemTaskType{ std::coroutine_handle<PromiseType>::from_promise(*this) }; }
@@ -398,7 +432,7 @@ public:
             if constexpr (EnqAtInitialSuspend)
             {
                 COPAT_ASSERT(enqToJobSystem);
-                enqToJobSystem->enqueueJob(std::coroutine_handle<PromiseType>::from_promise(*this), EnqueueInThread);
+                enqToJobSystem->enqueueJob(std::coroutine_handle<PromiseType>::from_promise(*this), EnqueueInThread, jobPriority);
                 return std::suspend_always{};
             }
             else
@@ -427,7 +461,7 @@ public:
  * scheduled in appropriate thread at initial suspend InMainThread - Determines the thread in which initial_suspend queues this coroutine Task
  * that is shareable and the coroutine handle is reference counted to ensure it gets destroyed after all Task copies gets destroyed
  */
-template <typename RetType, typename BasePromiseType, bool EnqAtInitialSuspend, EJobThreadType EnqueueInThread>
+template <typename RetType, typename BasePromiseType, bool EnqAtInitialSuspend, EJobThreadType EnqueueInThread, EJobPriority Priority>
 class JobSystemShareableTaskType
 {
 public:
@@ -456,22 +490,29 @@ public:
     public:
         RetTypeStorage returnStore;
         using BasePromiseType::enqToJobSystem;
+        using BasePromiseType::jobPriority;
 
     public:
         /**
          * User provided JobSystem. First argument of coroutine function must be JobSystem & or JobSystem *
          */
-        template <typename... FunctionParams>
-        PromiseType(JobSystem &jobSystem, FunctionParams... params)
-            : BasePromiseType(&jobSystem)
+        PromiseType(JobSystem &jobSystem, auto...)
+            : BasePromiseType(&jobSystem, Priority)
         {}
-        template <typename... FunctionParams>
-        PromiseType(JobSystem *jobSystem, FunctionParams... params)
-            : BasePromiseType(jobSystem)
+        PromiseType(JobSystem *jobSystem, auto...)
+            : BasePromiseType(jobSystem, Priority)
         {}
-
+        PromiseType(JobSystem &jobSystem, EJobPriority priority, auto...)
+            : BasePromiseType(&jobSystem, priority)
+        {}
+        PromiseType(JobSystem *jobSystem, EJobPriority priority, auto...)
+            : BasePromiseType(jobSystem, priority)
+        {}
+        PromiseType(EJobPriority priority, auto...)
+            : BasePromiseType(JobSystem::get(), priority)
+        {}
         PromiseType()
-            : BasePromiseType(JobSystem::get())
+            : BasePromiseType(JobSystem::get(), Priority)
         {}
 
         JobSystemShareableTaskType get_return_object() noexcept
@@ -483,7 +524,7 @@ public:
             if constexpr (EnqAtInitialSuspend)
             {
                 COPAT_ASSERT(enqToJobSystem);
-                enqToJobSystem->enqueueJob(std::coroutine_handle<PromiseType>::from_promise(*this), EnqueueInThread);
+                enqToJobSystem->enqueueJob(std::coroutine_handle<PromiseType>::from_promise(*this), EnqueueInThread, jobPriority);
                 return std::suspend_always{};
             }
             else
@@ -514,8 +555,8 @@ public:
 /**
  * Specialization for void return type
  */
-template <typename BasePromiseType, bool EnqAtInitialSuspend, EJobThreadType EnqueueInThread>
-class JobSystemShareableTaskType<void, BasePromiseType, EnqAtInitialSuspend, EnqueueInThread>
+template <typename BasePromiseType, bool EnqAtInitialSuspend, EJobThreadType EnqueueInThread, EJobPriority Priority>
+class JobSystemShareableTaskType<void, BasePromiseType, EnqAtInitialSuspend, EnqueueInThread, Priority>
 {
 public:
     class PromiseType;
@@ -540,22 +581,29 @@ public:
     {
     public:
         using BasePromiseType::enqToJobSystem;
+        using BasePromiseType::jobPriority;
 
     public:
         /**
          * User provided JobSystem. First argument of coroutine function must be JobSystem & or JobSystem *
          */
-        template <typename... FunctionParams>
-        PromiseType(JobSystem &jobSystem, FunctionParams... params)
-            : BasePromiseType(&jobSystem)
+        PromiseType(JobSystem &jobSystem, auto...)
+            : BasePromiseType(&jobSystem, Priority)
         {}
-        template <typename... FunctionParams>
-        PromiseType(JobSystem *jobSystem, FunctionParams... params)
-            : BasePromiseType(jobSystem)
+        PromiseType(JobSystem *jobSystem, auto...)
+            : BasePromiseType(jobSystem, Priority)
         {}
-
+        PromiseType(JobSystem &jobSystem, EJobPriority priority, auto...)
+            : BasePromiseType(&jobSystem, priority)
+        {}
+        PromiseType(JobSystem *jobSystem, EJobPriority priority, auto...)
+            : BasePromiseType(jobSystem, priority)
+        {}
+        PromiseType(EJobPriority priority, auto...)
+            : BasePromiseType(JobSystem::get(), priority)
+        {}
         PromiseType()
-            : BasePromiseType(JobSystem::get())
+            : BasePromiseType(JobSystem::get(), Priority)
         {}
 
         JobSystemShareableTaskType get_return_object() noexcept
@@ -567,7 +615,7 @@ public:
             if constexpr (EnqAtInitialSuspend)
             {
                 COPAT_ASSERT(enqToJobSystem);
-                enqToJobSystem->enqueueJob(std::coroutine_handle<PromiseType>::from_promise(*this), EnqueueInThread);
+                enqToJobSystem->enqueueJob(std::coroutine_handle<PromiseType>::from_promise(*this), EnqueueInThread, jobPriority);
                 return std::suspend_always{};
             }
             else
@@ -591,49 +639,66 @@ public:
     constexpr void await_resume() const {}
 };
 
-// Some common typedefs
+//////////////////////////////////////////////////////////////////////////
+/// Some common typedefs
+//////////////////////////////////////////////////////////////////////////
+
+// No returns
+
+/**
+ * Single awaitable task with no return type
+ */
+template <bool EnqAtInitSuspend, EJobThreadType EnqueueInThread, EJobPriority Priority>
+using JobSystemNoReturnTask = JobSystemTaskType<void, JobSystemPromiseBase, EnqAtInitSuspend, EnqueueInThread, Priority>;
+/**
+ * Multi awaitable task with no return type
+ */
+template <bool EnqAtInitSuspend, EJobThreadType EnqueueInThread, EJobPriority Priority>
+using JobSystemNoReturnTaskMC = JobSystemTaskType<void, JobSystemPromiseBaseMC, EnqAtInitSuspend, EnqueueInThread, Priority>;
 
 /**
  * Single awaitable, Auto enqueue task with no return type
  */
-template <EJobThreadType EnqueueInThread>
-using JobSystemEnqTask = JobSystemTaskType<void, JobSystemPromiseBase, true, EnqueueInThread>;
+template <EJobThreadType EnqueueInThread, EJobPriority Priority>
+using JobSystemEnqTask = JobSystemNoReturnTask<true, EnqueueInThread, Priority>;
 /**
  * Multi awaitable, Auto enqueue task with no return type
  */
-template <EJobThreadType EnqueueInThread>
-using JobSystemEnqTaskMultiAwait = JobSystemTaskType<void, JobSystemPromiseBaseMC, true, EnqueueInThread>;
+template <EJobThreadType EnqueueInThread, EJobPriority Priority>
+using JobSystemEnqTaskMC = JobSystemNoReturnTaskMC<true, EnqueueInThread, Priority>;
 
 /**
- * Single awaitable, Enqueue to Worker or Main thread specializations
+ * Single awaitable, Enqueue to Worker or Main thread specializations, no return type
  */
-using JobSystemMainThreadTask = JobSystemEnqTask<EJobThreadType::MainThread>;
-using JobSystemWorkerThreadTask = JobSystemEnqTask<EJobThreadType::WorkerThreads>;
+using JobSystemMainThreadTask = JobSystemEnqTask<EJobThreadType::MainThread, EJobPriority::Priority_Normal>;
+using JobSystemWorkerThreadTask = JobSystemEnqTask<EJobThreadType::WorkerThreads, EJobPriority::Priority_Normal>;
 
 /**
- * Multi awaitable, Enqueue to Worker or Main thread specializations
+ * Multi awaitable, Enqueue to Worker or Main thread specializations, no return type
  */
-using JobSystemMainThreadTaskMC = JobSystemEnqTaskMultiAwait<EJobThreadType::MainThread>;
-using JobSystemWorkerThreadTaskMC = JobSystemEnqTaskMultiAwait<EJobThreadType::WorkerThreads>;
+using JobSystemMainThreadTaskMC = JobSystemEnqTaskMC<EJobThreadType::MainThread, EJobPriority::Priority_Normal>;
+using JobSystemWorkerThreadTaskMC = JobSystemEnqTaskMC<EJobThreadType::WorkerThreads, EJobPriority::Priority_Normal>;
 
 /**
- * Single awaitable, Manual await enqueue task with no return type
+ * Single awaitable, Manual await task with no return type
  */
-using JobSystemTask = JobSystemTaskType<void, JobSystemPromiseBase, false, EJobThreadType::MainThread>;
+using JobSystemTask = JobSystemNoReturnTask<false, EJobThreadType::MainThread, EJobPriority::Priority_Normal>;
 /**
  * Multi awaitable, Manual await task with no return type
  */
-using JobSystemTaskMC = JobSystemTaskType<void, JobSystemPromiseBaseMC, false, EJobThreadType::MainThread>;
+using JobSystemTaskMC = JobSystemNoReturnTaskMC<false, EJobThreadType::MainThread, EJobPriority::Priority_Normal>;
+
+// With return type
 
 /**
  * Single awaitable task with return type
  */
-template <typename RetType, bool EnqAtInitSuspend, EJobThreadType EnqueueInThread>
-using JobSystemReturnableTask = JobSystemTaskType<RetType, JobSystemPromiseBase, EnqAtInitSuspend, EnqueueInThread>;
+template <typename RetType, bool EnqAtInitSuspend, EJobThreadType EnqueueInThread, EJobPriority Priority>
+using JobSystemReturnableTask = JobSystemTaskType<RetType, JobSystemPromiseBase, EnqAtInitSuspend, EnqueueInThread, Priority>;
 /**
  * Multi awaitable task with return type
  */
-template <typename RetType, bool EnqAtInitSuspend, EJobThreadType EnqueueInThread>
-using JobSystemReturnableTaskMC = JobSystemTaskType<RetType, JobSystemPromiseBaseMC, EnqAtInitSuspend, EnqueueInThread>;
+template <typename RetType, bool EnqAtInitSuspend, EJobThreadType EnqueueInThread, EJobPriority Priority>
+using JobSystemReturnableTaskMC = JobSystemTaskType<RetType, JobSystemPromiseBaseMC, EnqAtInitSuspend, EnqueueInThread, Priority>;
 
 } // namespace copat

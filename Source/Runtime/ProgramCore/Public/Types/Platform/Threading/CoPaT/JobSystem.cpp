@@ -185,7 +185,10 @@ void JobSystem::shutdown() noexcept
     }
 }
 
-void JobSystem::enqueueJob(std::coroutine_handle<> coro, EJobThreadType enqueueToThread /*= EJobThreadType::WorkerThreads*/) noexcept
+void JobSystem::enqueueJob(
+    std::coroutine_handle<> coro, EJobThreadType enqueueToThread /*= EJobThreadType::WorkerThreads*/,
+    EJobPriority priority /*= EJobPriority::Priority_Normal*/
+) noexcept
 {
     PerThreadData *threadData = getPerThreadData();
     enqueueToThread = enqToThreadType(enqueueToThread);
@@ -196,11 +199,11 @@ void JobSystem::enqueueJob(std::coroutine_handle<> coro, EJobThreadType enqueueT
 
         if (threadData)
         {
-            mainThreadJobs.enqueue(coro.address(), threadData->mainEnqToken);
+            mainThreadJobs[priority].enqueue(coro.address(), threadData->mainEnqToken[priority]);
         }
         else
         {
-            mainThreadJobs.enqueue(coro.address());
+            mainThreadJobs[priority].enqueue(coro.address());
         }
     }
     else if (enqueueToThread == EJobThreadType::WorkerThreads)
@@ -210,11 +213,11 @@ void JobSystem::enqueueJob(std::coroutine_handle<> coro, EJobThreadType enqueueT
 
         if (threadData)
         {
-            workerJobs.enqueue(coro.address(), threadData->workerEnqDqToken);
+            workerJobs[priority].enqueue(coro.address(), threadData->workerEnqDqToken[priority]);
         }
         else
         {
-            workerJobs.enqueue(coro.address());
+            workerJobs[priority].enqueue(coro.address());
         }
         // We do not have to be very strict here as long as one or two is free and we get 0 or nothing is free and we release one or two
         // more it is fine
@@ -230,21 +233,33 @@ void JobSystem::enqueueJob(std::coroutine_handle<> coro, EJobThreadType enqueueT
         {
             // Special thread queue token must not be null in this case
             COPAT_ASSERT(threadData->specialThreadTokens);
-            specialThreadsPool.enqueueJob(coro, enqueueToThread, threadData->specialThreadTokens);
+            specialThreadsPool.enqueueJob(coro, enqueueToThread, priority, threadData->specialThreadTokens);
         }
         else
         {
-            specialThreadsPool.enqueueJob(coro, enqueueToThread, nullptr);
+            specialThreadsPool.enqueueJob(coro, enqueueToThread, priority, nullptr);
         }
     }
 }
+
+JobSystem::PerThreadData::PerThreadData(
+    WorkerThreadQueueType *workerQs, SpecialThreadQueueType *mainQs, SpecialThreadsPoolType &specialThreadPool
+)
+    : threadType(EJobThreadType::WorkerThreads)
+    , workerEnqDqToken{ workerQs[Priority_Critical].getHazardToken(), workerQs[Priority_Normal].getHazardToken(),
+                        workerQs[Priority_Low].getHazardToken() }
+    , mainEnqToken{ mainQs[Priority_Critical].getHazardToken(), mainQs[Priority_Normal].getHazardToken(),
+                    mainQs[Priority_Low].getHazardToken() }
+    , specialThreadTokens(specialThreadPool.allocateEnqTokens())
+{}
 
 copat::JobSystem::PerThreadData &JobSystem::getOrCreatePerThreadData() noexcept
 {
     PerThreadData *threadData = (PerThreadData *)PlatformThreadingFuncs::getTlsSlotValue(tlsSlot);
     if (!threadData)
     {
-        PerThreadData *newThreadData = memNew<PerThreadData>(workerJobs.getHazardToken(), mainThreadJobs.getHazardToken(), specialThreadsPool);
+        PerThreadData *newThreadData = memNew<PerThreadData>(workerJobs, mainThreadJobs, specialThreadsPool);
+
         PlatformThreadingFuncs::setTlsSlotValue(tlsSlot, newThreadData);
         threadData = (PerThreadData *)PlatformThreadingFuncs::getTlsSlotValue(tlsSlot);
     }
@@ -264,10 +279,24 @@ void JobSystem::runMain() noexcept
             mainThreadTick(userData);
         }
 
-        while (void *coroPtr = mainThreadJobs.dequeue())
+        // Execute all tasks in Higher priority to lower priority order
+        void *coroPtr = nullptr;
+        for (EJobPriority priority = Priority_Critical; priority < Priority_MaxPriority && coroPtr == nullptr;
+             priority = EJobPriority(priority + 1))
+        {
+            coroPtr = mainThreadJobs[priority].dequeue();
+        }
+        while (coroPtr)
         {
             COPAT_PROFILER_SCOPE(COPAT_PROFILER_CHAR("CopatMainJob"));
             std::coroutine_handle<>::from_address(coroPtr).resume();
+
+            coroPtr = nullptr;
+            for (EJobPriority priority = Priority_Critical; priority < Priority_MaxPriority && coroPtr == nullptr;
+                 priority = EJobPriority(priority + 1))
+            {
+                coroPtr = mainThreadJobs[priority].dequeue();
+            }
         }
 
         if (bExitMain[0].test(std::memory_order::relaxed))
@@ -283,10 +312,24 @@ void JobSystem::doWorkerJobs() noexcept
     tlData->threadType = EJobThreadType::WorkerThreads;
     while (true)
     {
-        while (void *coroPtr = workerJobs.dequeue(tlData->workerEnqDqToken))
+        // Execute all tasks in Higher priority to lower priority order
+        void *coroPtr = nullptr;
+        for (EJobPriority priority = Priority_Critical; priority < Priority_MaxPriority && coroPtr == nullptr;
+             priority = EJobPriority(priority + 1))
+        {
+            coroPtr = workerJobs[priority].dequeue();
+        }
+        while (coroPtr)
         {
             COPAT_PROFILER_SCOPE(COPAT_PROFILER_CHAR("CopatWorkerJob"));
             std::coroutine_handle<>::from_address(coroPtr).resume();
+
+            coroPtr = nullptr;
+            for (EJobPriority priority = Priority_Critical; priority < Priority_MaxPriority && coroPtr == nullptr;
+                 priority = EJobPriority(priority + 1))
+            {
+                coroPtr = workerJobs[priority].dequeue();
+            }
         }
 
         if (bExitMain[1].test(std::memory_order::relaxed))

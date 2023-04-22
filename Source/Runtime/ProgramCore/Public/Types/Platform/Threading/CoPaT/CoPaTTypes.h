@@ -37,6 +37,18 @@ enum class EJobThreadType
     MaxThreads
 };
 
+enum EJobPriority
+{
+    Priority_Critical = 0,
+    Priority_Normal,
+    Priority_Low,
+    Priority_MaxPriority
+};
+
+//////////////////////////////////////////////////////////////////////////
+/// Copat memory allocators
+//////////////////////////////////////////////////////////////////////////
+
 #ifndef OVERRIDE_MEMORY_ALLOCATOR
 struct DefaultCoPaTMemAlloc
 {

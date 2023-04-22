@@ -20,7 +20,7 @@ namespace copat
 class JobSystem;
 class JobSystemPromiseBase;
 
-template <typename RetType, typename BasePromiseType, bool EnqAtInitialSuspend, EJobThreadType EnqueueInThread>
+template <typename RetType, typename BasePromiseType, bool EnqAtInitialSuspend, EJobThreadType EnqueueInThread, EJobPriority Priority>
 class JobSystemTaskType;
 
 template <typename AwaitingCollection>
@@ -28,11 +28,11 @@ class AwaitAllTasks;
 
 struct NormalFuncAwaiter;
 
-using DispatchAwaitableType = JobSystemTaskType<void, JobSystemPromiseBase, true, EJobThreadType::WorkerThreads>;
+using DispatchAwaitableType = JobSystemTaskType<void, JobSystemPromiseBase, true, EJobThreadType::WorkerThreads, EJobPriority::Priority_Normal>;
 using DispatchFunctionType = FunctionType<void, u32>;
 
 COPAT_EXPORT_SYM AwaitAllTasks<std::vector<DispatchAwaitableType>>
-dispatch(JobSystem *jobSys, const DispatchFunctionType &callback, u32 count) noexcept;
+dispatch(JobSystem *jobSys, const DispatchFunctionType &callback, u32 count, EJobPriority jobPriority = EJobPriority::Priority_Normal) noexcept;
 
 template <typename FuncType, typename... Args>
 NormalFuncAwaiter fireAndForget(FuncType &&func, Args &&...args) noexcept

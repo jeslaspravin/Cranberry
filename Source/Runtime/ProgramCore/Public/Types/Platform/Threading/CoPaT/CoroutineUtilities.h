@@ -12,6 +12,7 @@
 #pragma once
 
 #include "CoPaTConfig.h"
+#include "CoPaTTypes.h"
 
 #include <coroutine>
 #include <concepts>
@@ -140,17 +141,26 @@ template <typename AwaitableType>
 using GetAwaiterType_t = GetAwaiterType<AwaitableType>::type;
 
 //////////////////////////////////////////////////////////////////////////
-/// Copat type traits
+/// CoPaT type traits
 //////////////////////////////////////////////////////////////////////////
 
 class JobSystem;
 
 template <typename T>
-using IsJobSystemPromiseType = std::is_same<decltype(T::enqToJobSystem), JobSystem *>;
+using IsJobSystemPromiseType
+    = std::conjunction<std::is_same<decltype(T::enqToJobSystem), JobSystem *>, std::is_same<decltype(T::jobPriority), EJobPriority>>;
 template <typename T>
 constexpr bool IsJobSystemPromiseType_v = IsJobSystemPromiseType<T>::value;
+
 template <typename T>
-concept JobSystemPromiseType = IsJobSystemPromiseType_v<T>;
+concept JobSystemPromiseType = requires {
+    {
+        T::enqToJobSystem
+    } -> std::convertible_to<JobSystem *>;
+    {
+        T::jobPriority
+    } -> std::convertible_to<EJobPriority>;
+};
 
 //////////////////////////////////////////////////////////////////////////
 /// Awaiter/Awaitable
@@ -187,14 +197,25 @@ public:
     {
     public:
         JobSystem *enqToJobSystem = nullptr;
+        EJobPriority jobPriority = EJobPriority::Priority_Normal;
 
-        template <typename... FunctionParams>
-        PromiseType(JobSystem &jobSystem, FunctionParams... params)
+        PromiseType(JobSystem &jobSystem, auto...)
             : enqToJobSystem(&jobSystem)
         {}
-        template <typename... FunctionParams>
-        PromiseType(JobSystem *jobSystem, FunctionParams... params)
+        PromiseType(JobSystem *jobSystem, auto...)
             : enqToJobSystem(jobSystem)
+        {}
+        PromiseType(JobSystem &jobSystem, EJobPriority priority, auto...)
+            : enqToJobSystem(&jobSystem)
+            , jobPriority(priority)
+        {}
+        PromiseType(JobSystem *jobSystem, EJobPriority priority, auto...)
+            : enqToJobSystem(jobSystem)
+            , jobPriority(priority)
+        {}
+        PromiseType(EJobPriority priority, auto...)
+            : PromiseType()
+            , jobPriority(priority)
         {}
 
         COPAT_EXPORT_SYM PromiseType();
