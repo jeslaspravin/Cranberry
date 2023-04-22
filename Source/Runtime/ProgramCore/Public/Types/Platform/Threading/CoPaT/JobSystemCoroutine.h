@@ -23,34 +23,28 @@ COPAT_NS_INLINED
 namespace copat
 {
 
-class JobSystem;
-
 template <EJobThreadType SwitchToThread>
 struct SwitchJobThreadAwaiter
 {
-
-    JobSystem *enqToJobSystem = nullptr;
-
 public:
-    SwitchJobThreadAwaiter(JobSystem &jobSystem)
-        : enqToJobSystem(&jobSystem)
-    {}
-    SwitchJobThreadAwaiter()
-        : enqToJobSystem(JobSystem::get())
-    {}
+    SwitchJobThreadAwaiter() = default;
 
     // Even if nothing is awaiting it is still better to suspend as something might await on it after it if finished
     constexpr bool await_ready() const noexcept { return false; }
-    void await_suspend(std::coroutine_handle<> h) const noexcept
+    template <JobSystemPromiseType PromiseType>
+    void await_suspend(std::coroutine_handle<PromiseType> h) const noexcept
     {
-        COPAT_ASSERT(enqToJobSystem);
-        enqToJobSystem->enqueueJob(h, SwitchToThread);
+        COPAT_ASSERT(h.promise().enqToJobSystem);
+        h.promise().enqToJobSystem->enqueueJob(h, SwitchToThread);
     }
     constexpr void await_resume() const noexcept {}
 };
 
 class JobSystemPromiseBase
 {
+public:
+    JobSystem *enqToJobSystem = nullptr;
+
 private:
     std::coroutine_handle<> continuation = nullptr;
     // Should block any new continuation setup
@@ -74,6 +68,11 @@ public:
         }
         constexpr void await_resume() const noexcept {}
     };
+
+public:
+    JobSystemPromiseBase(JobSystem *jobSystem)
+        : enqToJobSystem(jobSystem)
+    {}
 
     bool trySetContinuation(std::coroutine_handle<> newContinuation) noexcept
     {
@@ -103,6 +102,9 @@ struct ContinuationEventChain
  */
 class JobSystemPromiseBaseMC
 {
+public:
+    JobSystem *enqToJobSystem = nullptr;
+
 private:
     ContinuationEventChain eventChain;
     ContinuationEventChain *chainTailPtrCache = &eventChain;
@@ -112,6 +114,10 @@ private:
     SpinLock continuationLock;
 
 public:
+    JobSystemPromiseBaseMC(JobSystem *jobSystem)
+        : enqToJobSystem(jobSystem)
+    {}
+
     ~JobSystemPromiseBaseMC()
     {
         chainTailPtrCache = nullptr;
@@ -265,7 +271,7 @@ public:
     {
     public:
         RetTypeStorage returnStore;
-        JobSystem *enqToJobSystem = nullptr;
+        using BasePromiseType::enqToJobSystem;
 
     public:
         /**
@@ -273,15 +279,15 @@ public:
          */
         template <typename... FunctionParams>
         PromiseType(JobSystem &jobSystem, FunctionParams... params)
-            : enqToJobSystem(&jobSystem)
+            : BasePromiseType(&jobSystem)
         {}
         template <typename... FunctionParams>
         PromiseType(JobSystem *jobSystem, FunctionParams... params)
-            : enqToJobSystem(jobSystem)
+            : BasePromiseType(jobSystem)
         {}
 
         PromiseType()
-            : enqToJobSystem(JobSystem::get())
+            : BasePromiseType(JobSystem::get())
         {}
 
         JobSystemTaskType get_return_object() noexcept { return JobSystemTaskType{ std::coroutine_handle<PromiseType>::from_promise(*this) }; }
@@ -367,7 +373,7 @@ public:
     class PromiseType : public BasePromiseType
     {
     public:
-        JobSystem *enqToJobSystem = nullptr;
+        using BasePromiseType::enqToJobSystem;
 
     public:
         /**
@@ -375,15 +381,15 @@ public:
          */
         template <typename... FunctionParams>
         PromiseType(JobSystem &jobSystem, FunctionParams...)
-            : enqToJobSystem(&jobSystem)
+            : BasePromiseType(&jobSystem)
         {}
         template <typename... FunctionParams>
         PromiseType(JobSystem *jobSystem, FunctionParams...)
-            : enqToJobSystem(jobSystem)
+            : BasePromiseType(jobSystem)
         {}
 
         PromiseType()
-            : enqToJobSystem(JobSystem::get())
+            : BasePromiseType(JobSystem::get())
         {}
 
         JobSystemTaskType get_return_object() noexcept { return JobSystemTaskType{ std::coroutine_handle<PromiseType>::from_promise(*this) }; }
@@ -449,8 +455,7 @@ public:
     {
     public:
         RetTypeStorage returnStore;
-
-        JobSystem *enqToJobSystem = nullptr;
+        using BasePromiseType::enqToJobSystem;
 
     public:
         /**
@@ -458,15 +463,15 @@ public:
          */
         template <typename... FunctionParams>
         PromiseType(JobSystem &jobSystem, FunctionParams... params)
-            : enqToJobSystem(&jobSystem)
+            : BasePromiseType(&jobSystem)
         {}
         template <typename... FunctionParams>
         PromiseType(JobSystem *jobSystem, FunctionParams... params)
-            : enqToJobSystem(jobSystem)
+            : BasePromiseType(jobSystem)
         {}
 
         PromiseType()
-            : enqToJobSystem(JobSystem::get())
+            : BasePromiseType(JobSystem::get())
         {}
 
         JobSystemShareableTaskType get_return_object() noexcept
@@ -534,7 +539,7 @@ public:
     class PromiseType : public BasePromiseType
     {
     public:
-        JobSystem *enqToJobSystem = nullptr;
+        using BasePromiseType::enqToJobSystem;
 
     public:
         /**
@@ -542,15 +547,15 @@ public:
          */
         template <typename... FunctionParams>
         PromiseType(JobSystem &jobSystem, FunctionParams... params)
-            : enqToJobSystem(&jobSystem)
+            : BasePromiseType(&jobSystem)
         {}
         template <typename... FunctionParams>
         PromiseType(JobSystem *jobSystem, FunctionParams... params)
-            : enqToJobSystem(jobSystem)
+            : BasePromiseType(jobSystem)
         {}
 
         PromiseType()
-            : enqToJobSystem(JobSystem::get())
+            : BasePromiseType(JobSystem::get())
         {}
 
         JobSystemShareableTaskType get_return_object() noexcept

@@ -140,19 +140,73 @@ template <typename AwaitableType>
 using GetAwaiterType_t = GetAwaiterType<AwaitableType>::type;
 
 //////////////////////////////////////////////////////////////////////////
+/// Copat type traits
+//////////////////////////////////////////////////////////////////////////
+
+class JobSystem;
+
+template <typename T>
+using IsJobSystemPromiseType = std::is_same<decltype(T::enqToJobSystem), JobSystem *>;
+template <typename T>
+constexpr bool IsJobSystemPromiseType_v = IsJobSystemPromiseType<T>::value;
+template <typename T>
+concept JobSystemPromiseType = IsJobSystemPromiseType_v<T>;
+
+//////////////////////////////////////////////////////////////////////////
 /// Awaiter/Awaitable
 //////////////////////////////////////////////////////////////////////////
 
-struct NormalFuncAwaiter : std::suspend_never
+/**
+ * This Awaiter should be used if you want to have a normal function to wrap another Awaitable.
+ * This keeps the other Awaitable alive until it terminates
+ *
+ * This type's promise does not takes up any space.
+ */
+struct NormalFuncAwaiter : public std::suspend_never
 {
+public:
     struct promise_type
     {
+    public:
         constexpr NormalFuncAwaiter get_return_object() const noexcept { return {}; }
         constexpr std::suspend_never initial_suspend() const noexcept { return {}; }
         constexpr std::suspend_never final_suspend() const noexcept { return {}; }
         constexpr void return_void() const noexcept {}
         constexpr void unhandled_exception() const noexcept {}
     };
+};
+
+/**
+ * This Awaiter is similar to NormalFuncAwaiter but allows using other Awaitables like copat::SwitchJobThreadsAwaiter etc. that works with
+ * JobSystem
+ */
+struct JobSystemFuncAwaiter : public std::suspend_never
+{
+public:
+    struct PromiseType
+    {
+    public:
+        JobSystem *enqToJobSystem = nullptr;
+
+        template <typename... FunctionParams>
+        PromiseType(JobSystem &jobSystem, FunctionParams... params)
+            : enqToJobSystem(&jobSystem)
+        {}
+        template <typename... FunctionParams>
+        PromiseType(JobSystem *jobSystem, FunctionParams... params)
+            : enqToJobSystem(jobSystem)
+        {}
+
+        COPAT_EXPORT_SYM PromiseType();
+
+        constexpr JobSystemFuncAwaiter get_return_object() const noexcept { return {}; }
+        constexpr std::suspend_never initial_suspend() const noexcept { return {}; }
+        constexpr std::suspend_never final_suspend() const noexcept { return {}; }
+        constexpr void return_void() const noexcept {}
+        constexpr void unhandled_exception() const noexcept {}
+    };
+
+    using promise_type = PromiseType;
 };
 
 //////////////////////////////////////////////////////////////////////////

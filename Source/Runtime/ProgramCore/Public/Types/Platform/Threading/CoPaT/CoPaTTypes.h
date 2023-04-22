@@ -22,6 +22,8 @@ COPAT_NS_INLINED
 namespace copat
 {
 
+class JobSystem;
+
 /**
  * MainThread must be 0 and any other threads must be sequential values from 1 to WorkerThreads - 1
  */
