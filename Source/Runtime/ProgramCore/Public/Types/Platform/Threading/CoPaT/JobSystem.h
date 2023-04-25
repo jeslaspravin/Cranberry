@@ -69,7 +69,7 @@ public:
     // It is okay to have as array as each queue will be aligned 2x the Cache line size
     SpecialThreadQueueType specialQueues[COUNT * Priority_MaxPriority];
     SpecialJobReceivedEvent specialJobEvents[COUNT];
-    std::latch allSpecialsFinishedEvent{ COUNT };
+    std::latch allSpecialsExitEvent{ COUNT };
 
 private:
     struct EnqueueTokensAllocator
@@ -95,7 +95,7 @@ public:
     ) noexcept
     {
         // We must not enqueue at shutdown
-        COPAT_ASSERT(!allSpecialsFinishedEvent.try_wait());
+        COPAT_ASSERT(!allSpecialsExitEvent.try_wait());
         const u32 threadIdx = threadTypeToIdx(enqueueToThread);
         const u32 queueArrayIdx = pAndTTypeToIdx(threadIdx, priority);
         if (fromThreadTokens)
@@ -114,8 +114,8 @@ public:
     {
         return &specialQueues[pAndTTypeToIdx(threadIdx, priority)];
     }
-    SpecialJobReceivedEvent *getJobEvent(u32 threadIdx) noexcept { return &specialJobEvents[threadIdx]; }
-    void onSpecialThreadExit() noexcept { allSpecialsFinishedEvent.count_down(); }
+    void waitForJob(u32 threadIdx) noexcept { return specialJobEvents[threadIdx].wait(); }
+    void onSpecialThreadExit() noexcept { allSpecialsExitEvent.count_down(); }
 
     /**
      * Allocates COUNT number of enqueue tokens, One for each special thread to be used for en queuing job from threads for each priority
@@ -177,7 +177,7 @@ public:
     void enqueueJob(std::coroutine_handle<>, EJobThreadType, EJobPriority, SpecialQHazardToken *) {}
 
     SpecialThreadQueueType *getThreadJobsQueue(u32, EJobPriority) { return nullptr; }
-    SpecialJobReceivedEvent *getJobEvent(u32) { return nullptr; }
+    void waitForJob(u32) {}
     void onSpecialThreadExit() {}
 
     SpecialQHazardToken *allocateEnqTokens() { return nullptr; }
@@ -241,9 +241,9 @@ private:
     // std::binary_semaphore workerJobEvent{0};
     std::counting_semaphore<2 * MAX_SUPPORTED_WORKERS> workerJobEvent;
     // To ensure that we do not trigger workerJobEvent when there is no free workers
-    std::atomic_uint_fast64_t availableWorkersCount;
-    // For waiting until all workers are finished
-    std::latch workersFinishedEvent;
+    std::atomic_int_fast64_t availableWorkersCount;
+    // For waiting until all workers are finishes and exits
+    std::latch workersExitEvent;
 
     SpecialThreadQueueType mainThreadJobs[Priority_MaxPriority];
     // 0 will be used by main thread loop itself while 1 will be used by worker threads to run until shutdown is called
@@ -333,7 +333,7 @@ private:
                 break;
             }
 
-            specialThreadsPool.getJobEvent(SpecialThreadIdx)->wait();
+            specialThreadsPool.waitForJob(SpecialThreadIdx);
         }
         specialThreadsPool.onSpecialThreadExit();
 
@@ -365,7 +365,7 @@ void SpecialThreadsPool<SpecialThreadsCount>::shutdown() noexcept
     {
         specialJobEvents[i].notify();
     }
-    allSpecialsFinishedEvent.wait();
+    allSpecialsExitEvent.wait();
     tokensAllocator.release();
 }
 

@@ -41,7 +41,7 @@ JobSystem::JobSystem(u32 constraints)
     , workersCount(calculateWorkersCount())
     , workerJobEvent(0)
     , availableWorkersCount(0)
-    , workersFinishedEvent(workersCount)
+    , workersExitEvent(workersCount)
 {
     for (u32 i = 0; i < u32(EJobThreadType::MaxThreads); ++i)
     {
@@ -53,7 +53,7 @@ JobSystem::JobSystem(u32 inWorkerCount, u32 constraints)
     , workersCount(inWorkerCount)
     , workerJobEvent(0)
     , availableWorkersCount(0)
-    , workersFinishedEvent(workersCount)
+    , workersExitEvent(workersCount)
 {
     for (u32 i = 0; i < u32(EJobThreadType::MaxThreads); ++i)
     {
@@ -175,7 +175,7 @@ void JobSystem::shutdown() noexcept
         while (workerJobEvent.try_acquire())
         {}
         workerJobEvent.release(workersCount);
-        workersFinishedEvent.wait();
+        workersExitEvent.wait();
     }
 
     memDelete(mainThreadTlData);
@@ -209,7 +209,7 @@ void JobSystem::enqueueJob(
     else if (enqueueToThread == EJobThreadType::WorkerThreads)
     {
         COPAT_PROFILER_SCOPE(COPAT_PROFILER_CHAR("CopatEnqueueToWorker"));
-        COPAT_ASSERT(!workersFinishedEvent.try_wait());
+        COPAT_ASSERT(!workersExitEvent.try_wait());
 
         if (threadData)
         {
@@ -219,10 +219,18 @@ void JobSystem::enqueueJob(
         {
             workerJobs[priority].enqueue(coro.address());
         }
-        // We do not have to be very strict here as long as one or two is free and we get 0 or nothing is free and we release one or two
-        // more it is fine
-        if (availableWorkersCount.load(std::memory_order::relaxed) != 0)
+        // Release here since the following add/release must happen after this sub
+        if (availableWorkersCount.fetch_sub(1, std::memory_order::release) <= 0)
         {
+            // Why (sub-add) instead of (load-sub)?
+            // Possibility that while load, the value might not have been subtracted in another thread
+            // Resulting in negative value
+            // This way whenever we go below 0 we pair it with corresponding add
+            availableWorkersCount.fetch_add(1, std::memory_order::relaxed);
+        }
+        else
+        {
+            // Trigger a worker
             workerJobEvent.release();
         }
     }
@@ -338,13 +346,11 @@ void JobSystem::doWorkerJobs() noexcept
         }
 
         // Marking that we are becoming available
-        availableWorkersCount.fetch_add(1, std::memory_order::memory_order_acq_rel);
+        availableWorkersCount.fetch_add(1, std::memory_order::acquire);
         // Wait until job available
         workerJobEvent.acquire();
-        // Starting work
-        availableWorkersCount.fetch_sub(1, std::memory_order::memory_order_acq_rel);
     }
-    workersFinishedEvent.count_down();
+    workersExitEvent.count_down();
     memDelete(tlData);
 }
 
