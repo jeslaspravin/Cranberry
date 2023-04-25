@@ -29,7 +29,7 @@ void WindowManager::init()
     const ApplicationInstance *appInstance = IApplicationModule::get()->getApplication();
     appMainWindow = new PlatformAppWindow();
 
-    appMainWindow->setWindowSize(ApplicationSettings::screenSize.get().x, ApplicationSettings::screenSize.get().y, false);
+    appMainWindow->setWindowSize(ApplicationSettings::screenSize.get().x, ApplicationSettings::screenSize.get().y);
     appMainWindow->setWindowName(appInstance->getAppName().getChar());
     appMainWindow->setWindowMode(ApplicationSettings::fullscreenMode.get());
     appMainWindow->onWindowActivated.bindObject(this, &WindowManager::activateWindow, appMainWindow);
@@ -77,7 +77,7 @@ GenericAppWindow *WindowManager::createWindow(UInt2 size, const TChar *name, Gen
     const ApplicationInstance *appInstance = IApplicationModule::get()->getApplication();
     GenericAppWindow *appWindow = new PlatformAppWindow();
 
-    appWindow->setWindowSize(size.x, size.y, false);
+    appWindow->setWindowSize(size.x, size.y);
     appWindow->setWindowName(name);
     appWindow->setWindowMode(false);
     appWindow->setParent(parent ? parent : nullptr);
@@ -256,6 +256,8 @@ void WindowManager::onWindowResize(uint32 width, uint32 height, GenericAppWindow
 {
     if (window->windowHeight != height || window->windowWidth != width)
     {
+        window->setWindowSize(width, height);
+
         ENQUEUE_RENDER_COMMAND(WindowResize)
         (
             [this, window, width,
@@ -266,7 +268,6 @@ void WindowManager::onWindowResize(uint32 width, uint32 height, GenericAppWindow
                 cmdList->flushAllcommands();
                 appModule->preWindowSurfaceUpdate(window);
 
-                window->setWindowSize(width, height, true);
                 // Update the canvas
                 WindowCanvasRef windowCanvas = getWindowCanvas(window);
                 if (windowCanvas.isValid() && !window->isMinimized())

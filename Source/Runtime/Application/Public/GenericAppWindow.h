@@ -52,12 +52,18 @@ protected:
     SimpleDelegate onDestroyRequested;
     ScreenDimDelegate onResize;
 
-protected:
-    virtual void updateWindowResources();
-
 public:
-    void windowSize(uint32 &width, uint32 &height) const;
-    void setWindowSize(uint32 width, uint32 height, bool updateResources);
+    void windowSize(uint32 &width, uint32 &height) const
+    {
+        width = windowWidth;
+        height = windowHeight;
+    }
+    void setWindowSize(uint32 width, uint32 height)
+    {
+        windowWidth = width;
+        windowHeight = height;
+    }
+
     FORCE_INLINE bool isMinimized() const { return windowWidth == 0 || windowHeight == 0; }
 
     float dpiScale() const { return dpiScaling; }

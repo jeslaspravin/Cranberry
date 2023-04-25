@@ -12,27 +12,6 @@
 #include "GenericAppWindow.h"
 #include "Logger/Logger.h"
 
-void GenericAppWindow::updateWindowResources()
-{
-    // Nothing to do here
-}
-
-void GenericAppWindow::windowSize(uint32 &width, uint32 &height) const
-{
-    width = windowWidth;
-    height = windowHeight;
-}
-
-void GenericAppWindow::setWindowSize(uint32 width, uint32 height, bool updateResources)
-{
-    windowWidth = width;
-    windowHeight = height;
-    if (updateResources)
-    {
-        updateWindowResources();
-    }
-}
-
 void GenericAppWindow::setWindowMode(bool bIsFullScreen) { bIsWindowed = !bIsFullScreen; }
 
 void GenericAppWindow::setWindowName(const TChar *wndName) { windowName = wndName; }

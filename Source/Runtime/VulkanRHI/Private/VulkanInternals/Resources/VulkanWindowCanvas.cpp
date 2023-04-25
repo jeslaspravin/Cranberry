@@ -93,7 +93,7 @@ void VulkanWindowCanvas::reinitResources()
         }
     }
 
-    ownerWindow->setWindowSize(swapchainInfo.size.x, swapchainInfo.size.y, false);
+    ownerWindow->setWindowSize(swapchainInfo.size.x, swapchainInfo.size.y);
     currentImageSize = swapchainInfo.size;
 }
 

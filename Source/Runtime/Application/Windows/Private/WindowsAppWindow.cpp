@@ -108,7 +108,7 @@ void WindowsAppWindow::destroyWindow()
     GenericAppWindow::destroyWindow();
 }
 
-bool WindowsAppWindow::isValidWindow() const { return windowHandle != nullptr && windowHandle != nullptr; }
+bool WindowsAppWindow::isValidWindow() const { return windowHandle != nullptr; }
 
 void WindowsAppWindow::pushEvent(uint32 eventType, LambdaFunction<void> &&function)
 {
