@@ -31,7 +31,6 @@ private:
     String reflectedTypesFile;
 
     FileChangesTracker *headerTracker;
-    CXIndex index;
     std::vector<SourceInformation> sources;
 
 private:

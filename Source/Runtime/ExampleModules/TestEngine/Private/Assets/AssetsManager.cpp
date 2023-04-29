@@ -18,7 +18,8 @@
 #include "Types/Platform/LFS/Paths.h"
 #include "Types/Platform/LFS/PathFunctions.h"
 #include "Types/Time.h"
-#include "Types/Platform/Threading/CoPaT/JobSystem.h"
+#include "Types/Platform/Threading/CoPaT/DispatchHelpers.h"
+#include "Types/Platform/Threading/CoPaT/JobSystemCoroutine.h"
 #include "Types/Platform/Threading/CoPaT/CoroutineWait.h"
 #include "Types/Platform/Threading/CoPaT/CoroutineAwaitAll.h"
 
@@ -48,20 +49,28 @@ void AssetManager::loadUnderPathAsync(const String &scanPath)
     LOG("AssetManager", "Initial asset load started");
     StopWatch loadTime;
     std::vector<String> foundFiles = FileSystemFunctions::listAllFiles(scanPath, true);
-    std::vector<decltype(loadAssetAsync(std::declval<AssetHeader>()))> asyncTasks;
-    asyncTasks.reserve(foundFiles.size());
-    for (const String &filePath : foundFiles)
+
+    auto loadAssetsAsync = [foundFiles, this](uint32 idx) -> std::vector<AssetBase *>
     {
         AssetHeader header;
-        header.assetPath = PathFunctions::asGenericPath(filePath);
-        header.type = AssetLoaderLibrary::typeFromAssetPath(filePath);
-        asyncTasks.emplace_back(loadAssetAsync(header));
-    }
-    copat::AwaitAllTasks<std::vector<decltype(loadAssetAsync(std::declval<AssetHeader>()))>> allAwaits
-        = copat::awaitAllTasks(std::move(asyncTasks));
-    for (auto &awaitable : copat::waitOnAwaitable(allAwaits))
+        header.assetPath = PathFunctions::asGenericPath(foundFiles[idx]);
+        header.type = AssetLoaderLibrary::typeFromAssetPath(foundFiles[idx]);
+
+        StopWatch loadTime;
+        std::vector<AssetBase *> assets = loadAsset(header);
+        LOG_DEBUG("AssetManager", "Loaded asset {} in {:0.3} Seconds(not including gpu copy)", header.assetPath.getChar(), loadTime.duration());
+
+        return assets;
+    };
+    auto allAwaits = copat::diverge(
+        copat::JobSystem::get(), copat::DispatchFunctionTypeWithRet<decltype(loadAssetsAsync(0))>::createLambda(std::move(loadAssetsAsync)),
+        uint32(foundFiles.size())
+    );
+    std::vector<decltype(loadAssetsAsync(0))> loadedAssetsPerFile = copat::converge(std::move(allAwaits));
+
+    for (const auto &loadedAssets : loadedAssetsPerFile)
     {
-        for (AssetBase *asset : awaitable.getReturnValue())
+        for (AssetBase *asset : loadedAssets)
         {
             assetsRegistered[asset->assetHeader] = asset;
         }
@@ -69,15 +78,6 @@ void AssetManager::loadUnderPathAsync(const String &scanPath)
 
     loadTime.stop();
     LOG("AssetManager", "Loaded all assets in {:0.3} Seconds(not including gpu copy)", loadTime.duration());
-}
-
-copat::JobSystemReturnableTask<std::vector<AssetBase *>, true, copat::EJobThreadType::WorkerThreads, copat::EJobPriority::Priority_Normal>
-AssetManager::loadAssetAsync(AssetHeader header)
-{
-    StopWatch loadTime;
-    std::vector<AssetBase *> assets = loadAsset(header);
-    LOG_DEBUG("AssetManager", "Loaded asset {} in {:0.3} Seconds(not including gpu copy)", header.assetPath.getChar(), loadTime.duration());
-    co_return std::move(assets);
 }
 
 std::vector<AssetBase *> AssetManager::loadAsset(const AssetHeader &header)

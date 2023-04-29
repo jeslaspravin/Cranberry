@@ -21,15 +21,14 @@ class SourceGenerator
 private:
     // For each source there will be one entry here to hold all the context necessary to generate
     // reflection header and source
-    std::unordered_map<const SourceInformation *, SourceGeneratorContext> sourceToGenCntxt;
+    std::vector<std::pair<SourceGeneratorContext, const SourceInformation *>> sourceGenCntxts;
     std::unordered_set<ReflectedTypeItem> allKnownReflectedTypes;
     String moduleName;
     // Temporary will be valid only until parseSources() starts, Contains previously know module reflected files
     std::vector<ReflectedTypeItem> moduleReflectedTypes;
 
-    // If any generation failed then this will be true, This flags is to continue generating even when
-    // some sources fails
-    bool bHasAnyError = false;
+    // If any generation failed then this will be true, This flags is to continue generating even when some sources fails
+    std::atomic_bool bHasAnyError;
     FORCE_INLINE static std::vector<String> getTemplateFiles();
 
 public:

@@ -12,7 +12,6 @@
 #include "DispatchHelpers.h"
 #include "CoroutineAwaitAll.h"
 #include "JobSystemCoroutine.h"
-#include "JobSystem.h"
 
 COPAT_NS_INLINED
 namespace copat

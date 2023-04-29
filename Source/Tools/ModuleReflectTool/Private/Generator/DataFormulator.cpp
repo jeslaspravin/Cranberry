@@ -18,6 +18,10 @@
 #include "Parser/ClangWrappers.h"
 #include "Parser/ParserHelper.h"
 #include "Property/PropertyHelper.h"
+#include "Types/Platform/Threading/CoPaT/DispatchHelpers.h"
+#include "Types/Platform/Threading/CoPaT/JobSystemCoroutine.h"
+#include "Types/Platform/Threading/CoPaT/CoroutineWait.h"
+#include "Types/Platform/Threading/CoPaT/CoroutineAwaitAll.h"
 
 struct LocalContext
 {
@@ -917,31 +921,52 @@ void SourceGenerator::parseSources()
         }
     );
 
-    for (std::pair<const SourceInformation *const, SourceGeneratorContext> &source : sourceToGenCntxt)
+    // Collect all reflected types
     {
-        std::vector<String> reflectedTypes;
-        collectReflectTypes(source.first, reflectedTypes);
-        for (const String &typeName : reflectedTypes)
+        auto collectAllReflectTypes = [this](uint32 idx) -> std::vector<String>
         {
-            allKnownReflectedTypes.insert(ReflectedTypeItem{ typeName, source.first->headerIncl, moduleName });
-        }
-
-        std::erase_if(
-            moduleReflectedTypes,
-            [&source](const ReflectedTypeItem &reflectedType)
-            {
-                return reflectedType.includePath == source.first->headerIncl;
-            }
+            std::vector<String> reflectedTypes;
+            collectReflectTypes(sourceGenCntxts[idx].second, reflectedTypes);
+            return reflectedTypes;
+        };
+        auto allAwaits = copat::diverge(
+            copat::JobSystem::get(),
+            copat::DispatchFunctionTypeWithRet<decltype(collectAllReflectTypes(0))>::createLambda(std::move(collectAllReflectTypes)),
+            uint32(sourceGenCntxts.size())
         );
-    }
-    // Now that all parsed source's types are removed from module's reflected types list, Insert reflect types from non parsed sources back
-    allKnownReflectedTypes.insert(moduleReflectedTypes.cbegin(), moduleReflectedTypes.cend());
-    moduleReflectedTypes.clear();
+        std::vector<std::vector<String>> reflectedTypesPerSource = copat::converge(std::move(allAwaits));
+        debugAssert(reflectedTypesPerSource.size() == sourceGenCntxts.size());
 
-    for (std::pair<const SourceInformation *const, SourceGeneratorContext> &source : sourceToGenCntxt)
-    {
-        parseSource(source.first, source.second);
+        for (SizeT i = 0; i != sourceGenCntxts.size(); ++i)
+        {
+            for (const String &typeName : reflectedTypesPerSource[i])
+            {
+                allKnownReflectedTypes.insert(ReflectedTypeItem{ typeName, sourceGenCntxts[i].second->headerIncl, moduleName });
+            }
+
+            std::erase_if(
+                moduleReflectedTypes,
+                [this, i](const ReflectedTypeItem &reflectedType)
+                {
+                    return reflectedType.includePath == sourceGenCntxts[i].second->headerIncl;
+                }
+            );
+        }
+        // Now that all parsed source's types are removed from module's reflected types list, Insert reflect types from non parsed sources back
+        allKnownReflectedTypes.insert(moduleReflectedTypes.cbegin(), moduleReflectedTypes.cend());
+        moduleReflectedTypes.clear();
     }
+
+    copat::waitOnAwaitable(copat::dispatch(
+        copat::JobSystem::get(),
+        copat::DispatchFunctionType::createLambda(
+            [this](uint32 idx)
+            {
+                parseSource(sourceGenCntxts[idx].second, sourceGenCntxts[idx].first);
+            }
+        ),
+        uint32(sourceGenCntxts.size())
+    ));
 }
 
 //////////////////////////////////////////////////////////////////////////

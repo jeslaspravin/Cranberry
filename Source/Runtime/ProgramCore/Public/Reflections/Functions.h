@@ -355,7 +355,7 @@ struct CapturedFunctor
         }
         static ReturnType invoke(const CapturedFunctor &thisFunctor, Parameters... params) noexcept
         {
-            (*reinterpret_cast<CallableType *>(const_cast<uint8 *>(&thisFunctor.data[0])))(std::forward<Parameters>(params)...);
+            return (*reinterpret_cast<CallableType *>(const_cast<uint8 *>(&thisFunctor.data[0])))(std::forward<Parameters>(params)...);
         }
     };
     template <typename CallableType>
@@ -392,7 +392,7 @@ struct CapturedFunctor
         }
         static ReturnType invoke(const CapturedFunctor &thisFunctor, Parameters... params) noexcept
         {
-            (*reinterpret_cast<CallableType *>(thisFunctor.heapAlloc.dataPtr))(std::forward<Parameters>(params)...);
+            return (*reinterpret_cast<CallableType *>(thisFunctor.heapAlloc.dataPtr))(std::forward<Parameters>(params)...);
         }
     };
 

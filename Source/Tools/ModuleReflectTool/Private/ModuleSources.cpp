@@ -20,6 +20,10 @@
 #include "Types/Platform/LFS/File/FileHelper.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
 #include "Types/Platform/LFS/PathFunctions.h"
+#include "Types/Platform/Threading/CoPaT/DispatchHelpers.h"
+#include "Types/Platform/Threading/CoPaT/JobSystemCoroutine.h"
+#include "Types/Platform/Threading/CoPaT/CoroutineWait.h"
+#include "Types/Platform/Threading/CoPaT/CoroutineAwaitAll.h"
 
 void ReflectedTypeItem::fromString(std::vector<ReflectedTypeItem> &outReflectedTypes, StringView str)
 {
@@ -115,7 +119,6 @@ void ModuleSources::clearGenerated(const std::vector<String> &headers) const
 
 ModuleSources::ModuleSources()
     : headerTracker(nullptr)
-    , index(nullptr)
 {
     String includesFile;
     String compileDefsFile;
@@ -216,34 +219,39 @@ ModuleSources::~ModuleSources()
     for (const SourceInformation &srcInfo : sources)
     {
         clang_disposeTranslationUnit(srcInfo.tu);
-    }
-    if (index)
-    {
-        clang_disposeIndex(index);
+        clang_disposeIndex(srcInfo.index);
     }
 }
 
 bool ModuleSources::compileAllSources(bool bFullCompile /*= false*/)
 {
-    bool bAllClear = true;
-    std::vector<String> headerFiles = FileSystemFunctions::listFiles(srcDir, true, TCHAR("*.h"));
-    if (headerFiles.empty())
-    {
-        return bAllClear;
-    }
-    sources.reserve(headerFiles.size());
+    std::atomic_bool bAllClear;
+    bAllClear.store(true, std::memory_order::relaxed);
 
+    std::vector<String> headerFiles = FileSystemFunctions::listFiles(srcDir, true, TCHAR("*.h"));
+    // Erase unnecessary headers
+    std::erase_if(
+        headerFiles,
+        [](const String &headerFile)
+        {
+            return !ParserHelper::shouldReflectHeader(headerFile);
+        }
+    );
     // Update to current header lists and do full source parse if any header deleted
     std::vector<String> deletedHeaders = headerTracker->filterIntersects(headerFiles);
     clearGenerated(deletedHeaders);
     const bool bAnyDeleted = !deletedHeaders.empty();
     deletedHeaders.clear();
 
+    if (headerFiles.empty())
+    {
+        return bAllClear.load(std::memory_order::relaxed);
+    }
+    sources.reserve(headerFiles.size());
+
     String publicHeadersPath = PathFunctions::combinePath(srcDir, TCHAR("Public"));
     String privateHeadersPath = PathFunctions::combinePath(srcDir, TCHAR("Private"));
 
-    // Create a common index for this module
-    index = clang_createIndex(0, 0);
     std::vector<std::string> moduleArgs;
     moduleArgs.emplace_back("-std=c++20");
     moduleArgs.emplace_back("-D__REF_PARSE__");
@@ -269,15 +277,11 @@ bool ModuleSources::compileAllSources(bool bFullCompile /*= false*/)
         argsPtrs[i] = moduleArgs[i].c_str();
     }
 
-    for (uint32 i = 0; i < headerFiles.size(); ++i)
+    auto compileHeaders = [&](uint32 idx) -> SourceInformation
     {
-        if (!ParserHelper::shouldReflectHeader(headerFiles[i]))
-        {
-            continue;
-        }
-        PlatformFile headerFile(headerFiles[i]);
+        PlatformFile headerFile(headerFiles[idx]);
 
-        SourceInformation &sourceInfo = sources.emplace_back();
+        SourceInformation sourceInfo;
         sourceInfo.filePath = headerFile.getFullPath();
         sourceInfo.fileSize = headerFile.fileSize();
         sourceInfo.generatedTUPath
@@ -311,12 +315,12 @@ bool ModuleSources::compileAllSources(bool bFullCompile /*= false*/)
         {
             // Use parse TU functions if need to customize certain options while compiling
             // Header.H - H has to be capital but why?
-            // It is okay if we miss some insignificant includes as they are ignored and parsing
-            // continues
+            // It is okay if we miss some insignificant includes as they are ignored and parsing continues
             String headerPath = PathFunctions::combinePath(
                 headerFile.getHostDirectory(), PathFunctions::stripExtension(headerFile.getFileName())
                                                    + TCHAR(".H")
                                                );
+            CXIndex index = clang_createIndex(0, 0);
             CXTranslationUnit unit = clang_parseTranslationUnit(
                 index, TCHAR_TO_ANSI(headerPath.getChar()), argsPtrs.data(), int32(argsPtrs.size()), nullptr, 0,
                 // Skipping function bodies for now, Enable if we are doing more that
@@ -327,7 +331,8 @@ bool ModuleSources::compileAllSources(bool bFullCompile /*= false*/)
             if (unit == nullptr)
             {
                 LOG_ERROR("CompileSource", "Unable to parse header {}. Quitting.", headerFile.getFullPath());
-                bAllClear = false;
+                clang_disposeIndex(index);
+                bAllClear.store(false, std::memory_order::relaxed);
             }
             else
             {
@@ -344,12 +349,21 @@ bool ModuleSources::compileAllSources(bool bFullCompile /*= false*/)
                     }
                 }
 
+                sourceInfo.index = index;
                 sourceInfo.tu = unit;
             }
         }
-    }
 
-    return bAllClear;
+        return sourceInfo;
+    };
+
+    auto allAwaits = copat::diverge(
+        copat::JobSystem::get(), copat::DispatchFunctionTypeWithRet<decltype(compileHeaders(0))>::createLambda(std::move(compileHeaders)),
+        uint32(headerFiles.size())
+    );
+    sources = copat::converge(std::move(allAwaits));
+
+    return bAllClear.load(std::memory_order::relaxed);
 }
 
 void ModuleSources::injectGeneratedFiles(

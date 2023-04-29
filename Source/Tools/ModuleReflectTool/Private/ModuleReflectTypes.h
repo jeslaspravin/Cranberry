@@ -44,7 +44,7 @@ struct std::hash<ReflectedTypeItem>
     }
 };
 
-struct alignas(CACHE_BREAK_SIZE) SourceInformation
+struct SourceInformation
 {
     String filePath;
     String headerIncl;
@@ -53,6 +53,8 @@ struct alignas(CACHE_BREAK_SIZE) SourceInformation
     // TU will be parsed and be valid only if this source's reflection data is outdated.
     // Failing to parse will lead to termination. So this must be valid if this source is parsed
     CXTranslationUnit tu = nullptr;
+    CXIndex index = nullptr;
+
     // File size used for sorting
     uint64 fileSize = 0;
 };
