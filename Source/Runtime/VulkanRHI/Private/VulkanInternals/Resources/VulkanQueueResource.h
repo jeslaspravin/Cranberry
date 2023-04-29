@@ -121,8 +121,7 @@ public:
         if (queueFamilyPropIndex != -1)
         {
             LOG_DEBUG(
-                "VulkanQueueResource", "Selected queue family at index {} for {} processing", queueFamilyPropIndex,
-                getSupportedQueueName().getChar()
+                "VulkanQueueResource", "Selected queue family at index {} for {} processing", queueFamilyPropIndex, getSupportedQueueName()
             );
             familyProperty = properties[queueFamilyPropIndex];
 
@@ -159,7 +158,7 @@ public:
             queuePointer.countPerPriority = maxQCountPerPriority;
             LOG_DEBUG(
                 "VulkanQueueResource", "Using {} queues per priority and {} Total queues for {}", maxQCountPerPriority, totalQueueCount,
-                getSupportedQueueName().getChar()
+                getSupportedQueueName()
             );
         }
     }
@@ -198,8 +197,7 @@ public:
         if (queueFamilyPropIndex != -1)
         {
             LOG_DEBUG(
-                "VulkanQueueResource", "Selected queue family at index {} for {} processing", queueFamilyPropIndex,
-                getSupportedQueueName().getChar()
+                "VulkanQueueResource", "Selected queue family at index {} for {} processing", queueFamilyPropIndex, getSupportedQueueName()
             );
             familyProperty = *(properties.find(queueFamilyPropIndex)->second);
 
@@ -233,12 +231,12 @@ public:
             queuePointer.countPerPriority = maxQCountPerPriority;
             LOG_DEBUG(
                 "VulkanQueueResource", "Using {} queues per priority and {} Total queues for {}", maxQCountPerPriority, totalQueueCount,
-                getSupportedQueueName().getChar()
+                getSupportedQueueName()
             );
         }
     }
 
-    constexpr static String getSupportedQueueName()
+    constexpr static const TChar *getSupportedQueueName()
     {
         switch (QueueType)
         {
@@ -279,7 +277,7 @@ public:
             if (queues[index] == nullptr)
             {
                 LOG_ERROR(
-                    "VulkanQueueResource", "[{}] Get queue failed for queue family {} at queue index {}", getSupportedQueueName().getChar(),
+                    "VulkanQueueResource", "[{}] Get queue failed for queue family {} at queue index {}", getSupportedQueueName(),
                     queueFamilyPropIndex, index
                 );
             }
@@ -308,7 +306,7 @@ public:
         {
             PriorityToFetch = queuePointer.minAvailablePriority;
             LOG_WARN(
-                "VulkanQueue", "{} queue requested priority {} is not available using priority {}", getSupportedQueueName().getChar(), Priority,
+                "VulkanQueue", "{} queue requested priority {} is not available using priority {}", getSupportedQueueName(), Priority,
                 PriorityToFetch
             );
         }

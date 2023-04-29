@@ -12,6 +12,7 @@
 #include "EditorHelpers.h"
 #include "CBEPackage.h"
 #include "CBEObjectHelpers.h"
+#include "ObjectTemplate.h"
 #include "Classes/World.h"
 #include "Classes/Actor.h"
 #include "Classes/ActorPrefab.h"

@@ -21,7 +21,41 @@
 #include "Types/Platform/LFS/PlatformLFS.h"
 #include "Types/Platform/LFS/PathFunctions.h"
 
-#include "SampleCode.h"
+void ReflectedTypeItem::fromString(std::vector<ReflectedTypeItem> &outReflectedTypes, StringView str)
+{
+    std::vector<StringView> items = String::split(str, TCHAR(";"));
+
+    debugAssertf(items.size() % 3 == 0, "Invalid string sequence({}) to convert into ReflectedTypeItem", items.size());
+
+    outReflectedTypes.reserve(outReflectedTypes.size() + items.size() / 3);
+    for (SizeT i = 0; i < items.size(); i += 3)
+    {
+        ReflectedTypeItem &typeItem = outReflectedTypes.emplace_back(items[i], items[i + 1], items[i + 2]);
+        typeItem.typeName.trim();
+        typeItem.includePath.trim();
+        typeItem.moduleName.trim();
+    }
+}
+
+String ReflectedTypeItem::toString(ArrayView<ReflectedTypeItem> reflectedTypes)
+{
+    std::vector<StringView> items;
+    items.reserve(reflectedTypes.size() * 3);
+
+    for (const ReflectedTypeItem &typeItem : reflectedTypes)
+    {
+        items.emplace_back(typeItem.typeName);
+        items.emplace_back(typeItem.includePath);
+        items.emplace_back(typeItem.moduleName);
+    }
+
+    debugAssertf(items.size() % 3 == 0, "Invalid string sequence({}) to created from ReflectedTypeItem", items.size());
+    return String::join(items.cbegin(), items.cend(), TCHAR(";"));
+}
+
+//////////////////////////////////////////////////////////////////////////
+/// ModuleSources impl
+//////////////////////////////////////////////////////////////////////////
 
 void ModuleSources::printDiagnostics(CXDiagnostic diagnostic, uint32 formatOptions, uint32 idx)
 {
@@ -85,12 +119,15 @@ ModuleSources::ModuleSources()
 {
     String includesFile;
     String compileDefsFile;
+    String depIntermDirsFile;
     ProgramCmdLine::get().getArg(genFiles, ReflectToolCmdLineConst::GENERATED_TU_LIST);
     ProgramCmdLine::get().getArg(srcDir, ReflectToolCmdLineConst::MODULE_SRC_DIR);
     ProgramCmdLine::get().getArg(genDir, ReflectToolCmdLineConst::GENERATED_DIR);
+    ProgramCmdLine::get().getArg(reflectedTypesFile, ReflectToolCmdLineConst::REFLECTED_TYPES_LIST_FILE);
     ProgramCmdLine::get().getArg(intermediateDir, ReflectToolCmdLineConst::INTERMEDIATE_DIR);
     ProgramCmdLine::get().getArg(includesFile, ReflectToolCmdLineConst::INCLUDE_LIST_FILE);
     ProgramCmdLine::get().getArg(compileDefsFile, ReflectToolCmdLineConst::COMPILE_DEF_LIST_FILE);
+    ProgramCmdLine::get().getArg(depIntermDirsFile, ReflectToolCmdLineConst::DEP_INTERMEDIATE_DIRS_LIST_FILE);
     LOG_DEBUG("ModuleReflectTool", "Reflecting source from {}", srcDir);
 
     fatalAssertf(
@@ -104,7 +141,7 @@ ModuleSources::ModuleSources()
     // Read includes file
     if (!FileHelper::readString(content, includesFile))
     {
-        fatalAssertf(!"Failed to read include file", "Failed to read include file from {}", includesFile);
+        fatalAssertf(!"Failed to read include file", "Failed to read from {}", includesFile);
     }
     for (const StringView &includeList : content.splitLines())
     {
@@ -119,13 +156,13 @@ ModuleSources::ModuleSources()
     // Read compile defines
     if (!FileHelper::readString(content, compileDefsFile))
     {
-        fatalAssertf(!"Failed to read compile definitions", "Failed to read compile definitions from {}", compileDefsFile);
+        fatalAssertf(!"Failed to read compile definitions", "Failed to read from {}", compileDefsFile);
     }
     // Parsing compile definitions
-    for (const String &compileDefsList : content.splitLines())
+    for (const StringView &compileDefsList : content.splitLines())
     {
         // We process defines a little different than includes since we have ; separated values in
-        // defines as well inside qoutes
+        // defines as well inside quotes
         auto beginTokenItr = compileDefsList.cbegin();
         for (auto tokenItr = compileDefsList.cbegin(); tokenItr != compileDefsList.cend(); ++tokenItr)
         {
@@ -145,11 +182,26 @@ ModuleSources::ModuleSources()
                 // If not consecutive ; token then add
                 if (beginTokenItr != tokenItr)
                 {
-                    compileDefs.emplace_back(String(beginTokenItr, tokenItr));
+                    compileDefs.emplace_back(beginTokenItr, tokenItr);
                 }
                 // Next token must be new begining skipping ;
                 beginTokenItr = tokenItr + 1;
             }
+        }
+    }
+
+    content.clear();
+    // Read dependent module's intermediate directories
+    if (!FileHelper::readString(content, depIntermDirsFile))
+    {
+        fatalAssertf(!"Failed to read dependent module's intermediate directories list", "Failed to read from {}", depIntermDirsFile);
+    }
+    for (const StringView &dirsList : content.splitLines())
+    {
+        std::vector<StringView> intermDirs = String::split(dirsList, TCHAR(";"));
+        for (const StringView &intermDir : intermDirs)
+        {
+            depIntermDirs.emplace_back(intermDir).trim();
         }
     }
 
@@ -254,8 +306,8 @@ bool ModuleSources::compileAllSources(bool bFullCompile /*= false*/)
         }
 
         // If output is no longer valid to current input file regenerate reflection
-        if (bFullCompile || bAnyDeleted
-            || headerTracker->isTargetOutdated(sourceInfo.filePath, { sourceInfo.generatedHeaderPath, sourceInfo.generatedTUPath }))
+        StringView targets[] = { sourceInfo.generatedHeaderPath, sourceInfo.generatedTUPath, reflectedTypesFile };
+        if (bFullCompile || bAnyDeleted || headerTracker->isTargetOutdated(sourceInfo.filePath, targets))
         {
             // Use parse TU functions if need to customize certain options while compiling
             // Header.H - H has to be capital but why?
@@ -300,7 +352,9 @@ bool ModuleSources::compileAllSources(bool bFullCompile /*= false*/)
     return bAllClear;
 }
 
-void ModuleSources::injectGeneratedFiles(const std::vector<const SourceInformation *> &generatedSrcs)
+void ModuleSources::injectGeneratedFiles(
+    const std::vector<const SourceInformation *> &generatedSrcs, std::vector<ReflectedTypeItem> moduleReflectedTypes
+)
 {
     // Only if anything new is generated inject those sources
     if (!generatedSrcs.empty())
@@ -335,20 +389,29 @@ void ModuleSources::injectGeneratedFiles(const std::vector<const SourceInformati
             String genFileContent = String::join(includeStmts.cbegin(), includeStmts.cend(), LINE_FEED_TCHAR);
             if (!FileHelper::writeString(genFileContent, genFiles[i]))
             {
-                LOG_ERROR("GeneratingBuildTU", "Failed to write file {}", genFiles[i]);
+                LOG_ERROR("GeneratingBuildTU", "Failed to write generated TU file {}", genFiles[i]);
                 std::exit(-1);
                 return;
             }
         }
     }
+
+    LOG_DEBUG("GeneratingBuildTU", "Writing out Module's reflected types to {}", reflectedTypesFile);
+    std::sort(moduleReflectedTypes.begin(), moduleReflectedTypes.end());
+    if (!FileHelper::writeString(ReflectedTypeItem::toString(moduleReflectedTypes), reflectedTypesFile))
+    {
+        LOG_ERROR("GeneratingBuildTU", "Failed to write reflected type list file {}", reflectedTypesFile);
+        std::exit(-1);
+        return;
+    }
+
     // Now generating is done so mark the tracker manifest with generated files
     for (uint32 i = 0; i < generatedSrcs.size(); ++i)
     {
         if (generatedSrcs[i]->tu != nullptr)
         {
-            headerTracker->updateNewerFile(
-                generatedSrcs[i]->filePath, { generatedSrcs[i]->generatedHeaderPath, generatedSrcs[i]->generatedTUPath }
-            );
+            StringView targets[] = { generatedSrcs[i]->generatedHeaderPath, generatedSrcs[i]->generatedTUPath, reflectedTypesFile };
+            headerTracker->updateNewerFile(generatedSrcs[i]->filePath, targets);
         }
     }
 }
@@ -362,6 +425,36 @@ std::vector<const SourceInformation *> ModuleSources::getParsedSources() const
         {
             retVal.emplace_back(&sources[i]);
         }
+    }
+    return retVal;
+}
+
+std::vector<ReflectedTypeItem> ModuleSources::getDepReflectedTypes() const
+{
+    std::vector<ReflectedTypeItem> retVal;
+    for (const String &depIntermDir : depIntermDirs)
+    {
+        String filePath = PathFunctions::combinePath(depIntermDir, PathFunctions::fileOrDirectoryName(reflectedTypesFile));
+        String content;
+        if (FileSystemFunctions::fileExists(filePath.getChar()))
+        {
+            bool bFileRead = FileHelper::readString(content, filePath);
+            fatalAssertf(bFileRead, "Failed reading reflected types file {}", filePath);
+            ReflectedTypeItem::fromString(retVal, content);
+        }
+    }
+    return retVal;
+}
+
+std::vector<ReflectedTypeItem> ModuleSources::getModuleReflectedTypes() const
+{
+    std::vector<ReflectedTypeItem> retVal;
+    String content;
+    if (FileSystemFunctions::fileExists(reflectedTypesFile.getChar()))
+    {
+        bool bFileRead = FileHelper::readString(content, reflectedTypesFile);
+        fatalAssertf(bFileRead, "Failed reading reflected types file {}", reflectedTypesFile);
+        ReflectedTypeItem::fromString(retVal, content);
     }
     return retVal;
 }

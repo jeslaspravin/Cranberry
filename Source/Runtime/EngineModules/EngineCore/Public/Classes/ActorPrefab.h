@@ -14,12 +14,6 @@
 #include "EngineCoreExports.h"
 #include "CBEObject.h"
 
-// Included to support generated codes
-#include "ObjectTemplate.h"
-#ifdef __REF_PARSE__
-#include "Components/ComponentBase.h"
-#endif
-
 #include "ActorPrefab.gen.h"
 
 namespace cbe

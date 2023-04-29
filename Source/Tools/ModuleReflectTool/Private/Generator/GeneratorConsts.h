@@ -34,6 +34,7 @@ CONST_EXPR StringLiteralStore<TCHAR("DefineCtorPolicy")> DEFINECTORPOLICY_BRANCH
 // Source tags
 CONST_EXPR StringLiteralStore<TCHAR("ReflectionTUDefine")> REFLECTIONTUDEF_TAG;
 CONST_EXPR StringLiteralStore<TCHAR("HeaderInclude")> INCLUDEHEADER_TAG;
+CONST_EXPR StringLiteralStore<TCHAR("AdditionalIncludes")> ADDITIONALINCLUDES_SECTION_TAG;
 CONST_EXPR StringLiteralStore<TCHAR("AllRegisterTypes")> ALLREGISTERTYPES_SECTION_TAG;
 CONST_EXPR StringLiteralStore<TCHAR("QualifiedTypes")> QUALIFIEDTYPES_SECTION_TAG;
 CONST_EXPR StringLiteralStore<TCHAR("PairTypes")> PAIRTYPES_SECTION_TAG;
@@ -46,6 +47,8 @@ CONST_EXPR StringLiteralStore<TCHAR("TypeMetaData")> TYPEMETADATA_SECTION_TAG;
 CONST_EXPR StringLiteralStore<TCHAR("TypeMetaDataCount")> TYPEMETADATACOUNT_TAG;
 CONST_EXPR StringLiteralStore<TCHAR("TypeMetaFlags")> TYPEMETAFLAGS_TAG;
 CONST_EXPR StringLiteralStore<TCHAR("SanitizedName")> SANITIZEDNAME_TAG;
+// AdditionalIncludes section tags
+CONST_EXPR StringLiteralStore<TCHAR("AdditionalInclude")> ADDITIONALINCLUDE_TAG;
 // AllRegisterTypes section tags
 CONST_EXPR StringLiteralStore<TCHAR("PropertyTypeName")> PROPERTYTYPENAME_TAG;
 CONST_EXPR StringLiteralStore<TCHAR("RegisterFunctionName")> REGISTERFUNCNAME_TAG;

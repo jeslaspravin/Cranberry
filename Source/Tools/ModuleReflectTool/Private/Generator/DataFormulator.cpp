@@ -11,6 +11,8 @@
 
 #include "Generator/SourceGenerator.h"
 #include "GeneratorConsts.h"
+#include "CmdLineArgConst.h"
+#include "CmdLine/CmdLine.h"
 #include "Logger/Logger.h"
 #include "ModuleSources.h"
 #include "Parser/ClangWrappers.h"
@@ -35,7 +37,7 @@ struct ClassParseContext
     bool bHasConstructor = false;
 };
 
-void visitTUCusor(CXCursor cursor, SourceGeneratorContext *srcGenContext);
+void parseTUCursorVisitor(CXCursor cursor, SourceGeneratorContext *srcGenContext);
 
 template <typename FmtType, typename... Args>
 void parseFailed(CXCursor cursor, SourceGeneratorContext *srcGenContext, const TChar *funcName, FmtType &&fmtMsg, Args &&...args)
@@ -101,7 +103,7 @@ FORCE_INLINE void addQualifiedType(const String &typeName, const String &sanitiz
 
 void generatePrereqTypes(CXType type, SourceGeneratorContext *srcGenContext);
 
-void visitEnums(CXCursor cursor, SourceGeneratorContext *srcGenContext)
+void parseEnumsVisitor(CXCursor cursor, SourceGeneratorContext *srcGenContext)
 {
     if (!ParserHelper::isReflectedDecl(cursor))
     {
@@ -123,7 +125,7 @@ void visitEnums(CXCursor cursor, SourceGeneratorContext *srcGenContext)
 
     // Why getting from canonical type? Because it gives name with all the scopes prefixed. We do not
     // have to handle parent namespace or types
-    const String enumTypeName = CXStringWrapper(clang_getTypeSpelling(clang_getCanonicalType(clang_getCursorType(cursor)))).toString();
+    const String enumTypeName = ParserHelper::getCursorCanonicalTypeName(cursor);
     const String sanitizedTypeName = PropertyHelper::getValidSymbolName(enumTypeName);
 
     // Setup source contexts
@@ -202,11 +204,11 @@ void visitEnums(CXCursor cursor, SourceGeneratorContext *srcGenContext)
 
     for (CXCursor c : localCtx.unhandledSibilings)
     {
-        visitTUCusor(c, srcGenContext);
+        parseTUCursorVisitor(c, srcGenContext);
     }
 }
 
-void visitMemberField(CXCursor cursor, LocalContext &localCntxt)
+void parseMemberFieldVisitor(CXCursor cursor, LocalContext &localCntxt)
 {
     if (!ParserHelper::isReflectedDecl(cursor))
     {
@@ -218,7 +220,7 @@ void visitMemberField(CXCursor cursor, LocalContext &localCntxt)
     CXType fieldType = clang_getCursorType(cursor);
     String typeName = ParserHelper::getCursorTypeName(cursor);
 
-    if (!ParserHelper::isValidFieldType(fieldType, cursor))
+    if (!ParserHelper::isValidFieldType(fieldType, cursor, localCntxt.srcGenContext))
     {
         parseFailed(cursor, localCntxt.srcGenContext, __func__, TCHAR("Invalid member field {}"), fieldName);
         return;
@@ -249,7 +251,7 @@ void visitMemberField(CXCursor cursor, LocalContext &localCntxt)
     context.args[GeneratorConsts::ACCESSSPECIFIER_TAG] = ParserHelper::accessSpecifierName(cursor);
 }
 
-void visitMemberCppMethods(CXCursor cursor, LocalContext &localCntxt)
+void parseMemberCppMethodsVisitor(CXCursor cursor, LocalContext &localCntxt)
 {
     // We reflect all constructors even not marked for meta reflection
     if (!(ParserHelper::isReflectedDecl(cursor) || clang_getCursorKind(cursor) == CXCursor_Constructor))
@@ -355,7 +357,7 @@ void visitMemberCppMethods(CXCursor cursor, LocalContext &localCntxt)
     }
 }
 
-void visitClassMember(CXCursor cursor, LocalContext &localCntxt)
+void parseClassMemberVisitor(CXCursor cursor, LocalContext &localCntxt)
 {
     CXCursorKind cursorKind = clang_getCursorKind(cursor);
     CXStringRef cursorName(new CXStringWrapper(clang_getCursorSpelling(cursor)));
@@ -424,13 +426,13 @@ void visitClassMember(CXCursor cursor, LocalContext &localCntxt)
     }
     case CXCursor_VarDecl:
     case CXCursor_FieldDecl:
-        visitMemberField(cursor, localCntxt);
+        parseMemberFieldVisitor(cursor, localCntxt);
         break;
     case CXCursor_Constructor:
     case CXCursor_CXXMethod:
     case CXCursor_FunctionTemplate:
         // All member functions including static member functions
-        visitMemberCppMethods(cursor, localCntxt);
+        parseMemberCppMethodsVisitor(cursor, localCntxt);
         break;
     default:
         localCntxt.unhandledSibilings.emplace_back(cursor);
@@ -438,7 +440,7 @@ void visitClassMember(CXCursor cursor, LocalContext &localCntxt)
     }
 }
 
-void visitStructs(CXCursor cursor, SourceGeneratorContext *srcGenContext)
+void parseStructsVisitor(CXCursor cursor, SourceGeneratorContext *srcGenContext)
 {
     if (!ParserHelper::isReflectedClass(cursor))
     {
@@ -461,8 +463,7 @@ void visitStructs(CXCursor cursor, SourceGeneratorContext *srcGenContext)
 
     // Why getting from canonical type? Because it gives name with all the scopes prefixed. We do not
     // have to handle parent namespace or types
-    const String structCanonicalTypeName
-        = CXStringWrapper(clang_getTypeSpelling(clang_getCanonicalType(clang_getCursorType(cursor)))).toString();
+    const String structCanonicalTypeName = ParserHelper::getCursorCanonicalTypeName(cursor);
     const String structTypeName = CXStringWrapper(clang_getCursorSpelling(cursor)).toString();
     const String sanitizedTypeName = PropertyHelper::getValidSymbolName(structCanonicalTypeName);
     CXSourceLocation generatedCodesSrcLoc = clang_getCursorLocation(ParserHelper::getGeneratedCodeCursor(cursor));
@@ -522,7 +523,7 @@ void visitStructs(CXCursor cursor, SourceGeneratorContext *srcGenContext)
         {
             // It is okay to use same visitor function as class here. Only BaseProperty gets populated
             // and It has no meaning now
-            visitClassMember(c, *(LocalContext *)(clientData));
+            parseClassMemberVisitor(c, *(LocalContext *)(clientData));
             return CXChildVisit_Continue;
         },
         &localCtx
@@ -530,11 +531,11 @@ void visitStructs(CXCursor cursor, SourceGeneratorContext *srcGenContext)
 
     for (CXCursor c : localCtx.unhandledSibilings)
     {
-        visitTUCusor(c, srcGenContext);
+        parseTUCursorVisitor(c, srcGenContext);
     }
 }
 
-void visitClasses(CXCursor cursor, SourceGeneratorContext *srcGenContext)
+void parseClassesVisitor(CXCursor cursor, SourceGeneratorContext *srcGenContext)
 {
     if (!ParserHelper::isReflectedClass(cursor))
     {
@@ -565,8 +566,7 @@ void visitClasses(CXCursor cursor, SourceGeneratorContext *srcGenContext)
         return;
     }
 
-    const String classCanonicalTypeName
-        = CXStringWrapper(clang_getTypeSpelling(clang_getCanonicalType(clang_getCursorType(cursor)))).toString();
+    const String classCanonicalTypeName = ParserHelper::getCursorCanonicalTypeName(cursor);
     const String classTypeName = CXStringWrapper(clang_getCursorSpelling(cursor)).toString();
     const String sanitizedTypeName = PropertyHelper::getValidSymbolName(classCanonicalTypeName);
     CXSourceLocation generatedCodesSrcLoc = clang_getCursorLocation(ParserHelper::getGeneratedCodeCursor(cursor));
@@ -627,7 +627,7 @@ void visitClasses(CXCursor cursor, SourceGeneratorContext *srcGenContext)
         cursor,
         [](CXCursor c, CXCursor /*p*/, CXClientData clientData)
         {
-            visitClassMember(c, *(LocalContext *)(clientData));
+            parseClassMemberVisitor(c, *(LocalContext *)(clientData));
             return CXChildVisit_Continue;
         },
         &classLocalCtx
@@ -641,7 +641,7 @@ void visitClasses(CXCursor cursor, SourceGeneratorContext *srcGenContext)
 
     for (CXCursor c : classLocalCtx.unhandledSibilings)
     {
-        visitTUCusor(c, srcGenContext);
+        parseTUCursorVisitor(c, srcGenContext);
     }
 }
 
@@ -675,7 +675,7 @@ void generatePrereqTypes(CXType type, SourceGeneratorContext *srcGenContext)
     }
 
     // Custom types needs customized generation
-    if (ParserHelper::isCustomType(referredType, nullCursor))
+    if (ParserHelper::isCustomType(referredType, nullCursor, srcGenContext))
     {
         std::vector<MustacheContext> *customTypeContexts = nullptr;
 
@@ -769,9 +769,9 @@ void generatePrereqTypes(CXType type, SourceGeneratorContext *srcGenContext)
             return;
         }
 
-        if ((clang_getCursorKind(typeDecl) == CXCursor_EnumDecl && ParserHelper::isReflectedDecl(typeDecl))
+        if ((clang_getCursorKind(typeDecl) == CXCursor_EnumDecl && ParserHelper::isReflectedDecl(typeDecl, srcGenContext))
             || ((clang_getCursorKind(typeDecl) == CXCursor_ClassDecl || clang_getCursorKind(typeDecl) == CXCursor_StructDecl)
-                && ParserHelper::isReflectedClass(typeDecl)))
+                && ParserHelper::isReflectedClass(typeDecl, srcGenContext)))
         {
             if (bIsQualified)
             {
@@ -787,20 +787,20 @@ void generatePrereqTypes(CXType type, SourceGeneratorContext *srcGenContext)
     }
 }
 
-void visitTUCusor(CXCursor cursor, SourceGeneratorContext *srcGenContext)
+void parseTUCursorVisitor(CXCursor cursor, SourceGeneratorContext *srcGenContext)
 {
     CXCursorKind cursorKind = clang_getCursorKind(cursor);
 
     switch (cursorKind)
     {
     case CXCursor_StructDecl:
-        visitStructs(cursor, srcGenContext);
+        parseStructsVisitor(cursor, srcGenContext);
         return;
     case CXCursor_ClassDecl:
-        visitClasses(cursor, srcGenContext);
+        parseClassesVisitor(cursor, srcGenContext);
         return;
     case CXCursor_EnumDecl:
-        visitEnums(cursor, srcGenContext);
+        parseEnumsVisitor(cursor, srcGenContext);
         return;
     case CXCursor_Namespace:
     {
@@ -808,7 +808,7 @@ void visitTUCusor(CXCursor cursor, SourceGeneratorContext *srcGenContext)
             cursor,
             [](CXCursor c, CXCursor /*p*/, CXClientData clientData)
             {
-                visitTUCusor(c, (SourceGeneratorContext *)(clientData));
+                parseTUCursorVisitor(c, (SourceGeneratorContext *)(clientData));
                 return CXChildVisit_Continue;
             },
             srcGenContext
@@ -817,8 +817,7 @@ void visitTUCusor(CXCursor cursor, SourceGeneratorContext *srcGenContext)
     }
     }
 }
-
-FORCE_INLINE void parseSource(const SourceInformation *srcInfo, SourceGeneratorContext &srcGenContext)
+void parseSource(const SourceInformation *srcInfo, SourceGeneratorContext &srcGenContext)
 {
     CXCursor cursor = clang_getTranslationUnitCursor(srcInfo->tu);
     clang_visitChildren(
@@ -829,19 +828,167 @@ FORCE_INLINE void parseSource(const SourceInformation *srcInfo, SourceGeneratorC
             // CXSourceLocation is not need to be freed
             if (!!clang_Location_isFromMainFile(clang_getCursorLocation(c)))
             {
-                visitTUCusor(c, (SourceGeneratorContext *)(client_data));
+                parseTUCursorVisitor(c, (SourceGeneratorContext *)(client_data));
             }
             // Continue to next Cursor in TU
             return CXChildVisit_Continue;
         },
         &srcGenContext
     );
+
+    if (!srcGenContext.externReflectSymbols.empty())
+    {
+        std::unordered_set<String> uniqIncludes;
+        for (const ReflectedTypeItem &reflectType : srcGenContext.externReflectSymbols)
+        {
+            if (uniqIncludes.insert(reflectType.includePath).second)
+            {
+                MustacheContext &additionalInclCntxt = srcGenContext.additionalIncludes.emplace_back();
+                additionalInclCntxt.args[GeneratorConsts::ADDITIONALINCLUDE_TAG] = reflectType.includePath;
+            }
+        }
+    }
 }
+
+void collectReflectedSymVisitor(CXCursor cursor, std::vector<String> &outReflectSymbols)
+{
+    CXCursorKind cursorKind = clang_getCursorKind(cursor);
+
+    bool bIsReflectedType = false;
+    switch (cursorKind)
+    {
+    case CXCursor_StructDecl:
+    case CXCursor_ClassDecl:
+        bIsReflectedType = ParserHelper::isReflectedClass(cursor);
+        break;
+    case CXCursor_EnumDecl:
+        bIsReflectedType = ParserHelper::isReflectedDecl(cursor);
+        break;
+    }
+
+    if (bIsReflectedType)
+    {
+        String canonicalTypeName = ParserHelper::getCursorCanonicalTypeName(cursor);
+        outReflectSymbols.emplace_back(canonicalTypeName);
+    }
+
+    clang_visitChildren(
+        cursor,
+        [](CXCursor c, CXCursor /*p*/, CXClientData clientData)
+        {
+            collectReflectedSymVisitor(c, *(std::vector<String> *)(clientData));
+            return CXChildVisit_Continue;
+        },
+        &outReflectSymbols
+    );
+}
+void collectReflectTypes(const SourceInformation *srcInfo, std::vector<String> &outReflectSymbols)
+{
+    CXCursor cursor = clang_getTranslationUnitCursor(srcInfo->tu);
+    clang_visitChildren(
+        cursor,
+        [](CXCursor c, CXCursor /*parent*/, CXClientData client_data)
+        {
+            // If this symbol is from this Source file?
+            // CXSourceLocation is not need to be freed
+            if (!!clang_Location_isFromMainFile(clang_getCursorLocation(c)))
+            {
+                collectReflectedSymVisitor(c, *(std::vector<String> *)(client_data));
+            }
+            // Continue to next Cursor in TU
+            return CXChildVisit_Continue;
+        },
+        &outReflectSymbols
+    );
+}
+
+//////////////////////////////////////////////////////////////////////////
+/// SourceGenerator Impl
+//////////////////////////////////////////////////////////////////////////
 
 void SourceGenerator::parseSources()
 {
+    // Remove all external module reflected types
+    std::erase_if(
+        moduleReflectedTypes,
+        [this](const ReflectedTypeItem &reflectedType)
+        {
+            return reflectedType.moduleName != moduleName;
+        }
+    );
+
+    for (std::pair<const SourceInformation *const, SourceGeneratorContext> &source : sourceToGenCntxt)
+    {
+        std::vector<String> reflectedTypes;
+        collectReflectTypes(source.first, reflectedTypes);
+        for (const String &typeName : reflectedTypes)
+        {
+            allKnownReflectedTypes.insert(ReflectedTypeItem{ typeName, source.first->headerIncl, moduleName });
+        }
+
+        std::erase_if(
+            moduleReflectedTypes,
+            [&source](const ReflectedTypeItem &reflectedType)
+            {
+                return reflectedType.includePath == source.first->headerIncl;
+            }
+        );
+    }
+    // Now that all parsed source's types are removed from module's reflected types list, Insert reflect types from non parsed sources back
+    allKnownReflectedTypes.insert(moduleReflectedTypes.cbegin(), moduleReflectedTypes.cend());
+    moduleReflectedTypes.clear();
+
     for (std::pair<const SourceInformation *const, SourceGeneratorContext> &source : sourceToGenCntxt)
     {
         parseSource(source.first, source.second);
     }
+}
+
+//////////////////////////////////////////////////////////////////////////
+/// ParserHelper Impl
+//////////////////////////////////////////////////////////////////////////
+
+bool ParserHelper::isReflectedDecl(CXCursor declCursor, SourceGeneratorContext *srcGenContext)
+{
+    if (!clang_isDeclaration(clang_getCursorKind(declCursor)))
+    {
+        return false;
+    }
+    // If it is already known type then return immediately
+    String typeName = getCursorCanonicalTypeName(declCursor);
+    const std::unordered_set<ReflectedTypeItem> &knownReflectedTypes = srcGenContext->generator->getKnownReflectedTypes();
+    auto itr = knownReflectedTypes.find(ReflectedTypeItem{ .typeName = typeName });
+    if (itr != knownReflectedTypes.cend())
+    {
+        if (!srcGenContext->generator->isFromCurrentModule(*itr))
+        {
+            srcGenContext->externReflectSymbols.insert(*itr);
+        }
+        return true;
+    }
+
+    return isReflectedDecl(declCursor);
+}
+
+bool ParserHelper::isReflectedClass(CXCursor declCursor, SourceGeneratorContext *srcGenContext)
+{
+    if (!clang_isDeclaration(clang_getCursorKind(declCursor)))
+    {
+        return false;
+    }
+
+    // If it is already known type then return immediately
+    String typeName = getCursorCanonicalTypeName(declCursor);
+    const std::unordered_set<ReflectedTypeItem> &knownReflectedTypes = srcGenContext->generator->getKnownReflectedTypes();
+    auto itr = knownReflectedTypes.find(ReflectedTypeItem{ .typeName = typeName });
+    if (itr != knownReflectedTypes.cend())
+    {
+        if (!srcGenContext->generator->isFromCurrentModule(*itr))
+        {
+            srcGenContext->externReflectSymbols.insert(*itr);
+        }
+        return true;
+    }
+
+    return isReflectedClass(declCursor);
 }

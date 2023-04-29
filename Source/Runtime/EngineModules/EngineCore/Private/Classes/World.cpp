@@ -10,6 +10,7 @@
  */
 
 #include "Classes/World.h"
+#include "ObjectTemplate.h"
 #include "Property/PropertyHelper.h"
 #include "CBEPackage.h"
 #include "Classes/Actor.h"

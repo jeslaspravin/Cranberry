@@ -11,6 +11,7 @@
 
 #include "Classes/Actor.h"
 #include "Classes/World.h"
+#include "ObjectTemplate.h"
 #include "Serialization/ObjectSerializationHelpers.h"
 #include "Classes/ActorPrefab.h"
 #include "CBEObjectHelpers.h"

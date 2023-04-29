@@ -41,8 +41,14 @@ void SourceGenerator::initialize(const ModuleSources *sources)
     sourceToGenCntxt.reserve(parsedSrcs.size());
     for (const SourceInformation *srcInfo : parsedSrcs)
     {
-        sourceToGenCntxt.insert({ srcInfo, {} });
+        sourceToGenCntxt.insert({ srcInfo, SourceGeneratorContext{ .generator = this } });
     }
+
+    std::vector<ReflectedTypeItem> allReflectTypes = sources->getDepReflectedTypes();
+    allKnownReflectedTypes.insert(allReflectTypes.cbegin(), allReflectTypes.cend());
+    moduleReflectedTypes = sources->getModuleReflectedTypes();
+
+    ProgramCmdLine::get().getArg(moduleName, ReflectToolCmdLineConst::MODULE_NAME);
 }
 
 void SourceGenerator::writeGeneratedFiles()
@@ -96,6 +102,7 @@ void SourceGenerator::writeGeneratedFiles()
         sourceContext.args[GeneratorConsts::REFLECTIONTUDEF_TAG] = headerFileName.toUpperCopy() + TCHAR("_GEN_TU");
         sourceContext.args[GeneratorConsts::HEADERFILEID_TAG] = headerFileID;
         sourceContext.args[GeneratorConsts::INCLUDEHEADER_TAG] = srcInfo->headerIncl;
+        sourceContext.sectionContexts[GeneratorConsts::ADDITIONALINCLUDES_SECTION_TAG] = srcGenCntxt.additionalIncludes;
         sourceContext.sectionContexts[GeneratorConsts::ALLREGISTERTYPES_SECTION_TAG] = srcGenCntxt.allRegisteredypes;
         sourceContext.sectionContexts[GeneratorConsts::QUALIFIEDTYPES_SECTION_TAG] = srcGenCntxt.qualifiedTypes;
         sourceContext.sectionContexts[GeneratorConsts::PAIRTYPES_SECTION_TAG] = srcGenCntxt.pairTypes;

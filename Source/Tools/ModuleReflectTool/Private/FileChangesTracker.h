@@ -11,6 +11,7 @@
 
 #pragma once
 #include "String/String.h"
+#include "Types/Containers/ArrayView.h"
 #include "Types/Time.h"
 
 #include <map>
@@ -42,8 +43,8 @@ public:
     ~FileChangesTracker();
 
     // return true if file is actually newer
-    bool isTargetOutdated(const String &absPath, const std::vector<String> &outputFiles) const;
-    bool updateNewerFile(const String &absPath, const std::vector<String> &outputFiles);
+    bool isTargetOutdated(StringView absPath, ArrayView<StringView> outputFiles) const;
+    bool updateNewerFile(StringView absPath, ArrayView<StringView> outputFiles);
     // clears files not present in this list from tracked entry, and returns list of removed files
-    std::vector<String> filterIntersects(const std::vector<String> &srcfilePaths);
+    std::vector<String> filterIntersects(ArrayView<String> srcfilePaths);
 };

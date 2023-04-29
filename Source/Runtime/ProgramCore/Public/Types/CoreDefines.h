@@ -88,6 +88,9 @@
 #ifndef CACHELINE_SIZE
 #define CACHELINE_SIZE 64
 #endif
+#ifndef CACHE_BREAK_SIZE
+#define CACHE_BREAK_SIZE CACHELINE_SIZE * 2
+#endif
 
 // Math defines
 #ifndef IS_FINITE

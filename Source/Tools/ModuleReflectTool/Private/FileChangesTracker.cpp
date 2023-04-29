@@ -51,7 +51,7 @@ FileChangesTracker::~FileChangesTracker()
     FileHelper::writeString(manifestFileContent, PathFunctions::combinePath(writePath, trackerManifestName));
 }
 
-bool FileChangesTracker::isTargetOutdated(const String &absPath, const std::vector<String> &outputFiles) const
+bool FileChangesTracker::isTargetOutdated(StringView absPath, ArrayView<StringView> outputFiles) const
 {
     PlatformFile srcFile(absPath);
     if (!srcFile.exists())
@@ -68,7 +68,7 @@ bool FileChangesTracker::isTargetOutdated(const String &absPath, const std::vect
 
         // Output file must be newer than src file
         bool bIsAllOutsValid = true;
-        for (const String &targetFilePath : outputFiles)
+        for (const StringView &targetFilePath : outputFiles)
         {
             PlatformFile targetFile(targetFilePath);
             bIsAllOutsValid = bIsAllOutsValid && targetFile.exists() && targetFile.lastWriteTimeStamp() > ts;
@@ -83,7 +83,7 @@ bool FileChangesTracker::isTargetOutdated(const String &absPath, const std::vect
     return true;
 }
 
-bool FileChangesTracker::updateNewerFile(const String &absPath, const std::vector<String> &outputFiles)
+bool FileChangesTracker::updateNewerFile(StringView absPath, ArrayView<StringView> outputFiles)
 {
     if (isTargetOutdated(absPath, outputFiles))
     {
@@ -96,7 +96,7 @@ bool FileChangesTracker::updateNewerFile(const String &absPath, const std::vecto
     return false;
 }
 
-std::vector<String> FileChangesTracker::filterIntersects(const std::vector<String> &srcfilePaths)
+std::vector<String> FileChangesTracker::filterIntersects(ArrayView<String> srcfilePaths)
 {
     std::vector<String> deletedSrcs;
     deletedSrcs.reserve(srcfilePaths.size());

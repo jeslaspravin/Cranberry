@@ -10,28 +10,11 @@
  */
 
 #pragma once
-#include "String/MustacheFormatString.h"
 
-#include <unordered_set>
+#include "ModuleReflectTypes.h"
 
-struct SourceInformation;
 class ModuleSources;
-
-struct SourceGeneratorContext
-{
-    std::vector<MustacheContext> headerReflectTypes;
-    std::vector<MustacheContext> allRegisteredypes;
-    std::vector<MustacheContext> qualifiedTypes;
-    std::vector<MustacheContext> pairTypes;
-    std::vector<MustacheContext> containerTypes;
-    std::vector<MustacheContext> mapTypes;
-    std::vector<MustacheContext> enumTypes;
-    std::vector<MustacheContext> classTypes;
-    // List of symbols that are adding in this generated TU
-    std::unordered_set<String> addedSymbols;
-    // If any error it will be set false
-    bool bGenerated = true;
-};
+class SourceGenerator;
 
 class SourceGenerator
 {
@@ -39,6 +22,11 @@ private:
     // For each source there will be one entry here to hold all the context necessary to generate
     // reflection header and source
     std::unordered_map<const SourceInformation *, SourceGeneratorContext> sourceToGenCntxt;
+    std::unordered_set<ReflectedTypeItem> allKnownReflectedTypes;
+    String moduleName;
+    // Temporary will be valid only until parseSources() starts, Contains previously know module reflected files
+    std::vector<ReflectedTypeItem> moduleReflectedTypes;
+
     // If any generation failed then this will be true, This flags is to continue generating even when
     // some sources fails
     bool bHasAnyError = false;
@@ -50,5 +38,7 @@ public:
     void writeGeneratedFiles();
     // Return true if no error
     bool generatedSources(std::vector<const SourceInformation *> &outGeneratedSrcs) const;
+    const std::unordered_set<ReflectedTypeItem> &getKnownReflectedTypes() const { return allKnownReflectedTypes; }
+    bool isFromCurrentModule(const ReflectedTypeItem &reflectItem) const { return reflectItem.moduleName == moduleName; }
     static bool isTemplatesModified();
 };

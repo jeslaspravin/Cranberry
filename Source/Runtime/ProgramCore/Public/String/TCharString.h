@@ -25,7 +25,7 @@ using CharStringView = std::basic_string_view<CharType, std::char_traits<CharTyp
 namespace TCharStr
 {
 template <typename CharType>
-NODISCARD CONST_EXPR const CharType *recurseToNullEnd(const CharType *start)
+NODISCARD constexpr const CharType *recurseToNullEnd(const CharType *start)
 {
     while (*start != CharType(0))
     {
@@ -35,25 +35,25 @@ NODISCARD CONST_EXPR const CharType *recurseToNullEnd(const CharType *start)
 }
 
 template <typename CharType>
-NODISCARD CONST_EXPR SizeT length(const CharType *start)
+NODISCARD constexpr SizeT length(const CharType *start)
 {
     return recurseToNullEnd(start) - start;
 }
 
 template <typename CharType>
-NODISCARD CONST_EXPR bool empty(const CharType *start)
+NODISCARD constexpr bool empty(const CharType *start)
 {
     return length(start) == 0;
 }
 
 template <typename CharType>
-NODISCARD CONST_EXPR bool isEqual(const CharType *lhs, const CharType *rhs)
+NODISCARD constexpr bool isEqual(const CharType *lhs, const CharType *rhs)
 {
     return CharStringView<CharType>(lhs) == CharStringView<CharType>(rhs);
 }
 
 template <typename CharType>
-CONST_EXPR bool find(CharStringView<CharType> findIn, CharStringView<CharType> findStr, SizeT *outFoundAt = nullptr, SizeT findFrom = 0)
+constexpr bool find(CharStringView<CharType> findIn, CharStringView<CharType> findStr, SizeT *outFoundAt = nullptr, SizeT findFrom = 0)
 {
     SizeT foundAt = findIn.find(findStr, findFrom);
     if (outFoundAt)
@@ -64,7 +64,7 @@ CONST_EXPR bool find(CharStringView<CharType> findIn, CharStringView<CharType> f
 }
 
 template <typename CharType>
-CONST_EXPR bool find(CharStringView<CharType> findIn, const CharType findCh, SizeT *outFoundAt = nullptr, SizeT findFrom = 0)
+constexpr bool find(CharStringView<CharType> findIn, const CharType findCh, SizeT *outFoundAt = nullptr, SizeT findFrom = 0)
 {
     SizeT foundAt = findIn.find(findCh, findFrom);
     if (outFoundAt)
@@ -75,7 +75,7 @@ CONST_EXPR bool find(CharStringView<CharType> findIn, const CharType findCh, Siz
 }
 
 template <typename CharType>
-CONST_EXPR bool rfind(
+constexpr bool rfind(
     CharStringView<CharType> findIn, CharStringView<CharType> findStr, SizeT *outFoundAt = nullptr,
     SizeT findFrom = CharStringView<CharType>::npos
 )
@@ -88,7 +88,7 @@ CONST_EXPR bool rfind(
     return foundAt != CharStringView<CharType>::npos;
 }
 template <typename CharType>
-CONST_EXPR bool
+constexpr bool
 rfind(CharStringView<CharType> findIn, const CharType findCh, SizeT *outFoundAt = nullptr, SizeT findFrom = CharStringView<CharType>::npos)
 {
     SizeT foundAt = findIn.rfind(findCh, findFrom);
@@ -100,7 +100,7 @@ rfind(CharStringView<CharType> findIn, const CharType findCh, SizeT *outFoundAt 
 }
 
 template <typename CharType>
-NODISCARD CONST_EXPR SizeT findCount(CharStringView<CharType> findIn, const CharType findCh, SizeT findFrom = 0)
+NODISCARD constexpr SizeT findCount(CharStringView<CharType> findIn, const CharType findCh, SizeT findFrom = 0)
 {
     SizeT numberOfInst = 0;
     SizeT atPos = 0;
@@ -112,7 +112,7 @@ NODISCARD CONST_EXPR SizeT findCount(CharStringView<CharType> findIn, const Char
     return numberOfInst;
 }
 template <typename CharType>
-NODISCARD CONST_EXPR SizeT findCount(CharStringView<CharType> findIn, CharStringView<CharType> findStr, SizeT findFrom = 0)
+NODISCARD constexpr SizeT findCount(CharStringView<CharType> findIn, CharStringView<CharType> findStr, SizeT findFrom = 0)
 {
     SizeT findStrLen = length(findStr);
 
@@ -127,7 +127,7 @@ NODISCARD CONST_EXPR SizeT findCount(CharStringView<CharType> findIn, CharString
 }
 
 template <typename CharType>
-CONST_EXPR void replaceInPlace(CharType *replaceIn, SizeT replaceFrom, SizeT replaceLen, const CharType *replaceWith)
+constexpr void replaceInPlace(CharType *replaceIn, SizeT replaceFrom, SizeT replaceLen, const CharType *replaceWith)
 {
     if (replaceLen <= 0 || replaceIn == nullptr || replaceWith == nullptr)
     {
@@ -149,7 +149,7 @@ CONST_EXPR void replaceInPlace(CharType *replaceIn, SizeT replaceFrom, SizeT rep
 
 // Allocated char array must be cleared including null terminated character as count
 template <typename CharType, typename AllocatorType>
-NODISCARD CONST_EXPR CharType *
+NODISCARD constexpr CharType *
 replace(const CharType *replaceIn, SizeT replaceFrom, SizeT replaceLen, const CharType *replaceWith, AllocatorType &allocator)
 {
     if (replaceLen <= 0 || replaceIn == nullptr || replaceWith == nullptr)
@@ -184,7 +184,7 @@ replace(const CharType *replaceIn, SizeT replaceFrom, SizeT replaceLen, const Ch
 }
 
 template <typename CharType>
-CONST_EXPR void replaceAllInPlace(CharType *replaceIn, const CharType *from, const CharType *to)
+constexpr void replaceAllInPlace(CharType *replaceIn, const CharType *from, const CharType *to)
 {
     if (replaceIn == nullptr || from == nullptr || to == nullptr)
     {
@@ -212,7 +212,7 @@ CONST_EXPR void replaceAllInPlace(CharType *replaceIn, const CharType *from, con
 // Allocated char array must be cleared including null terminated character as count
 // Returns null if nothing is replaced, so you can use the original str as it is
 template <typename CharType, typename AllocatorType>
-NODISCARD CONST_EXPR CharType *replaceAll(const CharType *replaceIn, const CharType *from, const CharType *to, AllocatorType &allocator)
+NODISCARD constexpr CharType *replaceAll(const CharType *replaceIn, const CharType *from, const CharType *to, AllocatorType &allocator)
 {
     if (replaceIn == nullptr || from == nullptr || to == nullptr)
     {
@@ -254,7 +254,7 @@ NODISCARD CONST_EXPR CharType *replaceAll(const CharType *replaceIn, const CharT
 }
 
 template <typename CharType>
-CONST_EXPR bool startsWith(CharStringView<CharType> matchIn, CharStringView<CharType> match)
+constexpr bool startsWith(CharStringView<CharType> matchIn, CharStringView<CharType> match)
 {
     if (matchIn.length() < match.length())
     {
@@ -289,7 +289,7 @@ NODISCARD bool startsWith(CharStringView<CharType> matchIn, CharStringView<CharT
 }
 
 template <typename CharType>
-NODISCARD CONST_EXPR bool startsWith(CharStringView<CharType> matchIn, CharType match)
+NODISCARD constexpr bool startsWith(CharStringView<CharType> matchIn, CharType match)
 {
     return matchIn[0] == match;
 }
@@ -328,7 +328,7 @@ NODISCARD bool endsWith(CharStringView<CharType> matchIn, CharStringView<CharTyp
 }
 
 template <typename CharType>
-NODISCARD CONST_EXPR CharStringView<CharType> trimL(CharStringView<CharType> strView)
+NODISCARD constexpr CharStringView<CharType> trimL(CharStringView<CharType> strView)
 {
     auto itr = std::find_if(
         strView.cbegin(), strView.cend(),
@@ -347,7 +347,7 @@ NODISCARD CONST_EXPR CharStringView<CharType> trimL(CharStringView<CharType> str
 }
 
 template <typename CharType>
-NODISCARD CONST_EXPR CharStringView<CharType> trimR(CharStringView<CharType> strView)
+NODISCARD constexpr CharStringView<CharType> trimR(CharStringView<CharType> strView)
 {
     auto itr = std::find_if(
         strView.crbegin(), strView.crend(),
@@ -366,14 +366,14 @@ NODISCARD CONST_EXPR CharStringView<CharType> trimR(CharStringView<CharType> str
 }
 
 template <typename CharType>
-NODISCARD CONST_EXPR CharStringView<CharType> trim(CharStringView<CharType> strView)
+NODISCARD constexpr CharStringView<CharType> trim(CharStringView<CharType> strView)
 {
     CharStringView<CharType> retView = trimL(strView);
     return trimR(retView);
 }
 
 template <typename CharType>
-NODISCARD CONST_EXPR std::vector<CharStringView<CharType>> splitLines(CharStringView<CharType> str)
+NODISCARD constexpr std::vector<CharStringView<CharType>> splitLines(CharStringView<CharType> str)
 {
     std::vector<CharStringView<CharType>> outStrs;
 
@@ -405,7 +405,7 @@ NODISCARD CONST_EXPR std::vector<CharStringView<CharType>> splitLines(CharString
 }
 
 template <typename CharType>
-NODISCARD CONST_EXPR std::vector<CharStringView<CharType>> split(CharStringView<CharType> str, CharStringView<CharType> separator)
+NODISCARD constexpr std::vector<CharStringView<CharType>> split(CharStringView<CharType> str, CharStringView<CharType> separator)
 {
     SizeT separatorLen = separator.length();
 
@@ -430,7 +430,7 @@ NODISCARD CONST_EXPR std::vector<CharStringView<CharType>> split(CharStringView<
 namespace TCharUtils
 {
 template <typename CharType, std::integral OutType>
-CONST_EXPR bool parseHex(OutType &outVal, CharStringView<CharType> strView)
+constexpr bool parseHex(OutType &outVal, CharStringView<CharType> strView)
 {
     if (strView.empty())
     {
@@ -467,7 +467,7 @@ CONST_EXPR bool parseHex(OutType &outVal, CharStringView<CharType> strView)
 }
 
 template <typename CharType, std::integral OutType>
-CONST_EXPR bool parseHex(OutType &outVal, const CharType *str)
+constexpr bool parseHex(OutType &outVal, const CharType *str)
 {
     return parseHex(outVal, CharStringView<CharType>(str, TCharStr::length(str)));
 }

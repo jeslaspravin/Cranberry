@@ -16,6 +16,9 @@
 
 #include <clang-c/Index.h>
 
+struct ReflectedTypeItem;
+struct SourceGeneratorContext;
+
 struct ParsedMetaData
 {
     String metaType;
@@ -57,6 +60,8 @@ public:
     static NODISCARD CXType getTypeReferred(CXType clangType, CXCursor typeRefCursor);
     static NODISCARD CXCursor getTypeRefInCursor(CXCursor cursor);
     static NODISCARD String getCursorTypeName(CXCursor cursor);
+    // Just returns canonical type name. No checks will be made
+    static NODISCARD String getCursorCanonicalTypeName(CXCursor cursor);
     static NODISCARD String accessSpecifierName(CXCursor cursor);
 
     static NODISCARD bool isBuiltinType(CXType clangType);
@@ -69,12 +74,14 @@ public:
      * Returns true if type is one of custom types like std::map,std::vector ...
      * Cursor must be one that has possible type reference
      */
-    static NODISCARD bool isCustomType(CXType clangType, CXCursor typeRefCursor);
+    static NODISCARD bool isCustomType(CXType clangType, CXCursor typeRefCursor, SourceGeneratorContext *srcGenContext);
     static NODISCARD bool isReflectedDecl(CXCursor declCursor);
+    static NODISCARD bool isReflectedDecl(CXCursor declCursor, SourceGeneratorContext *srcGenContext);
     /*
      * Checks if class/struct is annotated and also has generated codes
      */
     static NODISCARD bool isReflectedClass(CXCursor declCursor);
+    static NODISCARD bool isReflectedClass(CXCursor declCursor, SourceGeneratorContext *srcGenContext);
     static NODISCARD bool hasOverridenCtorPolicy(CXCursor declCursor);
     static NODISCARD CXCursor getGeneratedCodeCursor(CXCursor declCursor);
     static NODISCARD String getCursorMetaString(CXCursor cursor);
@@ -94,5 +101,5 @@ public:
     static NODISCARD bool isValidFuncParamType(CXType clangType, CXCursor paramCursor);
     static NODISCARD bool isValidFuncReturnType(CXType clangType);
     static NODISCARD bool isValidFunction(CXCursor funcCursor);
-    static NODISCARD bool isValidFieldType(CXType clangType, CXCursor fieldCursor);
+    static NODISCARD bool isValidFieldType(CXType clangType, CXCursor fieldCursor, SourceGeneratorContext *srcGenContext);
 };

@@ -12,6 +12,7 @@
 #include "Classes/ActorPrefab.h"
 #include "CBEObjectHelpers.h"
 #include "Classes/Actor.h"
+#include "ObjectTemplate.h"
 
 namespace cbe
 {

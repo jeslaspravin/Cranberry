@@ -106,7 +106,6 @@ String ParserHelper::getCursorTypeName(CXCursor cursor)
     CXType type = clang_getCursorType(cursor);
     CXType canonicalType = clang_getCanonicalType(type);
     String typeName = CXStringWrapper(clang_getTypeSpelling(type)).toString();
-    String paramName = CXStringWrapper(clang_getCursorSpelling(cursor)).toString();
     // If not POD then we need to check canonical typename for generation
     if (!ParserHelper::isBuiltinType(ParserHelper::getTypeReferred(type, cursor)))
     {
@@ -116,6 +115,11 @@ String ParserHelper::getCursorTypeName(CXCursor cursor)
         typeName = CXStringWrapper(clang_getTypeSpelling(canonicalType)).toString();
     }
     return typeName;
+}
+
+String ParserHelper::getCursorCanonicalTypeName(CXCursor cursor)
+{
+    return CXStringWrapper(clang_getTypeSpelling(clang_getCanonicalType(clang_getCursorType(cursor)))).toString();
 }
 
 String ParserHelper::accessSpecifierName(CXCursor cursor)
@@ -227,19 +231,24 @@ bool ParserHelper::isSpecializedType(CXType clangType, CXCursor typeRefCursor)
 
 #define CHECK_TYPE_FIRST(TypeName) (checkTypeName.startsWith(TCHAR(#TypeName)))
 #define CHECK_TYPE(TypeName) || (checkTypeName.startsWith(TCHAR(#TypeName)))
-bool ParserHelper::isCustomType(CXType clangType, CXCursor typeRefCursor)
+bool ParserHelper::isCustomType(CXType clangType, CXCursor typeRefCursor, SourceGeneratorContext *srcGenContext)
 {
     String checkTypeName = getNonConstTypeName(clangType, typeRefCursor);
 
-    auto checkMapSetType = [](CXType clangType)
+    auto checkMapSetType = [&srcGenContext](CXType clangType)
     {
         CXCursor cursor = clang_getTypeDeclaration(clang_getCanonicalType(clangType));
-        return isBuiltinType(clangType) || isSpecializedType(clangType, cursor)
-               || (clangType.kind == CXTypeKind::CXType_Pointer && isValidFieldType(clangType, cursor)) // Support pointer types
-               || (clangType.kind == CXTypeKind::CXType_Record
-                   && (clang_getCursorKind(cursor) == CXCursor_StructDecl || clang_getCursorKind(cursor) == CXCursor_ClassDecl
-                       || clang_getCursorKind(cursor) == CXCursor_ClassTemplate)
-                   && isReflectedClass(cursor)); // Support reflected types
+        bool bIsValid = isBuiltinType(clangType) || isSpecializedType(clangType, cursor);
+        // Support pointer types
+        bIsValid = bIsValid || (clangType.kind == CXTypeKind::CXType_Pointer && isValidFieldType(clangType, cursor, srcGenContext));
+        // Support reflected types
+        if (!bIsValid && clangType.kind == CXTypeKind::CXType_Record)
+        {
+            bIsValid = clang_getCursorKind(cursor) == CXCursor_StructDecl || clang_getCursorKind(cursor) == CXCursor_ClassDecl
+                       || clang_getCursorKind(cursor) == CXCursor_ClassTemplate;
+            bIsValid = bIsValid && isReflectedClass(cursor, srcGenContext);
+        }
+        return bIsValid;
     };
 
     if (FOR_EACH_MAP_SET_TYPES(CHECK_TYPE_FIRST, CHECK_TYPE, CHECK_TYPE))
@@ -282,7 +291,6 @@ bool ParserHelper::isCustomType(CXType clangType, CXCursor typeRefCursor)
 
 #undef CHECK_TYPE
 #undef CHECK_TYPE_FIRST
-
 bool ParserHelper::isReflectedDecl(CXCursor declCursor)
 {
     if (!clang_isDeclaration(clang_getCursorKind(declCursor)))
@@ -662,7 +670,7 @@ bool ParserHelper::isValidFunction(CXCursor funcCursor)
     return true;
 }
 
-bool ParserHelper::isValidFieldType(CXType clangType, CXCursor fieldCursor)
+bool ParserHelper::isValidFieldType(CXType clangType, CXCursor fieldCursor, SourceGeneratorContext *srcGenContext)
 {
     CXStringRef fieldName(new CXStringWrapper(clang_getCursorSpelling(fieldCursor)));
     CXStringRef typeName(new CXStringWrapper(clang_getTypeSpelling(clangType)));
@@ -684,7 +692,7 @@ bool ParserHelper::isValidFieldType(CXType clangType, CXCursor fieldCursor)
             CXType innerType = clang_getPointeeType(clangType);
             // Only class type can be a pointer so check that
             CXCursor classDecl = clang_getTypeDeclaration(innerType);
-            bIsValid = clang_getCursorKind(classDecl) == CXCursor_ClassDecl && isReflectedClass(classDecl);
+            bIsValid = clang_getCursorKind(classDecl) == CXCursor_ClassDecl && isReflectedClass(classDecl, srcGenContext);
             if (!bIsValid)
             {
                 LOG_ERROR(
@@ -699,7 +707,7 @@ bool ParserHelper::isValidFieldType(CXType clangType, CXCursor fieldCursor)
         case CXType_Vector:
         {
             CXType innerType = clang_getElementType(clangType);
-            bIsValid = isValidFieldType(innerType, clang_getNullCursor());
+            bIsValid = isValidFieldType(innerType, clang_getNullCursor(), srcGenContext);
             if (!bIsValid)
             {
                 LOG_ERROR(
@@ -722,7 +730,8 @@ bool ParserHelper::isValidFieldType(CXType clangType, CXCursor fieldCursor)
                 // std::vector or class decl like Matrix3 or Vector3
                 bIsValid = (clang_getCursorKind(typeDecl) == CXCursor_StructDecl || clang_getCursorKind(typeDecl) == CXCursor_ClassDecl
                             || clang_getCursorKind(typeDecl) == CXCursor_ClassTemplate)
-                           && (isReflectedClass(typeDecl) || isSpecializedType(clangType, fieldCursor) || isCustomType(clangType, fieldCursor));
+                           && (isReflectedClass(typeDecl, srcGenContext) || isSpecializedType(clangType, fieldCursor)
+                               || isCustomType(clangType, fieldCursor, srcGenContext));
                 if (!bIsValid)
                 {
                     LOG_ERROR("ParserHelper", "Type {} is not valid field type", typeName);
@@ -732,7 +741,7 @@ bool ParserHelper::isValidFieldType(CXType clangType, CXCursor fieldCursor)
         }
         case CXType_Elaborated:
         {
-            bIsValid = isValidFieldType(clang_getCanonicalType(clangType), fieldCursor);
+            bIsValid = isValidFieldType(clang_getCanonicalType(clangType), fieldCursor, srcGenContext);
             break;
         }
         case CXType_ConstantArray:

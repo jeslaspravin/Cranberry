@@ -70,7 +70,8 @@ public:
     STRING_FUNCQUALIFIER String(BaseString &&otherString)
         : BaseString(otherString)
     {}
-    STRING_FUNCQUALIFIER String(BaseString::const_iterator start, BaseString::const_iterator end)
+    template <typename ItrType>
+    STRING_FUNCQUALIFIER String(ItrType start, ItrType end)
         : BaseString(start, end)
     {}
     STRING_FUNCQUALIFIER String(const StringView &strView)
@@ -481,7 +482,7 @@ public:
 };
 
 template <>
-struct PROGRAMCORE_EXPORT std::hash<String>
+struct std::hash<String>
 {
     NODISCARD SizeT operator() (const String &keyval) const noexcept
     {

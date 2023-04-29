@@ -37,8 +37,22 @@
 NODISCARD constexpr const AChar *filterFileName(const AChar *fileName) noexcept
 {
     SizeT foundAt = 0;
-    TCharStr::rfind<AChar>(fileName, FS_PATH_SEPARATOR, &foundAt);
-    return fileName + foundAt + 1;
+    bool bFound = TCharStr::rfind<AChar>(fileName, FS_PATH_SEPARATOR, &foundAt);
+    if constexpr (*FS_PATH_SEPARATOR != '/')
+    {
+        SizeT fwdSlashFoundAt = 0;
+        bool bFwdSlashFound = TCharStr::rfind<AChar>(fileName, TCHAR("/"), &fwdSlashFoundAt);
+        if (bFwdSlashFound && (!bFound || fwdSlashFoundAt > foundAt))
+        {
+            foundAt = fwdSlashFoundAt;
+            bFound = true;
+        }
+    }
+    if (bFound)
+    {
+        return fileName + foundAt + 1;
+    }
+    return fileName;
 }
 
 // Maps log severity to corresponding log out's string

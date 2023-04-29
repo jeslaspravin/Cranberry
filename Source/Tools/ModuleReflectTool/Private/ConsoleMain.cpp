@@ -17,6 +17,7 @@
 #include "ModuleSources.h"
 #include "Modules/ModuleManager.h"
 #include "Types/CoreTypes.h"
+#include "Types/Platform/Threading/CoPaT/JobSystem.h"
 #include "Types/Platform/LFS/PathFunctions.h"
 #include "Types/Time.h"
 
@@ -30,10 +31,10 @@ void initializeCmdArguments()
         ReflectToolCmdLineConst::GENERATED_TU_LIST
     );
     CmdLineArgument generatedDirector(
-        TCHAR("Directory where the generated files will be dropped.\n\
-    Generated header for headers under Public folder, will be placed under public folder of this directory and others will be placed under Private\
-    "),
-        ReflectToolCmdLineConst::GENERATED_DIR
+        TCHAR("Directory where the generated files will be dropped.\nGenerated header for headers under Public folder, will be placed under public folder of this directory and others will be placed under Private"), ReflectToolCmdLineConst::GENERATED_DIR
+    );
+    CmdLineArgument reflectedTypesListFile(
+        TCHAR("File where all the reflected types from this module must be written out."), ReflectToolCmdLineConst::REFLECTED_TYPES_LIST_FILE
     );
     CmdLineArgument moduleSrcDir(
         TCHAR("Directory to search and parse source headers from for this module."), ReflectToolCmdLineConst::MODULE_SRC_DIR
@@ -56,6 +57,9 @@ void initializeCmdArguments()
         TCHAR("File path that contains list of compile definitions for this "
               "module semicolon(;) separated."),
         ReflectToolCmdLineConst::COMPILE_DEF_LIST_FILE, TCHAR("--D")
+    );
+    CmdLineArgument depIntermDirsList(
+        TCHAR("Intermediate directories of the modules this module depends on."), ReflectToolCmdLineConst::DEP_INTERMEDIATE_DIRS_LIST_FILE
     );
     CmdLineArgument exeSampleCode(TCHAR("Executes sample code instead of actual application"), ReflectToolCmdLineConst::SAMPLE_CODE);
     CmdLineArgument filterDiagnostics(
@@ -119,6 +123,10 @@ int32 main(int32 argsc, AChar **args)
     }
     else
     {
+        CBE_START_PROFILER();
+        copat::JobSystem js(copat::JobSystem::NoSpecialThreads);
+        js.initialize({}, nullptr);
+
         StopWatch sw;
         ModuleSources moduleSrcs;
         if (!moduleSrcs.compileAllSources(SourceGenerator::isTemplatesModified()))
@@ -132,9 +140,13 @@ int32 main(int32 argsc, AChar **args)
         generator.writeGeneratedFiles();
 
         std::vector<const SourceInformation *> generatedSrcs;
+        std::vector<ReflectedTypeItem> allKnownReflectedTypes;
         bool bGenerated = generator.generatedSources(generatedSrcs);
-        moduleSrcs.injectGeneratedFiles(generatedSrcs);
+        allKnownReflectedTypes.insert(
+            allKnownReflectedTypes.begin(), generator.getKnownReflectedTypes().cbegin(), generator.getKnownReflectedTypes().cend()
+        );
 
+        moduleSrcs.injectGeneratedFiles(generatedSrcs, std::move(allKnownReflectedTypes));
         if (!bGenerated)
         {
             LOG_ERROR("ModuleReflectTool", "Generating module sources failed");
@@ -148,6 +160,9 @@ int32 main(int32 argsc, AChar **args)
             sw.stop();
             LOG("ModuleReflectTool", "{} : Reflected in {:0.2} seconds", PathFunctions::fileOrDirectoryName(moduleSrcDir), sw.duration());
         }
+
+        js.shutdown();
+        CBE_STOP_PROFILER();
     }
 
     moduleManager->unloadModule(TCHAR("ReflectionRuntime"));

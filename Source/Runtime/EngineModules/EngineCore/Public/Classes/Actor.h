@@ -14,10 +14,6 @@
 #include "EngineCoreExports.h"
 #include "CBEObject.h"
 
-// Including in reflection parser alone to detect types as reflected, This is necessary for validation
-#ifdef __REF_PARSE__
-#include "Components/ComponentBase.h"
-#endif
 #include "Actor.gen.h"
 
 namespace cbe

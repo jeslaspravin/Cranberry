@@ -31,7 +31,7 @@ String PathFunctions::toRelativePath(const String &absPath, const String &relToP
     fatalAssertf(
         errorCode.value() == 0, "Error {} when making [{}] as relative to {}", UTF8_TO_TCHAR(errorCode.message().c_str()), absPath, relToPath
     );
-    return WCHAR_TO_TCHAR(relPath.c_str());
+    return asGenericPath(WCHAR_TO_TCHAR(relPath.c_str()));
 }
 
 String PathFunctions::toAbsolutePath(const String &relPath, const String &basePath)

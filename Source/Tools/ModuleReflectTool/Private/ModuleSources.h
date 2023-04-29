@@ -10,24 +10,10 @@
  */
 
 #pragma once
-#include "String/String.h"
 
-#include <clang-c/Index.h>
+#include "ModuleReflectTypes.h"
 
 class FileChangesTracker;
-
-struct SourceInformation
-{
-    String filePath;
-    String headerIncl;
-    String generatedHeaderPath;
-    String generatedTUPath;
-    // TU will be parsed and be valid only if this source's reflection data is outdated.
-    // Failing to parse will lead to termination. So this must be valid if this source is parsed
-    CXTranslationUnit tu = nullptr;
-    // File size used for sorting
-    uint64 fileSize = 0;
-};
 
 /*
  * This class processes each of the header in the module.
@@ -38,9 +24,11 @@ private:
     std::vector<String> genFiles;
     std::vector<String> includes;
     std::vector<String> compileDefs;
+    std::vector<String> depIntermDirs;
     String intermediateDir;
     String genDir;
     String srcDir;
+    String reflectedTypesFile;
 
     FileChangesTracker *headerTracker;
     CXIndex index;
@@ -58,7 +46,9 @@ public:
 
     bool compileAllSources(bool bFullCompile = false);
     // Injects generated TU's into generate module files for build system to compile
-    void injectGeneratedFiles(const std::vector<const SourceInformation *> &generatedSrcs);
+    void injectGeneratedFiles(const std::vector<const SourceInformation *> &generatedSrcs, std::vector<ReflectedTypeItem> moduleReflectedTypes);
 
     std::vector<const SourceInformation *> getParsedSources() const;
+    std::vector<ReflectedTypeItem> getDepReflectedTypes() const;
+    std::vector<ReflectedTypeItem> getModuleReflectedTypes() const;
 };

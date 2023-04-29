@@ -51,6 +51,8 @@ public:
         return combinePathWithSep(FS_PATH_SEPARATOR, std::forward<Paths>(paths)...);
     }
 
+    // NOTE: Cannot use StringView as most functions work after converting paths to generic path using asGenericPath()
+
     static String toRelativePath(const String &absPath, const String &relToPath);
     // To abs path converts relative path to absolute canonical path and replaces any up directory
     // redirectors

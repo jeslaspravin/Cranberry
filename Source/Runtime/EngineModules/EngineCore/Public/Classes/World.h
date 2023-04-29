@@ -16,11 +16,6 @@
 #include "CBEObject.h"
 #include "Types/Containers/FlatTree.h"
 
-#ifdef __REF_PARSE__
-#include "Classes/Actor.h"
-#include "Classes/ActorPrefab.h"
-#endif
-
 #include "World.gen.h"
 
 namespace cbe

@@ -52,8 +52,17 @@ endfunction ()
 
 function (reflect_target)    
     set(one_value_args TARGET_NAME)
-    set(multi_value_args GEN_FILES)
+    # GEN_FILES: Output generated files
+    # TARGET_DEPS: Modules that this target depends on
+    set(multi_value_args GEN_FILES TARGET_DEPS)
     cmake_parse_arguments(reflect_target "" "${one_value_args}" "${multi_value_args}" ${ARGN})
+
+    set(reflect_intm_folder Reflection)
+    set(intermediate_dir ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${reflect_intm_folder})
+    set(target_incls_file TargetIncludes.list)
+    set(target_defs_file TargetDefines.list)
+    set(target_dep_intm_dirs_file TargetDepIntermDirs.list)
+    set(target_ref_types_file TargetReflectTypes.list)
 
     set(gen_files_arg "")
     foreach (gen_file ${reflect_target_GEN_FILES})
@@ -63,12 +72,21 @@ function (reflect_target)
     # Why generate in first place? Some defines has quoted strings and they cannot be passed as commandline args and also sometime cmdline becomes huge because of these two properties
     # Generating intermediate files that store compile definitions and include directories for reflection generator tool
     # It is okay to be configure generate only as content written is only change when editing cmake files and it in turn regenerates new list
-    file (GENERATE OUTPUT $<CONFIG>/${reflect_target_TARGET_NAME}_incls.list
+    file (GENERATE OUTPUT $<CONFIG>/${reflect_intm_folder}/${target_incls_file}
         CONTENT "$<TARGET_PROPERTY:INCLUDE_DIRECTORIES>"
         TARGET ${reflect_target_TARGET_NAME}
     )
-    file (GENERATE OUTPUT $<CONFIG>/${reflect_target_TARGET_NAME}_defs.list
+    file (GENERATE OUTPUT $<CONFIG>/${reflect_intm_folder}/${target_defs_file}
         CONTENT "$<TARGET_PROPERTY:COMPILE_DEFINITIONS>"
+        TARGET ${reflect_target_TARGET_NAME}
+    )
+    set (dep_intermediate_dirs )
+    # Dependent intermediate directories list
+    foreach(dep_target ${reflect_target_TARGET_DEPS})
+        list(APPEND dep_intermediate_dirs $<TARGET_PROPERTY:${dep_target},BINARY_DIR>/$<CONFIG>/${reflect_intm_folder})
+    endforeach(dep_target ${reflect_target_TARGET_DEPS})
+    file (GENERATE OUTPUT $<CONFIG>/${reflect_intm_folder}/${target_dep_intm_dirs_file}
+        CONTENT "${dep_intermediate_dirs}"
         TARGET ${reflect_target_TARGET_NAME}
     )
 
@@ -76,15 +94,17 @@ function (reflect_target)
     add_custom_command(TARGET ${reflect_target_TARGET_NAME} PRE_BUILD
         COMMAND ModuleReflectTool   --generatedList ${gen_files_arg} --filterDiagnostics
                                     --generatedDir "${CMAKE_CURRENT_BINARY_DIR}/${target_generated_path}" 
+                                    --reflectedTypesList "${intermediate_dir}/${target_ref_types_file}"
                                     --moduleSrcDir "${CMAKE_CURRENT_LIST_DIR}" 
                                     --moduleName ${reflect_target_TARGET_NAME}
                                     --moduleExportMacro $<UPPER_CASE:${reflect_target_TARGET_NAME}>_EXPORT
-                                    --intermediateDir "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>" 
-                                    --includeList "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${reflect_target_TARGET_NAME}_incls.list" 
-                                    --compileDefList "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${reflect_target_TARGET_NAME}_defs.list"
+                                    --intermediateDir "${intermediate_dir}" 
+                                    --includeList "${intermediate_dir}/${target_incls_file}" 
+                                    --compileDefList "${intermediate_dir}/${target_defs_file}"
+                                    --depIntermDirsList "${intermediate_dir}/${target_dep_intm_dirs_file}"
                                     --logFileName ${reflect_target_TARGET_NAME}
                                     # --logVerbose
-        BYPRODUCTS ${gen_files}
+        BYPRODUCTS ${reflect_target_GEN_FILES}
         USES_TERMINAL
         COMMAND_EXPAND_LISTS
         # VERBATIM not needed as we took care of quotes manually
@@ -101,7 +121,7 @@ function (reflect_target)
     # add generated files to target_sources
     target_sources(${reflect_target_TARGET_NAME}
         PRIVATE
-            ${gen_files}
+            ${reflect_target_GEN_FILES}
     )
 endfunction()
 
@@ -110,6 +130,6 @@ macro (generate_reflection)
     determine_reflect_gen_files(gen_files ${target_name} "${CMAKE_CURRENT_LIST_DIR}" "${CMAKE_CURRENT_BINARY_DIR}")
     list (LENGTH gen_files gen_files_count)
     if (${gen_files_count} GREATER 0)
-        reflect_target(TARGET_NAME ${target_name} GEN_FILES ${gen_files})
+        reflect_target(TARGET_NAME ${target_name} GEN_FILES ${gen_files} TARGET_DEPS ${private_modules} ${public_modules} ${interface_modules})
     endif ()
 endmacro ()
