@@ -22,6 +22,8 @@ class CranberryEngineApp final : public ApplicationInstance
 public:
     CranberryEngineApp(const AppInstanceCreateInfo &ci)
         : ApplicationInstance(ci)
+        , rttiModule(nullptr)
+        , coreObjModule(nullptr)
     {}
 
     /* ApplicationInstance overrides */

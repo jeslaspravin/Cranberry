@@ -155,10 +155,10 @@ int32 main(int32 argsc, AChar **args)
         else
         {
             SCOPED_MUTE_LOG_SEVERITIES(Logger::Debug);
-            String moduleSrcDir;
-            ProgramCmdLine::get().getArg(moduleSrcDir, ReflectToolCmdLineConst::MODULE_SRC_DIR);
+            String moduleName;
+            ProgramCmdLine::get().getArg(moduleName, ReflectToolCmdLineConst::MODULE_NAME);
             sw.stop();
-            LOG("ModuleReflectTool", "{} : Reflected in {:0.2} seconds", PathFunctions::fileOrDirectoryName(moduleSrcDir), sw.duration());
+            LOG("ModuleReflectTool", "{} : Reflected in {:0.2} seconds", moduleName, sw.duration());
         }
 
         js.shutdown();

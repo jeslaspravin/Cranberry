@@ -12,6 +12,7 @@
 #include "DispatchHelpers.h"
 #include "CoroutineAwaitAll.h"
 #include "JobSystemCoroutine.h"
+#include "CoroutineWait.h"
 
 COPAT_NS_INLINED
 namespace copat
@@ -87,6 +88,20 @@ AwaitAllTasks<std::vector<DispatchAwaitableType>> dispatch(
         }
     }
     return awaitAllTasks(std::move(dispatchedJobs));
+}
+
+void parallelFor(
+    JobSystem *jobSys, const DispatchFunctionType &callback, u32 count, EJobPriority jobPriority /*= EJobPriority::Priority_Normal */
+) noexcept
+{
+    if (count == 0)
+    {
+        return;
+    }
+
+    AwaitAllTasks<std::vector<DispatchAwaitableType>> allAwaits = dispatch(jobSys, callback, count - 1, jobPriority);
+    callback(count - 1);
+    waitOnAwaitable(std::move(allAwaits));
 }
 
 } // namespace copat

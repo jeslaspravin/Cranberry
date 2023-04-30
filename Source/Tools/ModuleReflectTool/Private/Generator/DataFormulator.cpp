@@ -929,12 +929,11 @@ void SourceGenerator::parseSources()
             collectReflectTypes(sourceGenCntxts[idx].second, reflectedTypes);
             return reflectedTypes;
         };
-        auto allAwaits = copat::diverge(
+        std::vector<std::vector<String>> reflectedTypesPerSource = copat::parallelForReturn(
             copat::JobSystem::get(),
             copat::DispatchFunctionTypeWithRet<decltype(collectAllReflectTypes(0))>::createLambda(std::move(collectAllReflectTypes)),
             uint32(sourceGenCntxts.size())
         );
-        std::vector<std::vector<String>> reflectedTypesPerSource = copat::converge(std::move(allAwaits));
         debugAssert(reflectedTypesPerSource.size() == sourceGenCntxts.size());
 
         for (SizeT i = 0; i != sourceGenCntxts.size(); ++i)
@@ -957,7 +956,7 @@ void SourceGenerator::parseSources()
         moduleReflectedTypes.clear();
     }
 
-    copat::waitOnAwaitable(copat::dispatch(
+    copat::parallelFor(
         copat::JobSystem::get(),
         copat::DispatchFunctionType::createLambda(
             [this](uint32 idx)
@@ -966,7 +965,7 @@ void SourceGenerator::parseSources()
             }
         ),
         uint32(sourceGenCntxts.size())
-    ));
+    );
 }
 
 //////////////////////////////////////////////////////////////////////////

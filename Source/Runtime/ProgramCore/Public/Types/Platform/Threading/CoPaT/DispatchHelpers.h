@@ -39,6 +39,11 @@ using DispatchFunctionType = DispatchFunctionTypeWithRet<void>;
 COPAT_EXPORT_SYM AwaitAllTasks<std::vector<DispatchAwaitableType>>
 dispatch(JobSystem *jobSys, const DispatchFunctionType &callback, u32 count, EJobPriority jobPriority = EJobPriority::Priority_Normal) noexcept;
 
+// Dispatch and wait immediately
+COPAT_EXPORT_SYM void parallelFor(
+    JobSystem *jobSys, const DispatchFunctionType &callback, u32 count, EJobPriority jobPriority = EJobPriority::Priority_Normal
+) noexcept;
+
 template <typename FuncType, typename... Args>
 NormalFuncAwaiter fireAndForget(FuncType &&func, Args &&...args) noexcept
 {
@@ -122,7 +127,7 @@ struct DispatchWithReturn
  */
 template <typename RetType>
 auto diverge(
-    JobSystem *jobSys, DispatchFunctionTypeWithRet<RetType> &&callback, u32 count, EJobPriority jobPriority = EJobPriority::Priority_Normal
+    JobSystem *jobSys, const DispatchFunctionTypeWithRet<RetType> &callback, u32 count, EJobPriority jobPriority = EJobPriority::Priority_Normal
 ) noexcept
 {
     static_assert(
@@ -133,7 +138,7 @@ auto diverge(
 }
 
 template <typename RetType>
-std::vector<RetType> converge(AwaitAllTasks<std::vector<DispatchAwaitableTypeWithRet<std::vector<RetType>>>> &&allAwaits)
+std::vector<RetType> converge(AwaitAllTasks<std::vector<DispatchAwaitableTypeWithRet<std::vector<RetType>>>> &&allAwaits) noexcept
 {
     static_assert(
         std::is_same_v<DispatchAwaitableTypeWithRet<std::vector<RetType>>, typename DispatchWithReturn<RetType>::AwaitableType>,
@@ -145,6 +150,27 @@ std::vector<RetType> converge(AwaitAllTasks<std::vector<DispatchAwaitableTypeWit
         retVal.insert(retVal.end(), awaitable.getReturnValue().cbegin(), awaitable.getReturnValue().cend());
     }
     return retVal;
+}
+
+// diverge, converge immediately and returns the result
+template <typename RetType>
+std::vector<RetType> parallelForReturn(
+    JobSystem *jobSys, const DispatchFunctionTypeWithRet<RetType> &callback, u32 count, EJobPriority jobPriority = EJobPriority::Priority_Normal
+) noexcept
+{
+    using AwaitableType = typename DispatchWithReturn<RetType>::AwaitableType;
+    std::vector<RetType> retVals;
+    if (count == 0)
+    {
+        return retVals;
+    }
+
+    AwaitAllTasks<std::vector<AwaitableType>> allAwaits = diverge(jobSys, callback, count - 1, jobPriority);
+    RetType lastReturn = callback(count - 1);
+    retVals = converge(std::move(allAwaits));
+    retVals.emplace_back(std::move(lastReturn));
+
+    return retVals;
 }
 
 } // namespace copat

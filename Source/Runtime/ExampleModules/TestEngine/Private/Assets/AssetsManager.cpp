@@ -62,11 +62,10 @@ void AssetManager::loadUnderPathAsync(const String &scanPath)
 
         return assets;
     };
-    auto allAwaits = copat::diverge(
+    std::vector<decltype(loadAssetsAsync(0))> loadedAssetsPerFile = copat::parallelForReturn(
         copat::JobSystem::get(), copat::DispatchFunctionTypeWithRet<decltype(loadAssetsAsync(0))>::createLambda(std::move(loadAssetsAsync)),
         uint32(foundFiles.size())
     );
-    std::vector<decltype(loadAssetsAsync(0))> loadedAssetsPerFile = copat::converge(std::move(allAwaits));
 
     for (const auto &loadedAssets : loadedAssetsPerFile)
     {

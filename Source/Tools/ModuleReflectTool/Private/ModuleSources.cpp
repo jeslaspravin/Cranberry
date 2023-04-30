@@ -357,11 +357,10 @@ bool ModuleSources::compileAllSources(bool bFullCompile /*= false*/)
         return sourceInfo;
     };
 
-    auto allAwaits = copat::diverge(
+    sources = copat::parallelForReturn(
         copat::JobSystem::get(), copat::DispatchFunctionTypeWithRet<decltype(compileHeaders(0))>::createLambda(std::move(compileHeaders)),
         uint32(headerFiles.size())
     );
-    sources = copat::converge(std::move(allAwaits));
 
     return bAllClear.load(std::memory_order::relaxed);
 }

@@ -1046,7 +1046,7 @@ void EngineRenderScene::updateVisibility(const RenderSceneViewParams &viewParams
     viewParams.view.viewMatrix(w2clip);
     w2clip = viewParams.view.projectionMatrix() * w2clip;
 
-    copat::waitOnAwaitable(copat::dispatch(
+    copat::parallelFor(
         appInstance->jobSystem,
         copat::DispatchFunctionType::createLambda(
             [this, &compsInsideFrustum, &w2clip](uint32 idx)
@@ -1092,7 +1092,7 @@ void EngineRenderScene::updateVisibility(const RenderSceneViewParams &viewParams
             }
         ),
         totalCompCapacity
-    ));
+    );
 
     CBE_PROFILER_SCOPE(CBE_PROFILER_CHAR("WriteVisibilityBits"));
     for (SizeT i = 0; i != totalCompCapacity;)

@@ -74,7 +74,7 @@ void SourceGenerator::writeGeneratedFiles()
     String moduleExpMacro;
     ProgramCmdLine::get().getArg(moduleExpMacro, ReflectToolCmdLineConst::MODULE_EXP_MACRO);
 
-    copat::waitOnAwaitable(copat::dispatch(
+    copat::parallelFor(
         copat::JobSystem::get(),
         copat::DispatchFunctionType::createLambda(
             [this, &sourceGenTemplates, &moduleExpMacro](uint32 idx)
@@ -134,7 +134,7 @@ void SourceGenerator::writeGeneratedFiles()
             }
         ),
         uint32(sourceGenCntxts.size())
-    ));
+    );
 }
 
 bool SourceGenerator::generatedSources(std::vector<const SourceInformation *> &outGeneratedSrcs) const
