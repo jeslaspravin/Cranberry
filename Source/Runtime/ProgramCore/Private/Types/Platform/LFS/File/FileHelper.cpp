@@ -260,7 +260,7 @@ bool FileHelper::writeString(const String &content, const String &fileName)
     file.setFileFlags(EFileFlags::Write);
     if (file.openOrCreate())
     {
-        file.write(ArrayView<const uint8>(reinterpret_cast<uint8 *>(utf8Str.data()), utf8Str.size()));
+        file.write({ reinterpret_cast<uint8 *>(utf8Str.data()), utf8Str.length() });
         file.closeFile();
         return true;
     }
@@ -275,7 +275,7 @@ bool FileHelper::writeBytes(const std::vector<uint8> &bytes, const String &fileN
     file.setFileFlags(EFileFlags::Write);
     if (file.openOrCreate())
     {
-        file.write(ArrayView<const uint8>(bytes.data(), bytes.size()));
+        file.write({ bytes.data(), bytes.size() });
         file.closeFile();
         return true;
     }

@@ -51,7 +51,7 @@ void EnvironmentMapAsset::initAsset()
                 copyInfo.extent = hdrImage->getImageSize();
                 copyInfo.subres.layersCount = 1;
                 copyInfo.subres.baseMip = copyInfo.subres.baseLayer = 0;
-                cmdList->copyToImage(hdrImage, ArrayView<const LinearColor>(tempPixelData), copyInfo);
+                cmdList->copyToImage(hdrImage, tempPixelData, copyInfo);
             }
 
             // Create Textures

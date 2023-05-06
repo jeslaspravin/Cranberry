@@ -10,7 +10,9 @@
  */
 
 #pragma once
+
 #include "RenderInterface/ShaderCore/ShaderParameters.h"
+#include "Logger/Logger.h"
 #include "ShaderDataTypes.h"
 
 #include <map>

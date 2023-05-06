@@ -10,7 +10,7 @@
  */
 
 #include "Types/Platform/LFS/File/GenericFile.h"
-#include "Logger/Logger.h"
+#include "Types/Platform/PlatformAssertionErrors.h"
 #include "Types/CoreDefines.h"
 #include "Types/Platform/LFS/PathFunctions.h"
 #include "Types/Platform/LFS/PlatformLFS.h"

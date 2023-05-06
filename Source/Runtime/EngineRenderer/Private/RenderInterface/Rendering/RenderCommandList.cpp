@@ -35,47 +35,47 @@ public:
     void newFrame(float timeDelta) final;
 
     void copyToBuffer(BufferResourceRef dst, uint32 dstOffset, const void *dataToCopy, uint32 size) final;
-    void copyToBuffer(ArrayView<const BatchCopyBufferData> batchCopies) final;
-    void copyBuffer(BufferResourceRef src, BufferResourceRef dst, ArrayView<const CopyBufferInfo> copies) final;
-    void copyBuffer(ArrayView<const BatchCopyBufferInfo> batchCopies) final;
+    void copyToBuffer(ArrayView<BatchCopyBufferData> batchCopies) final;
+    void copyBuffer(BufferResourceRef src, BufferResourceRef dst, ArrayView<CopyBufferInfo> copies) final;
+    void copyBuffer(ArrayView<BatchCopyBufferInfo> batchCopies) final;
 
-    void copyToImage(ImageResourceRef dst, ArrayView<const Color> pixelData, const CopyPixelsToImageInfo &copyInfo) final;
-    void copyToImage(ImageResourceRef dst, ArrayView<const LinearColor> pixelData, const CopyPixelsToImageInfo &copyInfo) final;
-    void copyToImageLinearMapped(ImageResourceRef dst, ArrayView<const Color> pixelData, const CopyPixelsToImageInfo &copyInfo) final;
+    void copyToImage(ImageResourceRef dst, ArrayView<Color> pixelData, const CopyPixelsToImageInfo &copyInfo) final;
+    void copyToImage(ImageResourceRef dst, ArrayView<LinearColor> pixelData, const CopyPixelsToImageInfo &copyInfo) final;
+    void copyToImageLinearMapped(ImageResourceRef dst, ArrayView<Color> pixelData, const CopyPixelsToImageInfo &copyInfo) final;
 
     void copyOrResolveImage(ImageResourceRef src, ImageResourceRef dst, const CopyImageInfo &srcInfo, const CopyImageInfo &dstInfo) final;
 
-    void clearImage(ImageResourceRef image, const LinearColor &clearColor, ArrayView<const ImageSubresource> subresources) final;
-    void clearDepth(ImageResourceRef image, float depth, uint32 stencil, ArrayView<const ImageSubresource> subresources) final;
+    void clearImage(ImageResourceRef image, const LinearColor &clearColor, ArrayView<ImageSubresource> subresources) final;
+    void clearDepth(ImageResourceRef image, float depth, uint32 stencil, ArrayView<ImageSubresource> subresources) final;
 
     void setupInitialLayout(ImageResourceRef image) final;
 
     void presentImage(
-        ArrayView<const WindowCanvasRef> canvases, ArrayView<const uint32> imageIndices, ArrayView<const SemaphoreRef> waitOnSemaphores
+        ArrayView<WindowCanvasRef> canvases, ArrayView<uint32> imageIndices, ArrayView<SemaphoreRef> waitOnSemaphores
     ) final;
 
-    void cmdCopyBuffer(const GraphicsResource *cmdBuffer, BufferResourceRef src, BufferResourceRef dst, ArrayView<const CopyBufferInfo> copies)
+    void cmdCopyBuffer(const GraphicsResource *cmdBuffer, BufferResourceRef src, BufferResourceRef dst, ArrayView<CopyBufferInfo> copies)
         final;
-    void cmdCopyBuffer(const GraphicsResource *cmdBuffer, ArrayView<const BatchCopyBufferInfo> copies) final;
-    void cmdCopyToBuffer(const GraphicsResource *cmdBuffer, ArrayView<const BatchCopyBufferData> batchCopies) final;
+    void cmdCopyBuffer(const GraphicsResource *cmdBuffer, ArrayView<BatchCopyBufferInfo> copies) final;
+    void cmdCopyToBuffer(const GraphicsResource *cmdBuffer, ArrayView<BatchCopyBufferData> batchCopies) final;
     void cmdCopyOrResolveImage(
         const GraphicsResource *cmdBuffer, ImageResourceRef src, ImageResourceRef dst, const CopyImageInfo &srcInfo,
         const CopyImageInfo &dstInfo
     ) final;
 
-    void cmdTransitionLayouts(const GraphicsResource *cmdBuffer, ArrayView<const ImageResourceRef> images) final;
+    void cmdTransitionLayouts(const GraphicsResource *cmdBuffer, ArrayView<ImageResourceRef> images) final;
 
     void cmdClearImage(
-        const GraphicsResource *cmdBuffer, ImageResourceRef image, const LinearColor &clearColor, ArrayView<const ImageSubresource> subresources
+        const GraphicsResource *cmdBuffer, ImageResourceRef image, const LinearColor &clearColor, ArrayView<ImageSubresource> subresources
     ) final;
     void cmdClearDepth(
-        const GraphicsResource *cmdBuffer, ImageResourceRef image, float depth, uint32 stencil, ArrayView<const ImageSubresource> subresources
+        const GraphicsResource *cmdBuffer, ImageResourceRef image, float depth, uint32 stencil, ArrayView<ImageSubresource> subresources
     ) final;
 
-    void cmdBarrierResources(const GraphicsResource *cmdBuffer, ArrayView<const ShaderParametersRef> descriptorsSets) final;
-    void cmdBarrierVertices(const GraphicsResource *cmdBuffer, ArrayView<const BufferResourceRef> vertexBuffers) final;
-    void cmdBarrierIndices(const GraphicsResource *cmdBuffer, ArrayView<const BufferResourceRef> indexBuffers) final;
-    void cmdBarrierIndirectDraws(const GraphicsResource *cmdBuffer, ArrayView<const BufferResourceRef> indirectDrawBuffers) final;
+    void cmdBarrierResources(const GraphicsResource *cmdBuffer, ArrayView<ShaderParametersRef> descriptorsSets) final;
+    void cmdBarrierVertices(const GraphicsResource *cmdBuffer, ArrayView<BufferResourceRef> vertexBuffers) final;
+    void cmdBarrierIndices(const GraphicsResource *cmdBuffer, ArrayView<BufferResourceRef> indexBuffers) final;
+    void cmdBarrierIndirectDraws(const GraphicsResource *cmdBuffer, ArrayView<BufferResourceRef> indirectDrawBuffers) final;
     void cmdReleaseQueueResources(const GraphicsResource *cmdBuffer, EQueueFunction releaseToQueue) final;
     void cmdReleaseQueueResources(
         const GraphicsResource *cmdBuffer, EQueueFunction releaseToQueue,
@@ -94,18 +94,18 @@ public:
     void cmdBindComputePipeline(const GraphicsResource *cmdBuffer, const LocalPipelineContext &contextPipeline) const final;
     void cmdPushConstants(
         const GraphicsResource *cmdBuffer, const LocalPipelineContext &contextPipeline, uint32 stagesUsed, const uint8 *data,
-        ArrayView<const CopyBufferInfo> pushConsts
+        ArrayView<CopyBufferInfo> pushConsts
     ) const final;
     void cmdBindDescriptorsSetInternal(
         const GraphicsResource *cmdBuffer, const PipelineBase *contextPipeline, const std::map<uint32, ShaderParametersRef> &descriptorsSets
     ) const final;
     void cmdBindDescriptorsSetsInternal(
-        const GraphicsResource *cmdBuffer, const PipelineBase *contextPipeline, ArrayView<const ShaderParametersRef> descriptorsSets
+        const GraphicsResource *cmdBuffer, const PipelineBase *contextPipeline, ArrayView<ShaderParametersRef> descriptorsSets
     ) const final;
     void cmdBindVertexBuffer(const GraphicsResource *cmdBuffer, uint32 firstBinding, BufferResourceRef vertexBuffer, uint64 offset) final;
     void cmdBindVertexBuffers(
-        const GraphicsResource *cmdBuffer, uint32 firstBinding, ArrayView<const BufferResourceRef> vertexBuffers,
-        ArrayView<const uint64> offsets
+        const GraphicsResource *cmdBuffer, uint32 firstBinding, ArrayView<BufferResourceRef> vertexBuffers,
+        ArrayView<uint64> offsets
     ) final;
     void cmdBindIndexBuffer(const GraphicsResource *cmdBuffer, const BufferResourceRef &indexBuffer, uint64 offset = 0) final;
 
@@ -125,7 +125,7 @@ public:
     ) final;
 
     void cmdSetViewportAndScissors(
-        const GraphicsResource *cmdBuffer, ArrayView<const std::pair<IRect, IRect>> viewportAndScissors, uint32 firstViewport = 0
+        const GraphicsResource *cmdBuffer, ArrayView<std::pair<IRect, IRect>> viewportAndScissors, uint32 firstViewport = 0
     ) const final;
     void
     cmdSetViewportAndScissor(const GraphicsResource *cmdBuffer, const IRect &viewport, const IRect &scissor, uint32 atViewport = 0) const final;
@@ -143,9 +143,9 @@ public:
     void endCmd(const GraphicsResource *cmdBuffer) final;
     void freeCmd(const GraphicsResource *cmdBuffer) final;
     void submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo &submitInfo, FenceRef fence) final;
-    void submitCmds(EQueuePriority::Enum priority, ArrayView<const CommandSubmitInfo> submitInfos, FenceRef fence) final;
+    void submitCmds(EQueuePriority::Enum priority, ArrayView<CommandSubmitInfo> submitInfos, FenceRef fence) final;
     void submitWaitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo2 &submitInfo);
-    void submitCmds(EQueuePriority::Enum priority, ArrayView<const CommandSubmitInfo2> submitInfos) final;
+    void submitCmds(EQueuePriority::Enum priority, ArrayView<CommandSubmitInfo2> submitInfos) final;
     void submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo2 &command) final;
     void finishCmd(const GraphicsResource *cmdBuffer) final;
     void finishCmd(const String &uniqueName) final;
@@ -160,7 +160,7 @@ public:
 
 void RenderCommandList::cmdPushConstants(
     const GraphicsResource *cmdBuffer, const LocalPipelineContext &contextPipeline, uint32 stagesUsed, const uint8 *data,
-    ArrayView<const CopyBufferInfo> pushConsts
+    ArrayView<CopyBufferInfo> pushConsts
 ) const
 {
     cmdList->cmdPushConstants(cmdBuffer, contextPipeline, stagesUsed, data, pushConsts);
@@ -174,7 +174,7 @@ void RenderCommandList::cmdBindDescriptorsSetInternal(
 }
 
 void RenderCommandList::cmdBindDescriptorsSetsInternal(
-    const GraphicsResource *cmdBuffer, const PipelineBase *contextPipeline, ArrayView<const ShaderParametersRef> descriptorsSets
+    const GraphicsResource *cmdBuffer, const PipelineBase *contextPipeline, ArrayView<ShaderParametersRef> descriptorsSets
 ) const
 {
     cmdList->cmdBindDescriptorsSetsInternal(cmdBuffer, contextPipeline, descriptorsSets);
@@ -188,7 +188,7 @@ void RenderCommandList::cmdBindVertexBuffer(
 }
 
 void RenderCommandList::cmdBindVertexBuffers(
-    const GraphicsResource *cmdBuffer, uint32 firstBinding, ArrayView<const BufferResourceRef> vertexBuffers, ArrayView<const uint64> offsets
+    const GraphicsResource *cmdBuffer, uint32 firstBinding, ArrayView<BufferResourceRef> vertexBuffers, ArrayView<uint64> offsets
 )
 {
     cmdList->cmdBindVertexBuffers(cmdBuffer, firstBinding, vertexBuffers, offsets);
@@ -243,19 +243,19 @@ void RenderCommandList::setup(IRenderCommandList *commandList)
 
 void RenderCommandList::newFrame(float timeDelta) { cmdList->newFrame(timeDelta); }
 
-void RenderCommandList::copyBuffer(BufferResourceRef src, BufferResourceRef dst, ArrayView<const CopyBufferInfo> copies)
+void RenderCommandList::copyBuffer(BufferResourceRef src, BufferResourceRef dst, ArrayView<CopyBufferInfo> copies)
 {
     cmdList->copyBuffer(src, dst, copies);
 }
 
-void RenderCommandList::copyBuffer(ArrayView<const BatchCopyBufferInfo> batchCopies) { cmdList->copyBuffer(batchCopies); }
+void RenderCommandList::copyBuffer(ArrayView<BatchCopyBufferInfo> batchCopies) { cmdList->copyBuffer(batchCopies); }
 
 void RenderCommandList::copyToBuffer(BufferResourceRef dst, uint32 dstOffset, const void *dataToCopy, uint32 size)
 {
     cmdList->copyToBuffer(dst, dstOffset, dataToCopy, size);
 }
 
-void RenderCommandList::copyToBuffer(ArrayView<const BatchCopyBufferData> batchCopies) { cmdList->copyToBuffer(batchCopies); }
+void RenderCommandList::copyToBuffer(ArrayView<BatchCopyBufferData> batchCopies) { cmdList->copyToBuffer(batchCopies); }
 
 const GraphicsResource *RenderCommandList::startCmd(const String &uniqueName, EQueueFunction queue, bool bIsReusable)
 {
@@ -271,7 +271,7 @@ void RenderCommandList::submitCmd(EQueuePriority::Enum priority, const CommandSu
     cmdList->submitCmd(priority, submitInfo, fence);
 }
 
-void RenderCommandList::submitCmds(EQueuePriority::Enum priority, ArrayView<const CommandSubmitInfo> submitInfos, FenceRef fence)
+void RenderCommandList::submitCmds(EQueuePriority::Enum priority, ArrayView<CommandSubmitInfo> submitInfos, FenceRef fence)
 {
     cmdList->submitCmds(priority, submitInfos, fence);
 }
@@ -281,7 +281,7 @@ void RenderCommandList::submitWaitCmd(EQueuePriority::Enum priority, const Comma
     cmdList->submitWaitCmd(priority, submitInfo);
 }
 
-void RenderCommandList::submitCmds(EQueuePriority::Enum priority, ArrayView<const CommandSubmitInfo2> submitInfos)
+void RenderCommandList::submitCmds(EQueuePriority::Enum priority, ArrayView<CommandSubmitInfo2> submitInfos)
 {
     cmdList->submitCmds(priority, submitInfos);
 }
@@ -315,18 +315,18 @@ bool RenderCommandList::hasCmdsUsingResource(const MemoryResourceRef &resource, 
     return cmdList->hasCmdsUsingResource(resource, bFinishCmds);
 }
 
-void RenderCommandList::copyToImage(ImageResourceRef dst, ArrayView<const class Color> pixelData, const CopyPixelsToImageInfo &copyInfo)
+void RenderCommandList::copyToImage(ImageResourceRef dst, ArrayView<class Color> pixelData, const CopyPixelsToImageInfo &copyInfo)
 {
     cmdList->copyToImage(dst, pixelData, copyInfo);
 }
 
-void RenderCommandList::copyToImage(ImageResourceRef dst, ArrayView<const class LinearColor> pixelData, const CopyPixelsToImageInfo &copyInfo)
+void RenderCommandList::copyToImage(ImageResourceRef dst, ArrayView<class LinearColor> pixelData, const CopyPixelsToImageInfo &copyInfo)
 {
     cmdList->copyToImage(dst, pixelData, copyInfo);
 }
 
 void RenderCommandList::copyToImageLinearMapped(
-    ImageResourceRef dst, ArrayView<const class Color> pixelData, const CopyPixelsToImageInfo &copyInfo
+    ImageResourceRef dst, ArrayView<class Color> pixelData, const CopyPixelsToImageInfo &copyInfo
 )
 {
     cmdList->copyToImageLinearMapped(dst, pixelData, copyInfo);
@@ -339,12 +339,12 @@ void RenderCommandList::copyOrResolveImage(
     cmdList->copyOrResolveImage(src, dst, srcInfo, dstInfo);
 }
 
-void RenderCommandList::clearImage(ImageResourceRef image, const LinearColor &clearColor, ArrayView<const ImageSubresource> subresources)
+void RenderCommandList::clearImage(ImageResourceRef image, const LinearColor &clearColor, ArrayView<ImageSubresource> subresources)
 {
     cmdList->clearImage(image, clearColor, subresources);
 }
 
-void RenderCommandList::clearDepth(ImageResourceRef image, float depth, uint32 stencil, ArrayView<const ImageSubresource> subresources)
+void RenderCommandList::clearDepth(ImageResourceRef image, float depth, uint32 stencil, ArrayView<ImageSubresource> subresources)
 {
     cmdList->clearDepth(image, depth, stencil, subresources);
 }
@@ -352,25 +352,25 @@ void RenderCommandList::clearDepth(ImageResourceRef image, float depth, uint32 s
 void RenderCommandList::setupInitialLayout(ImageResourceRef image) { cmdList->setupInitialLayout(image); }
 
 void RenderCommandList::presentImage(
-    ArrayView<const WindowCanvasRef> canvases, ArrayView<const uint32> imageIndices, ArrayView<const SemaphoreRef> waitOnSemaphores
+    ArrayView<WindowCanvasRef> canvases, ArrayView<uint32> imageIndices, ArrayView<SemaphoreRef> waitOnSemaphores
 )
 {
     cmdList->presentImage(canvases, imageIndices, waitOnSemaphores);
 }
 
 void RenderCommandList::cmdCopyBuffer(
-    const GraphicsResource *cmdBuffer, BufferResourceRef src, BufferResourceRef dst, ArrayView<const CopyBufferInfo> copies
+    const GraphicsResource *cmdBuffer, BufferResourceRef src, BufferResourceRef dst, ArrayView<CopyBufferInfo> copies
 )
 {
     cmdList->cmdCopyBuffer(cmdBuffer, src, dst, copies);
 }
 
-void RenderCommandList::cmdCopyBuffer(const GraphicsResource *cmdBuffer, ArrayView<const BatchCopyBufferInfo> copies)
+void RenderCommandList::cmdCopyBuffer(const GraphicsResource *cmdBuffer, ArrayView<BatchCopyBufferInfo> copies)
 {
     cmdList->cmdCopyBuffer(cmdBuffer, copies);
 }
 
-void RenderCommandList::cmdCopyToBuffer(const GraphicsResource *cmdBuffer, ArrayView<const BatchCopyBufferData> batchCopies)
+void RenderCommandList::cmdCopyToBuffer(const GraphicsResource *cmdBuffer, ArrayView<BatchCopyBufferData> batchCopies)
 {
     cmdList->cmdCopyToBuffer(cmdBuffer, batchCopies);
 }
@@ -382,41 +382,41 @@ void RenderCommandList::cmdCopyOrResolveImage(
     cmdList->cmdCopyOrResolveImage(cmdBuffer, src, dst, srcInfo, dstInfo);
 }
 
-void RenderCommandList::cmdTransitionLayouts(const GraphicsResource *cmdBuffer, ArrayView<const ImageResourceRef> images)
+void RenderCommandList::cmdTransitionLayouts(const GraphicsResource *cmdBuffer, ArrayView<ImageResourceRef> images)
 {
     cmdList->cmdTransitionLayouts(cmdBuffer, images);
 }
 
 void RenderCommandList::cmdClearImage(
-    const GraphicsResource *cmdBuffer, ImageResourceRef image, const LinearColor &clearColor, ArrayView<const ImageSubresource> subresources
+    const GraphicsResource *cmdBuffer, ImageResourceRef image, const LinearColor &clearColor, ArrayView<ImageSubresource> subresources
 )
 {
     cmdList->cmdClearImage(cmdBuffer, image, clearColor, subresources);
 }
 
 void RenderCommandList::cmdClearDepth(
-    const GraphicsResource *cmdBuffer, ImageResourceRef image, float depth, uint32 stencil, ArrayView<const ImageSubresource> subresources
+    const GraphicsResource *cmdBuffer, ImageResourceRef image, float depth, uint32 stencil, ArrayView<ImageSubresource> subresources
 )
 {
     cmdList->cmdClearDepth(cmdBuffer, image, depth, stencil, subresources);
 }
 
-void RenderCommandList::cmdBarrierResources(const GraphicsResource *cmdBuffer, ArrayView<const ShaderParametersRef> descriptorsSets)
+void RenderCommandList::cmdBarrierResources(const GraphicsResource *cmdBuffer, ArrayView<ShaderParametersRef> descriptorsSets)
 {
     cmdList->cmdBarrierResources(cmdBuffer, descriptorsSets);
 }
 
-void RenderCommandList::cmdBarrierVertices(const GraphicsResource *cmdBuffer, ArrayView<const BufferResourceRef> vertexBuffers)
+void RenderCommandList::cmdBarrierVertices(const GraphicsResource *cmdBuffer, ArrayView<BufferResourceRef> vertexBuffers)
 {
     cmdList->cmdBarrierVertices(cmdBuffer, vertexBuffers);
 }
 
-void RenderCommandList::cmdBarrierIndices(const GraphicsResource *cmdBuffer, ArrayView<const BufferResourceRef> indexBuffers)
+void RenderCommandList::cmdBarrierIndices(const GraphicsResource *cmdBuffer, ArrayView<BufferResourceRef> indexBuffers)
 {
     cmdList->cmdBarrierIndices(cmdBuffer, indexBuffers);
 }
 
-void RenderCommandList::cmdBarrierIndirectDraws(const GraphicsResource *cmdBuffer, ArrayView<const BufferResourceRef> indirectDrawBuffers)
+void RenderCommandList::cmdBarrierIndirectDraws(const GraphicsResource *cmdBuffer, ArrayView<BufferResourceRef> indirectDrawBuffers)
 {
     cmdList->cmdBarrierIndirectDraws(cmdBuffer, indirectDrawBuffers);
 }
@@ -457,7 +457,7 @@ void RenderCommandList::cmdBindComputePipeline(const GraphicsResource *cmdBuffer
 }
 
 void RenderCommandList::cmdSetViewportAndScissors(
-    const GraphicsResource *cmdBuffer, ArrayView<const std::pair<IRect, IRect>> viewportAndScissors, uint32 firstViewport /*= 0*/
+    const GraphicsResource *cmdBuffer, ArrayView<std::pair<IRect, IRect>> viewportAndScissors, uint32 firstViewport /*= 0*/
 ) const
 {
     cmdList->cmdSetViewportAndScissors(cmdBuffer, viewportAndScissors, firstViewport);
@@ -502,7 +502,7 @@ void RenderCommandList::
 void RenderCommandList::cmdEndBufferMarker(const GraphicsResource *commandBuffer) const { cmdList->cmdEndBufferMarker(commandBuffer); }
 
 bool IRenderCommandList::simpleCopyPixelsTo(
-    BufferResourceRef stagingBuffer, uint8 *stagingPtr, ArrayView<const Color> pixelData, EPixelDataFormat::Type dataFormat,
+    BufferResourceRef stagingBuffer, uint8 *stagingPtr, ArrayView<Color> pixelData, EPixelDataFormat::Type dataFormat,
     const EPixelDataFormat::PixelFormatInfo *formatInfo
 ) const
 {
@@ -567,7 +567,7 @@ bool IRenderCommandList::simpleCopyPixelsTo(
 }
 
 void IRenderCommandList::copyPixelsTo(
-    BufferResourceRef stagingBuffer, uint8 *stagingPtr, ArrayView<const Color> pixelData, const EPixelDataFormat::PixelFormatInfo *formatInfo
+    BufferResourceRef stagingBuffer, uint8 *stagingPtr, ArrayView<Color> pixelData, const EPixelDataFormat::PixelFormatInfo *formatInfo
 ) const
 {
     constexpr uint32 colorCompBits = sizeof(decltype(std::declval<Color>().r())) * 8;
@@ -628,7 +628,7 @@ void IRenderCommandList::copyPixelsTo(
 }
 
 void IRenderCommandList::copyPixelsTo(
-    BufferResourceRef stagingBuffer, uint8 *stagingPtr, ArrayView<const LinearColor> pixelData,
+    BufferResourceRef stagingBuffer, uint8 *stagingPtr, ArrayView<LinearColor> pixelData,
     const EPixelDataFormat::PixelFormatInfo *formatInfo, bool bIsFloatingFormat
 ) const
 {
@@ -716,7 +716,7 @@ void IRenderCommandList::copyPixelsTo(
 }
 
 void IRenderCommandList::copyPixelsLinearMappedTo(
-    BufferResourceRef stagingBuffer, uint8 *stagingPtr, ArrayView<const Color> pixelData, const EPixelDataFormat::PixelFormatInfo *formatInfo
+    BufferResourceRef stagingBuffer, uint8 *stagingPtr, ArrayView<Color> pixelData, const EPixelDataFormat::PixelFormatInfo *formatInfo
 ) const
 {
     constexpr uint32 colorCompBits = sizeof(decltype(std::declval<Color>().r())) * 8;
@@ -778,7 +778,7 @@ void IRenderCommandList::copyPixelsLinearMappedTo(
 #endif
 }
 
-void IRenderCommandList::copyToImage(ImageResourceRef dst, ArrayView<const Color> pixelData)
+void IRenderCommandList::copyToImage(ImageResourceRef dst, ArrayView<Color> pixelData)
 {
     if (pixelData.size() < (dst->getImageSize().z * dst->getImageSize().y * dst->getImageSize().x) * dst->getLayerCount())
     {
@@ -797,7 +797,7 @@ void IRenderCommandList::copyToImage(ImageResourceRef dst, ArrayView<const Color
     copyToImage(dst, pixelData, copyInfo);
 }
 
-void IRenderCommandList::copyToImageLinearMapped(ImageResourceRef dst, ArrayView<const Color> pixelData)
+void IRenderCommandList::copyToImageLinearMapped(ImageResourceRef dst, ArrayView<Color> pixelData)
 {
     if (pixelData.size() < (dst->getImageSize().z * dst->getImageSize().y * dst->getImageSize().x) * dst->getLayerCount())
     {
@@ -844,7 +844,7 @@ struct PushConstCopier
 };
 
 void IRenderCommandList::cmdPushConstants(
-    const GraphicsResource *cmdBuffer, const LocalPipelineContext &contextPipeline, ArrayView<const std::pair<String, std::any>> pushData
+    const GraphicsResource *cmdBuffer, const LocalPipelineContext &contextPipeline, ArrayView<std::pair<String, std::any>> pushData
 ) const
 {
     const ReflectPushConstant &entry = contextPipeline.getPipeline()->getShaderResource()->getReflection()->pushConstants;
@@ -1017,7 +1017,7 @@ void IRenderCommandList::cmdBindDescriptorsSets(
 }
 
 void IRenderCommandList::cmdBindDescriptorsSets(
-    const GraphicsResource *cmdBuffer, const LocalPipelineContext &contextPipeline, ArrayView<const ShaderParametersRef> descriptorsSets
+    const GraphicsResource *cmdBuffer, const LocalPipelineContext &contextPipeline, ArrayView<ShaderParametersRef> descriptorsSets
 ) const
 {
     std::vector<ShaderParametersRef> shaderParamsSetsList;

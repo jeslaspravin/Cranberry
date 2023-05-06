@@ -129,7 +129,7 @@ int32 main(int32 argsc, AChar **args)
 
         StopWatch sw;
         ModuleSources moduleSrcs;
-        if (!moduleSrcs.compileAllSources(SourceGenerator::isTemplatesModified()))
+        if (!moduleSrcs.compileAllSources(SourceGenerator::issueFullRecompile()))
         {
             LOG_ERROR("ModuleReflectTool", "Compiling module sources failed");
             return 1;

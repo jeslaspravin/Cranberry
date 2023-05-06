@@ -239,8 +239,8 @@ int32 VulkanGraphicsHelper::getNextSwapchainImage(
 }
 
 void VulkanGraphicsHelper::presentImage(
-    IGraphicsInstance *graphicsInstance, ArrayView<const WindowCanvasRef> canvases, ArrayView<const uint32> imageIndex,
-    ArrayView<const SemaphoreRef> waitOnSemaphores
+    IGraphicsInstance *graphicsInstance, ArrayView<WindowCanvasRef> canvases, ArrayView<uint32> imageIndex,
+    ArrayView<SemaphoreRef> waitOnSemaphores
 )
 {
     if (canvases.empty() || imageIndex.empty() || canvases.size() != imageIndex.size())
@@ -1058,7 +1058,7 @@ void VulkanGraphicsHelper::destroyPipelineLayout(IGraphicsInstance *graphicsInst
     device->vkDestroyPipelineLayout(device->logicalDevice, pipelineLayout, nullptr);
 }
 
-VkPipelineCache VulkanGraphicsHelper::createPipelineCache(IGraphicsInstance *graphicsInstance, ArrayView<const uint8> cacheData)
+VkPipelineCache VulkanGraphicsHelper::createPipelineCache(IGraphicsInstance *graphicsInstance, ArrayView<uint8> cacheData)
 {
     const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
     const VulkanDevice *device = &gInstance->selectedDevice;
@@ -1119,7 +1119,7 @@ void VulkanGraphicsHelper::destroyPipelineCache(IGraphicsInstance *graphicsInsta
 }
 
 void VulkanGraphicsHelper::mergePipelineCaches(
-    IGraphicsInstance *graphicsInstance, VkPipelineCache dstCache, ArrayView<const VkPipelineCache> srcCaches
+    IGraphicsInstance *graphicsInstance, VkPipelineCache dstCache, ArrayView<VkPipelineCache> srcCaches
 )
 {
     const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);

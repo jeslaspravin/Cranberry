@@ -10,6 +10,7 @@
  */
 
 #include "FileChangesTracker.h"
+#include "Types/Platform/PlatformAssertionErrors.h"
 #include "Types/Platform/LFS/File/FileHelper.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
 #include "Types/Platform/LFS/PathFunctions.h"

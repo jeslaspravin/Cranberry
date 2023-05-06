@@ -279,7 +279,7 @@ protected:
     std::set<std::pair<StringID, uint32>> samplerUpdates;
     std::vector<ParamUpdateLambda> genericUpdates;
 
-    const GraphicsResource *paramLayout;
+    const GraphicsResource *paramLayout = nullptr;
     String descriptorSetName;
 
 public:
@@ -326,12 +326,12 @@ public:
     bool setBuffer(StringID paramName, const void *bufferValue, uint32 index = 0);
     // Below set*AtPath can be used to set parameters in buffer deeper than above sets can.
     // 0th must be bound buffer's name, (n-1)th must be the param name to set
-    bool setIntAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices, int32 value);
-    bool setIntAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices, uint32 value);
-    bool setFloatAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices, float value);
-    bool setVector2AtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices, const Vector2 &value);
-    bool setVector4AtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices, const Vector4 &value);
-    bool setMatrixAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices, const Matrix4 &value);
+    bool setIntAtPath(ArrayView<StringID> pathNames, ArrayView<uint32> indices, int32 value);
+    bool setIntAtPath(ArrayView<StringID> pathNames, ArrayView<uint32> indices, uint32 value);
+    bool setFloatAtPath(ArrayView<StringID> pathNames, ArrayView<uint32> indices, float value);
+    bool setVector2AtPath(ArrayView<StringID> pathNames, ArrayView<uint32> indices, const Vector2 &value);
+    bool setVector4AtPath(ArrayView<StringID> pathNames, ArrayView<uint32> indices, const Vector4 &value);
+    bool setMatrixAtPath(ArrayView<StringID> pathNames, ArrayView<uint32> indices, const Matrix4 &value);
 
     bool setTexelParam(StringID paramName, BufferResourceRef texelBuffer, uint32 index = 0);
     bool setTextureParam(StringID paramName, ImageResourceRef texture, uint32 index = 0);
@@ -354,12 +354,12 @@ public:
     Matrix4 getMatrixParam(StringID paramName, StringID bufferName, uint32 index = 0) const;
     // Below get*AtPath can be used to get parameters in buffer deeper than above gets can.
     // 0th must be bound buffer's name, (n-1)th must be the param name to get
-    int32 getIntAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const;
-    uint32 getUintAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const;
-    float getFloatAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const;
-    Vector2 getVector2AtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const;
-    Vector4 getVector4AtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const;
-    Matrix4 getMatrixAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const;
+    int32 getIntAtPath(ArrayView<StringID> pathNames, ArrayView<uint32> indices) const;
+    uint32 getUintAtPath(ArrayView<StringID> pathNames, ArrayView<uint32> indices) const;
+    float getFloatAtPath(ArrayView<StringID> pathNames, ArrayView<uint32> indices) const;
+    Vector2 getVector2AtPath(ArrayView<StringID> pathNames, ArrayView<uint32> indices) const;
+    Vector4 getVector4AtPath(ArrayView<StringID> pathNames, ArrayView<uint32> indices) const;
+    Matrix4 getMatrixAtPath(ArrayView<StringID> pathNames, ArrayView<uint32> indices) const;
 
     BufferResourceRef getTexelParam(StringID paramName, uint32 index = 0) const;
     ImageResourceRef getTextureParam(StringID paramName, uint32 index = 0) const;
@@ -390,21 +390,21 @@ private:
     std::pair<const BufferParametersData *, const BufferParametersData::BufferParameter *>
     findBufferParam(StringID &bufferName, StringID paramName) const;
     void *getOuterPtrForPath(
-        std::vector<const BufferParametersData::BufferParameter *> &outInnerBufferParams, ArrayView<const StringID> pathNames,
-        ArrayView<const uint32> indices
+        std::vector<const BufferParametersData::BufferParameter *> &outInnerBufferParams, ArrayView<StringID> pathNames,
+        ArrayView<uint32> indices
     ) const;
     template <typename FieldType>
     bool setFieldParam(StringID paramName, const FieldType &value, uint32 index);
     template <typename FieldType>
     bool setFieldParam(StringID paramName, StringID bufferName, const FieldType &value, uint32 index);
     template <typename FieldType>
-    bool setFieldAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices, const FieldType &value);
+    bool setFieldAtPath(ArrayView<StringID> pathNames, ArrayView<uint32> indices, const FieldType &value);
     template <typename FieldType>
     FieldType getFieldParam(StringID paramName, uint32 index) const;
     template <typename FieldType>
     FieldType getFieldParam(StringID paramName, StringID bufferName, uint32 index) const;
     template <typename FieldType>
-    FieldType getFieldAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const;
+    FieldType getFieldAtPath(ArrayView<StringID> pathNames, ArrayView<uint32> indices) const;
 
 protected:
     ShaderParameters() = default;

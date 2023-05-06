@@ -192,7 +192,7 @@ Format specifiers: https://learn.microsoft.com/en-us/visualstudio/debugger/forma
   
   <!-- Std_UnorderedMap_Int_OperatorBracket_idx(debugStrs(), id) does not seem to work -->
   <Type Name="StringID">
-    <Intrinsic Name="debugStrs" Expression="ProgramCore.dll!StringID::debugStrings"/>
+    <Intrinsic Name="debugStrs" Expression="ProgramCore.dll!DebugStringIDsData::debugStrings"/>
     <Intrinsic Name="debugStrsSize" Expression="debugStrs()-&gt;_List._Mypair._Myval2._Mysize"/>
     <DisplayString Condition="id == 0">Invalid</DisplayString>
     <DisplayString>{id}</DisplayString>

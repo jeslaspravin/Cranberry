@@ -155,10 +155,20 @@ bool SourceGenerator::generatedSources(std::vector<const SourceInformation *> &o
     return !(bHasAnyError.load(std::memory_order::relaxed) || bAnyGenFailure);
 }
 
-bool SourceGenerator::isTemplatesModified()
+bool SourceGenerator::issueFullRecompile()
 {
-    std::vector<String> templateFiles = getTemplateFiles();
+    String fullReflectTs;
+    ProgramCmdLine::get().getArg(fullReflectTs, ReflectToolCmdLineConst::INTERMEDIATE_DIR);
+    fullReflectTs = PathFunctions::combinePath(fullReflectTs, "FullReflect.timestamp");
+    PlatformFile fullReflectTsFile(fullReflectTs);
+    if (!fullReflectTsFile.exists())
+    {
+        FileHelper::touchFile(fullReflectTs);
+        return true;
+    }
 
+    // Check template files
+    std::vector<String> templateFiles = getTemplateFiles();
     TickRep lastModifiedTs = 0;
     for (const String &templateFile : templateFiles)
     {
@@ -166,14 +176,14 @@ bool SourceGenerator::isTemplatesModified()
         lastModifiedTs = lastModifiedTs < ts ? ts : lastModifiedTs;
     }
 
-    String templateTs;
-    ProgramCmdLine::get().getArg(templateTs, ReflectToolCmdLineConst::INTERMEDIATE_DIR);
-    templateTs = PathFunctions::combinePath(templateTs, "Templates.timestamp");
-    PlatformFile templateTsFile(templateTs);
+    // Check if ModuleReflectTool is new
+    TickRep reflectToolTs = PlatformFile(FileSystemFunctions::applicationPath()).lastWriteTimeStamp();
+    lastModifiedTs = lastModifiedTs < reflectToolTs ? reflectToolTs : lastModifiedTs;
+
     // If last modified after last generation
-    if (!templateTsFile.exists() || templateTsFile.lastWriteTimeStamp() < lastModifiedTs)
+    if (fullReflectTsFile.lastWriteTimeStamp() < lastModifiedTs)
     {
-        FileHelper::touchFile(templateTs);
+        FileHelper::touchFile(fullReflectTs);
         return true;
     }
     return false;

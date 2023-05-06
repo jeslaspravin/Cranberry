@@ -999,8 +999,7 @@ void ExperimentalEnginePBR::setupCascadeShadowViews()
     // Directional light cascades
     const AABB sceneBounds = sceneVolume.getBounds();
     Vector3 sceneBoundPts[8];
-    ArrayView<Vector3> sceneBoundPtsView(sceneBoundPts, ARRAY_LENGTH(sceneBoundPts));
-    sceneBounds.boundCorners(sceneBoundPtsView);
+    sceneBounds.boundCorners(sceneBoundPts);
 
     const Matrix3 dirLightToWorld = RotationMatrix::fromX(dirLight.direction.fwdVector()).matrix();
     const Matrix3 worldToDirLight = dirLightToWorld.transpose(); // Since it is orthogonal matrix
@@ -1049,8 +1048,7 @@ void ExperimentalEnginePBR::setupCascadeShadowViewsShimmerFix()
     // Directional light cascades
     const AABB sceneBounds = sceneVolume.getBounds();
     Vector3 sceneBoundPts[8];
-    ArrayView<Vector3> sceneBoundPtsView(sceneBoundPts);
-    sceneBounds.boundCorners(sceneBoundPtsView);
+    sceneBounds.boundCorners(sceneBoundPts);
 
     const Vector3 dirLightFwd = dirLight.direction.fwdVector();
     Camera tempCamera = camera;

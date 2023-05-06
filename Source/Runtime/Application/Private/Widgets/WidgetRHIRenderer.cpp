@@ -331,8 +331,8 @@ void WidgetRHIRenderer::drawWindowWidgetsRenderThread(
 
         // Setup vertices, indices and fill draw commands
         createVerticesAndIndices(totalNoOfQuads * 6, totalNoOfQuads * 4, graphicsInstance, graphicsHelper);
-        ArrayView<VertexUI> verticesView((VertexUI *)graphicsHelper->borrowMappedPtr(graphicsInstance, vertices), vertices->bufferCount());
-        ArrayView<uint32> indicesView((uint32 *)graphicsHelper->borrowMappedPtr(graphicsInstance, indices), indices->bufferCount());
+        ArrayRange<VertexUI> verticesView((VertexUI *)graphicsHelper->borrowMappedPtr(graphicsInstance, vertices), vertices->bufferCount());
+        ArrayRange<uint32> indicesView((uint32 *)graphicsHelper->borrowMappedPtr(graphicsInstance, indices), indices->bufferCount());
         // Offset of quad vertices inserted so far into vertices array
         uint32 quadIdxOffset = 0;
         for (uint32 i = 0; i < drawingContexts.size(); ++i)

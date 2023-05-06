@@ -32,12 +32,9 @@
 #endif // !STRINGID_HASHFUNC
 
 #if ENABLE_STRID_DEBUG
-#include <unordered_map>
-#include <unordered_set>
 #endif
 
 class StringID;
-struct DebugStringIDsData;
 
 inline namespace Literals
 {
@@ -53,8 +50,6 @@ public:
 private:
     IDType id = 0;
 
-    friend DebugStringIDsData;
-
     template <StringLiteral str>
     friend STRINGID_FUNCQUALIFIER StringID Literals::operator"" _sid () noexcept;
     template <ArchiveTypeName ArchiveType>
@@ -67,10 +62,6 @@ public:
 
 private:
 #if ENABLE_STRID_DEBUG
-    using DebugStringsMap = std::unordered_map<IDType, std::unordered_set<String>>;
-
-    // Holds pointer to debugStringsDB which will be used by debug to visualize string
-    static DebugStringsMap *debugStrings;
     static const TChar *findDebugString(IDType strId);
     void insertDbgStr(StringView str);
 

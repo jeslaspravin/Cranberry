@@ -175,7 +175,7 @@ public:
     virtual bool setFileSize(int64 newSize) const = 0;
     virtual void read(std::vector<uint8> &readTo, uint32 bytesToRead = (~0u)) const = 0;
     virtual void read(uint8 *readTo, uint32 bytesToRead) const = 0;
-    virtual void write(const ArrayView<const uint8> &writeBytes) const = 0;
+    virtual void write(ArrayView<uint8> writeBytes) const = 0;
 
     virtual bool deleteFile() = 0;
     virtual bool renameFile(String newName) = 0;

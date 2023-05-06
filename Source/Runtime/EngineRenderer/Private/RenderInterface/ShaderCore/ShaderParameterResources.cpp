@@ -795,8 +795,7 @@ ShaderParameters::findBufferParam(StringID &bufferName, StringID paramName) cons
 }
 
 void *ShaderParameters::getOuterPtrForPath(
-    std::vector<const BufferParametersData::BufferParameter *> &outInnerBufferParams, ArrayView<const StringID> pathNames,
-    ArrayView<const uint32> indices
+    std::vector<const BufferParametersData::BufferParameter *> &outInnerBufferParams, ArrayView<StringID> pathNames, ArrayView<uint32> indices
 ) const
 {
     debugAssertf(indices.front() == 0, "Indexing bound buffer itself is not supported right now!");
@@ -956,7 +955,7 @@ bool ShaderParameters::setFieldParam(StringID paramName, StringID bufferName, co
 }
 
 template <typename FieldType>
-bool ShaderParameters::setFieldAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices, const FieldType &value)
+bool ShaderParameters::setFieldAtPath(ArrayView<StringID> pathNames, ArrayView<uint32> indices, const FieldType &value)
 {
     // 1 or 2 can be set using setFieldParam
     if (pathNames.size() == 1)
@@ -1066,7 +1065,7 @@ FieldType ShaderParameters::getFieldParam(StringID paramName, StringID bufferNam
 }
 
 template <typename FieldType>
-FieldType ShaderParameters::getFieldAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const
+FieldType ShaderParameters::getFieldAtPath(ArrayView<StringID> pathNames, ArrayView<uint32> indices) const
 {
     // 1 or 2 can be set using getFieldParam
     if (pathNames.size() == 1)
@@ -1149,32 +1148,32 @@ bool ShaderParameters::setMatrixParam(StringID paramName, const Matrix4 &value, 
     return setFieldParam(paramName, value, index);
 }
 
-bool ShaderParameters::setIntAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices, int32 value)
+bool ShaderParameters::setIntAtPath(ArrayView<StringID> pathNames, ArrayView<uint32> indices, int32 value)
 {
     return setFieldAtPath(pathNames, indices, value);
 }
 
-bool ShaderParameters::setIntAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices, uint32 value)
+bool ShaderParameters::setIntAtPath(ArrayView<StringID> pathNames, ArrayView<uint32> indices, uint32 value)
 {
     return setFieldAtPath(pathNames, indices, value);
 }
 
-bool ShaderParameters::setFloatAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices, float value)
+bool ShaderParameters::setFloatAtPath(ArrayView<StringID> pathNames, ArrayView<uint32> indices, float value)
 {
     return setFieldAtPath(pathNames, indices, value);
 }
 
-bool ShaderParameters::setVector2AtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices, const Vector2 &value)
+bool ShaderParameters::setVector2AtPath(ArrayView<StringID> pathNames, ArrayView<uint32> indices, const Vector2 &value)
 {
     return setFieldAtPath(pathNames, indices, value);
 }
 
-bool ShaderParameters::setVector4AtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices, const Vector4 &value)
+bool ShaderParameters::setVector4AtPath(ArrayView<StringID> pathNames, ArrayView<uint32> indices, const Vector4 &value)
 {
     return setFieldAtPath(pathNames, indices, value);
 }
 
-bool ShaderParameters::setMatrixAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices, const Matrix4 &value)
+bool ShaderParameters::setMatrixAtPath(ArrayView<StringID> pathNames, ArrayView<uint32> indices, const Matrix4 &value)
 {
     return setFieldAtPath(pathNames, indices, value);
 }
@@ -1285,32 +1284,32 @@ Matrix4 ShaderParameters::getMatrixParam(StringID paramName, StringID bufferName
     return getFieldParam<Matrix4>(paramName, bufferName, index);
 }
 
-int32 ShaderParameters::getIntAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const
+int32 ShaderParameters::getIntAtPath(ArrayView<StringID> pathNames, ArrayView<uint32> indices) const
 {
     return getFieldAtPath<int32>(pathNames, indices);
 }
 
-uint32 ShaderParameters::getUintAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const
+uint32 ShaderParameters::getUintAtPath(ArrayView<StringID> pathNames, ArrayView<uint32> indices) const
 {
     return getFieldAtPath<uint32>(pathNames, indices);
 }
 
-float ShaderParameters::getFloatAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const
+float ShaderParameters::getFloatAtPath(ArrayView<StringID> pathNames, ArrayView<uint32> indices) const
 {
     return getFieldAtPath<float>(pathNames, indices);
 }
 
-Vector2 ShaderParameters::getVector2AtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const
+Vector2 ShaderParameters::getVector2AtPath(ArrayView<StringID> pathNames, ArrayView<uint32> indices) const
 {
     return getFieldAtPath<Vector2>(pathNames, indices);
 }
 
-Vector4 ShaderParameters::getVector4AtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const
+Vector4 ShaderParameters::getVector4AtPath(ArrayView<StringID> pathNames, ArrayView<uint32> indices) const
 {
     return getFieldAtPath<Vector4>(pathNames, indices);
 }
 
-Matrix4 ShaderParameters::getMatrixAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const
+Matrix4 ShaderParameters::getMatrixAtPath(ArrayView<StringID> pathNames, ArrayView<uint32> indices) const
 {
     return getFieldAtPath<Matrix4>(pathNames, indices);
 }

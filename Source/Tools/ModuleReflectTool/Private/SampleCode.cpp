@@ -1416,11 +1416,11 @@ void visitMemberCppMethods(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
         clang_getOverriddenCursors(cursor, &baseCursors, &numOverrides);
         uint32 levelFromThisOverride = 1;
         LOG("CppReflectionParser", "Function {} - Overrides following methods ---->", funcName);
-        std::vector<ArrayView<CXCursor>> currOverridenCursors{ ArrayView<CXCursor>(baseCursors, numOverrides) };
+        std::vector<ArrayRange<CXCursor>> currOverridenCursors{ ArrayRange<CXCursor>(baseCursors, numOverrides) };
         while (!currOverridenCursors.empty())
         {
-            std::vector<ArrayView<CXCursor>> newOverridenCursors;
-            for (ArrayView<CXCursor> &overridenCursors : currOverridenCursors)
+            std::vector<ArrayRange<CXCursor>> newOverridenCursors;
+            for (ArrayRange<CXCursor> &overridenCursors : currOverridenCursors)
             {
                 for (uint32 i = 0; i < overridenCursors.size(); ++i)
                 {
@@ -1440,7 +1440,7 @@ void visitMemberCppMethods(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
                     clang_getOverriddenCursors(overridenCursors[i], &baseCursors, &numOverrides);
                     if (numOverrides > 0)
                     {
-                        newOverridenCursors.emplace_back(ArrayView<CXCursor>(baseCursors, numOverrides));
+                        newOverridenCursors.emplace_back(baseCursors, numOverrides);
                     }
                 }
                 // Now dispose this cursors

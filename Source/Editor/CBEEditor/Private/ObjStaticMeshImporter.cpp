@@ -120,7 +120,7 @@ bool hasSmoothedNormals(const tinyobj::shape_t &mesh)
 //  Solve the same for other pair v0, v2
 //
 void calcTangent(
-    ArrayView<uint32> errorCountersView, PerMeshData &loaderData, StaticMeshVertex &vertexData, const StaticMeshVertex &other1,
+    ArrayRange<uint32> errorCounters, PerMeshData &loaderData, StaticMeshVertex &vertexData, const StaticMeshVertex &other1,
     const StaticMeshVertex &other2
 )
 {
@@ -141,7 +141,7 @@ void calcTangent(
         tangent = tbnFrame.fwdVector();
         bitangent = tbnFrame.rightVector();
 
-        errorCountersView[EImportErrorCodes::DegenerateTextureCoords]++;
+        errorCounters[EImportErrorCodes::DegenerateTextureCoords]++;
     }
     else
     {

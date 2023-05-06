@@ -52,8 +52,8 @@ public:
         IGraphicsInstance *graphicsInstance, VkSwapchainKHR swapchain, SemaphoreRef *waitOnSemaphore, FenceRef *waitOnFence = nullptr
     );
     static void presentImage(
-        IGraphicsInstance *graphicsInstance, ArrayView<const WindowCanvasRef> canvases, ArrayView<const uint32> imageIndex,
-        ArrayView<const SemaphoreRef> waitOnSemaphores
+        IGraphicsInstance *graphicsInstance, ArrayView<WindowCanvasRef> canvases, ArrayView<uint32> imageIndex,
+        ArrayView<SemaphoreRef> waitOnSemaphores
     );
     WindowCanvasRef createWindowCanvas(IGraphicsInstance *graphicsInstance, GenericAppWindow *fromWindow) const final;
     void cacheSurfaceProperties(IGraphicsInstance *graphicsInstance, const WindowCanvasRef &windowCanvas) const final;
@@ -169,10 +169,10 @@ public:
     static VkPipelineLayout createPipelineLayout(IGraphicsInstance *graphicsInstance, const PipelineBase *pipeline);
     static void destroyPipelineLayout(IGraphicsInstance *graphicsInstance, const VkPipelineLayout pipelineLayout);
 
-    static VkPipelineCache createPipelineCache(IGraphicsInstance *graphicsInstance, ArrayView<const uint8> cacheData);
+    static VkPipelineCache createPipelineCache(IGraphicsInstance *graphicsInstance, ArrayView<uint8> cacheData);
     static VkPipelineCache createPipelineCache(IGraphicsInstance *graphicsInstance);
     static void destroyPipelineCache(IGraphicsInstance *graphicsInstance, VkPipelineCache pipelineCache);
-    static void mergePipelineCaches(IGraphicsInstance *graphicsInstance, VkPipelineCache dstCache, ArrayView<const VkPipelineCache> srcCaches);
+    static void mergePipelineCaches(IGraphicsInstance *graphicsInstance, VkPipelineCache dstCache, ArrayView<VkPipelineCache> srcCaches);
     static void getPipelineCacheData(IGraphicsInstance *graphicsInstance, VkPipelineCache pipelineCache, std::vector<uint8> &cacheData);
     static void
     getMergedCacheData(IGraphicsInstance *graphicsInstance, std::vector<uint8> &cacheData, const std::vector<const PipelineBase *> &pipelines);

@@ -331,14 +331,14 @@ void WindowsFile::read(uint8 *readTo, uint32 bytesToRead) const
     seek(filePointerCache);
 }
 
-void WindowsFile::write(const ArrayView<const uint8> &writeBytes) const
+void WindowsFile::write(ArrayView<uint8> writeBytes) const
 {
     if (!getFileHandle() || BIT_NOT_SET(fileFlags, EFileFlags::Write))
     {
         return;
     }
 
-    std::vector<uint8>::size_type sizeLeft = writeBytes.size();
+    SizeT sizeLeft = writeBytes.size();
     const uint8 *pData = writeBytes.data();
 
     const uint32 writeBufferSize = 5 * 1024 * 1024; // 5MB

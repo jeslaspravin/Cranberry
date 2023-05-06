@@ -37,7 +37,9 @@ public:
     void writeGeneratedFiles();
     // Return true if no error
     bool generatedSources(std::vector<const SourceInformation *> &outGeneratedSrcs) const;
+
     const std::unordered_set<ReflectedTypeItem> &getKnownReflectedTypes() const { return allKnownReflectedTypes; }
     bool isFromCurrentModule(const ReflectedTypeItem &reflectItem) const { return reflectItem.moduleName == moduleName; }
-    static bool isTemplatesModified();
+
+    static bool issueFullRecompile();
 };

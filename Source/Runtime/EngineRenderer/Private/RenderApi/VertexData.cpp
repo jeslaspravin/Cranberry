@@ -412,12 +412,11 @@ void GlobalBuffers::createVertIndBuffers(
     GlobalBuffers::quadRectVertsInds.first = quadRectVertexBuffer;
     GlobalBuffers::quadRectVertsInds.second = quadRectIndexBuffer;
 
-    std::vector<BatchCopyBufferData> copies{
+    cmdList->copyToBuffer({
         {   quadTriVertexBuffer, 0,    quadTriVerts.data(),    uint32(quadTriVertexBuffer->getResourceSize())},
         {  quadRectVertexBuffer, 0,   quadRectVerts.data(),   uint32(quadRectVertexBuffer->getResourceSize())},
         {   quadRectIndexBuffer, 0, quadRectIndices.data(),    uint32(quadRectIndexBuffer->getResourceSize())},
         {  lineGizmoVertsBuffer, 0,      gizmoVerts.data(),   uint32(lineGizmoVertsBuffer->getResourceSize())},
         {lineGizmoIndicesBuffer, 0,    gizmoIndices.data(), uint32(lineGizmoIndicesBuffer->getResourceSize())}
-    };
-    cmdList->copyToBuffer(copies);
+    });
 }

@@ -11,25 +11,33 @@
 
 #include "String/StringID.h"
 
-#include <shared_mutex>
-
 #if ENABLE_STRID_DEBUG
 
 #include "Logger/Logger.h"
 
+#include <unordered_map>
+#include <unordered_set>
+#include <shared_mutex>
+
+using DebugStringsMap = std::unordered_map<StringID::IDType, std::unordered_set<String>>;
+
 struct DebugStringIDsData
 {
     std::shared_mutex lock;
-    StringID::DebugStringsMap stringsDb;
+    DebugStringsMap stringsDb;
 
-    DebugStringIDsData() { StringID::debugStrings = &stringsDb; }
+    // Holds pointer to debugStringsDB which will be used by debug to visualize string
+    static DebugStringsMap *debugStrings;
+
+    DebugStringIDsData() { debugStrings = &stringsDb; }
     MAKE_TYPE_NONCOPY_NONMOVE(DebugStringIDsData)
     ~DebugStringIDsData()
     {
         std::unique_lock<std::shared_mutex> writeLock{ lock };
-        StringID::debugStrings = nullptr;
+        debugStrings = nullptr;
     }
 };
+DebugStringsMap *DebugStringIDsData::debugStrings = nullptr;
 
 DebugStringIDsData &debugStringDB()
 {
@@ -65,8 +73,6 @@ void StringID::insertDbgStr(StringView str)
     std::unique_lock<std::shared_mutex> writeLock{ stringsDbData.lock };
     stringsDbData.stringsDb[id].insert(str);
 }
-
-StringID::DebugStringsMap *StringID::debugStrings = nullptr;
 
 #endif // DEV_BUILD
 

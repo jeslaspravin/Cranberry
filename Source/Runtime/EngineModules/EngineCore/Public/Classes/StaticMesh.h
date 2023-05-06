@@ -70,8 +70,8 @@ public:
     BufferResourceRef vertexCpuBuffer;
     BufferResourceRef indexCpuBuffer;
     // Following will be valid only after corresponding CPU buffers are created in render thread
-    ArrayView<StaticMeshVertex> vertexCpuView;
-    ArrayView<uint32> indexCpuView;
+    ArrayRange<StaticMeshVertex> vertexCpuView;
+    ArrayRange<uint32> indexCpuView;
 
     StaticMesh();
     StaticMesh(SMCreateInfo &&ci);

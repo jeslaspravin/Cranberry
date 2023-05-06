@@ -10,6 +10,7 @@
  */
 
 #include "RenderInterface/ShaderCore/ShaderParameters.h"
+#include "Types/Platform/PlatformAssertionErrors.h"
 
 ShaderBufferField::ShaderBufferField(const TChar *pName, FieldDecorationFlags decorations)
     : paramName(pName)
