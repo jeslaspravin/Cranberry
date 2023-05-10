@@ -19,7 +19,7 @@ namespace cbe
 {
 constexpr inline const TChar *PACKAGE_EXT = TCHAR("berry");
 
-class META_ANNOTATE_API(COREOBJECTS_EXPORT) Package final : public Object
+class COREOBJECTS_EXPORT Package final : public Object
 {
     GENERATED_CODES()
 private:
@@ -54,5 +54,6 @@ public:
      * @return cbe::Package *
      */
     static Package *createPackage(const String &relativePath, const String &contentDir, bool bForLoading);
-};
+
+} META_ANNOTATE(NoExport);
 } // namespace cbe

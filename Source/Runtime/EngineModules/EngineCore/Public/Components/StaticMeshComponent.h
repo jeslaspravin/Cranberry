@@ -27,13 +27,14 @@ class ENGINECORE_EXPORT StaticMeshComponent : public RenderableComponent
     GENERATED_CODES()
 public:
     META_ANNOTATE()
-    StaticMesh *mesh;
+    StaticMesh *mesh = nullptr;
 
     /* RenderableComponent overrides */
     void setupRenderInfo(ComponentRenderInfo &compRenderInfo) const override;
     void clearRenderInfo(const ComponentRenderInfo &compRenderInfo) const override;
     AABB getLocalBound() const override;
     /* Override ends */
+
 } META_ANNOTATE(NoExport);
 
 } // namespace cbe

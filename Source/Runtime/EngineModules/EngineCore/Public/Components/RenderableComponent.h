@@ -20,7 +20,7 @@ struct ComponentRenderInfo;
 namespace cbe
 {
 
-class ENGINECORE_EXPORT RenderableComponent : public TransformComponent
+class ENGINECORE_EXPORT RenderableComponent : public TransformLeafComponent
 {
     GENERATED_CODES()
 

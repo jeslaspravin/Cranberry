@@ -23,11 +23,7 @@ template <typename FromType, typename ToType>
 struct IsStaticCastable<FromType, ToType, decltype(static_cast<ToType>(std::declval<FromType>()))> : std::true_type
 {};
 template <typename FromType, typename ToType>
-concept StaticCastable = requires(FromType value) {
-    {
-        static_cast<ToType>(value)
-    } -> std::same_as<ToType>;
-};
+concept StaticCastable = IsStaticCastable<FromType, ToType>::value;
 
 // Indexable checks for both compound types and dynamic pointer array and native array
 template <typename DataType>

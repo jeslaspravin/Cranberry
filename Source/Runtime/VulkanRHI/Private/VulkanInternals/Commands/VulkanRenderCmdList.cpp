@@ -481,9 +481,8 @@ void VulkanCommandList::cmdCopyBuffer_Internal(
     vDevice->vkCmdCopyBuffer2KHR(cmdBufferManager.getRawBuffer(cmdBuffer), &copyBufferInfo);
 }
 
-BufferResourceRef VulkanCommandList::copyToBuffer_GenCopyBufferInfo(
-    std::vector<BatchCopyBufferInfo> &outBatchCopies, ArrayView<BatchCopyBufferData> batchCopies
-)
+BufferResourceRef
+VulkanCommandList::copyToBuffer_GenCopyBufferInfo(std::vector<BatchCopyBufferInfo> &outBatchCopies, ArrayView<BatchCopyBufferData> batchCopies)
 {
     std::vector<const void *> srcDataPtrs;
     outBatchCopies.clear();
@@ -2711,9 +2710,7 @@ void VulkanCommandList::copyToImage(ImageResourceRef dst, ArrayView<class Linear
     stagingBuffer.reset();
 }
 
-void VulkanCommandList::copyToImageLinearMapped(
-    ImageResourceRef dst, ArrayView<class Color> pixelData, const CopyPixelsToImageInfo &copyInfo
-)
+void VulkanCommandList::copyToImageLinearMapped(ImageResourceRef dst, ArrayView<class Color> pixelData, const CopyPixelsToImageInfo &copyInfo)
 {
     fatalAssertf(dst->isValid(), "Invalid image resource {}", dst->getResourceName().getChar());
     if (EPixelDataFormat::isDepthFormat(dst->imageFormat()) || EPixelDataFormat::isFloatingFormat(dst->imageFormat()))

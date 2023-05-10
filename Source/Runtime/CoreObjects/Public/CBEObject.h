@@ -84,10 +84,10 @@ protected:
 
 class COREOBJECTS_EXPORT Object : private ObjectBase
 {
-    GENERATED_CODES();
+    GENERATED_CODES()
 
 public:
-    OVERRIDE_CONSTRUCTION_POLICY(CBEObjectConstructionPolicy);
+    OVERRIDE_CONSTRUCTION_POLICY(CBEObjectConstructionPolicy)
 
 private:
     friend INTERNAL_ObjectCoreAccessors;
@@ -139,7 +139,7 @@ public:
     virtual void onPostLoad() {}
     virtual void onPostSerialize(const ObjectArchive & /*ar*/) {}
     virtual ObjectArchive &serialize(ObjectArchive &ar) { return ar; }
-} META_ANNOTATE(BaseType, NoExport);
+} META_ANNOTATE(NoExport, BaseType);
 } // namespace cbe
 
 COMPILER_PRAGMA(COMPILER_POP_WARNING)

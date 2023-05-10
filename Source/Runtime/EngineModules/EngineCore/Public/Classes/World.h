@@ -21,6 +21,7 @@
 namespace cbe
 {
 class TransformComponent;
+class TransformLeafComponent;
 class LogicComponent;
 class Actor;
 class ActorPrefab;
@@ -38,17 +39,22 @@ enum Type
 {
     Loading,
     Loaded,
+    PreparedPlay,
     StartingPlay,
     Playing,
     EndingPlay
 };
 
-FORCE_INLINE bool isPlayState(EWorldState::Type state) { return state == StartingPlay || state == Playing || state == EndingPlay; }
+FORCE_INLINE bool isPlayState(EWorldState::Type state) { return state >= StartingPlay && state <= EndingPlay; }
+// State in which all the information needed for traversing scene graph is already available in the World
+FORCE_INLINE bool isPreparedState(EWorldState::Type state) { return state >= PreparedPlay && state <= EndingPlay; }
 
 }; // namespace EWorldState
 
 using WorldActorEvent = Event<World, Actor *>;
 using WorldComponentEvent = Event<World, Object *>;
+using WorldTransformCompsEvent = Event<World, ArrayView<TransformComponent *>>;
+using WorldLeafCompsEvent = Event<World, ArrayView<TransformLeafComponent *>>;
 
 /**
  * If any struct/logic is changed here in world, Be sure to update the changes in EditorHelpers implementations for world
@@ -65,8 +71,9 @@ private:
     friend class EditorHelpers;
 #endif
     friend class WorldsManager;
+    friend class WACHelpers;
 
-    struct META_ANNOTATE() ActorAttachedToInfo
+    struct ActorAttachedToInfo
     {
         GENERATED_CODES()
 
@@ -75,7 +82,7 @@ private:
 
         META_ANNOTATE()
         TransformComponent *component;
-    };
+    } META_ANNOTATE();
 
     // No need to have as reflected field as removing or adding actors handle this
     using TFHierarchyIdx = SizeT;
@@ -94,9 +101,12 @@ private:
     META_ANNOTATE(Transient)
     std::set<ActorPrefab *> delayInitPrefabs;
 
+    // TODO(Jeslas) : Clear dirty flags for this components after all system updates, Then remove the Annotation
     // Components that are either invalidated or transformed
     META_ANNOTATE(Transient)
-    std::vector<TransformComponent *> dirtyComponents; // TODO(Jeslas) : Clear dirty flags for this components after all system updates
+    std::set<TransformComponent *> dirtyTfComps;
+    META_ANNOTATE(Transient)
+    std::set<TransformLeafComponent *> dirtyLeafComps;
 
     EWorldState::Type worldState;
 
@@ -105,8 +115,10 @@ public:
     WorldActorEvent onActorRemoved;
     WorldComponentEvent onTfCompAdded;
     WorldComponentEvent onTfCompRemoved;
-    WorldComponentEvent onTfCompTransformed;
-    WorldComponentEvent onTfCompInvalidated;
+    WorldTransformCompsEvent onTfCompsTransformed;
+    WorldComponentEvent onLeafCompAdded;
+    WorldComponentEvent onLeafCompRemoved;
+    WorldLeafCompsEvent onLeafsTransformed;
     WorldComponentEvent onLogicCompAdded;
     WorldComponentEvent onLogicCompRemoved;
 
@@ -118,11 +130,12 @@ public:
     ObjectArchive &serialize(ObjectArchive &ar) override;
     /* Overrides ends */
 
-    void tfCompInvalidated(TransformComponent *tfComponent);
-    void tfCompTransformed(TransformComponent *tfComponent, bool bPrevTfDirty);
+    void tfCompTransformed(TransformComponent *tfComponent);
     void tfAttachmentChanged(TransformComponent *attachingComp, TransformComponent *attachedTo);
     void tfComponentAdded(Actor *actor, TransformComponent *tfComponent);
     void tfComponentRemoved(Actor *actor, TransformComponent *tfComponent);
+    void leafComponentAdded(Actor *actor, TransformLeafComponent *leafComp);
+    void leafComponentRemoved(Actor *actor, TransformLeafComponent *leafComp);
     void logicComponentAdded(Actor *actor, LogicComponent *logicComp);
     void logicComponentRemoved(Actor *actor, LogicComponent *logicComp);
 
@@ -131,13 +144,11 @@ public:
     // Merges other world into this world and renames duplicate named actors, bMoveActors true means all actors will be moved to this world
     bool mergeWorld(World *otherWorld, bool bMoveActors);
 
-    // Calling in editor worlds is not efficient
-    void
-    getComponentsAttachedTo(std::vector<TransformComponent *> &outAttaches, const TransformComponent *component, bool bRecurse = false) const;
-
     bool hasWorldTf(const TransformComponent *component) const;
     const Transform3D &getWorldTf(const TransformComponent *component) const;
 
+    TransformComponent *getComponentAttachedTo(const TransformComponent *component) const;
+    void getComponentAttaches(const TransformComponent *component, std::vector<TransformComponent *> &childTfs) const;
     TransformComponent *getActorAttachedToComp(const Actor *actor) const;
     Actor *getActorAttachedTo(const Actor *actor) const;
 
@@ -155,15 +166,18 @@ private:
     Actor *addActor(CBEClass actorClass, const String &actorName, EObjectFlags actorFlags, bool bDelayedInit);
     Actor *addActor(ActorPrefab *inPrefab, const String &name, EObjectFlags actorFlags);
     bool finalizeAddActor(ActorPrefab *prefab);
-    Actor *setupActorInternal(ActorPrefab *actorPrefab);
+    Actor *setupActorInternal(ActorPrefab *actorPrefab, bool bUpdateTfTree);
+    void updateTfAttachment(TransformComponent *attachingComp, TransformComponent *attachedTo, bool bUpdateTfTree);
     void removeActor(Actor *actor);
 
     void broadcastActorAdded(Actor *actor) const { onActorAdded.invoke(actor); }
     void broadcastActorRemoved(Actor *actor) const { onActorRemoved.invoke(actor); }
     void broadcastTfCompAdded(Object *tfComp) const { onTfCompAdded.invoke(tfComp); }
     void broadcastTfCompRemoved(Object *tfComp) const { onTfCompRemoved.invoke(tfComp); }
-    void broadcastTfCompInvalidated(Object *tfComp) const { onTfCompInvalidated.invoke(tfComp); }
-    void broadcastTfCompTransformed(Object *tfComp) const { onTfCompTransformed.invoke(tfComp); }
+    void broadcastTfCompTransformed(ArrayView<TransformComponent *> tfComps) const { onTfCompsTransformed.invoke(tfComps); }
+    void broadcastLeafCompAdded(Object *leafComp) const { onLeafCompAdded.invoke(leafComp); }
+    void broadcastLeafCompRemoved(Object *leafComp) const { onLeafCompRemoved.invoke(leafComp); }
+    void broadcastLeafTransformed(ArrayView<TransformLeafComponent *> leafComps) const { onLeafsTransformed.invoke(leafComps); }
     void broadcastLogicCompAdded(Object *logicComp) const { onLogicCompAdded.invoke(logicComp); }
     void broadcastLogicCompRemoved(Object *logicComp) const { onLogicCompRemoved.invoke(logicComp); }
 } META_ANNOTATE(NoExport);

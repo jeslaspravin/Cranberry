@@ -118,12 +118,10 @@ protected:
     // raw copies the pixels to staging buffer, Only accepts non floating point or 32bit floating point
     // textures
     void copyPixelsTo(
-        BufferResourceRef stagingBuffer, uint8 *stagingPtr, ArrayView<Color> pixelData,
-        const EPixelDataFormat::PixelFormatInfo *formatInfo
+        BufferResourceRef stagingBuffer, uint8 *stagingPtr, ArrayView<Color> pixelData, const EPixelDataFormat::PixelFormatInfo *formatInfo
     ) const;
     void copyPixelsLinearMappedTo(
-        BufferResourceRef stagingBuffer, uint8 *stagingPtr, ArrayView<Color> pixelData,
-        const EPixelDataFormat::PixelFormatInfo *formatInfo
+        BufferResourceRef stagingBuffer, uint8 *stagingPtr, ArrayView<Color> pixelData, const EPixelDataFormat::PixelFormatInfo *formatInfo
     ) const;
     void copyPixelsTo(
         BufferResourceRef stagingBuffer, uint8 *stagingPtr, ArrayView<LinearColor> pixelData,
@@ -170,9 +168,8 @@ public:
 
     virtual void setupInitialLayout(ImageResourceRef image) = 0;
 
-    virtual void presentImage(
-        ArrayView<WindowCanvasRef> canvases, ArrayView<uint32> imageIndices, ArrayView<SemaphoreRef> waitOnSemaphores
-    ) = 0;
+    virtual void presentImage(ArrayView<WindowCanvasRef> canvases, ArrayView<uint32> imageIndices, ArrayView<SemaphoreRef> waitOnSemaphores)
+        = 0;
 
     ///////////////////////////////////////////////////////////////////////////////
     //// Command buffer related function access if you know what you are doing ////
@@ -248,8 +245,7 @@ public:
     // Offset in bytes
     virtual void cmdBindVertexBuffer(const GraphicsResource *cmdBuffer, uint32 firstBinding, BufferResourceRef vertexBuffer, uint64 offset) = 0;
     virtual void cmdBindVertexBuffers(
-        const GraphicsResource *cmdBuffer, uint32 firstBinding, ArrayView<BufferResourceRef> vertexBuffers,
-        ArrayView<uint64> offsets
+        const GraphicsResource *cmdBuffer, uint32 firstBinding, ArrayView<BufferResourceRef> vertexBuffers, ArrayView<uint64> offsets
     ) = 0;
     virtual void cmdBindIndexBuffer(const GraphicsResource *cmdBuffer, const BufferResourceRef &indexBuffer, uint64 offset = 0) = 0;
 

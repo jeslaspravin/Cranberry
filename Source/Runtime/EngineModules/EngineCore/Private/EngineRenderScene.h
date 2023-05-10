@@ -312,7 +312,7 @@ private:
     void removeRenderComponents(const std::vector<String> &renderComps);
     void recreateRenderComponents(const std::vector<cbe::RenderableComponent *> &renderComps);
     void
-    updateTfComponents(const std::vector<cbe::TransformComponent *> &comps, IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance);
+    updateTfComponents(const std::vector<cbe::RenderableComponent *> &comps, IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance);
 
     void createRenderInfo(cbe::RenderableComponent *comp, SizeT compRenderInfoIdx);
     void destroyRenderInfo(const cbe::RenderableComponent *comp, SizeT compRenderInfoIdx);

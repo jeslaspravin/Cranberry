@@ -22,7 +22,7 @@ class FieldProperty;
 namespace cbe
 {
 
-class META_ANNOTATE_API(COREOBJECTS_EXPORT) ObjectTemplate : public Object
+class COREOBJECTS_EXPORT ObjectTemplate : public Object
 {
     GENERATED_CODES()
 public:
@@ -39,7 +39,7 @@ private:
     Object *templateObj;
 
     META_ANNOTATE()
-    ObjectTemplate *parentTemplate = nullptr;
+    ObjectTemplate *parentTemplate;
 
     CBEClass templateClass;
     // Object names are relative to outer, ie) templateObj will be subobject of ObjectTemplate
@@ -48,7 +48,11 @@ private:
     std::unordered_map<NameString, TemplateObjectEntry> objectEntries;
 
 public:
-    ObjectTemplate() {}
+    ObjectTemplate()
+        : templateObj(nullptr)
+        , parentTemplate(nullptr)
+        , templateClass(nullptr)
+    {}
     ObjectTemplate(StringID className, const String &name);
     ObjectTemplate(ObjectTemplate *inTemplate, const String &name);
 
@@ -74,7 +78,7 @@ public:
 
 private:
     void createTemplate(CBEClass clazz, const TChar *name);
-};
+} META_ANNOTATE(NoExport);
 
 /**
  * Creates an object from template

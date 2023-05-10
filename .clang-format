@@ -214,6 +214,7 @@ StatementAttributeLikeMacros:
   - Q_EMIT
 StatementMacros:
   - META_ANNOTATE
+  - META_ANNOTATE_API
   - GENERATED_CODES
   - FirstMacroName
   - MacroName

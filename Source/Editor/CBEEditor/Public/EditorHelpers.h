@@ -60,7 +60,4 @@ private:
 
     static void componentAddedToWorld(cbe::World *world, cbe::Actor *actor, cbe::Object *component);
     static void componentRemovedFromWorld(cbe::World *world, cbe::Actor *actor, cbe::Object *component);
-
-    static void attachActorInWorld(cbe::World *world, cbe::Actor *attachingActor, cbe::TransformComponent *attachToComp);
-    static void detachActorInWorld(cbe::World *world, cbe::Actor *detachingActor);
 };

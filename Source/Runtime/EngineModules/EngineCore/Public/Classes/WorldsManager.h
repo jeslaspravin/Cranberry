@@ -29,13 +29,13 @@ namespace cbe
 class World;
 class WorldsManager;
 
-struct META_ANNOTATE() WorldInfo
+struct WorldInfo
 {
     GENERATED_CODES()
 
     ComponentRenderSyncInfo frameSyncInfo;
     SharedPtr<EngineRenderScene> renderScene;
-};
+} META_ANNOTATE();
 
 using WorldManagerEvent = Event<WorldsManager, World *, bool>;
 
@@ -86,9 +86,6 @@ public:
 
 private:
     bool isMainWorld(World *world) const { return mainWorld == world || renderingWorld == world; }
-
-    void tfCompAdded(World *world, Object *component);
-    void tfCompRemoved(World *world, Object *component);
 } META_ANNOTATE(NoExport);
 
 } // namespace cbe

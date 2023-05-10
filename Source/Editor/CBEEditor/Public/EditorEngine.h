@@ -33,7 +33,7 @@ namespace cbe
 
 class Actor;
 
-class META_ANNOTATE_API(CBEEDITOR_EXPORT) EditorEngine : public EngineBase
+class CBEEDITOR_EXPORT EditorEngine : public EngineBase
 {
     GENERATED_CODES()
 private:
@@ -70,7 +70,8 @@ public:
 
 private:
     void selectionChanged(Object *newSelection);
-};
+
+} META_ANNOTATE(NoExport);
 
 CBEEDITOR_EXPORT extern EditorEngine *gCBEditorEngine;
 

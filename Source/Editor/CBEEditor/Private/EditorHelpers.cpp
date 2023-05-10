@@ -74,15 +74,12 @@ EditorHelpers::addStaticMeshesToWorld(const std::vector<cbe::StaticMesh *> &stat
             = modifyPrefabCompField(PropertyHelper::findField(smComp->getType(), GET_MEMBER_ID_CHECKED(StaticMeshComponent, mesh)), smComp);
         debugAssert(modifyingComp == smComp);
         smComp->mesh = sm;
+        // Attach static mesh to root even though in Prefab, added component will get attached to root by default
+        smActorPrefab->setLeafAttachedTo(smComp, smActorPrefab->getRootComponent());
 
-        // Reset root and remove default root component
-        TransformComponent *defaultRoot = smActorPrefab->getRootComponent();
-        smActorPrefab->setRootComponent(smComp);
-        smActorPrefab->removeComponent(defaultRoot);
+        cbe::WACHelpers::attachActor(smActor, rootActorRoot);
 
-        attachActorInWorld(world, smActor, rootActorRoot);
-
-        debugAssert(smActor->getActorAttachedTo() == nullptr && world->actorAttachedTo[smActor].component == rootActorRoot);
+        debugAssert(world->actorAttachedTo[smActor].component == rootActorRoot);
     }
     cbe::markDirty(world);
     return rootActorPrefab->getActorTemplate();
@@ -143,48 +140,28 @@ void EditorHelpers::removeComponentFromPrefab(cbe::ActorPrefab *prefab, cbe::Obj
 cbe::Object *EditorHelpers::modifyComponentInPrefab(cbe::ActorPrefab *prefab, cbe::Object *modifyingComp)
 {
     cbe::Object *modifiedComp = prefab->modifyComponent(modifyingComp);
-    // Should I have this special function? Right now the purpose is only to update data in world on modifying
-    // However prefabs in world will always have overrides at start and always will modifiedComp == modifyingComp
-    cbe::World *world = prefab->getActorTemplate()->getWorld();
-    if (world && modifiedComp != modifyingComp)
-    {
-        if (cbe::TransformComponent *tfComponent = cbe::cast<cbe::TransformComponent>(modifiedComp))
-        {
-            for (auto actorAttachedToItr = world->actorAttachedTo.begin(); actorAttachedToItr != world->actorAttachedTo.end();
-                 ++actorAttachedToItr)
-            {
-                if (actorAttachedToItr->second.component == modifyingComp)
-                {
-                    actorAttachedToItr->second.component = tfComponent;
-                }
-            }
-            cbe::markDirty(world);
-        }
-    }
     return modifiedComp;
 }
 
 cbe::Object *EditorHelpers::modifyPrefabCompField(const FieldProperty *prop, cbe::Object *comp)
 {
     debugAssert(comp && prop);
-    cbe::ObjectTemplate *compTemplate = cbe::ActorPrefab::objectTemplateFromObj(comp);
-    cbe::ActorPrefab *prefab = nullptr;
-    if (compTemplate == nullptr)
+    cbe::ObjectTemplate *compTemplate = nullptr;
+    if (cbe::ActorPrefab::isNativeComponent(comp))
     {
         // Probably actor owned/native component
-        cbe::Actor *actor = cbe::cast<cbe::Actor>(comp->getOuter());
-        debugAssert(actor);
-        compTemplate = cbe::ActorPrefab::objectTemplateFromObj(actor);
-        prefab = cbe::ActorPrefab::prefabFromActorTemplate(compTemplate);
+        compTemplate = cbe::ActorPrefab::objectTemplateFromNativeComp(comp);
+        cbe::ActorPrefab *prefab = cbe::ActorPrefab::prefabFromActorTemplate(compTemplate);
+        cbe::Object *newComp = modifyComponentInPrefab(prefab, comp);
+        debugAssert(newComp == comp);
     }
     else
     {
-        prefab = cbe::ActorPrefab::prefabFromCompTemplate(compTemplate);
+        cbe::ActorPrefab *prefab = cbe::ActorPrefab::prefabFromCompTemplate(cbe::ActorPrefab::objectTemplateFromObj(comp));
+        comp = modifyComponentInPrefab(prefab, comp);
+        compTemplate = cbe::ActorPrefab::objectTemplateFromObj(comp);
     }
-    debugAssert(prefab);
-
-    comp = modifyComponentInPrefab(prefab, comp);
-    compTemplate = cbe::ActorPrefab::objectTemplateFromObj(comp);
+    debugAssert(compTemplate);
     compTemplate->onFieldModified(prop, comp);
     return comp;
 }
@@ -192,24 +169,22 @@ cbe::Object *EditorHelpers::modifyPrefabCompField(const FieldProperty *prop, cbe
 cbe::Object *EditorHelpers::resetPrefabCompField(const FieldProperty *prop, cbe::Object *comp)
 {
     debugAssert(comp && prop);
-    cbe::ObjectTemplate *compTemplate = cbe::ActorPrefab::objectTemplateFromObj(comp);
-    cbe::ActorPrefab *prefab = nullptr;
-    if (compTemplate == nullptr)
+    cbe::ObjectTemplate *compTemplate = nullptr;
+    if (cbe::ActorPrefab::isNativeComponent(comp))
     {
         // Probably actor owned/native component
-        cbe::Actor *actor = cbe::cast<cbe::Actor>(comp->getOuter());
-        debugAssert(actor);
-        compTemplate = cbe::ActorPrefab::objectTemplateFromObj(actor);
-        prefab = cbe::ActorPrefab::prefabFromActorTemplate(compTemplate);
+        compTemplate = cbe::ActorPrefab::objectTemplateFromNativeComp(comp);
+        cbe::ActorPrefab *prefab = cbe::ActorPrefab::prefabFromActorTemplate(compTemplate);
+        cbe::Object *newComp = modifyComponentInPrefab(prefab, comp);
+        debugAssert(newComp == comp);
     }
     else
     {
-        prefab = cbe::ActorPrefab::prefabFromCompTemplate(compTemplate);
+        cbe::ActorPrefab *prefab = cbe::ActorPrefab::prefabFromCompTemplate(cbe::ActorPrefab::objectTemplateFromObj(comp));
+        comp = modifyComponentInPrefab(prefab, comp);
+        compTemplate = cbe::ActorPrefab::objectTemplateFromObj(comp);
     }
-    debugAssert(prefab);
-
-    comp = modifyComponentInPrefab(prefab, comp);
-    compTemplate = cbe::ActorPrefab::objectTemplateFromObj(comp);
+    debugAssert(compTemplate);
     compTemplate->onFieldReset(prop, comp);
     return comp;
 }
@@ -225,6 +200,11 @@ void EditorHelpers::postAddActorToWorld(cbe::World *world, cbe::ActorPrefab *pre
     {
         componentAddedToWorld(world, actor, actorLogicComp);
     }
+    for (cbe::TransformLeafComponent *actorLeafComp : actor->getLeafComponents())
+    {
+        componentAddedToWorld(world, actor, actorLeafComp);
+    }
+
     for (cbe::ObjectTemplate *compTemplate : prefab->getPrefabComponents())
     {
         componentAddedToWorld(world, actor, compTemplate->getTemplate());
@@ -247,7 +227,7 @@ void EditorHelpers::removeActorFromWorld(cbe::World *world, cbe::Actor *actor)
         std::erase(world->actorPrefabs, prefab);
     }
     std::erase(world->actors, actor);
-    detachActorInWorld(world, actor);
+    cbe::WACHelpers::detachActor(actor);
     // Detach anything that is attached to this actor
     for (auto actorAttachedToItr = world->actorAttachedTo.begin(); actorAttachedToItr != world->actorAttachedTo.end();)
     {
@@ -274,6 +254,11 @@ void EditorHelpers::removeActorFromWorld(cbe::World *world, cbe::Actor *actor)
     {
         componentRemovedFromWorld(world, actor, actorLogicComp);
     }
+    for (cbe::TransformLeafComponent *actorLeafComp : actor->getLeafComponents())
+    {
+        componentRemovedFromWorld(world, actor, actorLeafComp);
+    }
+
     for (cbe::ObjectTemplate *compTemplate : prefab->getPrefabComponents())
     {
         componentRemovedFromWorld(world, actor, compTemplate->getTemplate());
@@ -288,33 +273,44 @@ void EditorHelpers::removeActorFromWorld(cbe::World *world, cbe::Actor *actor)
 
 void EditorHelpers::componentAddedToWorld(cbe::World *world, cbe::Actor * /*actor*/, cbe::Object *component)
 {
-    cbe::TransformComponent *tfComponent = cbe::cast<cbe::TransformComponent>(component);
-    if (tfComponent)
+    if (PropertyHelper::isChildOf<cbe::TransformComponent>(component->getType()))
     {
         world->broadcastTfCompAdded(component);
     }
-    else
+    else if (PropertyHelper::isChildOf<cbe::LogicComponent>(component->getType()))
     {
         world->broadcastLogicCompAdded(component);
+    }
+    else if (PropertyHelper::isChildOf<cbe::TransformLeafComponent>(component->getType()))
+    {
+        world->broadcastLeafCompAdded(component);
+    }
+    else
+    {
+        fatalAssertf(
+            !"Invalid component", "Invalid component type {} added to the world {}", component->getType()->nameString,
+            world->getObjectData().name
+        );
     }
 }
 
 void EditorHelpers::componentRemovedFromWorld(cbe::World *world, cbe::Actor * /*actor*/, cbe::Object *component)
 {
     // Just to be safe and not have any hanging references
-    cbe::TransformComponent *tfComponent = cbe::cast<cbe::TransformComponent>(component);
-    if (tfComponent)
+    if (cbe::TransformComponent *tfComponent = cbe::cast<cbe::TransformComponent>(component))
     {
         auto compWorldTfItr = world->compToTf.find(tfComponent);
         cbe::World::TFHierarchyIdx compTfIdx;
         if (compWorldTfItr != world->compToTf.end())
         {
             compTfIdx = compWorldTfItr->second;
+#if DEBUG_VALIDATIONS
             std::vector<cbe::World::TFHierarchyIdx> directAttachments;
             world->txHierarchy.getChildren(directAttachments, compTfIdx, false);
-
             // So if ever below assert fails. There is desync in logic on how world components are attached and tree updates
             debugAssert(directAttachments.empty());
+#endif // DEBUG_VALIDATIONS
+
             world->txHierarchy.remove(compTfIdx);
             world->compToTf.erase(compWorldTfItr);
         }
@@ -339,20 +335,19 @@ void EditorHelpers::componentRemovedFromWorld(cbe::World *world, cbe::Actor * /*
         }
         world->broadcastTfCompRemoved(component);
     }
-    else
+    else if (PropertyHelper::isChildOf<cbe::LogicComponent>(component->getType()))
     {
         world->broadcastLogicCompRemoved(component);
     }
-}
-
-void EditorHelpers::attachActorInWorld(cbe::World *world, cbe::Actor *attachingActor, cbe::TransformComponent *attachToComp)
-{
-    debugAssert(world && attachingActor && attachToComp);
-    world->actorAttachedTo[attachingActor] = cbe::World::ActorAttachedToInfo{ attachToComp->getActor(), attachToComp };
-}
-
-void EditorHelpers::detachActorInWorld(cbe::World *world, cbe::Actor *detachingActor)
-{
-    debugAssert(world && detachingActor);
-    world->actorAttachedTo.erase(detachingActor);
+    else if (PropertyHelper::isChildOf<cbe::TransformLeafComponent>(component->getType()))
+    {
+        world->broadcastLeafCompRemoved(component);
+    }
+    else
+    {
+        fatalAssertf(
+            !"Invalid component", "Invalid component type {} removed from the world {}", component->getType()->nameString,
+            world->getObjectData().name
+        );
+    }
 }

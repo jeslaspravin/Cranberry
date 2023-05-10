@@ -62,6 +62,11 @@ ActorPrefab *ActorPrefab::prefabFromCompTemplate(const ObjectTemplate *compTempl
 
 ObjectTemplate *ActorPrefab::objectTemplateFromObj(const Object *obj) { return obj ? cast<ObjectTemplate>(obj->getOuter()) : nullptr; }
 
-bool ActorPrefab::isOwnedComponent(Object *comp) const { return prefabFromCompTemplate(objectTemplateFromObj(comp)) == this; }
+ObjectTemplate *ActorPrefab::objectTemplateFromNativeComp(const Object *obj)
+{
+    return obj && isNativeComponent(obj) ? cast<ObjectTemplate>(obj->getOuter()->getOuter()) : nullptr;
+}
+
+bool ActorPrefab::isOwnedComponent(const Object *comp) const { return prefabFromCompTemplate(objectTemplateFromObj(comp)) == this; }
 
 } // namespace cbe

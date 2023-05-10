@@ -50,12 +50,9 @@ public:
 
     void setupInitialLayout(ImageResourceRef image) final;
 
-    void presentImage(
-        ArrayView<WindowCanvasRef> canvases, ArrayView<uint32> imageIndices, ArrayView<SemaphoreRef> waitOnSemaphores
-    ) final;
+    void presentImage(ArrayView<WindowCanvasRef> canvases, ArrayView<uint32> imageIndices, ArrayView<SemaphoreRef> waitOnSemaphores) final;
 
-    void cmdCopyBuffer(const GraphicsResource *cmdBuffer, BufferResourceRef src, BufferResourceRef dst, ArrayView<CopyBufferInfo> copies)
-        final;
+    void cmdCopyBuffer(const GraphicsResource *cmdBuffer, BufferResourceRef src, BufferResourceRef dst, ArrayView<CopyBufferInfo> copies) final;
     void cmdCopyBuffer(const GraphicsResource *cmdBuffer, ArrayView<BatchCopyBufferInfo> copies) final;
     void cmdCopyToBuffer(const GraphicsResource *cmdBuffer, ArrayView<BatchCopyBufferData> batchCopies) final;
     void cmdCopyOrResolveImage(
@@ -104,8 +101,7 @@ public:
     ) const final;
     void cmdBindVertexBuffer(const GraphicsResource *cmdBuffer, uint32 firstBinding, BufferResourceRef vertexBuffer, uint64 offset) final;
     void cmdBindVertexBuffers(
-        const GraphicsResource *cmdBuffer, uint32 firstBinding, ArrayView<BufferResourceRef> vertexBuffers,
-        ArrayView<uint64> offsets
+        const GraphicsResource *cmdBuffer, uint32 firstBinding, ArrayView<BufferResourceRef> vertexBuffers, ArrayView<uint64> offsets
     ) final;
     void cmdBindIndexBuffer(const GraphicsResource *cmdBuffer, const BufferResourceRef &indexBuffer, uint64 offset = 0) final;
 
@@ -325,9 +321,7 @@ void RenderCommandList::copyToImage(ImageResourceRef dst, ArrayView<class Linear
     cmdList->copyToImage(dst, pixelData, copyInfo);
 }
 
-void RenderCommandList::copyToImageLinearMapped(
-    ImageResourceRef dst, ArrayView<class Color> pixelData, const CopyPixelsToImageInfo &copyInfo
-)
+void RenderCommandList::copyToImageLinearMapped(ImageResourceRef dst, ArrayView<class Color> pixelData, const CopyPixelsToImageInfo &copyInfo)
 {
     cmdList->copyToImageLinearMapped(dst, pixelData, copyInfo);
 }
@@ -628,8 +622,8 @@ void IRenderCommandList::copyPixelsTo(
 }
 
 void IRenderCommandList::copyPixelsTo(
-    BufferResourceRef stagingBuffer, uint8 *stagingPtr, ArrayView<LinearColor> pixelData,
-    const EPixelDataFormat::PixelFormatInfo *formatInfo, bool bIsFloatingFormat
+    BufferResourceRef stagingBuffer, uint8 *stagingPtr, ArrayView<LinearColor> pixelData, const EPixelDataFormat::PixelFormatInfo *formatInfo,
+    bool bIsFloatingFormat
 ) const
 {
     constexpr uint32 colorCompBits = sizeof(decltype(std::declval<LinearColor>().r())) * 8;

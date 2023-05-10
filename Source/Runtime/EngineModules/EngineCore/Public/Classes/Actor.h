@@ -21,6 +21,7 @@ namespace cbe
 class World;
 class LogicComponent;
 class TransformComponent;
+class TransformLeafComponent;
 class ObjectTemplate;
 class ActorPrefab;
 
@@ -37,21 +38,27 @@ private:
     std::set<LogicComponent *> logicComps;
 
     META_ANNOTATE()
-    TransformComponent *rootComponent;
+    std::set<TransformLeafComponent *> leafComps;
+
+    // Root component can only be modified at edit time or native constructor
+    META_ANNOTATE()
+    TransformComponent *rootComponent = nullptr;
 
 public:
     // For any world spawned actor, its outer will be world itself
     World *getWorld() const;
+    // Use this getRootComponent only if you are sure this actor is already a part of the prepared world
     FORCE_INLINE TransformComponent *getRootComponent() const { return rootComponent; }
     FORCE_INLINE const std::set<TransformComponent *> &getTransformComponents() const { return transformComps; }
     FORCE_INLINE const std::set<LogicComponent *> &getLogicComponents() const { return logicComps; }
+    FORCE_INLINE const std::set<TransformLeafComponent *> &getLeafComponents() const { return leafComps; }
 
-    void addComponent(Object *component);
-    void removeComponent(Object *component);
-
-    void attachActor(TransformComponent *otherComponent);
-    Actor *getActorAttachedTo() const;
-    void detachActor();
+    void addComponent(TransformComponent *component);
+    void addComponent(TransformLeafComponent *component);
+    void addComponent(LogicComponent *component);
+    void removeComponent(TransformComponent *component);
+    void removeComponent(TransformLeafComponent *component);
+    void removeComponent(LogicComponent *component);
 
     // Helpers
     template <typename T>
@@ -62,6 +69,7 @@ public:
 private:
     Object *componentFromClass(CBEClass clazz, const TChar *componentName, EObjectFlags componentFlags);
     Object *componentFromTemplate(ObjectTemplate *objTemplate, const TChar *componentName, EObjectFlags componentFlags);
+
 } META_ANNOTATE(NoExport);
 
 template <typename T>

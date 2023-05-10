@@ -21,7 +21,7 @@ namespace cbe
 {
 class WorldsManager;
 
-class META_ANNOTATE_API(ENGINECORE_EXPORT) EngineBase : public Object
+class ENGINECORE_EXPORT EngineBase : public Object
 {
     GENERATED_CODES()
 public:
@@ -40,7 +40,7 @@ public:
     virtual void engineStart() {}
     virtual void engineTick(float /*timeDelta*/) {}
     virtual void engineExit() {}
-};
+} META_ANNOTATE(NoExport);
 
 } // namespace cbe
 

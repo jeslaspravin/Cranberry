@@ -96,6 +96,7 @@ ActorPrefab::ActorPrefab(ActorPrefab *inPrefab, const String &name)
     }
 
     // TODO(Jeslas) : Should I really do this in world? I can avoid doing this if I recreate entire actor and its component at runtime.
+    // Right now this piece of code is important and most other world logics are done in this assumption
     // This is mainly to use actor prefab directly in world/level without constructing a new actor from prefab. Makes it easier in editor
     bool bIsInWorld = cast<World>(getOuter());
     if (bIsInWorld)
@@ -116,7 +117,8 @@ ActorPrefab::ActorPrefab(ActorPrefab *inPrefab, const String &name)
 
 cbe::Object *ActorPrefab::modifyComponent(Object *modifyingComp)
 {
-    if (!isOwnedComponent(modifyingComp))
+    // Native components are already part of actor object template
+    if (!isOwnedComponent(modifyingComp) && !isNativeComponent(modifyingComp))
     {
         ObjectTemplate *modifyingCompTemplate = objectTemplateFromObj(modifyingComp);
         debugAssert(modifyingCompTemplate);
@@ -381,9 +383,9 @@ void ActorPrefab::setRootComponent(TransformComponent *component)
         return;
     }
     componentAttachedTo.erase(component);
-    component->setAttachedTo(nullptr);
     rootComponent = component;
-    // if current root component is the component that setting root component overrides we should not attach current to new
+    // if current root component is the parent's template and trying to replace the root component to newly overridden template
+    // the we should not attach current to new
     auto compOverrideInfoItr = std::find_if(
         componentOverrides.begin(), componentOverrides.end(),
         [rootComp](const ComponentOverrideInfo &overrideInfo)
@@ -394,10 +396,6 @@ void ActorPrefab::setRootComponent(TransformComponent *component)
     if (rootComp && (compOverrideInfoItr == componentOverrides.end() || compOverrideInfoItr->overriddenTemplate->getTemplate() != component))
     {
         componentAttachedTo[rootComp] = component;
-        if (isOwnedComponent(rootComp))
-        {
-            rootComp->setAttachedTo(component);
-        }
     }
     markDirty(this);
 }
@@ -427,13 +425,33 @@ void ActorPrefab::setComponentAttachedTo(TransformComponent *attachingComp, Tran
     if (attachedToComp == nullptr)
     {
         componentAttachedTo.erase(attachingComp);
-        attachingComp->setAttachedTo(nullptr);
     }
     else
     {
         componentAttachedTo[attachingComp] = attachedToComp;
-        attachingComp->setAttachedTo(attachedToComp);
     }
+}
+
+void ActorPrefab::setLeafAttachedTo(TransformLeafComponent *attachingComp, TransformComponent *attachedToComp)
+{
+    TransformLeafComponent *modifiedComp = static_cast<TransformLeafComponent *>(modifyComponent(attachingComp));
+    cbe::ObjectTemplate *compTemplate = nullptr;
+    if (isNativeComponent(attachingComp))
+    {
+        debugAssertf(modifiedComp == attachingComp, "Native component cannot be modified but modified");
+        compTemplate = cbe::ActorPrefab::objectTemplateFromNativeComp(attachingComp);
+    }
+    else
+    {
+        compTemplate = cbe::ActorPrefab::objectTemplateFromObj(modifiedComp);
+    }
+    debugAssert(compTemplate);
+
+    static const FieldProperty *leafAttachedToProp = PropertyHelper::findField(TransformLeafComponent::staticType(), STRID("attachedTo"));
+    debugAssert(leafAttachedToProp);
+    compTemplate->onFieldModified(leafAttachedToProp, attachingComp);
+
+    WACHelpers::attachComponent(modifiedComp, attachedToComp);
 }
 
 Object *ActorPrefab::addComponent(CBEClass compClass, const String &compName)
@@ -460,16 +478,16 @@ Object *ActorPrefab::addComponent(ObjectTemplate *compTemplate, const String &co
     return compObjTemplate->getTemplate();
 }
 
-void ActorPrefab::removeComponent(Object *comp)
+void ActorPrefab::removeComponent(Object *component)
 {
-    debugAssert(!isNativeComponent(comp));
-    TransformComponent *tfComponent = cast<TransformComponent>(comp);
-    ObjectTemplate *compTemplate = objectTemplateFromObj(comp);
+    debugAssert(!isNativeComponent(component));
+    TransformComponent *tfComponent = cast<TransformComponent>(component);
+    ObjectTemplate *compTemplate = objectTemplateFromObj(component);
     debugAssert(compTemplate);
     auto compTemplateItr = std::find(components.begin(), components.end(), compTemplate);
     if (compTemplateItr == components.end())
     {
-        LOG("ActorPrefab", "Component {} is already removed", comp->getObjectData().name);
+        LOG("ActorPrefab", "Component {} is already removed", component->getObjectData().name);
         return;
     }
 
@@ -521,18 +539,37 @@ void ActorPrefab::removeComponent(Object *comp)
                     setComponentAttachedTo(attachedToPair.first, reattachTo);
                 }
             }
+
+            // reattach all the leafs
+            for (ObjectTemplate *comp : components)
+            {
+                TransformLeafComponent *leaf = cast<TransformLeafComponent>(comp->getTemplate());
+                if (leaf && leaf->getAttachedTo() == tfComponent)
+                {
+                    setLeafAttachedTo(leaf, reattachTo);
+                }
+            }
+            for (const ComponentOverrideInfo &compOverride : componentOverrides)
+            {
+                ObjectTemplate *comp = getTemplateToOverride(compOverride);
+                TransformLeafComponent *leaf = cast<TransformLeafComponent>(comp->getTemplate());
+                if (leaf && leaf->getAttachedTo() == tfComponent)
+                {
+                    setLeafAttachedTo(leaf, reattachTo);
+                }
+            }
         }
     }
 
     // Replace anything that used this component to null at least in this ActorPrefab. Derived prefab must handle it them self
     std::unordered_map<Object *, Object *> replacements = {
-        {comp, nullptr}
+        {component, nullptr}
     };
     replaceObjectReferences(this, replacements, EObjectTraversalMode::EntireObjectTree);
     markDirty(this);
     components.erase(compTemplateItr);
     compTemplate->beginDestroy();
-    comp->beginDestroy();
+    component->beginDestroy();
 }
 
 TransformComponent *ActorPrefab::getRootComponent() const
@@ -555,6 +592,39 @@ TransformComponent *ActorPrefab::getAttachedToComp(const TransformComponent *com
 {
     debugAssert(isValidFast(component) && componentAttachedTo.contains(component));
     return componentAttachedTo.find(component)->second;
+}
+
+void ActorPrefab::getCompAttaches(const TransformComponent *component, std::vector<TransformComponent *> tfComps) const
+{
+    for (const std::pair<TransformComponent *const, TransformComponent *> &childToParent : componentAttachedTo)
+    {
+        if (childToParent.second == component)
+        {
+            tfComps.push_back(childToParent.first);
+        }
+    }
+}
+
+void ActorPrefab::getCompAttaches(const TransformComponent *component, std::vector<TransformLeafComponent *> leafComps) const
+{
+    for (ObjectTemplate *compTemplate : components)
+    {
+        TransformLeafComponent *leaf = compTemplate->getTemplateAs<TransformLeafComponent>();
+        if (leaf && leaf->getAttachedTo() == component)
+        {
+            leafComps.push_back(leaf);
+        }
+    }
+
+    for (const ComponentOverrideInfo &overrideInfo : componentOverrides)
+    {
+        ObjectTemplate *compTemplate = overrideInfo.overriddenTemplate ? overrideInfo.overriddenTemplate : getTemplateToOverride(overrideInfo);
+        TransformLeafComponent *leaf = compTemplate->getTemplateAs<TransformLeafComponent>();
+        if (leaf && leaf->getAttachedTo() == component)
+        {
+            leafComps.push_back(leaf);
+        }
+    }
 }
 
 ObjectArchive &ActorPrefab::serialize(ObjectArchive &ar)
@@ -624,12 +694,10 @@ void ActorPrefab::onPostSerialize(const ObjectArchive &ar)
                 if (nextAttachedToItr != componentAttachedTo.end())
                 {
                     compAttachedToPair.second = nextAttachedToItr->second;
-                    compAttachedToPair.first->setAttachedTo(nextAttachedToItr->second);
                 }
                 else
                 {
                     compAttachedToPair.second = nullptr;
-                    compAttachedToPair.first->setAttachedTo(nullptr);
                 }
             }
         }
@@ -669,7 +737,6 @@ void ActorPrefab::onPostSerialize(const ObjectArchive &ar)
                 // Not owned but no root this is not possible unless something is really messed up
                 debugAssert(isOwnedComponent(possibleRoot));
                 rootComponent = possibleRoot;
-                possibleRoot->setAttachedTo(nullptr);
                 componentAttachedTo.erase(rootComponent);
             }
             else
@@ -685,7 +752,6 @@ void ActorPrefab::onPostSerialize(const ObjectArchive &ar)
             if (compAttachedToPair.second == nullptr)
             {
                 compAttachedToPair.second = rootComp;
-                compAttachedToPair.first->setAttachedTo(rootComp);
             }
         }
     }
@@ -697,26 +763,21 @@ void ActorPrefab::initializeActor(ActorPrefab *inPrefab)
     debugAssert(actorWorld);
 
     Actor *actor = inPrefab->getActorTemplate();
-    uint32 nativeCompsCount = uint32(actor->getLogicComponents().size() + actor->getTransformComponents().size());
+    SizeT nativeCompsCount = actor->getLogicComponents().size() + actor->getTransformComponents().size() + actor->getLeafComponents().size();
     actor->rootComponent = inPrefab->getRootComponent();
     auto addCompToActor = [&actor, &inPrefab](Object *comp)
     {
         if (TransformComponent *tfComp = cast<TransformComponent>(comp))
         {
-            if (tfComp != actor->rootComponent)
-            {
-                auto attachedToItr = inPrefab->componentAttachedTo.find(tfComp);
-                alertAlways(attachedToItr != inPrefab->componentAttachedTo.end());
-                if (attachedToItr->second == tfComp->getAttachedTo())
-                {
-                    tfComp->setAttachedTo(attachedToItr->second);
-                }
-            }
             actor->transformComps.insert(tfComp);
         }
         else if (LogicComponent *logicComp = cast<LogicComponent>(comp))
         {
             actor->logicComps.insert(logicComp);
+        }
+        else if (TransformLeafComponent *leafComp = cast<TransformLeafComponent>(comp))
+        {
+            actor->leafComps.insert(leafComp);
         }
         else
         {
@@ -736,12 +797,12 @@ void ActorPrefab::initializeActor(ActorPrefab *inPrefab)
     }
     debugAssert(
         actor->rootComponent
-        && (actor->logicComps.size() + actor->transformComps.size())
+        && (actor->logicComps.size() + actor->transformComps.size() + actor->leafComps.size())
                == (inPrefab->components.size() + inPrefab->componentOverrides.size() + nativeCompsCount)
     );
 }
 
-bool ActorPrefab::isNativeComponent(Object *obj) const { return obj && PropertyHelper::isChildOf<Actor>(obj->getOuter()->getType()); }
+bool ActorPrefab::isNativeComponent(const Object *obj) { return obj && PropertyHelper::isChildOf<Actor>(obj->getOuter()->getType()); }
 
 void ActorPrefab::createComponentOverride(ComponentOverrideInfo &overrideInfo, bool bReplaceReferences)
 {
@@ -856,6 +917,10 @@ FORCE_INLINE void ActorPrefab::postAddComponent(Object *comp)
     {
         setComponentAttachedTo(tfComp, getRootComponent());
     }
+    else if (TransformLeafComponent *leafComp = cast<TransformLeafComponent>(comp))
+    {
+        setLeafAttachedTo(leafComp, getRootComponent());
+    }
     markDirty(this);
 }
 
@@ -863,15 +928,17 @@ FORCE_INLINE void ActorPrefab::postAddComponent(Object *comp)
 // Components impl
 //////////////////////////////////////////////////////////////////////////
 
-Actor *LogicComponent::getActor() const
+Actor *getActorFromComponent(const Object *component)
 {
-    if (Actor *actor = cast<Actor>(getOuter()))
+    // If natively added below getOuter will be the Actor
+    if (Actor *actor = cast<Actor>(component->getOuter()))
     {
         return actor;
     }
     // If stored inside prefab, Template will be subobject of Actor template itself
-    else if (ObjectTemplate *objTemplate = ActorPrefab::objectTemplateFromObj(this))
+    else if (ObjectTemplate *objTemplate = ActorPrefab::objectTemplateFromObj(component))
     {
+        // Above condition makes sure this is none native component
         ActorPrefab *prefab = ActorPrefab::prefabFromCompTemplate(objTemplate);
         debugAssert(prefab);
         return prefab->getActorTemplate();
@@ -879,82 +946,11 @@ Actor *LogicComponent::getActor() const
     return nullptr;
 }
 
-cbe::TransformComponent *TransformComponent::canonicalAttachedTo()
-{
-    // Will be null when not playing or when not attached to anything
-    if (attachedTo == nullptr)
-    {
-        ObjectTemplate *objTemplate = ActorPrefab::objectTemplateFromObj(this);
-        ActorPrefab *prefab = ActorPrefab::prefabFromCompTemplate(objTemplate);
-        World *world = getWorld();
-        if (objTemplate && prefab)
-        {
-            TransformComponent *attachedToComp = nullptr;
-            if (prefab->getRootComponent() != this)
-            {
-                attachedToComp = prefab->getAttachedToComp(this);
-            }
-            else if (world && !EWorldState::isPlayState(world->getState())) // If root component then world will have its attachment information
-            {
-                attachedToComp = world->getActorAttachedToComp(getActor());
-            }
-            return attachedToComp;
-        }
-    }
-    else
-    {
-        return attachedTo;
-    }
-    return nullptr;
-}
+Actor *LogicComponent::getActor() const { return getActorFromComponent(this); }
 
-Transform3D TransformComponent::getWorldTransform() const
-{
-    World *world = getWorld();
-    if (world && world->hasWorldTf(this))
-    {
-        return world->getWorldTf(this);
-    }
-    else
-    {
-        ObjectTemplate *objTemplate = ActorPrefab::objectTemplateFromObj(this);
-        ActorPrefab *prefab = ActorPrefab::prefabFromCompTemplate(objTemplate);
-        if (objTemplate && prefab)
-        {
-            TransformComponent *attachedToComp = nullptr;
-            if (prefab->getRootComponent() != this)
-            {
-                attachedToComp = prefab->getAttachedToComp(this);
-            }
-            else if (world && !EWorldState::isPlayState(world->getState()))
-            {
-                attachedToComp = world->getActorAttachedToComp(getActor());
-            }
+Actor *TransformComponent::getActor() const { return getActorFromComponent(this); }
 
-            if (attachedToComp)
-            {
-                return attachedToComp->getWorldTransform().transform(relativeTf);
-            }
-        }
-    }
-    return relativeTf;
-}
-
-Actor *TransformComponent::getActor() const
-{
-    if (Actor *actor = cast<Actor>(getOuter()))
-    {
-        return actor;
-    }
-    // If stored inside prefab, Template will be subobject of Actor template itself
-    else if (ObjectTemplate *objTemplate = ActorPrefab::objectTemplateFromObj(this))
-    {
-        ActorPrefab *prefab = ActorPrefab::prefabFromCompTemplate(objTemplate);
-        debugAssert(prefab);
-        return prefab->getActorTemplate();
-    }
-    return nullptr;
-}
+Actor *TransformLeafComponent::getActor() const { return getActorFromComponent(this); }
 
 //////////////////////////////////////////////////////////////////////////
 /// Actor impl
@@ -962,6 +958,7 @@ Actor *TransformComponent::getActor() const
 
 World *Actor::getWorld() const
 {
+    // None prefab case
     if (World *world = cast<World>(getOuter()))
     {
         return world;
@@ -974,105 +971,73 @@ World *Actor::getWorld() const
     return nullptr;
 }
 
-void Actor::addComponent(Object *component)
+void Actor::addComponent(TransformComponent *component)
 {
-    if (PropertyHelper::isChildOf<TransformComponent>(component->getType()))
-    {
-        TransformComponent *tfComp = static_cast<TransformComponent *>(component);
-        transformComps.insert(tfComp);
-        if (tfComp->getAttachedTo() == nullptr)
-        {
-            tfComp->setAttachedTo(rootComponent);
-        }
-        if (World *world = getWorld())
-        {
-            world->tfComponentAdded(this, tfComp);
-        }
-    }
-    else if (PropertyHelper::isChildOf<LogicComponent>(component->getType()))
-    {
-        logicComps.insert(static_cast<LogicComponent *>(component));
-        if (World *world = getWorld())
-        {
-            world->logicComponentAdded(this, static_cast<LogicComponent *>(component));
-        }
-    }
+    transformComps.insert(component);
+
+    World *world = getWorld();
+    fatalAssertf(
+        world && EWorldState::isPlayState(world->getState()), "Must be called only on Actor that is from playing!", getObjectData().path
+    );
+    world->tfComponentAdded(this, component);
+}
+void Actor::addComponent(TransformLeafComponent *component)
+{
+    leafComps.insert(component);
+
+    World *world = getWorld();
+    fatalAssertf(
+        world && EWorldState::isPlayState(world->getState()), "Must be called only on Actor that is from playing!", getObjectData().path
+    );
+    world->leafComponentAdded(this, component);
+}
+void Actor::addComponent(LogicComponent *component)
+{
+    logicComps.insert(component);
+    World *world = getWorld();
+    fatalAssertf(
+        world && EWorldState::isPlayState(world->getState()), "Must be called only on Actor that is from playing!", getObjectData().path
+    );
+    world->logicComponentAdded(this, component);
 }
 
-void Actor::removeComponent(Object *component)
+void Actor::removeComponent(TransformComponent *component)
 {
-    if (PropertyHelper::isChildOf<TransformComponent>(component->getType()))
+    if (component == rootComponent)
     {
-        TransformComponent *tfComp = static_cast<TransformComponent *>(component);
-        if (transformComps.erase(tfComp) != 0)
-        {
-            if (tfComp == rootComponent)
-            {
-                if (World *world = getWorld())
-                {
-                    std::vector<TransformComponent *> attachments;
-                    getWorld()->getComponentsAttachedTo(attachments, tfComp);
-                    // Just set the first child component of root as new root the world will fix up attachments
-                    for (TransformComponent *attachment : attachments)
-                    {
-                        if (attachment->getActor() == this)
-                        {
-                            rootComponent = attachment;
-                            break;
-                        }
-                    }
-                    // This will reattach  all components to new root that was attached to old root
-                    getWorld()->tfComponentRemoved(this, tfComp);
-                }
-                else
-                {
-                    // This happens if actor is not created from world. Instead may be created as part of ActorPrefab
-                    for (TransformComponent *attachment : transformComps)
-                    {
-                        if (attachment->getAttachedTo() == tfComp)
-                        {
-                            rootComponent = attachment;
-                            attachment->setAttachedTo(nullptr);
-                            break;
-                        }
-                    }
-                    for (TransformComponent *attachment : transformComps)
-                    {
-                        if (attachment->getAttachedTo() == tfComp)
-                        {
-                            attachment->setAttachedTo(rootComponent);
-                        }
-                    }
-                }
-            }
-        }
+        LOG_ERROR("Actor", "Cannot remove the root component {} from actor {}", component->getObjectData().name, getObjectData().path);
+        return;
     }
-    else if (PropertyHelper::isChildOf<LogicComponent>(component->getType()))
+
+    World *world = getWorld();
+    fatalAssertf(
+        world && EWorldState::isPlayState(world->getState()), "Must be called only on Actor that is from playing!", getObjectData().path
+    );
+    if (transformComps.erase(component) != 0)
     {
-        logicComps.erase(static_cast<LogicComponent *>(component));
-        if (World *world = getWorld())
-        {
-            world->logicComponentRemoved(this, static_cast<LogicComponent *>(component));
-        }
+        world->tfComponentRemoved(this, component);
     }
 }
-
-void Actor::attachActor(TransformComponent *otherComponent)
+void Actor::removeComponent(TransformLeafComponent *component)
 {
-    debugAssert(rootComponent);
-    rootComponent->attachComponent(otherComponent);
-}
+    World *world = getWorld();
+    fatalAssertf(
+        world && EWorldState::isPlayState(world->getState()), "Must be called only on Actor that is from playing!", getObjectData().path
+    );
 
-cbe::Actor *Actor::getActorAttachedTo() const
+    leafComps.erase(component);
+    world->leafComponentRemoved(this, component);
+}
+void Actor::removeComponent(LogicComponent *component)
 {
-    if (rootComponent && rootComponent->getAttachedTo())
-    {
-        return rootComponent->getAttachedTo()->getActor();
-    }
-    return nullptr;
-}
+    World *world = getWorld();
+    fatalAssertf(
+        world && EWorldState::isPlayState(world->getState()), "Must be called only on Actor that is from playing!", getObjectData().path
+    );
 
-void Actor::detachActor() { rootComponent->detachComponent(); }
+    logicComps.erase(component);
+    world->logicComponentRemoved(this, component);
+}
 
 cbe::Object *Actor::componentFromClass(CBEClass clazz, const TChar *componentName, EObjectFlags componentFlags)
 {

@@ -15,7 +15,7 @@
 
 #include "StaticMeshImporter.gen.h"
 
-struct META_ANNOTATE(NoExport) StaticMeshImportOptions
+struct StaticMeshImportOptions
 {
     GENERATED_CODES()
 
@@ -33,9 +33,10 @@ struct META_ANNOTATE(NoExport) StaticMeshImportOptions
 
     META_ANNOTATE()
     bool bFromYUp = false;
-};
 
-class META_ANNOTATE(NoExport) ObjStaticMeshImporter : public AssetImporterBase
+} META_ANNOTATE(NoExport);
+
+class ObjStaticMeshImporter : public AssetImporterBase
 {
     GENERATED_CODES()
 public:
@@ -46,4 +47,5 @@ public:
 
 private:
     void makePackageUnique(String &inOutPackageDir) const;
-};
+
+} META_ANNOTATE(NoExport);

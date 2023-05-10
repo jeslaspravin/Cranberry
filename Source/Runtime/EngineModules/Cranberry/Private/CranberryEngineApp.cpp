@@ -324,23 +324,22 @@ void tempTest()
                 cbe::Object *modifyingComp = EditorHelpers::modifyPrefabCompField(
                     PropertyHelper::findField(smComp->getType(), GET_MEMBER_ID_CHECKED(cbe::StaticMeshComponent, mesh)), smComp
                 );
-                modifyingComp = EditorHelpers::modifyPrefabCompField(PropertyHelper::findField(smComp->getType(), STRID("relativeTf")), smComp);
                 debugAssert(modifyingComp == smComp);
                 smComp->mesh = cubeMesh;
+                // Attach static mesh to root even though in Prefab, added component will get attached to root by default
+                smActorPrefab->setLeafAttachedTo(smComp, smActorPrefab->getRootComponent());
 
+                modifyingComp = EditorHelpers::modifyPrefabCompField(
+                    PropertyHelper::findField(cbe::TransformComponent::staticType(), STRID("relativeTf")), smActorPrefab->getRootComponent()
+                );
                 const float scale = 0.25f, scalex2 = 0.5f;
                 Vector3 pos;
                 // 100 is size of cube
                 pos.x() = (i % xCount) * scalex2 * 100 - ((xCount - 1) * scale * 100);
                 pos.y() = ((i / xCount) % yCount) * scalex2 * 100 - ((yCount - 1) * scale * 100);
                 pos.z() = (i / (xCount * yCount)) * scalex2 * 100 - ((zCount - 1) * scale * 100);
-                smComp->setRelativeLocation(pos);
-                smComp->setRelativeScale(Vector3{ scale });
-
-                // Reset root and remove default root component
-                cbe::TransformComponent *defaultRoot = smActorPrefab->getRootComponent();
-                smActorPrefab->setRootComponent(smComp);
-                smActorPrefab->removeComponent(defaultRoot);
+                smActorPrefab->getRootComponent()->setRelativeLocation(pos);
+                smActorPrefab->getRootComponent()->setRelativeScale(Vector3{ scale });
             }
 
             cbe::save(sceneObj);

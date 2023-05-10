@@ -301,9 +301,9 @@ EngineRenderScene::EngineRenderScene(cbe::World *inWorld)
     ComponentRenderSyncInfo syncInfo;
     for (cbe::Actor *actor : inWorld->getActors())
     {
-        for (cbe::TransformComponent *tfComp : actor->getTransformComponents())
+        for (cbe::TransformLeafComponent *leafComp : actor->getLeafComponents())
         {
-            if (cbe::RenderableComponent *renderComp = cbe::cast<cbe::RenderableComponent>(tfComp))
+            if (cbe::RenderableComponent *renderComp = cbe::cast<cbe::RenderableComponent>(leafComp))
             {
                 syncInfo.compsAdded.emplace_back(renderComp);
             }
@@ -320,7 +320,7 @@ EngineRenderScene::EngineRenderScene(cbe::World *inWorld)
     );
 
     // No need to clear the bindings as EngineRenderScene lifetime is less than that of World itself
-    inWorld->onTfCompAdded.bindLambda(
+    inWorld->onLeafCompAdded.bindLambda(
         [this](cbe::Object *compObj)
         {
             if (cbe::RenderableComponent *renderComp = cbe::cast<cbe::RenderableComponent>(compObj))
@@ -329,7 +329,7 @@ EngineRenderScene::EngineRenderScene(cbe::World *inWorld)
             }
         }
     );
-    inWorld->onTfCompRemoved.bindLambda(
+    inWorld->onLeafCompAdded.bindLambda(
         [this](cbe::Object *compObj)
         {
             if (cbe::RenderableComponent *renderComp = cbe::cast<cbe::RenderableComponent>(compObj))
@@ -341,21 +341,27 @@ EngineRenderScene::EngineRenderScene(cbe::World *inWorld)
             }
         }
     );
-    inWorld->onTfCompInvalidated.bindLambda(
-        [this](cbe::Object *compObj)
+
+    // TODO(JESLAS) : Enable below once invalidating components are added
+    // inWorld->onLeafInvalidated.bindLambda(
+    //    [this](cbe::Object *compObj)
+    //    {
+    //        if (cbe::RenderableComponent *renderComp = cbe::cast<cbe::RenderableComponent>(compObj))
+    //        {
+    //            componentUpdates.recreateComps.emplace_back(renderComp);
+    //        }
+    //    }
+    //);
+
+    inWorld->onLeafsTransformed.bindLambda(
+        [this](ArrayView<cbe::TransformLeafComponent *> compObj)
         {
-            if (cbe::RenderableComponent *renderComp = cbe::cast<cbe::RenderableComponent>(compObj))
+            for (cbe::TransformLeafComponent *leaf : compObj)
             {
-                componentUpdates.recreateComps.emplace_back(renderComp);
-            }
-        }
-    );
-    inWorld->onTfCompTransformed.bindLambda(
-        [this](cbe::Object *compObj)
-        {
-            if (cbe::TransformComponent *renderComp = cbe::cast<cbe::TransformComponent>(compObj))
-            {
-                componentUpdates.compsTransformed.emplace_back(renderComp);
+                if (cbe::RenderableComponent *renderComp = cbe::cast<cbe::RenderableComponent>(leaf))
+                {
+                    componentUpdates.compsTransformed.emplace_back(renderComp);
+                }
             }
         }
     );
@@ -836,26 +842,23 @@ void EngineRenderScene::recreateRenderComponents(const std::vector<cbe::Renderab
 }
 
 void EngineRenderScene::updateTfComponents(
-    const std::vector<cbe::TransformComponent *> &comps, IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance
+    const std::vector<cbe::RenderableComponent *> &comps, IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance
 )
 {
-    for (cbe::TransformComponent *updateTf : comps)
+    for (cbe::RenderableComponent *renderComp : comps)
     {
-        if (!cbe::isValidFast(updateTf))
+        if (!cbe::isValidFast(renderComp))
         {
             continue;
         }
 
-        cbe::ObjectPath updateTfPath{ updateTf };
+        cbe::ObjectPath updateTfPath{ renderComp };
         auto compRenderIdxItr = componentToRenderInfo.find(updateTfPath);
         if (compRenderIdxItr != componentToRenderInfo.cend())
         {
-            cbe::RenderableComponent *renderComp = cbe::cast<cbe::RenderableComponent>(updateTf);
-            debugAssert(renderComp);
-
             ComponentRenderInfo &compRenderInfo = compsRenderInfo[compRenderIdxItr->second];
             // TODO(Jeslas) : Getting world tf here is safe?
-            compRenderInfo.worldTf = updateTf->getWorldTransform();
+            compRenderInfo.worldTf = renderComp->getWorldTransform();
             compRenderInfo.worldBound = AABB();
             Vector3 aabbCorners[8];
             renderComp->getLocalBound().boundCorners(aabbCorners);

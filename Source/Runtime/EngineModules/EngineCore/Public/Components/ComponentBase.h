@@ -13,6 +13,7 @@
 
 #include "EngineCoreExports.h"
 #include "CBEObject.h"
+#include "WACHelpers.h"
 
 #include "ComponentBase.gen.h"
 
@@ -48,59 +49,72 @@ public:
  * \author Jeslas
  * \date July 2022
  */
-class ENGINECORE_EXPORT TransformComponent : public Object
+class ENGINECORE_EXPORT TransformComponent final : public Object
 {
     GENERATED_CODES()
 
-protected:
+private:
     META_ANNOTATE()
     Transform3D relativeTf;
 
-private:
-    META_ANNOTATE(Transient)
-    TransformComponent *attachedTo = nullptr;
-
-    // Below flags are used only to avoid multiple trigger of corresponding events. They must be cleared at end of every frame
-    bool bInvalidated = false;
-    bool bTransformed = false;
-
 public:
-    void attachComponent(TransformComponent *attachToComp);
-    void detachComponent();
-    void setAttachedTo(TransformComponent *otherComp) { attachedTo = otherComp; }
+    void setRelativeLocation(Vector3 location)
+    {
+        relativeTf.setTranslation(location);
+        WACHelpers::componentTransformed(this);
+    }
+    void setRelativeRotation(Rotation rotation)
+    {
+        relativeTf.setRotation(rotation);
+        WACHelpers::componentTransformed(this);
+    }
+    void setRelativeScale(Vector3 scale)
+    {
+        relativeTf.setScale(scale);
+        WACHelpers::componentTransformed(this);
+    }
+    void setRelativeTransform(Transform3D newRelativeTf)
+    {
+        relativeTf = newRelativeTf;
+        WACHelpers::componentTransformed(this);
+    }
+    void setWorldLocation(Vector3 location) { WACHelpers::setComponentWorldLocation(this, location); }
+    void setWorldRotation(Rotation rotation) { WACHelpers::setComponentWorldRotation(this, rotation); }
+    void setWorldScale(Vector3 scale) { WACHelpers::setComponentWorldScale(this, scale); }
+    void setWorldTransform(Transform3D newTf) { WACHelpers::setComponentWorldTransform(this, newTf); }
 
-    void invalidateComponent();
-    FORCE_INLINE void clearInvalidatedFlag() { bInvalidated = false; }
-
-    const Vector3 &setRelativeLocation(Vector3 location);
-    const Rotation &setRelativeRotation(Rotation rotation);
-    const Vector3 &setRelativeScale(Vector3 scale);
-    const Transform3D &setRelativeTransform(const Transform3D &newRelativeTf);
-    Vector3 setWorldLocation(Vector3 location);
-    Rotation setWorldRotation(Rotation rotation);
-    Vector3 setWorldScale(Vector3 scale);
-    Transform3D setWorldTransform(const Transform3D &newTf);
-    FORCE_INLINE void clearTransformedFlag() { bTransformed = false; }
-
-    FORCE_INLINE TransformComponent *getAttachedTo() const { return attachedTo; }
-    // Searches prefab or world to determine component's actual attachTo even when world is not being played
-    TransformComponent *canonicalAttachedTo();
-
-    FORCE_INLINE const Vector3 &getRelativeLocation() const { return relativeTf.getTranslation(); }
-    FORCE_INLINE const Rotation &getRelativeRotation() const { return relativeTf.getRotation(); }
-    FORCE_INLINE const Vector3 &getRelativeScale() const { return relativeTf.getScale(); }
     FORCE_INLINE const Transform3D &getRelativeTransform() const { return relativeTf; }
-    FORCE_INLINE Vector3 getWorldLocation() const { return getWorldTransform().getTranslation(); }
-    FORCE_INLINE Rotation getWorldRotation() const { return getWorldTransform().getRotation(); }
-    FORCE_INLINE Vector3 getWorldScale() const { return getWorldTransform().getScale(); }
-    Transform3D getWorldTransform() const;
+    Vector3 getWorldLocation() { return WACHelpers::getComponentWorldLocation(this); }
+    Rotation getWorldRotation() { return WACHelpers::getComponentWorldRotation(this); }
+    Vector3 getWorldScale() { return WACHelpers::getComponentWorldScale(this); }
+    Transform3D getWorldTransform() const { return WACHelpers::getComponentWorldTransform(this); }
+
+    TransformComponent *getAttachedTo() const { return WACHelpers::getComponentAttachedTo(this); }
 
     World *getWorld() const;
     Actor *getActor() const;
 
-private:
-    FORCE_INLINE void componentTransformed(World *world);
+} META_ANNOTATE(NoExport);
 
+class ENGINECORE_EXPORT TransformLeafComponent : public Object
+{
+    GENERATED_CODES()
+private:
+    META_ANNOTATE()
+    TransformComponent *attachedTo = nullptr;
+
+public:
+    void setAttachedTo(TransformComponent *otherComp) { attachedTo = otherComp; }
+    TransformComponent *getAttachedTo() const { return attachedTo; }
+
+    FORCE_INLINE const Transform3D &getRelativeTransform() const { return attachedTo->getRelativeTransform(); }
+    Vector3 getWorldLocation() { return attachedTo->getWorldLocation(); }
+    Rotation getWorldRotation() { return attachedTo->getWorldRotation(); }
+    Vector3 getWorldScale() { return attachedTo->getWorldScale(); }
+    FORCE_INLINE Transform3D getWorldTransform() const { return attachedTo->getWorldTransform(); }
+
+    World *getWorld() const;
+    Actor *getActor() const;
 } META_ANNOTATE(NoExport);
 
 } // namespace cbe
