@@ -14,6 +14,9 @@ Why is `Cranberry` the name? I was eating cranberry and checking Twitter for my 
 * Install Visual Studio 2022 from [VisualStudio]
 * Install Vulkan SDK from [VulkanSDK]. Necessary because I am using `glslangValidator`
 * Run GenerateProject.bat to generate Visual Studio solution. This will by default generate solution for `Editor-DynamicLinked` preset under `Build` folder
+
+<p style="text-align: center;font-weight: bold;font-style: italic;">(or)</p>
+
 * You can also run GenerateProject.bat with one of following presets(eg., `GenerateProject.bat` or `GenerateProject.bat <preset> [Some Cmake arguments]..`)
 Note that if using preset and not going to change library dependencies run Setup.bat first(It will download archive with necessary libraries)
     - `Editor-DynamicLinked` preset creates command `cmake -B Build -G "Visual Studio 17 2022" -A x64 -Thost=x64 -DCMAKE_INSTALL_PREFIX:STRING=${sourceDir}/Installed -DCranberry_STATIC_MODULES:BOOL=OFF`
@@ -25,7 +28,7 @@ Right now I have two runtime applications `Cranberry` and `TestEngine`
 
 * For `Cranberry` start from [Cranberry-Main]
     - Right now the scenes can be manually loaded using this line of code [CranberryAppLoadScene] at startup of the engine
-    - If engine cannot find any valid `obj` file then it auto creates a default scene with bunch of cubes like in the [Screen Shot](#CranberryEditor) 
+    - If engine cannot find any valid `obj` file then it auto creates a default scene with bunch of cubes like in the [Screen Shot](#CranberryEditor). It is done here [CranberryAppCubeScene]
 * For `TestEngine` start from [TestEngine-Main]. In order to run `TestEngine` additional Assets directory with raw assets are necessary. If you want to run `TestEngine.exe` download and extract [Assets.zip] in Runtime folder
 
 ## Features
@@ -87,6 +90,7 @@ If you found any piece of this software helpful or used it yourself, Please feel
 [TestEngine-Main]: https://github.com/jeslaspravin/Cranberry/blob/main/Source/Runtime/ExampleModules/TestEngine/Private/StartMain.cpp#L44
 [TestEngineSS]: https://jeslaspravin.github.io/assets/images/CranberryEngine/TestEngine(08-01-2023).jpg
 [CranberryEdSS]: https://jeslaspravin.github.io/assets/images/CranberryEngine/CranberryEngine(08-01-2023).jpg
-[CranberryAppLoadScene]: https://github.com/jeslaspravin/Cranberry/blob/main/Source/Runtime/EngineModules/Cranberry/Private/CranberryEngineApp.cpp#L171
+[CranberryAppLoadScene]: https://github.com/jeslaspravin/Cranberry/blob/main/Source/Runtime/EngineModules/Cranberry/Private/CranberryEngineApp.cpp#L274
+[CranberryAppCubeScene]: https://github.com/jeslaspravin/Cranberry/blob/main/Source/Runtime/EngineModules/Cranberry/Private/CranberryEngineApp.cpp#L326
 [Cranberry Board-Trello]: https://trello.com/b/ZvopPmvj
 [Cranberry Board-Github]: https://github.com/users/jeslaspravin/projects/4 
