@@ -46,7 +46,7 @@ private:
     }
 
 public:
-    VectorN() { data.resize(0); }
+    VectorN() = default;
     MAKE_TYPE_DEFAULT_COPY_MOVE(VectorN)
 
     explicit VectorN(const CellIndex<d> &count)

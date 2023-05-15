@@ -48,6 +48,7 @@ public:
 
         // Signature and names to match std::source_location
         NODISCARD constexpr uint32 line() const noexcept { return lineNum; }
+        NODISCARD constexpr uint32 column() const noexcept { return 0; }
         NODISCARD constexpr const AChar *file_name() const noexcept { return fileName; }
         NODISCARD constexpr const AChar *function_name() const noexcept { return funcName; }
     };
@@ -221,9 +222,9 @@ public:
 };
 
 #if HAS_SOURCE_LOCATION_FEATURE
-#define CURRENT_SRC_LOC() Logger::SourceLocationType::current()
+#define LOG_CURR_SRC_LOC() Logger::SourceLocationType::current()
 #else
-#define CURRENT_SRC_LOC() Logger::SourceLocationType::current(__FILE__, __func__, __LINE__)
+#define LOG_CURR_SRC_LOC() Logger::SourceLocationType::current(__FILE__, __func__, __LINE__)
 #endif
 
 // If use format function inside the macro itself(1) or let logging function do it(0)
@@ -232,28 +233,28 @@ public:
 #if LOGGER_FORMAT_DIRECT
 
 #if ENABLE_VERBOSE_LOG
-#define LOG_VERBOSE(Category, Fmt, ...) Logger::verbose(CURRENT_SRC_LOC(), TCHAR(Category), STR_FORMAT(TCHAR(Fmt), __VA_ARGS__))
+#define LOG_VERBOSE(Category, Fmt, ...) Logger::verbose(LOG_CURR_SRC_LOC(), TCHAR(Category), STR_FORMAT(TCHAR(Fmt), __VA_ARGS__))
 #else // ENABLE_VERBOSE_LOG
 #define LOG_VERBOSE(Category, Fmt, ...)
 #endif // ENABLE_VERBOSE_LOG
 
-#define LOG_DEBUG(Category, Fmt, ...) Logger::debug(CURRENT_SRC_LOC(), TCHAR(Category), STR_FORMAT(TCHAR(Fmt), __VA_ARGS__))
-#define LOG(Category, Fmt, ...) Logger::log(CURRENT_SRC_LOC(), TCHAR(Category), STR_FORMAT(TCHAR(Fmt), __VA_ARGS__))
-#define LOG_WARN(Category, Fmt, ...) Logger::warn(CURRENT_SRC_LOC(), TCHAR(Category), STR_FORMAT(TCHAR(Fmt), __VA_ARGS__))
-#define LOG_ERROR(Category, Fmt, ...) Logger::error(CURRENT_SRC_LOC(), TCHAR(Category), STR_FORMAT(TCHAR(Fmt), __VA_ARGS__))
+#define LOG_DEBUG(Category, Fmt, ...) Logger::debug(LOG_CURR_SRC_LOC(), TCHAR(Category), STR_FORMAT(TCHAR(Fmt), __VA_ARGS__))
+#define LOG(Category, Fmt, ...) Logger::log(LOG_CURR_SRC_LOC(), TCHAR(Category), STR_FORMAT(TCHAR(Fmt), __VA_ARGS__))
+#define LOG_WARN(Category, Fmt, ...) Logger::warn(LOG_CURR_SRC_LOC(), TCHAR(Category), STR_FORMAT(TCHAR(Fmt), __VA_ARGS__))
+#define LOG_ERROR(Category, Fmt, ...) Logger::error(LOG_CURR_SRC_LOC(), TCHAR(Category), STR_FORMAT(TCHAR(Fmt), __VA_ARGS__))
 
 #else // LOGGER_FORMAT_DIRECT
 
 #if ENABLE_VERBOSE_LOG
-#define LOG_VERBOSE(Category, Fmt, ...) Logger::verbose(CURRENT_SRC_LOC(), TCHAR(Category), TCHAR(Fmt), __VA_ARGS__)
+#define LOG_VERBOSE(Category, Fmt, ...) Logger::verbose(LOG_CURR_SRC_LOC(), TCHAR(Category), TCHAR(Fmt), __VA_ARGS__)
 #else // ENABLE_VERBOSE_LOG
 #define LOG_VERBOSE(Category, Fmt, ...)
 #endif // ENABLE_VERBOSE_LOG
 
-#define LOG_DEBUG(Category, Fmt, ...) Logger::debug(CURRENT_SRC_LOC(), TCHAR(Category), TCHAR(Fmt), __VA_ARGS__)
-#define LOG(Category, Fmt, ...) Logger::log(CURRENT_SRC_LOC(), TCHAR(Category), TCHAR(Fmt), __VA_ARGS__)
-#define LOG_WARN(Category, Fmt, ...) Logger::warn(CURRENT_SRC_LOC(), TCHAR(Category), TCHAR(Fmt), __VA_ARGS__)
-#define LOG_ERROR(Category, Fmt, ...) Logger::error(CURRENT_SRC_LOC(), TCHAR(Category), TCHAR(Fmt), __VA_ARGS__)
+#define LOG_DEBUG(Category, Fmt, ...) Logger::debug(LOG_CURR_SRC_LOC(), TCHAR(Category), TCHAR(Fmt), __VA_ARGS__)
+#define LOG(Category, Fmt, ...) Logger::log(LOG_CURR_SRC_LOC(), TCHAR(Category), TCHAR(Fmt), __VA_ARGS__)
+#define LOG_WARN(Category, Fmt, ...) Logger::warn(LOG_CURR_SRC_LOC(), TCHAR(Category), TCHAR(Fmt), __VA_ARGS__)
+#define LOG_ERROR(Category, Fmt, ...) Logger::error(LOG_CURR_SRC_LOC(), TCHAR(Category), TCHAR(Fmt), __VA_ARGS__)
 
 #endif // LOGGER_FORMAT_DIRECT
 

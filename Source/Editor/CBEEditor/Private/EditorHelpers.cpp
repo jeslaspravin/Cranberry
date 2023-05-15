@@ -88,7 +88,7 @@ EditorHelpers::addStaticMeshesToWorld(const std::vector<cbe::StaticMesh *> &stat
 cbe::Actor *EditorHelpers::addActorToWorld(cbe::World *world, CBEClass actorClass, const String &actorName, EObjectFlags flags)
 {
     cbe::ActorPrefab *prefab
-        = cbe::create<cbe::ActorPrefab, StringID, const String &>(actorName + TCHAR("_Prefab"), world, flags, actorClass->name, actorName);
+        = cbe::create<cbe::ActorPrefab, StringID, String>(actorName + TCHAR("_Prefab"), world, flags, actorClass->name, actorName);
     world->actorPrefabs.emplace_back(prefab);
     postAddActorToWorld(world, prefab);
     cbe::markDirty(world);
@@ -97,8 +97,7 @@ cbe::Actor *EditorHelpers::addActorToWorld(cbe::World *world, CBEClass actorClas
 
 cbe::Actor *EditorHelpers::addActorToWorld(cbe::World *world, cbe::ActorPrefab *inPrefab, const String &name, EObjectFlags flags)
 {
-    cbe::ActorPrefab *prefab
-        = create<cbe::ActorPrefab, cbe::ActorPrefab *, const String &>(name + TCHAR("_Prefab"), world, flags, inPrefab, name);
+    cbe::ActorPrefab *prefab = create<cbe::ActorPrefab, cbe::ActorPrefab *, String>(name + TCHAR("_Prefab"), world, flags, inPrefab, name);
     world->actorPrefabs.emplace_back(prefab);
     postAddActorToWorld(world, prefab);
     cbe::markDirty(world);

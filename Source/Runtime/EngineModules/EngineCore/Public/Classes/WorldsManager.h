@@ -84,6 +84,8 @@ public:
     WorldManagerEvent &onWorldUnloadEvent() { return worldUnloadEvent; }
     WorldManagerEvent &onWorldInitEvent() { return worldInitEvent; }
 
+    void tickWorlds(float deltaTime);
+
 private:
     bool isMainWorld(World *world) const { return mainWorld == world || renderingWorld == world; }
 } META_ANNOTATE(NoExport);

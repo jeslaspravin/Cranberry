@@ -53,8 +53,8 @@ public:
         , parentTemplate(nullptr)
         , templateClass(nullptr)
     {}
-    ObjectTemplate(StringID className, const String &name);
-    ObjectTemplate(ObjectTemplate *inTemplate, const String &name);
+    ObjectTemplate(StringID className, String name);
+    ObjectTemplate(ObjectTemplate *inTemplate, String name);
 
     /* cbe::Object overrides */
     void destroy() override;
@@ -77,7 +77,7 @@ public:
     bool copyFrom(ObjectTemplate *otherTemplate);
 
 private:
-    void createTemplate(CBEClass clazz, const TChar *name);
+    void createTemplate(CBEClass clazz, StringView name);
 } META_ANNOTATE(NoExport);
 
 /**

@@ -10,6 +10,7 @@
  */
 
 #pragma once
+
 #include "Math/Matrix3.h"
 #include "Math/Matrix4.h"
 #include "Types/CoreDefines.h"
@@ -23,8 +24,8 @@ private:
 
 public:
     RotationMatrix();
-    RotationMatrix(const RotationMatrix &other);
-    RotationMatrix(RotationMatrix &&other);
+    MAKE_TYPE_DEFAULT_COPY_MOVE(RotationMatrix)
+
     RotationMatrix(const Matrix3 &rotMatrix);
     RotationMatrix(const Matrix4 &rotMatrix);
     RotationMatrix(const class Rotation &rotation);

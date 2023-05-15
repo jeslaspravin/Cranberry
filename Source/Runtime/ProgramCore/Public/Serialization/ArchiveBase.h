@@ -13,7 +13,7 @@
 
 #include "ProgramCoreExports.h"
 #include "Serialization/ArchiveTypes.h"
-#include "Math/Math.h"
+#include "Types/Containers/ArrayView.h"
 #include "Types/CoreDefines.h"
 #include "Types/CoreTypes.h"
 #include "Types/Templates/TemplateTypes.h"
@@ -201,6 +201,30 @@ ArchiveType &operator<< (ArchiveType &archive, std::vector<ValueType, AllocType>
     for (SizeT i = 0; i < len; ++i)
     {
         archive << value[i];
+    }
+    return archive;
+}
+
+template <ArchiveTypeName ArchiveType, typename ValueType>
+ArchiveType &operator<< (ArchiveType &archive, ArrayRange<ValueType> &value)
+{
+    SizeT len = value.size();
+    archive << len;
+
+    SizeT serializeCount = Math::min(len, value.size());
+    for (SizeT i = 0; i < serializeCount; ++i)
+    {
+        archive << value[i];
+    }
+    // TODO(Jeslas) : Should I do this? Corruption has to be handled in high level code right?
+    // Just to not corrupt the archive, read the rest of the archive data
+    if (archive.isLoading())
+    {
+        ValueType dummy;
+        for (SizeT i = serializeCount; i < len; ++i)
+        {
+            archive << dummy;
+        }
     }
     return archive;
 }

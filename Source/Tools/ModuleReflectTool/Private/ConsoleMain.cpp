@@ -110,6 +110,7 @@ int32 main(int32 argsc, AChar **args)
 
     Logger::flushStream();
 
+    int32 returnCode = 0;
     if (ProgramCmdLine::get().hasArg(ReflectToolCmdLineConst::SAMPLE_CODE))
     {
         LOG_DEBUG("CPPReflect", "Executing sample codes");
@@ -129,28 +130,34 @@ int32 main(int32 argsc, AChar **args)
 
         StopWatch sw;
         ModuleSources moduleSrcs;
+        bool bGenerated = false;
         if (!moduleSrcs.compileAllSources(SourceGenerator::issueFullRecompile()))
         {
             LOG_ERROR("ModuleReflectTool", "Compiling module sources failed");
-            return 1;
+            bGenerated = false;
+            returnCode = 1;
         }
-        SourceGenerator generator;
-        generator.initialize(&moduleSrcs);
-        generator.parseSources();
-        generator.writeGeneratedFiles();
+        else
+        {
+            SourceGenerator generator;
+            generator.initialize(&moduleSrcs);
+            generator.parseSources();
+            generator.writeGeneratedFiles();
 
-        std::vector<const SourceInformation *> generatedSrcs;
-        std::vector<ReflectedTypeItem> allKnownReflectedTypes;
-        bool bGenerated = generator.generatedSources(generatedSrcs);
-        allKnownReflectedTypes.insert(
-            allKnownReflectedTypes.begin(), generator.getKnownReflectedTypes().cbegin(), generator.getKnownReflectedTypes().cend()
-        );
+            std::vector<const SourceInformation *> generatedSrcs;
+            std::vector<ReflectedTypeItem> allKnownReflectedTypes;
+            bGenerated = generator.generatedSources(generatedSrcs);
+            allKnownReflectedTypes.insert(
+                allKnownReflectedTypes.begin(), generator.getKnownReflectedTypes().cbegin(), generator.getKnownReflectedTypes().cend()
+            );
 
-        moduleSrcs.injectGeneratedFiles(generatedSrcs, std::move(allKnownReflectedTypes));
+            moduleSrcs.injectGeneratedFiles(generatedSrcs, std::move(allKnownReflectedTypes));
+        }
+
         if (!bGenerated)
         {
             LOG_ERROR("ModuleReflectTool", "Generating module sources failed");
-            return 1;
+            returnCode = 1;
         }
         else
         {
@@ -170,5 +177,5 @@ int32 main(int32 argsc, AChar **args)
 
     UnexpectedErrorHandler::getHandler()->unregisterFilter();
     Logger::shutdown();
-    return 0;
+    return returnCode;
 }

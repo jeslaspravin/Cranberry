@@ -27,24 +27,24 @@ ArchiveType &operator<< (ArchiveType &archive, ObjectTemplate::TemplateObjectEnt
     return archive << value.modifiedFields << value.cursorStart;
 }
 
-ObjectTemplate::ObjectTemplate(StringID className, const String &name)
+ObjectTemplate::ObjectTemplate(StringID className, String name)
     : Object()
     , parentTemplate(nullptr)
 {
     CBEClass clazz = IReflectionRuntimeModule::get()->getClassType(className);
     debugAssert(clazz);
-    createTemplate(clazz, name.getChar());
+    createTemplate(clazz, name);
     debugAssert(templateObj);
     templateObj->constructed();
     markDirty(this);
 }
 
-ObjectTemplate::ObjectTemplate(ObjectTemplate *inTemplate, const String &name)
+ObjectTemplate::ObjectTemplate(ObjectTemplate *inTemplate, String name)
     : Object()
     , parentTemplate(inTemplate)
 {
     debugAssert(parentTemplate && parentTemplate->templateClass);
-    createTemplate(parentTemplate->templateClass, name.getChar());
+    createTemplate(parentTemplate->templateClass, name);
     debugAssert(templateObj);
     templateObj->constructed();
     markDirty(this);
@@ -197,7 +197,7 @@ bool ObjectTemplate::copyFrom(ObjectTemplate *otherTemplate)
     return true;
 }
 
-void ObjectTemplate::createTemplate(CBEClass clazz, const TChar *name)
+void ObjectTemplate::createTemplate(CBEClass clazz, StringView name)
 {
     if (clazz != templateClass && isValidFast(templateObj))
     {

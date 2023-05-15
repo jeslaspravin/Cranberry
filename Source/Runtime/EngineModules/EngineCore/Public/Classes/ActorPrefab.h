@@ -77,8 +77,8 @@ public:
         , rootComponent(nullptr)
     {}
 
-    ActorPrefab(StringID className, const String &actorName);
-    ActorPrefab(ActorPrefab *inPrefab, const String &name);
+    ActorPrefab(StringID className, String actorName);
+    ActorPrefab(ActorPrefab *inPrefab, String name);
 
     bool canOverrideRootComp() const;
     /**
@@ -108,8 +108,8 @@ public:
      * Create and add a component to prefab and if it is a TransformComponent attaches it to root component
      * Returns the created component
      */
-    Object *addComponent(CBEClass compClass, const String &compName);
-    Object *addComponent(ObjectTemplate *compTemplate, const String &compName);
+    Object *addComponent(CBEClass compClass, StringView compName);
+    Object *addComponent(ObjectTemplate *compTemplate, StringView compName);
     void removeComponent(Object *component);
 
     FORCE_INLINE CBEClass getActorClass() const { return actorClass; }

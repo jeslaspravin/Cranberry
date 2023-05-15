@@ -69,6 +69,6 @@ FORCE_INLINE OutputStream &operator<< (OutputStream &stream, const CXSourceLocat
     uint32 lineNum, colNum;
     clang_getFileLocation(cxStrLoc, &file, &lineNum, &colNum, nullptr);
     String srcfile(CXStringWrapper(clang_getFileName(file)).toString());
-    stream << srcfile << TCHAR("(") << lineNum << TCHAR(",") << colNum << TCHAR("):");
+    stream << STR_FORMAT("{}({},{}): ", srcfile, lineNum, colNum);
     return stream;
 }

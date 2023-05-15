@@ -222,6 +222,7 @@ public:
      */
     void getSubobjects(std::vector<NodeIdxType> &subobjNodeIdxs, NodeIdxType nodeIdx) const;
     void getSubobjects(std::vector<cbe::Object *> &subobjs, NodeIdxType nodeIdx) const;
+    // Get immediate children
     void getChildren(std::vector<cbe::Object *> &children, NodeIdxType nodeIdx) const;
 
     /**

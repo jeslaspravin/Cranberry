@@ -26,11 +26,13 @@ class Vector4;
 class PROGRAMCORE_EXPORT Matrix4
 {
 private:
-    glm::mat4 value;
+    glm::mat4 value{ 0 };
     Matrix4(const glm::mat4 &matrix);
 
 public:
-    Matrix4();
+    Matrix4() = default;
+    MAKE_TYPE_DEFAULT_COPY_MOVE(Matrix4)
+
     explicit Matrix4(float allValue);
 
     //  Matrix arrangement
@@ -47,10 +49,6 @@ public:
     Matrix4(const Vector4 &c1, const Vector4 &c2, const Vector4 &c3, const Vector4 &c4);
     // Scaling matrix should always be applied before rotation or translation to preserve volume
     Matrix4(const Vector3 &scale);
-    Matrix4(const Matrix4 &other);
-    Matrix4(Matrix4 &&other);
-    Matrix4 &operator= (const Matrix4 &other);
-    Matrix4 &operator= (Matrix4 &&other);
 
     Matrix4Col &operator[] (uint32 colIndex);
     Matrix4Col operator[] (uint32 colIndex) const;
@@ -86,3 +84,84 @@ public:
 public:
     static const Matrix4 IDENTITY;
 };
+
+//////////////////////////////////////////////////////////////////////////
+/// Implementations
+//////////////////////////////////////////////////////////////////////////
+
+inline Matrix4::Matrix4(const glm::mat4 &matrix)
+    : value(matrix)
+{}
+inline Matrix4::Matrix4(float allValue)
+    : value(allValue)
+{}
+
+inline Matrix4Col &Matrix4::operator[] (uint32 colIndex) { return value[colIndex]; }
+inline Matrix4Col Matrix4::operator[] (uint32 colIndex) const { return value[colIndex]; }
+
+inline Matrix4 Matrix4::inverse() const { return glm::inverse(value); }
+inline float Matrix4::determinant() const { return glm::determinant(value); }
+inline Matrix4 Matrix4::transpose() const { return glm::transpose(value); }
+
+inline Matrix4 Matrix4::operator* (const Matrix4 &b) const { return value * b.value; }
+inline Matrix4 &Matrix4::operator*= (const Matrix4 &b)
+{
+    value *= b.value;
+    return *this;
+}
+
+inline Matrix4 Matrix4::operator* (float scalar) const { return value * scalar; }
+inline Matrix4 &Matrix4::operator*= (float scalar)
+{
+    value *= scalar;
+    return *this;
+}
+
+inline Matrix4 Matrix4::operator| (const Matrix4 &b) const { return glm::matrixCompMult(value, b.value); }
+inline Matrix4 &Matrix4::operator|= (const Matrix4 &b)
+{
+    value = glm::matrixCompMult(value, b.value);
+    return *this;
+}
+
+inline Matrix4 Matrix4::operator/ (const Matrix4 &b) const { return value / b.value; }
+inline Matrix4 &Matrix4::operator/= (const Matrix4 &b)
+{
+    value /= b.value;
+    return *this;
+}
+
+inline Matrix4 Matrix4::operator/ (float scalar) const { return Matrix4(value / scalar); }
+inline Matrix4 &Matrix4::operator/= (float scalar)
+{
+    value /= scalar;
+    return *this;
+}
+
+inline Matrix4 Matrix4::operator- (const Matrix4 &b) const { return (value - b.value); }
+inline Matrix4 &Matrix4::operator-= (const Matrix4 &b)
+{
+    value -= b.value;
+    return *this;
+}
+
+inline Matrix4 Matrix4::operator- (float scalar) const { return (value - scalar); }
+inline Matrix4 &Matrix4::operator-= (float scalar)
+{
+    value -= scalar;
+    return *this;
+}
+
+inline Matrix4 Matrix4::operator+ (const Matrix4 &b) const { return (value + b.value); }
+inline Matrix4 &Matrix4::operator+= (const Matrix4 &b)
+{
+    value += b.value;
+    return *this;
+}
+
+inline Matrix4 Matrix4::operator+ (float scalar) const { return (value + scalar); }
+inline Matrix4 &Matrix4::operator+= (float scalar)
+{
+    value += scalar;
+    return *this;
+}

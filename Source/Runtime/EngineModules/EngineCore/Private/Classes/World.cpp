@@ -270,7 +270,7 @@ bool World::copyFrom(World *otherWorld)
     for (ActorPrefab *otherPrefab : otherWorld->actorPrefabs)
     {
         ObjectPrivateDataView otherPrefabDatV = objsDb.getObjectData(otherPrefab->getDbIdx());
-        ActorPrefab *thisPrefab = get<ActorPrefab>(ObjectPathHelper::getFullPath(otherPrefabDatV.name, this).getChar());
+        ActorPrefab *thisPrefab = get<ActorPrefab>(ObjectPathHelper::getFullPath(otherPrefabDatV.name, this));
         if (thisPrefab)
         {
             debugAssert(prefabsToRemove.contains(thisPrefab));
@@ -288,13 +288,13 @@ bool World::copyFrom(World *otherWorld)
         {
             if (ActorPrefab *parentPrefab = otherPrefab->getParentPrefab())
             {
-                thisPrefab = create<ActorPrefab, cbe::ActorPrefab *, const String &>(
+                thisPrefab = create<ActorPrefab, cbe::ActorPrefab *, String>(
                     otherPrefabDatV.name, this, otherPrefabDatV.flags, parentPrefab, otherPrefab->getActorTemplate()->getObjectData().name
                 );
             }
             else
             {
-                thisPrefab = create<ActorPrefab, StringID, const String &>(
+                thisPrefab = create<ActorPrefab, StringID, String>(
                     otherPrefabDatV.name, this, otherPrefabDatV.flags, otherPrefab->getActorClass()->name,
                     otherPrefab->getActorTemplate()->getObjectData().name
                 );
@@ -305,7 +305,7 @@ bool World::copyFrom(World *otherWorld)
     // Now copy each prefabs
     for (ActorPrefab *otherPrefab : otherWorld->actorPrefabs)
     {
-        ActorPrefab *thisPrefab = get<ActorPrefab>(ObjectPathHelper::getFullPath(otherPrefab->getObjectData().name, this).getChar());
+        ActorPrefab *thisPrefab = get<ActorPrefab>(ObjectPathHelper::getFullPath(otherPrefab->getObjectData().name, this));
         debugAssert(thisPrefab);
 
         bAllCopied = bAllCopied && thisPrefab->copyFrom(otherPrefab);
@@ -333,20 +333,49 @@ bool World::copyFrom(World *otherWorld)
 
         // Getting actor full path from actor to world relative path
         String fullPath = ObjectPathHelper::getFullPath(ObjectPathHelper::computeObjectPath(otherAttachmentPair.first, otherWorld), this);
-        Actor *thisAttachingActor = get<Actor>(fullPath.getChar());
+        Actor *thisAttachingActor = get<Actor>(fullPath);
         // Getting actor full path from actor to world relative path
         fullPath = ObjectPathHelper::getFullPath(ObjectPathHelper::computeObjectPath(otherAttachmentPair.second.actor, otherWorld), this);
-        Actor *thisAttachedActor = get<Actor>(fullPath.getChar());
+        Actor *thisAttachedActor = get<Actor>(fullPath);
         // Getting component full path from component to actor template relative path
         fullPath = ObjectPathHelper::computeObjectPath(
             otherAttachmentPair.second.component, ActorPrefab::objectTemplateFromObj(otherAttachmentPair.second.actor)
         );
         fullPath = ObjectPathHelper::getFullPath(fullPath, ActorPrefab::objectTemplateFromObj(thisAttachedActor));
-        TransformComponent *thisAttachedComp = get<TransformComponent>(fullPath.getChar());
+        TransformComponent *thisAttachedComp = get<TransformComponent>(fullPath);
 
         debugAssert(thisAttachingActor && thisAttachedActor && thisAttachedComp);
 
         actorAttachedTo[thisAttachingActor] = ActorAttachedToInfo{ thisAttachedActor, thisAttachedComp };
+    }
+
+    /**
+     * Replacements are necessary in case there is actor/component references across tree, Then ActorPrefab.copyFrom is alone not enough
+     * Example ObjectTemplate.copyFrom if it stores object from another sibling ObjectTemplate then it never gets replaced. It gets handled here
+     */
+    std::unordered_map<Object *, Object *> replacements = {
+        {otherWorld, this}
+    };
+    std::vector<Object *> objectsToReplace;
+    {
+        std::vector<Object *> otherSubObjs;
+        objsDb.getSubobjects(otherSubObjs, otherWorld->getDbIdx());
+
+        objectsToReplace.reserve(otherSubObjs.size());
+        for (Object *otherObj : otherSubObjs)
+        {
+            String fullPath = ObjectPathHelper::getFullPath(ObjectPathHelper::computeObjectPath(otherObj, otherWorld), this);
+            Object *thisObj = get(fullPath);
+            debugAssert(thisObj);
+            replacements[otherObj] = thisObj;
+            objectsToReplace.emplace_back(thisObj);
+        }
+    }
+    // This world is not included in objectsToReplace
+    // Could be parallelized
+    for (Object *thisObj : objectsToReplace)
+    {
+        cbe::replaceObjectReferences(thisObj, replacements, EObjectTraversalMode::OnlyObject);
     }
 
     markDirty(this);
@@ -366,7 +395,7 @@ bool World::mergeWorld(World *otherWorld, bool bMoveActors)
     auto getUniqPrefabName = [&duplicateCounter, this](String otherPrefabName) -> String
     {
         String thisPrefabName = otherPrefabName;
-        while (get<ActorPrefab>(ObjectPathHelper::getFullPath(thisPrefabName, this).getChar()))
+        while (get<ActorPrefab>(ObjectPathHelper::getFullPath(thisPrefabName, this)))
         {
             thisPrefabName = otherPrefabName + String::toString(duplicateCounter++);
         }
@@ -400,13 +429,13 @@ bool World::mergeWorld(World *otherWorld, bool bMoveActors)
             ActorPrefab *thisPrefab;
             if (ActorPrefab *parentPrefab = otherPrefab->getParentPrefab())
             {
-                thisPrefab = create<ActorPrefab, cbe::ActorPrefab *, const String &>(
+                thisPrefab = create<ActorPrefab, cbe::ActorPrefab *, String>(
                     otherPrefabDatV.name, this, otherPrefabDatV.flags, parentPrefab, otherPrefab->getActorTemplate()->getObjectData().name
                 );
             }
             else
             {
-                thisPrefab = create<ActorPrefab, StringID, const String &>(
+                thisPrefab = create<ActorPrefab, StringID, String>(
                     otherPrefabDatV.name, this, otherPrefabDatV.flags, otherPrefab->getActorClass()->name,
                     otherPrefab->getActorTemplate()->getObjectData().name
                 );
@@ -427,15 +456,13 @@ bool World::mergeWorld(World *otherWorld, bool bMoveActors)
             NameString attachToPrefabName{ objsDb.getObjectData(otherAttToPrefab->getDbIdx()).name };
             debugAssert(otherPrefabToNew.contains(attachedPrefabName) && otherPrefabToNew.contains(attachToPrefabName));
 
-            ActorPrefab *thisAttPrefab
-                = get<ActorPrefab>(ObjectPathHelper::getFullPath(otherPrefabToNew[attachedPrefabName].getChar(), this).getChar());
-            ActorPrefab *thisAttToPrefab
-                = get<ActorPrefab>(ObjectPathHelper::getFullPath(otherPrefabToNew[attachToPrefabName].getChar(), this).getChar());
+            ActorPrefab *thisAttPrefab = get<ActorPrefab>(ObjectPathHelper::getFullPath(otherPrefabToNew[attachedPrefabName], this));
+            ActorPrefab *thisAttToPrefab = get<ActorPrefab>(ObjectPathHelper::getFullPath(otherPrefabToNew[attachToPrefabName], this));
             // Getting component full path from component to actor relative path
             String fullPath = ObjectPathHelper::getFullPath(
                 ObjectPathHelper::computeObjectPath(otherAttachmentPair.second.component, otherAttToPrefab), thisAttToPrefab
             );
-            TransformComponent *thisAttachedComp = get<TransformComponent>(fullPath.getChar());
+            TransformComponent *thisAttachedComp = get<TransformComponent>(fullPath);
             debugAssert(thisAttPrefab && thisAttToPrefab && thisAttachedComp);
 
             actorAttachedTo[thisAttPrefab->getActorTemplate()] = ActorAttachedToInfo{ thisAttToPrefab->getActorTemplate(), thisAttachedComp };
@@ -514,7 +541,7 @@ TransformComponent *World::getActorAttachedToComp(const Actor *actor) const
     return nullptr;
 }
 
-cbe::Actor *World::getActorAttachedTo(const Actor *actor) const
+Actor *World::getActorAttachedTo(const Actor *actor) const
 {
     debugAssert(EWorldState::isPreparedState(worldState));
     auto compWorldTfItr = compToTf.find(actor->getRootComponent());
@@ -526,6 +553,38 @@ cbe::Actor *World::getActorAttachedTo(const Actor *actor) const
     }
 
     return nullptr;
+}
+
+Actor *World::spawnActor(ActorPrefab *actorPrefab, Transform3D transform, StringView actorName, bool bDelayedInit)
+{
+    debugAssert(EWorldState::isPlayState(worldState));
+
+    Actor *actor = addActor(actorPrefab, actorName, EObjectFlagBits::ObjFlag_Transient, true);
+    actor->setWorldTransform(transform);
+    if (!bDelayedInit)
+    {
+        finalizeAddActor(ActorPrefab::prefabFromActorTemplate(ActorPrefab::objectTemplateFromObj(actor)));
+    }
+    return actor;
+}
+
+Actor *World::spawnActor(CBEClass actorClass, Transform3D transform, StringView actorName, bool bDelayedInit)
+{
+    debugAssert(EWorldState::isPlayState(worldState));
+
+    Actor *actor = addActor(actorClass, actorName, EObjectFlagBits::ObjFlag_Transient, true);
+    actor->setWorldTransform(transform);
+    if (!bDelayedInit)
+    {
+        finalizeAddActor(ActorPrefab::prefabFromActorTemplate(ActorPrefab::objectTemplateFromObj(actor)));
+    }
+    return actor;
+}
+
+void World::finishSpawning(Actor *actor)
+{
+    debugAssert(EWorldState::isPlayState(worldState));
+    finalizeAddActor(ActorPrefab::prefabFromActorTemplate(ActorPrefab::objectTemplateFromObj(actor)));
 }
 
 void World::updateWorldTf(const std::vector<TFHierarchyIdx> &idxsToUpdate)
@@ -567,14 +626,20 @@ void World::prepareForPlay()
     worldState = EWorldState::PreparedPlay;
 }
 
-Actor *World::addActor(CBEClass actorClass, const String &actorName, EObjectFlags actorFlags, bool bDelayedInit)
+void World::commitDirtyComponents()
+{
+    dirtyLeafComps.clear();
+    dirtyTfComps.clear();
+}
+
+Actor *World::addActor(CBEClass actorClass, StringView actorName, EObjectFlags actorFlags, bool bDelayedInit)
 {
     if (EWorldState::isPlayState(worldState))
     {
         actorFlags |= EObjectFlagBits::ObjFlag_Transient;
     }
     // If modifying how actor gets created then check EditorHelpers::addActorToWorld, World::copyFrom and World::mergeWorld
-    ActorPrefab *prefab = create<ActorPrefab, StringID, const String &>(actorName, this, actorFlags, actorClass->name, actorName);
+    ActorPrefab *prefab = create<ActorPrefab, StringID, String>(actorName, this, actorFlags, actorClass->name, actorName);
     if (bDelayedInit)
     {
         delayInitPrefabs.insert(prefab);
@@ -584,14 +649,19 @@ Actor *World::addActor(CBEClass actorClass, const String &actorName, EObjectFlag
     return setupActorInternal(prefab, false);
 }
 
-Actor *World::addActor(ActorPrefab *inPrefab, const String &name, EObjectFlags actorFlags)
+Actor *World::addActor(ActorPrefab *inPrefab, StringView name, EObjectFlags actorFlags, bool bDelayedInit)
 {
     if (EWorldState::isPlayState(worldState))
     {
         actorFlags |= EObjectFlagBits::ObjFlag_Transient;
     }
     // If modifying how actor gets created then check EditorHelpers::addActorToWorld, World::copyFrom and World::mergeWorld
-    ActorPrefab *prefab = create<ActorPrefab, ActorPrefab *, const String &>(name, this, actorFlags, inPrefab, name);
+    ActorPrefab *prefab = create<ActorPrefab, ActorPrefab *, String>(name, this, actorFlags, inPrefab, name);
+    if (bDelayedInit)
+    {
+        delayInitPrefabs.insert(prefab);
+        return prefab->getActorTemplate();
+    }
     actorPrefabs.emplace_back(prefab);
     return setupActorInternal(prefab, false);
 }

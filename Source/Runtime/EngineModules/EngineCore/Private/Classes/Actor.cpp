@@ -15,7 +15,6 @@
 #include "Serialization/ObjectSerializationHelpers.h"
 #include "Classes/ActorPrefab.h"
 #include "CBEObjectHelpers.h"
-#include "Components/ComponentBase.h"
 
 namespace cbe
 {
@@ -28,21 +27,22 @@ constexpr inline const uint32 ACTOR_PREFAB_SERIALIZER_VERSION = 0;
 constexpr inline const uint32 ACTOR_PREFAB_SERIALIZER_CUTOFF_VERSION = 0;
 STRINGID_CONSTEXPR inline const StringID ACTOR_PREFAB_CUSTOM_VERSION_ID = STRID("ActorPrefabSerializer");
 
-ActorPrefab::ActorPrefab(StringID className, const String &actorName)
+ActorPrefab::ActorPrefab(StringID className, String actorName)
     : parentPrefab(nullptr)
 {
     ObjectPrivateDataView thisObjDatV = getObjectData();
 
     actorClass = IReflectionRuntimeModule::get()->getClassType(className);
-    actorTemplate
-        = create<ObjectTemplate, StringID, const String &>(actorName + TCHAR("_AcTmpt"), this, thisObjDatV.flags, className, actorName);
+    String templateName = actorName;
+    templateName += TCHAR("_AcTmpt");
+    actorTemplate = create<ObjectTemplate, StringID, String>(templateName, this, thisObjDatV.flags, className, actorName);
 
     // If there is no root component already then we must create a root component and add it
     if (!static_cast<Actor *>(actorTemplate->getTemplate())->getRootComponent())
     {
         String componentName = TCHAR("RootComp");
         String compTemplateName = TCHAR("RootComp_CpTmpt");
-        components.emplace_back(create<ObjectTemplate, StringID, const String &>(
+        components.emplace_back(create<ObjectTemplate, StringID, String>(
             compTemplateName, actorTemplate, thisObjDatV.flags, TransformComponent::staticType()->name, componentName
         ));
         rootComponent = static_cast<TransformComponent *>(components.back()->getTemplate());
@@ -50,20 +50,19 @@ ActorPrefab::ActorPrefab(StringID className, const String &actorName)
     markDirty(this);
 }
 
-ActorPrefab::ActorPrefab(ActorPrefab *inPrefab, const String &name)
+ActorPrefab::ActorPrefab(ActorPrefab *inPrefab, String name)
     : parentPrefab(inPrefab)
 {
     debugAssert(parentPrefab);
     ObjectPrivateDataView thisObjDatV = getObjectData();
 
     actorClass = parentPrefab->actorClass;
+    // Since parentPrefab must have set it up
+    debugAssert(parentPrefab->getRootComponent());
 
     String actorTemplateName = name + TCHAR("_AcTmpt");
-    actorTemplate = create<ObjectTemplate, ObjectTemplate *, const String &>(
-        actorTemplateName, this, thisObjDatV.flags, parentPrefab->actorTemplate, name
-    );
-    // Since parentPrefab must have set it up
-    debugAssert(static_cast<Actor *>(actorTemplate->getTemplate())->getRootComponent());
+    actorTemplate
+        = create<ObjectTemplate, ObjectTemplate *, String>(actorTemplateName, this, thisObjDatV.flags, parentPrefab->actorTemplate, name);
 
     // Fill component overrides structs
     componentOverrides.reserve(parentPrefab->components.size() + parentPrefab->componentOverrides.size());
@@ -103,12 +102,12 @@ ActorPrefab::ActorPrefab(ActorPrefab *inPrefab, const String &name)
     {
         // Do not have to replace actor inner components as they will already be replaced in deep copy
         std::unordered_map<Object *, Object *> objectReplacements;
-        for (ComponentOverrideInfo &overrideInfo : parentPrefab->componentOverrides)
+        for (ComponentOverrideInfo &overrideInfo : componentOverrides)
         {
             ObjectTemplate *templateToOverride = getTemplateToOverride(overrideInfo);
             createComponentOverride(overrideInfo, false);
             debugAssert(overrideInfo.overriddenTemplate);
-            objectReplacements[templateToOverride->getTemplate()] = overrideInfo.overriddenTemplate;
+            objectReplacements[templateToOverride->getTemplate()] = overrideInfo.overriddenTemplate->getTemplate();
         }
         replaceObjectReferences(this, objectReplacements, EObjectTraversalMode::EntireObjectTree);
     }
@@ -454,25 +453,29 @@ void ActorPrefab::setLeafAttachedTo(TransformLeafComponent *attachingComp, Trans
     WACHelpers::attachComponent(modifiedComp, attachedToComp);
 }
 
-Object *ActorPrefab::addComponent(CBEClass compClass, const String &compName)
+Object *ActorPrefab::addComponent(CBEClass compClass, StringView compName)
 {
     ObjectPrivateDataView thisObjDatV = getObjectData();
 
-    String compTemplateName = compName + TCHAR("_CpTmpt");
+    String compTemplateName = compName;
+    compTemplateName += TCHAR("_CpTmpt");
+
     ObjectTemplate *compTemplate
-        = create<ObjectTemplate, StringID, const String &>(compTemplateName, actorTemplate, thisObjDatV.flags, compClass->name, compName);
+        = create<ObjectTemplate, StringID, String>(compTemplateName, actorTemplate, thisObjDatV.flags, compClass->name, compName);
     components.emplace_back(compTemplate);
     postAddComponent(compTemplate->getTemplate());
     return compTemplate->getTemplate();
 }
 
-Object *ActorPrefab::addComponent(ObjectTemplate *compTemplate, const String &compName)
+Object *ActorPrefab::addComponent(ObjectTemplate *compTemplate, StringView compName)
 {
     ObjectPrivateDataView thisObjDatV = getObjectData();
 
-    String compTemplateName = compName + TCHAR("_CpTmpt");
+    String compTemplateName = compName;
+    compTemplateName += TCHAR("_CpTmpt");
+
     ObjectTemplate *compObjTemplate
-        = create<ObjectTemplate, ObjectTemplate *, const String &>(compTemplateName, actorTemplate, thisObjDatV.flags, compTemplate, compName);
+        = create<ObjectTemplate, ObjectTemplate *, String>(compTemplateName, actorTemplate, thisObjDatV.flags, compTemplate, compName);
     components.emplace_back(compObjTemplate);
     postAddComponent(compObjTemplate->getTemplate());
     return compObjTemplate->getTemplate();
@@ -814,12 +817,13 @@ void ActorPrefab::createComponentOverride(ComponentOverrideInfo &overrideInfo, b
 #if DEBUG_VALIDATIONS
     ActorPrefab *actorPrefab = prefabFromCompTemplate(compTemplateObj);
     LogicComponent *logicComponent = compTemplateObj->getTemplateAs<LogicComponent>();
-    debugAssert(compTemplateObj && (logicComponent || tfComponent) && actorPrefab && actorPrefab != this);
+    TransformLeafComponent *leafComponent = compTemplateObj->getTemplateAs<TransformLeafComponent>();
+    debugAssert(compTemplateObj && actorPrefab && actorPrefab != this && (logicComponent || tfComponent || leafComponent));
 #endif
     ObjectPrivateDataView compTemplateObjDatV = objsDb.getObjectData(compTemplateObj->getDbIdx());
     ObjectPrivateDataView compTemplateDatV = objsDb.getObjectData(compTemplateObj->getTemplate()->getDbIdx());
 
-    overrideInfo.overriddenTemplate = create<ObjectTemplate, ObjectTemplate *, const String &>(
+    overrideInfo.overriddenTemplate = create<ObjectTemplate, ObjectTemplate *, String>(
         compTemplateObjDatV.name, actorTemplate, compTemplateObjDatV.flags, compTemplateObj, compTemplateDatV.name
     );
 

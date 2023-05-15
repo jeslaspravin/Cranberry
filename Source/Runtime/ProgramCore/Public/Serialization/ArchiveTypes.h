@@ -12,8 +12,16 @@
 #pragma once
 
 #include <type_traits>
+#include <concepts>
 
 class ArchiveBase;
 
 template <typename Type>
 concept ArchiveTypeName = std::is_base_of_v<ArchiveBase, Type>;
+
+template <typename Type, typename ArchiveType>
+concept ArchivableType = ArchiveTypeName<ArchiveType> && requires(Type value, ArchiveType archive) {
+    {
+        archive << value
+    } -> std::convertible_to<ArchiveType &>;
+};

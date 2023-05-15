@@ -74,6 +74,17 @@ SharedPtr<EngineRenderScene> WorldsManager::getWorldRenderScene(World *world) co
     return nullptr;
 }
 
+void WorldsManager::tickWorlds(float /*deltaTime*/)
+{
+    // TODO(Jeslas) : Not sure what to do here yet
+#if EDITOR_BUILD
+    if (renderingWorld && !EWorldState::isPlayState(renderingWorld->getState()))
+    {
+        renderingWorld->commitDirtyComponents();
+    }
+#endif
+}
+
 void WorldsManager::unloadWorld(World *world)
 {
     if (!isValid(world))

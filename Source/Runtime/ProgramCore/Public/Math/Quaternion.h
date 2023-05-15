@@ -26,8 +26,8 @@ private:
 
 public:
     Quat() = default;
-    Quat(const Quat &) = default;
-    Quat(Quat &&) = default;
+    MAKE_TYPE_DEFAULT_COPY_MOVE(Quat)
+
     FORCE_INLINE Quat(float inX, float inY, float inZ, float inW)
         : x(inX)
         , y(inY)
@@ -37,9 +37,6 @@ public:
     FORCE_INLINE Quat(float angle, const Vector3 &axis) { fromAngleAxisImpl(angle, axis); }
     FORCE_INLINE Quat(const Rotation &rotation) { fromRotationImpl(rotation); }
     FORCE_INLINE Quat(const RotationMatrix &rotationMatrix) { fromRotationMatImpl(rotationMatrix); }
-
-    Quat &operator= (const Quat &other) = default;
-    Quat &operator= (Quat &&other) = default;
 
     float operator[] (uint32 index) const;
     float &operator[] (uint32 index);
@@ -107,3 +104,93 @@ FORCE_INLINE Quat operator- (float n, const Quat &d) { return Quat(n - d.x, n - 
 FORCE_INLINE Quat operator* (float n, const Quat &d) { return d * n; }
 
 FORCE_INLINE Quat operator+ (float n, const Quat &d) { return d + n; }
+
+//////////////////////////////////////////////////////////////////////////
+/// Implementations
+//////////////////////////////////////////////////////////////////////////
+
+inline float Quat::operator[] (uint32 index) const { return (&this->x)[index]; }
+inline float &Quat::operator[] (uint32 index) { return (&this->x)[index]; }
+
+inline float Quat::operator| (const Quat &b) const { return (x * b.x) + (y * b.y) + (z * b.z) + (w * b.w); }
+
+inline Quat Quat::operator* (const Quat &b) const
+{
+    Quat ret(*this);
+    return ret *= b;
+}
+inline Quat &Quat::operator*= (const Quat &b)
+{
+    Quat a(*this);
+    this->x = a.x * b.w + a.w * b.x + a.y * b.z - a.z * b.y;
+    this->y = a.y * b.w + a.w * b.y - a.x * b.z + a.z * b.x;
+    this->z = a.z * b.w + a.w * b.z + a.x * b.y - a.y * b.x;
+    this->w = a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z;
+
+    *this = this->safeNormalize();
+    return (*this);
+}
+
+inline Quat Quat::operator* (float scalar) const { return Quat(x * scalar, y * scalar, z * scalar, w * scalar); }
+inline Quat &Quat::operator*= (float scalar)
+{
+    x *= scalar;
+    y *= scalar;
+    z *= scalar;
+    w *= scalar;
+    return *this;
+}
+
+inline Quat Quat::operator/ (float scalar) const { return Quat(x / scalar, y / scalar, z / scalar, w / scalar); }
+inline Quat &Quat::operator/= (float scalar)
+{
+    x /= scalar;
+    y /= scalar;
+    z /= scalar;
+    w /= scalar;
+    return *this;
+}
+
+inline Quat Quat::operator- (const Quat &b) const { return Quat(x - b.x, y - b.y, z - b.z, w - b.w); }
+inline Quat &Quat::operator-= (const Quat &b)
+{
+    x -= b.x;
+    y -= b.y;
+    z -= b.z;
+    w -= b.w;
+    return *this;
+}
+
+inline Quat Quat::operator- (float scalar) const { return Quat(x - scalar, y - scalar, z - scalar, w - scalar); }
+inline Quat &Quat::operator-= (float scalar)
+{
+    x -= scalar;
+    y -= scalar;
+    z -= scalar;
+    w -= scalar;
+    return *this;
+}
+
+inline Quat Quat::operator- () const { return Quat(-x, -y, -z, -w); }
+
+inline Quat Quat::operator+ (const Quat &b) const { return Quat(x + b.x, y + b.y, z + b.z, w + b.w); }
+inline Quat &Quat::operator+= (const Quat &b)
+{
+    x += b.x;
+    y += b.y;
+    z += b.z;
+    w += b.w;
+    return *this;
+}
+
+inline Quat Quat::operator+ (float scalar) const { return Quat(x + scalar, y + scalar, z + scalar, w + scalar); }
+inline Quat &Quat::operator+= (float scalar)
+{
+    x += scalar;
+    y += scalar;
+    z += scalar;
+    w += scalar;
+    return *this;
+}
+
+inline float Quat::dot(const Quat &a, const Quat &b) { return a | b; }

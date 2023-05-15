@@ -148,14 +148,6 @@ RotationMatrix::RotationMatrix(const Matrix4 &rotMatrix)
     verifyMatrix();
 }
 
-RotationMatrix::RotationMatrix(const RotationMatrix &other)
-    : rotationMatrix(other.rotationMatrix)
-{}
-
-RotationMatrix::RotationMatrix(RotationMatrix &&other)
-    : rotationMatrix(std::move(other.rotationMatrix))
-{}
-
 void RotationMatrix::verifyMatrix() const
 {
     debugAssertf(

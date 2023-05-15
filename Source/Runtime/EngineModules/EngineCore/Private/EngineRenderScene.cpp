@@ -1791,7 +1791,7 @@ void EngineRenderScene::createNextDrawList(
                                                             .instanceCount = 1,
                                                             .firstIndex = uint32(meshView.idxOffset),
                                                             .vertexOffset = int32(meshView.vertOffset),
-                                                            .firstInstance = uint32(compRenderInfo.tfIndex) };
+                                                            .firstInstance = uint32(instanceIdxToVectorIdx(compRenderInfo.tfIndex)) };
 
             shaderMats.cpuDrawListPerVertType[compRenderInfo.vertexType].emplace_back(std::move(indexedIndirectDraw));
         }

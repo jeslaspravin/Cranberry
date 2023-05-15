@@ -12,7 +12,7 @@
 #pragma once
 
 #include "EngineCoreExports.h"
-#include "CBEObject.h"
+#include "Components/ComponentBase.h"
 
 #include "Actor.gen.h"
 
@@ -52,6 +52,16 @@ public:
     FORCE_INLINE const std::set<TransformComponent *> &getTransformComponents() const { return transformComps; }
     FORCE_INLINE const std::set<LogicComponent *> &getLogicComponents() const { return logicComps; }
     FORCE_INLINE const std::set<TransformLeafComponent *> &getLeafComponents() const { return leafComps; }
+
+    void setWorldLocation(Vector3 location) { getRootComponent()->setWorldLocation(location); }
+    void setWorldRotation(Rotation rotation) { getRootComponent()->setWorldRotation(rotation); }
+    void setWorldScale(Vector3 scale) { getRootComponent()->setWorldScale(scale); }
+    void setWorldTransform(Transform3D newTf) { getRootComponent()->setWorldTransform(newTf); }
+
+    Vector3 getWorldLocation() { return getRootComponent()->getWorldLocation(); }
+    Rotation getWorldRotation() { return getRootComponent()->getWorldRotation(); }
+    Vector3 getWorldScale() { return getRootComponent()->getWorldScale(); }
+    Transform3D getWorldTransform() const { return getRootComponent()->getWorldTransform(); }
 
     void addComponent(TransformComponent *component);
     void addComponent(TransformLeafComponent *component);

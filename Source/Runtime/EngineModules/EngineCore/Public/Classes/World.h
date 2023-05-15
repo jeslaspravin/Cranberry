@@ -152,6 +152,10 @@ public:
     TransformComponent *getActorAttachedToComp(const Actor *actor) const;
     Actor *getActorAttachedTo(const Actor *actor) const;
 
+    Actor *spawnActor(CBEClass actorClass, Transform3D transform, StringView actorName, bool bDelayedInit);
+    Actor *spawnActor(ActorPrefab *actorPrefab, Transform3D transform, StringView actorName, bool bDelayedInit);
+    void finishSpawning(Actor *actor);
+
     const std::vector<Actor *> &getActors() const { return actors; }
 
     EWorldState::Type getState() const { return worldState; }
@@ -162,9 +166,11 @@ private:
     // Initializes all actor prefab and pushes them to actors list and attaches all linked actors
     void prepareForPlay();
 
+    void commitDirtyComponents();
+
     // bDelayedInit for actor created from class to allow setting up the prefab directly with in the world
-    Actor *addActor(CBEClass actorClass, const String &actorName, EObjectFlags actorFlags, bool bDelayedInit);
-    Actor *addActor(ActorPrefab *inPrefab, const String &name, EObjectFlags actorFlags);
+    Actor *addActor(CBEClass actorClass, StringView actorName, EObjectFlags actorFlags, bool bDelayedInit);
+    Actor *addActor(ActorPrefab *inPrefab, StringView name, EObjectFlags actorFlags, bool bDelayedInit);
     bool finalizeAddActor(ActorPrefab *prefab);
     Actor *setupActorInternal(ActorPrefab *actorPrefab, bool bUpdateTfTree);
     void updateTfAttachment(TransformComponent *attachingComp, TransformComponent *attachedTo, bool bUpdateTfTree);

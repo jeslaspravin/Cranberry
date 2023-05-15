@@ -36,7 +36,9 @@ void EngineBase::onStart()
 void EngineBase::onTick()
 {
     // TODO(Jeslas) :
-    engineTick(IApplicationModule::get()->getApplication()->timeData.deltaTime);
+    const ApplicationTimeData &timeData = IApplicationModule::get()->getApplication()->timeData;
+    engineTick(timeData.deltaTime);
+    worldManager()->tickWorlds(timeData.deltaTime);
 }
 
 void EngineBase::onExit()

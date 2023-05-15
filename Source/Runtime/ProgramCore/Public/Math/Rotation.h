@@ -17,6 +17,7 @@
 GLM_HEADER_INCLUDES_BEGIN
 
 #include <glm/ext/vector_float3.hpp>
+#include <glm/common.hpp>
 
 GLM_HEADER_INCLUDES_END
 
@@ -25,18 +26,16 @@ class Vector3;
 class PROGRAMCORE_EXPORT Rotation
 {
 private:
-    glm::vec3 value;
+    glm::vec3 value{ 0 };
 
     Rotation(const glm::vec3 &rotValue);
 
 public:
-    Rotation();
+    Rotation() = default;
+    MAKE_TYPE_DEFAULT_COPY_MOVE(Rotation)
+
     Rotation(float r, float p, float y);
     explicit Rotation(float allValue);
-    Rotation(const Rotation &other);
-    Rotation(Rotation &&other);
-    Rotation &operator= (const Rotation &other);
-    Rotation &operator= (Rotation &&other);
 
     float &roll();
     float &pitch();
@@ -82,3 +81,102 @@ public:
     static Rotation mod(const Rotation &a, float b);
     static Rotation modf(Rotation &wholePart, const Rotation &value);
 };
+
+//////////////////////////////////////////////////////////////////////////
+/// Implementations
+//////////////////////////////////////////////////////////////////////////
+
+inline Rotation::Rotation(const glm::vec3 &rotValue)
+    : value(rotValue)
+{}
+inline Rotation::Rotation(float allValue)
+    : value(allValue)
+{}
+inline Rotation::Rotation(float r, float p, float y)
+    : value(r, p, y)
+{}
+
+inline float &Rotation::roll() { return value.x; }
+inline float Rotation::roll() const { return value.x; }
+
+inline float &Rotation::pitch() { return value.y; }
+inline float Rotation::pitch() const { return value.y; }
+
+inline float &Rotation::yaw() { return value.z; }
+inline float Rotation::yaw() const { return value.z; }
+
+inline bool Rotation::operator== (const Rotation &b) const { return isSame(b); }
+
+inline Rotation Rotation::operator* (const Rotation &b) const { return Rotation(value * b.value); }
+inline Rotation &Rotation::operator*= (const Rotation &b)
+{
+    value *= b.value;
+    return *this;
+}
+
+inline Rotation Rotation::operator* (float scalar) const { return Rotation(value * scalar); }
+inline Rotation &Rotation::operator*= (float scalar)
+{
+    value *= scalar;
+    return *this;
+}
+
+inline Rotation Rotation::operator/ (const Rotation &b) const { return Rotation(value / b.value); }
+inline Rotation &Rotation::operator/= (const Rotation &b)
+{
+    value /= b.value;
+    return *this;
+}
+
+inline Rotation Rotation::operator/ (float scalar) const { return Rotation(value / scalar); }
+inline Rotation &Rotation::operator/= (float scalar)
+{
+    value /= scalar;
+    return *this;
+}
+
+inline Rotation Rotation::operator- (const Rotation &b) const { return Rotation(value - b.value); }
+inline Rotation &Rotation::operator-= (const Rotation &b)
+{
+    value -= b.value;
+    return *this;
+}
+
+inline Rotation Rotation::operator- (float scalar) const { return Rotation(value - scalar); }
+inline Rotation &Rotation::operator-= (float scalar)
+{
+    value -= scalar;
+    return *this;
+}
+
+inline Rotation Rotation::operator+ (const Rotation &b) const { return Rotation(value + b.value); }
+inline Rotation &Rotation::operator+= (const Rotation &b)
+{
+    value += b.value;
+    return *this;
+}
+
+inline Rotation Rotation::operator+ (float scalar) const { return Rotation(value + scalar); }
+inline Rotation &Rotation::operator+= (float scalar)
+{
+    value += scalar;
+    return *this;
+}
+
+inline Rotation Rotation::clamp(const Rotation &value, const Rotation &min, const Rotation &max)
+{
+    return Rotation(glm::clamp(value.value, min.value, max.value));
+}
+
+inline Rotation Rotation::min(const Rotation &a, const Rotation &b) { return Rotation(glm::min(a.value, b.value)); }
+inline Rotation Rotation::max(const Rotation &a, const Rotation &b) { return Rotation(glm::max(a.value, b.value)); }
+
+inline Rotation Rotation::abs(const Rotation &value) { return Rotation(glm::abs(value.value)); }
+
+inline Rotation Rotation::floor(const Rotation &value) { return Rotation(glm::floor(value.value)); }
+inline Rotation Rotation::ceil(const Rotation &value) { return Rotation(glm::ceil(value.value)); }
+inline Rotation Rotation::round(const Rotation &value) { return Rotation(glm::round(value.value)); }
+
+inline Rotation Rotation::mod(const Rotation &a, const Rotation &b) { return Rotation(glm::mod(a.value, b.value)); }
+inline Rotation Rotation::mod(const Rotation &a, float b) { return Rotation(glm::mod(a.value, b)); }
+inline Rotation Rotation::modf(Rotation &wholePart, const Rotation &value) { return Rotation(glm::modf(value.value, wholePart.value)); }
