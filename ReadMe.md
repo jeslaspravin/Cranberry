@@ -15,7 +15,7 @@ Why is `Cranberry` the name? I was eating cranberry and checking Twitter for my 
 * Install Vulkan SDK from [VulkanSDK]. Necessary because I am using `glslangValidator`
 * Run GenerateProject.bat to generate Visual Studio solution. This will by default generate solution for `Editor-DynamicLinked` preset under `Build` folder
 
-<p style="text-align: center;font-weight: bold;font-style: italic;">(or)</p>
+***<p align="center">(or)</p>***
 
 * You can also run GenerateProject.bat with one of following presets(eg., `GenerateProject.bat` or `GenerateProject.bat <preset> [Some Cmake arguments]..`)
 Note that if using preset and not going to change library dependencies run Setup.bat first(It will download archive with necessary libraries)
