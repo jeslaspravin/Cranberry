@@ -39,6 +39,7 @@ FORCE_INLINE bool isValid(const Object *obj)
     {
         return false;
     }
+    CBE_PROFILER_SCOPE("IsValidObj");
 
     // TODO(Jeslas) : Find some way to determine validity directly from obj pointer eg. Map obj pointer value to Object node index or have a set
     // of valid objects in objects db
@@ -61,6 +62,8 @@ FORCE_INLINE bool isValidFast(const Object *obj)
     {
         return false;
     }
+    CBE_PROFILER_SCOPE("IsValidObjFast");
+
     ObjectDbIdx dbIdx = obj->getDbIdx();
 
     const CoreObjectsDB &objectsDb = ICoreObjectsModule::objectsDB();
@@ -75,6 +78,8 @@ FORCE_INLINE bool isValidAlloc(const Object *obj)
     {
         return false;
     }
+    CBE_PROFILER_SCOPE("IsValidObjAlloc");
+
     ObjectDbIdx dbIdx = obj->getDbIdx();
 
     const CoreObjectsDB &objectsDb = ICoreObjectsModule::objectsDB();
@@ -128,6 +133,7 @@ Object *INTERNAL_create(CBEClass clazz, StringView name, Object *outerObj, EObje
         return nullptr;
     }
 
+    CBE_PROFILER_SCOPE("CreateCbeObject");
     // Validate inside main thread
     fatalAssertf(INTERNAL_isInMainThread(), "Instance of any class {} must be constructed inside main thread!", clazz->nameString);
 
@@ -214,6 +220,8 @@ Object *create(CBEClass clazz, StringView name, Object *outerObj, EObjectFlags f
 template <typename... CtorArgs>
 Object *createOrGet(CBEClass clazz, StringView name, Object *outerObj, EObjectFlags flags = 0, CtorArgs... ctorArgs)
 {
+    CBE_PROFILER_SCOPE("CreateOrGetCbeObj");
+
     String objFullPath = ObjectPathHelper::getFullPath(name, outerObj);
     const CoreObjectsDB &objectsDb = ICoreObjectsModule::objectsDB();
     CoreObjectsDB::NodeIdxType objNodeIdx
@@ -241,10 +249,12 @@ ClassType *createOrGet(StringView name, Object *outerObj, EObjectFlags flags = 0
 
 FORCE_INLINE Object *get(StringView objectFullPath)
 {
+    CBE_PROFILER_SCOPE("GetCbeObj");
     return ICoreObjectsModule::objectsDB().getObject({ .objectPath = objectFullPath, .objectId = StringID(objectFullPath) });
 }
 FORCE_INLINE Object *get(StringID objectID, StringView objectFullPath)
 {
+    CBE_PROFILER_SCOPE("GetCbeObj");
     return ICoreObjectsModule::objectsDB().getObject({ .objectPath = objectFullPath, .objectId = StringID(objectID) });
 }
 

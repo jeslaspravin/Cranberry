@@ -11,6 +11,7 @@
 
 #pragma once
 #include "IReflectionRuntime.h"
+#include "Profiler/ProgramProfiler.hpp"
 #include "Property/Property.h"
 #include "ReflectionRuntimeExports.h"
 #include "String/String.h"
@@ -285,6 +286,8 @@ public:
     template <ReflectClassOrStructType AsType, ReflectClassOrStructType FromType>
     FORCE_INLINE static AsType *cast(FromType *obj)
     {
+        CBE_PROFILER_SCOPE("CastObjToObj");
+
         if (isValidReflectedObject(obj) && isChildOf(obj->getType(), AsType::staticType()))
         {
             return static_cast<AsType *>(obj);
@@ -304,6 +307,8 @@ public:
     requires (!StaticCastable<FromType *, AsType *>)
     FORCE_INLINE static AsType *cast(FromType *obj)
     {
+        CBE_PROFILER_SCOPE("CastIxxToObj");
+
         using UPtrIntType = std::conditional_t<std::is_const_v<FromType>, const UPtrInt, UPtrInt>;
 
         if (!isValidReflectedObject(obj))
@@ -322,6 +327,8 @@ public:
     requires StaticCastable<FromType *, AsType *>
     FORCE_INLINE static AsType *cast(FromType *obj)
     {
+        CBE_PROFILER_SCOPE("CastObjToIxxStatic");
+
         return isChildOf(obj->getType(), AsType::staticType()) ? static_cast<AsType *>(obj) : nullptr;
     }
 
@@ -329,6 +336,8 @@ public:
     requires (!StaticCastable<FromType *, AsType *>)
     FORCE_INLINE static AsType *cast(FromType *obj)
     {
+        CBE_PROFILER_SCOPE("CastObjToIxx");
+
         using UPtrIntType = std::conditional_t<std::is_const_v<FromType>, const UPtrInt, UPtrInt>;
 
         if (!(obj && obj->getType() && isChildOf(obj->getType(), AsType::staticType())))
@@ -354,6 +363,8 @@ public:
     requires (!StaticCastable<FromType *, AsType *>)
     FORCE_INLINE static AsType *cast(FromType *obj)
     {
+        CBE_PROFILER_SCOPE("CastIxxToIxx");
+
         using UPtrIntType = std::conditional_t<std::is_const_v<FromType>, const UPtrInt, UPtrInt>;
 
         if (!(obj && obj->getType() && implementsInterface<AsType>(obj->getType())))

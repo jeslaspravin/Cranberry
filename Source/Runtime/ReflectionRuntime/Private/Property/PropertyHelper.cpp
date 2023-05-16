@@ -60,6 +60,8 @@ bool PropertyHelper::isChildOf(const ClassProperty *childClassProp, const ClassP
         return false;
     }
 
+    CBE_PROFILER_SCOPE("IsChildOf");
+
     const ClassProperty *checkProp = childClassProp;
     while (checkProp)
     {
@@ -84,6 +86,8 @@ const InterfaceInfo *PropertyHelper::getMatchingInterfaceInfo(const ClassPropert
         alertAlwaysf(childClassProp && interfaceType, "Null class properties are not valid input for implementsInterface function");
         return nullptr;
     }
+
+    CBE_PROFILER_SCOPE("GetMatchingInterface");
 
     for (const InterfaceInfo &interfaceInfo : childClassProp->interfaces)
     {

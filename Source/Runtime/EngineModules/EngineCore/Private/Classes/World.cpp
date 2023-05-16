@@ -100,6 +100,7 @@ ObjectArchive &World::serialize(ObjectArchive &ar)
 void World::tfCompTransformed(TransformComponent *tfComponent)
 {
     debugAssert(EWorldState::isPreparedState(getState()));
+    CBE_PROFILER_SCOPE("TfCompTransformed");
 
     std::vector<TransformComponent *> transformedComps;
     std::vector<TransformLeafComponent *> transformedLeaves;
@@ -262,14 +263,16 @@ bool World::copyFrom(World *otherWorld)
         LOG_ERROR("World", "Cannot copy a playing world to another playing world");
         return false;
     }
-    const CoreObjectsDB &objsDb = ICoreObjectsModule::objectsDB();
+    CBE_PROFILER_SCOPE("CopyWorld");
+
+    const CoreObjectsDB &objectsDb = ICoreObjectsModule::objectsDB();
 
     bool bAllCopied = true;
     std::unordered_set<ActorPrefab *> prefabsToRemove(actorPrefabs.cbegin(), actorPrefabs.cend());
     // First create any new actors
     for (ActorPrefab *otherPrefab : otherWorld->actorPrefabs)
     {
-        ObjectPrivateDataView otherPrefabDatV = objsDb.getObjectData(otherPrefab->getDbIdx());
+        ObjectPrivateDataView otherPrefabDatV = objectsDb.getObjectData(otherPrefab->getDbIdx());
         ActorPrefab *thisPrefab = get<ActorPrefab>(ObjectPathHelper::getFullPath(otherPrefabDatV.name, this));
         if (thisPrefab)
         {
@@ -286,6 +289,7 @@ bool World::copyFrom(World *otherWorld)
 
         if (thisPrefab == nullptr)
         {
+            CBE_PROFILER_SCOPE("CreateActorPrefab");
             if (ActorPrefab *parentPrefab = otherPrefab->getParentPrefab())
             {
                 thisPrefab = create<ActorPrefab, cbe::ActorPrefab *, String>(
@@ -358,8 +362,10 @@ bool World::copyFrom(World *otherWorld)
     };
     std::vector<Object *> objectsToReplace;
     {
+        CBE_PROFILER_SCOPE("PrepWorldObjTreeRefs");
+
         std::vector<Object *> otherSubObjs;
-        objsDb.getSubobjects(otherSubObjs, otherWorld->getDbIdx());
+        objectsDb.getSubobjects(otherSubObjs, otherWorld->getDbIdx());
 
         objectsToReplace.reserve(otherSubObjs.size());
         for (Object *otherObj : otherSubObjs)
@@ -375,6 +381,8 @@ bool World::copyFrom(World *otherWorld)
     // Could be parallelized
     for (Object *thisObj : objectsToReplace)
     {
+        CBE_PROFILER_SCOPE("FixObjRefs");
+
         cbe::replaceObjectReferences(thisObj, replacements, EObjectTraversalMode::OnlyObject);
     }
 
@@ -606,6 +614,7 @@ void World::updateWorldTf(const std::vector<TFHierarchyIdx> &idxsToUpdate)
 void World::prepareForPlay()
 {
     debugAssert(!EWorldState::isPreparedState(worldState));
+    CBE_PROFILER_SCOPE("PrepareWorldForPlay");
 
     actors.clear();
     actors.reserve(actorPrefabs.size());
@@ -682,6 +691,8 @@ bool World::finalizeAddActor(ActorPrefab *prefab)
 
 cbe::Actor *World::setupActorInternal(ActorPrefab *actorPrefab, bool bUpdateTfTree)
 {
+    CBE_PROFILER_SCOPE("SetupWorldActor");
+
     Actor *actor = actorPrefab->getActorTemplate();
     if (EWorldState::isPlayState(worldState))
     {
@@ -711,6 +722,8 @@ cbe::Actor *World::setupActorInternal(ActorPrefab *actorPrefab, bool bUpdateTfTr
     // Now update the world transforms
     if (bUpdateTfTree)
     {
+        CBE_PROFILER_SCOPE("UpdateTfCompTree");
+
         TFHierarchyIdx rootCompIdx = compToTf[actor->getRootComponent()];
         std::vector<TFHierarchyIdx> idxsToUpdate;
         idxsToUpdate.emplace_back(rootCompIdx);
@@ -742,6 +755,8 @@ cbe::Actor *World::setupActorInternal(ActorPrefab *actorPrefab, bool bUpdateTfTr
 
 void World::updateTfAttachment(TransformComponent *attachingComp, TransformComponent *attachedTo, bool bUpdateTfTree)
 {
+    CBE_PROFILER_SCOPE("UpdateTfAttachment");
+
     auto attachingItr = compToTf.find(attachingComp);
     debugAssert(attachingItr != compToTf.end());
     TFHierarchyIdx attachingIdx = attachingItr->second;

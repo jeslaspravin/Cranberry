@@ -229,7 +229,7 @@ Format specifiers: https://learn.microsoft.com/en-us/visualstudio/debugger/forma
   </Type>
 
   <Type Name="cbe::Object" Inheritable="false">
-    <AlternativeType Name="cbe::ObjectBase" Inheritable="false" />
+    <!-- <AlternativeType Name="cbe::ObjectBase" Inheritable="false" /> -->
     <Intrinsic Name="objectsDb" Expression="CoreObjects.dll!CoreObjectsModule::objsDbPtr" />
     <Intrinsic Name="objectsTree" Expression="objectsDb()-&gt;objectTree" />
     <Intrinsic Name="objectsDbDataFirst" Expression="objectsTree().treeData._Mypair._Myval2._Myfirst" />

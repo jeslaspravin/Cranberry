@@ -152,6 +152,8 @@ FORCE_INLINE void PackageLoader::linkContainedObjects() const
         return;
     }
 
+    CBE_PROFILER_SCOPE("LinkPackageObjRefs");
+
     LinkObjectPtrsData userData{ this };
     for (const PackageContainedData &containedData : containedObjects)
     {
@@ -396,6 +398,8 @@ EPackageLoadSaveResult PackageLoader::load()
     ArrayArchiveStream *archiveStreamPtr = inStream;
     if (inStream == nullptr)
     {
+        CBE_PROFILER_SCOPE("ReadPackageArchive");
+
         std::vector<uint8> fileData;
         bool bRead = FileHelper::readBytes(fileData, packageFilePath);
         if (!bRead)
@@ -412,6 +416,8 @@ EPackageLoadSaveResult PackageLoader::load()
     EPackageLoadSaveResult loadResult = EPackageLoadSaveResult::Success;
     auto containedObjSerializer = [&loadResult, &packageName, archiveStreamPtr, this](PackageContainedData &containedData)
     {
+        CBE_PROFILER_SCOPE("SerializeObj");
+
         if (archiveStreamPtr->cursorPos() > containedData.streamStart)
         {
             archiveStreamPtr->moveBackward(archiveStreamPtr->cursorPos() - containedData.streamStart);
@@ -451,6 +457,8 @@ EPackageLoadSaveResult PackageLoader::load()
     };
 
     {
+        CBE_PROFILER_SCOPE("CreatePackageObjs");
+
         // Create all object first
         for (PackageContainedData &containedData : containedObjects)
         {
@@ -481,11 +489,15 @@ EPackageLoadSaveResult PackageLoader::load()
     linkContainedObjects();
 
     // Broadcast post serialize event
-    for (PackageContainedData &containedData : containedObjects)
     {
-        if (containedData.object.isValid())
+        CBE_PROFILER_SCOPE("PostSerializePackage");
+
+        for (PackageContainedData &containedData : containedObjects)
         {
-            containedData.object->postSerialize(*this);
+            if (containedData.object.isValid())
+            {
+                containedData.object->postSerialize(*this);
+            }
         }
     }
 
@@ -493,22 +505,30 @@ EPackageLoadSaveResult PackageLoader::load()
     SET_BITS(cbe::INTERNAL_ObjectCoreAccessors::getFlags(package), cbe::EObjectFlagBits::ObjFlag_PackageLoaded);
 
     // Broadcast load events, postLoad() and constructed()
-    for (PackageContainedData &containedData : containedObjects)
     {
-        if (containedData.object.isValid())
+        CBE_PROFILER_SCOPE("PostLoadPackage");
+
+        for (PackageContainedData &containedData : containedObjects)
         {
-            containedData.object->postLoad();
+            if (containedData.object.isValid())
+            {
+                containedData.object->postLoad();
+            }
         }
+        CoreObjectDelegates::broadcastPackageLoaded(package);
     }
-    CoreObjectDelegates::broadcastPackageLoaded(package);
-    for (PackageContainedData &containedData : containedObjects)
     {
-        if (containedData.object.isValid())
+        CBE_PROFILER_SCOPE("ConstructedPackage");
+
+        for (PackageContainedData &containedData : containedObjects)
         {
-            containedData.object->constructed();
+            if (containedData.object.isValid())
+            {
+                containedData.object->constructed();
+            }
         }
+        package->constructed();
     }
-    package->constructed();
 
     return loadResult;
 }

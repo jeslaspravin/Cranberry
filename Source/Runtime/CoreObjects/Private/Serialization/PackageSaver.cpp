@@ -82,30 +82,48 @@ PackageSaver::PackageSaver(cbe::Package *savingPackage)
 
 EPackageLoadSaveResult PackageSaver::savePackage()
 {
+    CBE_PROFILER_SCOPE("SavePackage");
+
     ArchiveSizeCounterStream archiveCounter;
     packageArchive.setStream(&archiveCounter);
-    // Step 1 : Dummy archive meta/header size for offsetting original stream start and size later
+    /**
+     * STEP 1 :
+     * Dummy archive meta/header size for offsetting original stream start and size later
+     */
     SizeT dummyHeaderSize = archiveCounter.cursorPos();
 
-    // Step 2 : Dummy serialize to find stream start and stream size for each object
-    for (PackageContainedData &containedObjData : containedObjects)
+    /**
+     * STEP 2 :
+     * Dummy serialize to find stream start and stream size for each object
+     */
     {
-        containedObjData.streamStart = archiveCounter.cursorPos();
-        serializeObject(containedObjData.object);
-        containedObjData.streamSize = archiveCounter.cursorPos() - containedObjData.streamStart;
-        // We must have custom version setup if present, Custom version keys must be from class property name
-        containedObjData.classVersion = ArchiveBase::getCustomVersion(uint32(containedObjData.object->getType()->name));
+        CBE_PROFILER_SCOPE("DummySerializePackage");
+
+        for (PackageContainedData &containedObjData : containedObjects)
+        {
+            containedObjData.streamStart = archiveCounter.cursorPos();
+            serializeObject(containedObjData.object);
+            containedObjData.streamSize = archiveCounter.cursorPos() - containedObjData.streamStart;
+            // We must have custom version setup if present, Custom version keys must be from class property name
+            containedObjData.classVersion = ArchiveBase::getCustomVersion(uint32(containedObjData.object->getType()->name));
+        }
     }
 
-    // Step 3 : Copy custom versions and other archive related property to actual packageArchive
+    /**
+     * STEP 3 :
+     * Copy custom versions and other archive related property to actual packageArchive
+     */
     for (const std::pair<const uint32, uint32> &customVersion : ArchiveBase::getCustomVersions())
     {
         packageArchive.setCustomVersion(customVersion.first, customVersion.second);
     }
     packageArchive.setCustomVersion(uint32(PACKAGE_CUSTOM_VERSION_ID), PACKAGE_SERIALIZER_VERSION);
 
-    // Step 4 : Now all custom versions and dependent object data are setup we determine new header size and set stream start and size offsets
-    // for serialized objects
+    /**
+     * STEP 4 :
+     * Now all custom versions and dependent object data are setup we determine new header size
+     * Then set stream the final start and size offsets for serialized objects
+     */
     packageArchive.setStream(nullptr);
     archiveCounter.moveBackward(archiveCounter.cursorPos());
     packageArchive.setStream(&archiveCounter);
@@ -119,24 +137,36 @@ EPackageLoadSaveResult PackageSaver::savePackage()
     }
     SizeT finalPackageSize = containedObjects.back().streamStart + containedObjects.back().streamSize;
 
-    // Step 5 : Setup Array stream to write
+    /**
+     * STEP 5 :
+     * Setup Array stream to write
+     */
     ArrayArchiveStream localStream;
     ArrayArchiveStream *archiveStreamPtr = outStream ? outStream : &localStream;
     archiveStreamPtr->allocate(finalPackageSize);
     packageArchive.setStream(archiveStreamPtr);
 
-    // Step 6 : Write into archive
-    (*static_cast<ObjectArchive *>(this)) << *const_cast<StringID *>(&PACKAGE_ARCHIVE_MARKER);
-    (*static_cast<ObjectArchive *>(this)) << containedObjects;
-    (*static_cast<ObjectArchive *>(this)) << dependentObjects;
-    for (PackageContainedData &containedObjData : containedObjects)
+    /**
+     * STEP 6 :
+     * Write into archive
+     */
     {
-        serializeObject(containedObjData.object);
+        CBE_PROFILER_SCOPE("SerializePackage");
+
+        (*static_cast<ObjectArchive *>(this)) << *const_cast<StringID *>(&PACKAGE_ARCHIVE_MARKER);
+        (*static_cast<ObjectArchive *>(this)) << containedObjects;
+        (*static_cast<ObjectArchive *>(this)) << dependentObjects;
+        for (PackageContainedData &containedObjData : containedObjects)
+        {
+            serializeObject(containedObjData.object);
+        }
+        packageArchive.setStream(nullptr);
     }
-    packageArchive.setStream(nullptr);
 
     if (outStream == nullptr)
     {
+        CBE_PROFILER_SCOPE("PostSavePackage");
+
         String packagePath = package->getPackageFilePath();
         if (!FileHelper::writeBytes(archiveStreamPtr->getBuffer(), packagePath))
         {

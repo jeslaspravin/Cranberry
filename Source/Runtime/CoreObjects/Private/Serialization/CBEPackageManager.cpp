@@ -75,6 +75,8 @@ cbe::Package *Package::createPackage(const String &relativePath, const String &c
 
 COREOBJECTS_EXPORT Object *load(StringView objectPath, CBEClass clazz)
 {
+    CBE_PROFILER_SCOPE("LoadCbeObj");
+
     CBEPackageManager &packageManager = CoreObjectsModule::packageManager();
 
     StringView packagePath = ObjectPathHelper::getPackagePath(objectPath);
@@ -140,6 +142,8 @@ COREOBJECTS_EXPORT Object *load(StringView objectPath, CBEClass clazz)
 
 Object *getOrLoad(StringView objectPath, CBEClass clazz)
 {
+    CBE_PROFILER_SCOPE("GetOrLoadCbeObj");
+
     StringView packagePath = ObjectPathHelper::getPackagePath(objectPath);
     // If no package path, find a package that has this object name or path
     if (packagePath.empty())
@@ -181,6 +185,8 @@ void markDirty(Object *obj)
 
 bool save(Object *obj)
 {
+    CBE_PROFILER_SCOPE("SaveCbeObj");
+
     cbe::Package *package = cast<cbe::Package>(obj);
     if (!package)
     {

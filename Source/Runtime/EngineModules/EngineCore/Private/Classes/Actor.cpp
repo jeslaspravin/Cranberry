@@ -119,6 +119,8 @@ cbe::Object *ActorPrefab::modifyComponent(Object *modifyingComp)
     // Native components are already part of actor object template
     if (!isOwnedComponent(modifyingComp) && !isNativeComponent(modifyingComp))
     {
+        CBE_PROFILER_SCOPE("ModifyPrefabComponent");
+
         ObjectTemplate *modifyingCompTemplate = objectTemplateFromObj(modifyingComp);
         debugAssert(modifyingCompTemplate);
         auto compOverrideItr = std::find_if(
@@ -215,6 +217,8 @@ bool ActorPrefab::copyFrom(ActorPrefab *otherPrefab)
     {
         return false;
     }
+    CBE_PROFILER_SCOPE("CopyActorPrefab");
+
     const CoreObjectsDB &objectsDb = ICoreObjectsModule::objectsDB();
 
     bool bCopiedActorTemplate = actorTemplate->copyFrom(otherPrefab->actorTemplate);
@@ -762,6 +766,8 @@ void ActorPrefab::onPostSerialize(const ObjectArchive &ar)
 
 void ActorPrefab::initializeActor(ActorPrefab *inPrefab)
 {
+    CBE_PROFILER_SCOPE("InitializeActorFromPrefab");
+
     World *actorWorld = inPrefab->getActorTemplate()->getWorld();
     debugAssert(actorWorld);
 

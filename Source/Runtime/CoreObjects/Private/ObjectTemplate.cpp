@@ -175,6 +175,7 @@ bool ObjectTemplate::copyFrom(ObjectTemplate *otherTemplate)
     {
         return false;
     }
+    CBE_PROFILER_SCOPE("CopyObjectTemplate");
 
     // Copy all values first
     cbe::deepCopy(otherTemplate->templateObj, templateObj, 0, 0, false);
