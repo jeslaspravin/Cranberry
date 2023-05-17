@@ -25,8 +25,8 @@ public:
     // Object paths will be "RootObjName:OuterMostObjName/OuterObjName/ObjName"
     // Why? This will in long term will be helpful to manage all objects under one root/sub-objects and
     // traversing the object tree will become so much easier
-    CONST_EXPR static const TChar ObjectObjectSeparator = '/';
-    CONST_EXPR static const TChar RootObjectSeparator = ':';
+    CONST_EXPR static const TChar ObjectObjectSeparator = TCHAR('/');
+    CONST_EXPR static const TChar RootObjectSeparator = TCHAR(':');
 
     static String computeFullPath(const cbe::Object *object);
     static String computeFullPath(StringView objectName, const cbe::Object *outerObj);

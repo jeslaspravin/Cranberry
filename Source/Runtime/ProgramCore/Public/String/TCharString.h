@@ -279,7 +279,7 @@ NODISCARD bool startsWith(CharStringView<CharType> matchIn, CharStringView<CharT
 
     auto it = std::search(
         matchIn.cbegin(), matchIn.cend(), match.cbegin(), match.cend(),
-        [](CharType c1, CharType c2)
+        [](const CharType c1, const CharType c2)
         {
             return PlatformFunctions::toUpper(c1) == PlatformFunctions::toUpper(c2);
         }
@@ -289,12 +289,12 @@ NODISCARD bool startsWith(CharStringView<CharType> matchIn, CharStringView<CharT
 }
 
 template <typename CharType>
-NODISCARD constexpr bool startsWith(CharStringView<CharType> matchIn, CharType match)
+NODISCARD constexpr bool startsWith(CharStringView<CharType> matchIn, const CharType match)
 {
     return matchIn[0] == match;
 }
 template <typename CharType>
-NODISCARD bool startsWith(CharStringView<CharType> matchIn, CharType match, bool bMatchCase)
+NODISCARD bool startsWith(CharStringView<CharType> matchIn, const CharType match, bool bMatchCase)
 {
     if (bMatchCase)
     {
@@ -318,7 +318,7 @@ NODISCARD bool endsWith(CharStringView<CharType> matchIn, CharStringView<CharTyp
 
     auto it = std::search(
         matchIn.cbegin(), matchIn.cend(), match.cbegin(), match.cend(),
-        [](CharType c1, CharType c2)
+        [](const CharType c1, const CharType c2)
         {
             return PlatformFunctions::toUpper(c1) == PlatformFunctions::toUpper(c2);
         }
@@ -332,7 +332,7 @@ NODISCARD constexpr CharStringView<CharType> trimL(CharStringView<CharType> strV
 {
     auto itr = std::find_if(
         strView.cbegin(), strView.cend(),
-        [](CharType ch)
+        [](const CharType ch)
         {
             return !std::isspace(ch);
         }
@@ -351,7 +351,7 @@ NODISCARD constexpr CharStringView<CharType> trimR(CharStringView<CharType> strV
 {
     auto itr = std::find_if(
         strView.crbegin(), strView.crend(),
-        [](CharType ch)
+        [](const CharType ch)
         {
             return !std::isspace(ch);
         }

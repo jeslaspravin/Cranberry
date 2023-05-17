@@ -28,18 +28,15 @@ struct DelegateHandle;
 class PROGRAMCORE_EXPORT Logger
 {
 public:
-#if HAS_SOURCE_LOCATION_FEATURE
-    using SourceLocationType = std::source_location;
-#else
-    struct SourceLocationType
+    struct LoggerSourceLocationType
     {
         const AChar *fileName = "";
         const AChar *funcName = "";
         uint32 lineNum = {};
 
-        constexpr static SourceLocationType current(const AChar *file, const AChar *func, uint32 line)
+        constexpr static LoggerSourceLocationType current(const AChar *file, const AChar *func, uint32 line)
         {
-            SourceLocationType retVal;
+            LoggerSourceLocationType retVal;
             retVal.fileName = file;
             retVal.funcName = func;
             retVal.lineNum = line;
@@ -52,6 +49,11 @@ public:
         NODISCARD constexpr const AChar *file_name() const noexcept { return fileName; }
         NODISCARD constexpr const AChar *function_name() const noexcept { return funcName; }
     };
+
+#if HAS_SOURCE_LOCATION_FEATURE
+    using SourceLocationType = std::source_location;
+#else
+    using SourceLocationType = LoggerSourceLocationType;
 #endif
 
     enum ESeverityID : uint8
@@ -82,8 +84,6 @@ public:
     struct LogMsgPacket
     {
         SourceLocationType srcLoc;
-        // Since file name is constant allocated
-        const AChar *fileName = nullptr;
 
         // In const TChar *
         SizeT categoryStart;
@@ -92,9 +92,16 @@ public:
         uint32 messageSize;
 
         int64 timeStamp;
+
+        uint32 fileNameOffset;
+        uint32 funcNameOffset;
+        uint32 funcNameSize;
+
         ESeverityID severity = ESeverityID::SevID_Max;
 
         ELogSeverity getServerityFlag() const { return ELogSeverity(1 << severity); }
+        std::string_view getFileName() const { return srcLoc.file_name() + fileNameOffset; }
+        std::string_view getFuncName() const { return { srcLoc.function_name() + funcNameOffset, funcNameSize }; }
     };
 
     using StaticPacketsFunc = Function<void, const String &, const std::vector<LogMsgPacket> &>;

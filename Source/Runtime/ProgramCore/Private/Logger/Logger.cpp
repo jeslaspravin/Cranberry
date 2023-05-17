@@ -36,23 +36,37 @@
 
 NODISCARD constexpr const AChar *filterFileName(const AChar *fileName) noexcept
 {
-    SizeT foundAt = 0;
-    bool bFound = TCharStr::rfind<AChar>(fileName, FS_PATH_SEPARATOR, &foundAt);
-    if constexpr (*FS_PATH_SEPARATOR != '/')
+    SizeT len = TCharStr::length(fileName);
+    while (len > 0)
     {
-        SizeT fwdSlashFoundAt = 0;
-        bool bFwdSlashFound = TCharStr::rfind<AChar>(fileName, TCHAR("/"), &fwdSlashFoundAt);
-        if (bFwdSlashFound && (!bFound || fwdSlashFoundAt > foundAt))
+        len--;
+        if (fileName[len] == '\\' || fileName[len] == '/')
         {
-            foundAt = fwdSlashFoundAt;
-            bFound = true;
+            return fileName + len + 1;
         }
     }
+    return fileName;
+}
+
+NODISCARD constexpr std::string_view filterFuncName(const AChar *funcName) noexcept
+{
+    SizeT funcNameEnd = 0;
+    bool bFound = TCharStr::rfind<AChar>(funcName, '(', &funcNameEnd);
     if (bFound)
     {
-        return fileName + foundAt + 1;
+        SizeT funcNameStart = funcNameEnd;
+        while (funcNameStart > 0)
+        {
+            funcNameStart--;
+            if (funcName[funcNameStart] == ':' || std::isspace(funcName[funcNameStart]))
+            {
+                funcNameStart += 1;
+                return { funcName + funcNameStart, funcNameEnd - funcNameStart };
+            }
+        }
+        return { funcName, funcNameStart };
     }
-    return fileName;
+    return funcName;
 }
 
 // Maps log severity to corresponding log out's string
@@ -276,12 +290,12 @@ void LoggerImpl::flushStreamInternal() noexcept
                 tempOutputBuffer.append(TCHAR("]"));
 
                 tempOutputBuffer.append(TCHAR("["));
-                tempOutputBuffer.append(packet.fileName);
+                tempOutputBuffer.append(packet.getFileName());
                 tempOutputBuffer.append(TCHAR(":"));
                 tempOutputBuffer.append(String::toString(packet.srcLoc.line()));
                 tempOutputBuffer.append(TCHAR("]"));
 
-                tempOutputBuffer.append(packet.srcLoc.function_name());
+                tempOutputBuffer.append(packet.getFuncName());
                 tempOutputBuffer.append(TCHAR("() : "));
 
                 tempOutputBuffer.append(msgView);
@@ -393,6 +407,7 @@ void Logger::verboseInternal(const SourceLocationType srcLoc, const TChar *categ
         timeStr = Time::toString(timeStamp, false);
     }
     const AChar *fileName = filterFileName(srcLoc.file_name());
+    std::string_view funcName = filterFuncName(srcLoc.function_name());
 
     if (canLog(ELogSeverity::Verbose, ELogOutputType::File))
     {
@@ -400,7 +415,9 @@ void Logger::verboseInternal(const SourceLocationType srcLoc, const TChar *categ
 
         LogMsgPacket &packet = loggerImpl->getPacketPayload();
         packet.srcLoc = srcLoc;
-        packet.fileName = fileName;
+        packet.fileNameOffset = uint32(fileName - srcLoc.file_name());
+        packet.funcNameOffset = uint32(funcName.data() - srcLoc.function_name());
+        packet.funcNameSize = uint32(funcName.size());
         packet.timeStamp = timeStamp;
         packet.severity = ESeverityID::SevID_Verbose;
         // Push category
@@ -429,7 +446,7 @@ void Logger::verboseInternal(const SourceLocationType srcLoc, const TChar *categ
         COUT << SEVERITY_OUT_STR[ESeverityID::SevID_Verbose];
         COUT << TCHAR("[") << category << TCHAR("]");
         COUT << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]");
-        COUT << srcLoc.function_name() << TCHAR("() : ");
+        COUT << funcName << TCHAR("() : ");
         COUT << message.getChar();
         COUT << std::endl;
 #endif // SHORT_MSG_IN_CONSOLE
@@ -460,6 +477,7 @@ void Logger::debugInternal(const SourceLocationType srcLoc, const TChar *categor
         timeStr = Time::toString(timeStamp, false);
     }
     const AChar *fileName = filterFileName(srcLoc.file_name());
+    std::string_view funcName = filterFuncName(srcLoc.function_name());
 
     if (canLog(ELogSeverity::Debug, ELogOutputType::File))
     {
@@ -467,7 +485,9 @@ void Logger::debugInternal(const SourceLocationType srcLoc, const TChar *categor
 
         LogMsgPacket &packet = loggerImpl->getPacketPayload();
         packet.srcLoc = srcLoc;
-        packet.fileName = fileName;
+        packet.fileNameOffset = uint32(fileName - srcLoc.file_name());
+        packet.funcNameOffset = uint32(funcName.data() - srcLoc.function_name());
+        packet.funcNameSize = uint32(funcName.size());
         packet.timeStamp = timeStamp;
         packet.severity = ESeverityID::SevID_Debug;
         // Push category
@@ -496,7 +516,7 @@ void Logger::debugInternal(const SourceLocationType srcLoc, const TChar *categor
         COUT << SEVERITY_OUT_STR[ESeverityID::SevID_Debug];
         COUT << TCHAR("[") << category << TCHAR("]");
         COUT << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]");
-        COUT << srcLoc.function_name() << TCHAR("() : ");
+        COUT << funcName << TCHAR("() : ");
         COUT << message.getChar();
         COUT << std::endl;
 #endif // SHORT_MSG_IN_CONSOLE
@@ -524,6 +544,7 @@ void Logger::logInternal(const SourceLocationType srcLoc, const TChar *category,
         timeStr = Time::toString(timeStamp, false);
     }
     const AChar *fileName = filterFileName(srcLoc.file_name());
+    std::string_view funcName = filterFuncName(srcLoc.function_name());
 
     if (canLog(ELogSeverity::Log, ELogOutputType::File))
     {
@@ -531,7 +552,9 @@ void Logger::logInternal(const SourceLocationType srcLoc, const TChar *category,
 
         LogMsgPacket &packet = loggerImpl->getPacketPayload();
         packet.srcLoc = srcLoc;
-        packet.fileName = fileName;
+        packet.fileNameOffset = uint32(fileName - srcLoc.file_name());
+        packet.funcNameOffset = uint32(funcName.data() - srcLoc.function_name());
+        packet.funcNameSize = uint32(funcName.size());
         packet.timeStamp = timeStamp;
         packet.severity = ESeverityID::SevID_Log;
         // Push category
@@ -560,7 +583,7 @@ void Logger::logInternal(const SourceLocationType srcLoc, const TChar *category,
         COUT << SEVERITY_OUT_STR[ESeverityID::SevID_Log];
         COUT << TCHAR("[") << category << TCHAR("]");
         COUT << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]");
-        COUT << srcLoc.function_name() << TCHAR("() : ");
+        COUT << funcName << TCHAR("() : ");
         COUT << message.getChar();
         COUT << std::endl;
 #endif // SHORT_MSG_IN_CONSOLE
@@ -584,6 +607,7 @@ void Logger::warnInternal(const SourceLocationType srcLoc, const TChar *category
         timeStr = Time::toString(timeStamp, false);
     }
     const AChar *fileName = filterFileName(srcLoc.file_name());
+    std::string_view funcName = filterFuncName(srcLoc.function_name());
 
     if (canLog(ELogSeverity::Warning, ELogOutputType::File))
     {
@@ -591,7 +615,9 @@ void Logger::warnInternal(const SourceLocationType srcLoc, const TChar *category
 
         LogMsgPacket &packet = loggerImpl->getPacketPayload();
         packet.srcLoc = srcLoc;
-        packet.fileName = fileName;
+        packet.fileNameOffset = uint32(fileName - srcLoc.file_name());
+        packet.funcNameOffset = uint32(funcName.data() - srcLoc.function_name());
+        packet.funcNameSize = uint32(funcName.size());
         packet.timeStamp = timeStamp;
         packet.severity = ESeverityID::SevID_Warning;
         // Push category
@@ -627,7 +653,7 @@ void Logger::warnInternal(const SourceLocationType srcLoc, const TChar *category
         CERR << SEVERITY_OUT_STR[ESeverityID::SevID_Warning];
         CERR << TCHAR("[") << category << TCHAR("]");
         CERR << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]");
-        CERR << srcLoc.function_name() << TCHAR("() : ");
+        CERR << funcName << TCHAR("() : ");
         CERR << message.getChar();
         CERR << std::endl;
 #endif // SHORT_MSG_IN_CONSOLE
@@ -658,6 +684,7 @@ void Logger::errorInternal(const SourceLocationType srcLoc, const TChar *categor
         timeStr = Time::toString(timeStamp, false);
     }
     const AChar *fileName = filterFileName(srcLoc.file_name());
+    std::string_view funcName = filterFuncName(srcLoc.function_name());
 
     if (canLog(ELogSeverity::Error, ELogOutputType::File))
     {
@@ -665,7 +692,9 @@ void Logger::errorInternal(const SourceLocationType srcLoc, const TChar *categor
 
         LogMsgPacket &packet = loggerImpl->getPacketPayload();
         packet.srcLoc = srcLoc;
-        packet.fileName = fileName;
+        packet.fileNameOffset = uint32(fileName - srcLoc.file_name());
+        packet.funcNameOffset = uint32(funcName.data() - srcLoc.function_name());
+        packet.funcNameSize = uint32(funcName.size());
         packet.timeStamp = timeStamp;
         packet.severity = ESeverityID::SevID_Error;
         // Push category
@@ -701,7 +730,7 @@ void Logger::errorInternal(const SourceLocationType srcLoc, const TChar *categor
         CERR << SEVERITY_OUT_STR[ESeverityID::SevID_Error];
         CERR << TCHAR("[") << category << TCHAR("]");
         CERR << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]");
-        CERR << srcLoc.function_name() << TCHAR("() : ");
+        CERR << funcName << TCHAR("() : ");
         CERR << message.getChar();
         CERR << std::endl;
 #endif // SHORT_MSG_IN_CONSOLE
