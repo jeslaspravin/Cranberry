@@ -58,7 +58,6 @@ struct DispatchWithReturn
     using FuncType = DispatchFunctionTypeWithRet<RetType>;
 
     // Just copying the callback so a copy exists inside dispatch
-    // Just copying the callback so a copy exists inside dispatch
     static AwaitableType dispatchOneTask(JobSystem &jobSys, EJobPriority jobPriority, FuncType callback, u32 jobIdx) noexcept
     {
         std::vector<RetType> retVal{ callback(jobIdx) };
@@ -85,14 +84,19 @@ struct DispatchWithReturn
             return {};
         }
 
-        // If there is no worker threads then we cannot dispatch so fail
+        /**
+         * If there is no worker threads then we cannot dispatch so fail.
+         * Asserting here as there is no direct way to return as AwaitableType immediately.
+         * TODO(Jeslas) : Find an work around if this becomes a problem.S
+         * Maybe I could have a coroutine to execute immediately and wait at final_suspend?
+         */
         COPAT_ASSERT(jobSys && jobSys->enqToThreadType(EJobThreadType::WorkerThreads) == EJobThreadType::WorkerThreads);
 
         std::vector<AwaitableType> dispatchedJobs;
 
-        u32 groupJobsCount = count / jobSys->getWorkersCount();
+        u32 jobsPerGrp = count / jobSys->getWorkersCount();
         // If dispatching count is less than max workers count
-        if (groupJobsCount == 0)
+        if (jobsPerGrp == 0)
         {
             dispatchedJobs.reserve(count);
             for (u32 i = 0; i < count; ++i)
@@ -108,14 +112,14 @@ struct DispatchWithReturn
             for (u32 i = 0; i < grpsWithMoreJobCount; ++i)
             {
                 // Add one more job for all grps with more jobs
-                dispatchedJobs.emplace_back(std::move(dispatchTaskGroup(*jobSys, jobPriority, callback, jobIdx, groupJobsCount + 1)));
-                jobIdx += groupJobsCount + 1;
+                dispatchedJobs.emplace_back(std::move(dispatchTaskGroup(*jobSys, jobPriority, callback, jobIdx, jobsPerGrp + 1)));
+                jobIdx += jobsPerGrp + 1;
             }
 
             for (u32 i = grpsWithMoreJobCount; i < jobSys->getWorkersCount(); ++i)
             {
-                dispatchedJobs.emplace_back(std::move(dispatchTaskGroup(*jobSys, jobPriority, callback, jobIdx, groupJobsCount)));
-                jobIdx += groupJobsCount;
+                dispatchedJobs.emplace_back(std::move(dispatchTaskGroup(*jobSys, jobPriority, callback, jobIdx, jobsPerGrp)));
+                jobIdx += jobsPerGrp;
             }
         }
         return awaitAllTasks(std::move(dispatchedJobs));
@@ -165,11 +169,27 @@ std::vector<RetType> parallelForReturn(
         return retVals;
     }
 
-    AwaitAllTasks<std::vector<AwaitableType>> allAwaits = diverge(jobSys, callback, count - 1, jobPriority);
-    RetType lastReturn = callback(count - 1);
-    retVals = converge(std::move(allAwaits));
-    retVals.emplace_back(std::move(lastReturn));
+    COPAT_ASSERT(jobSys);
 
+    // If dispatching count is less than max workers count then jobsPerGrp will be 1
+    // Else it will be jobsPerGrp or jobsPerGrp + 1 depending on count equiv-distributable among workers
+    u32 jobsPerGrp = count / jobSys->getWorkersCount();
+    jobsPerGrp += (count % jobSys->getWorkersCount()) > 0;
+
+    AwaitAllTasks<std::vector<AwaitableType>> allAwaits = diverge(jobSys, callback, count - jobsPerGrp, jobPriority);
+
+    std::vector<RetType> lastGrpRets;
+    lastGrpRets.reserve(jobsPerGrp);
+    for (u32 jobIdx = count - jobsPerGrp; jobIdx < count; ++jobIdx)
+    {
+        lastGrpRets.emplace_back(callback(jobIdx));
+    }
+
+    retVals = converge(std::move(allAwaits));
+    for (RetType &retVal : lastGrpRets)
+    {
+        retVals.emplace_back(std::move(retVal));
+    }
     return retVals;
 }
 

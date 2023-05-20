@@ -59,9 +59,9 @@ AwaitAllTasks<std::vector<DispatchAwaitableType>> dispatch(
 
     std::vector<DispatchAwaitableType> dispatchedJobs;
 
-    u32 groupJobsCount = count / jobSys->getWorkersCount();
+    u32 jobsPerGrp = count / jobSys->getWorkersCount();
     // If dispatching count is less than max workers count
-    if (groupJobsCount == 0)
+    if (jobsPerGrp == 0)
     {
         dispatchedJobs.reserve(count);
         for (u32 i = 0; i < count; ++i)
@@ -77,14 +77,14 @@ AwaitAllTasks<std::vector<DispatchAwaitableType>> dispatch(
         for (u32 i = 0; i < grpsWithMoreJobCount; ++i)
         {
             // Add one more job for all grps with more jobs
-            dispatchedJobs.emplace_back(std::move(dispatchTaskGroup(*jobSys, jobPriority, callback, jobIdx, groupJobsCount + 1)));
-            jobIdx += groupJobsCount + 1;
+            dispatchedJobs.emplace_back(std::move(dispatchTaskGroup(*jobSys, jobPriority, callback, jobIdx, jobsPerGrp + 1)));
+            jobIdx += jobsPerGrp + 1;
         }
 
         for (u32 i = grpsWithMoreJobCount; i < jobSys->getWorkersCount(); ++i)
         {
-            dispatchedJobs.emplace_back(std::move(dispatchTaskGroup(*jobSys, jobPriority, callback, jobIdx, groupJobsCount)));
-            jobIdx += groupJobsCount;
+            dispatchedJobs.emplace_back(std::move(dispatchTaskGroup(*jobSys, jobPriority, callback, jobIdx, jobsPerGrp)));
+            jobIdx += jobsPerGrp;
         }
     }
     return awaitAllTasks(std::move(dispatchedJobs));
@@ -99,8 +99,18 @@ void parallelFor(
         return;
     }
 
-    AwaitAllTasks<std::vector<DispatchAwaitableType>> allAwaits = dispatch(jobSys, callback, count - 1, jobPriority);
-    callback(count - 1);
+    COPAT_ASSERT(jobSys);
+
+    // If dispatching count is less than max workers count then jobsPerGrp will be 1
+    // Else it will be jobsPerGrp or jobsPerGrp + 1 depending on count equiv-distributable among workers
+    u32 jobsPerGrp = count / jobSys->getWorkersCount();
+    jobsPerGrp += (count % jobSys->getWorkersCount()) > 0;
+
+    AwaitAllTasks<std::vector<DispatchAwaitableType>> allAwaits = dispatch(jobSys, callback, count - jobsPerGrp, jobPriority);
+    for (u32 jobIdx = count - jobsPerGrp; jobIdx < count; ++jobIdx)
+    {
+        callback(jobIdx);
+    }
     waitOnAwaitable(std::move(allAwaits));
 }
 
