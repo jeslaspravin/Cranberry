@@ -271,6 +271,8 @@ void tempTest()
     {
         const TChar *meshObjPath = TCHAR("D:/Assets/Scenes/CrytekSponza/sponza.obj");
         const TChar *meshEnginePath = TCHAR("Scenes/sponza:sponza");
+        // const TChar *meshObjPath = TCHAR("D:/Assets/Scenes/LumberyardBistro/Exterior/LumberyardBistroExterior.obj");
+        // const TChar *meshEnginePath = TCHAR("Scenes/LumberyardBistroExterior:LumberyardBistroExterior");
         cbe::World *sceneObj = cbe::getOrLoad<cbe::World>(meshEnginePath);
         if (sceneObj == nullptr)
         {

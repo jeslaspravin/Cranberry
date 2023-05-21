@@ -144,7 +144,7 @@ void Quat::fromAngleAxisImpl(float angle, Vector3 axis)
 
     float sqrLen = axis.sqrlength();
     alertAlwaysf(sqrLen >= SMALL_EPSILON, "Invalid axis square length {}", sqrLen);
-    if (sqrLen >= SMALL_EPSILON && !Math::isEqual(1.0f, sqrLen, SMALL_EPSILON))
+    if (sqrLen >= SMALL_EPSILON && !Math::isEqual(1.0f, sqrLen, SMALL_EPSILON)) [[unlikely]]
     {
         axis = axis.normalized();
     }

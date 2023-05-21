@@ -51,8 +51,9 @@ constexpr inline const uint32 FACE_MAX_VERTS = 3;
 enum EImportErrorCodes
 {
     DegenerateTextureCoords,
-    DegenerateNormals,
+    DegenerateNormal,
     DegenerateTriangle,
+    InvalidFace,
     ErrorsCount
 };
 
@@ -63,11 +64,14 @@ void printErrors(uint32 errorCount, EImportErrorCodes errorCode)
     case ObjSMImporterHelpers::DegenerateTextureCoords:
         LOG_WARN("ObjStaticMeshImporter", "Incorrect texture coordinate, using world x, y as tangents[{}]", errorCount);
         break;
-    case ObjSMImporterHelpers::DegenerateNormals:
+    case ObjSMImporterHelpers::DegenerateNormal:
         LOG_WARN("ObjStaticMeshImporter", "Degenerate normals, Tangents might be invalid. Expect visual artifacts[{}]", errorCount);
         break;
     case ObjSMImporterHelpers::DegenerateTriangle:
         LOG_WARN("ObjStaticMeshImporter", "Degenerate triangles found and they are removed[{}]", errorCount);
+        break;
+    case ObjSMImporterHelpers::InvalidFace:
+        LOG_WARN("ObjStaticMeshImporter", "Invalid face/index data found and they are removed[{}]", errorCount);
         break;
     case ObjSMImporterHelpers::ErrorsCount:
     default:
@@ -219,7 +223,7 @@ void rotateVertices(tinyobj::attrib_t &attrib, const StaticMeshImportOptions &op
     {
         const uint64 normXIdx = normIdx * 3;
         Vector3 n{ attrib.normals[normXIdx + 0], attrib.normals[normXIdx + 1], attrib.normals[normXIdx + 2] };
-        n = ROTATION_Y2Z_UP.rotateVector(n).normalized();
+        n = ROTATION_Y2Z_UP.rotateVector(n).safeNormalized();
         attrib.normals[normXIdx + 0] = n.x();
         attrib.normals[normXIdx + 1] = n.y();
         attrib.normals[normXIdx + 2] = n.z();
@@ -228,17 +232,24 @@ void rotateVertices(tinyobj::attrib_t &attrib, const StaticMeshImportOptions &op
 
 void fillVertexInfo(StaticMeshVertex &vertexData, const tinyobj::attrib_t &attrib, const tinyobj::index_t &index)
 {
-    // Inverting Y since UV origin is at left bottom of image and Graphics API's UV origin is at left top
-    Vector2 uvCoord{ attrib.texcoords[index.texcoord_index * 2 + 0], (1.0f - attrib.texcoords[index.texcoord_index * 2 + 1]) };
-    uvCoord = Math::clamp(uvCoord, Vector2::ZERO, Vector2::ONE);
+    Vector2 uvCoord;
+    Vector3 normal;
+    if (index.texcoord_index != -1)
+    {
+        // Inverting Y since UV origin is at left bottom of image and Graphics API's UV origin is at left top
+        uvCoord = { attrib.texcoords[index.texcoord_index * 2 + 0], (1.0f - attrib.texcoords[index.texcoord_index * 2 + 1]) };
+    }
+    if (index.normal_index != -1)
+    {
+        normal = { attrib.normals[index.normal_index * 3], attrib.normals[index.normal_index * 3 + 1],
+                   attrib.normals[index.normal_index * 3 + 2] };
+    }
 
+    uvCoord = Math::clamp(uvCoord, Vector2::ZERO, Vector2::ONE);
     vertexData.position = Vector4(
         attrib.vertices[index.vertex_index * 3], attrib.vertices[index.vertex_index * 3 + 1], attrib.vertices[index.vertex_index * 3 + 2],
         uvCoord.x()
     );
-    Vector3 normal{ attrib.normals[index.normal_index * 3], attrib.normals[index.normal_index * 3 + 1],
-                    attrib.normals[index.normal_index * 3 + 2] };
-
     vertexData.normal = Vector4(normal.safeNormalized(), uvCoord.y());
     // vertexData.vertexColor = Vector4(attrib.colors[index.vertex_index * 3], attrib.colors[index.vertex_index * 3 + 1],
     // attrib.colors[index.vertex_index * 2 + 2], 1.0f);
@@ -271,7 +282,7 @@ void addNormal(StaticMeshVertex &vertex, Vector3 &normal)
 void normalize(Vector4 &normal)
 {
     Vector3 newNormal(normal);
-    newNormal = newNormal.normalized();
+    newNormal = newNormal.safeNormalized();
     normal.x() = newNormal.x();
     normal.y() = newNormal.y();
     normal.z() = newNormal.z();
@@ -341,6 +352,8 @@ void load(
     // Vertices pushed to meshImportData along with indices
     {
         std::unordered_map<tinyobj::index_t, uint32> &indexToNewVert = outImportData.indexToNewVert;
+        // To keep track of final face count and removed faces from imported data
+        uint32 newFaceIdx = 0;
         for (uint32 faceIdx = 0; faceIdx < faceCount; ++faceIdx)
         {
             debugAssert(FACE_MAX_VERTS == 3 && FACE_MAX_VERTS == mesh.mesh.num_face_vertices[faceIdx]);
@@ -348,10 +361,15 @@ void load(
             const std::array<tinyobj::index_t, FACE_MAX_VERTS> idxs
                 = { mesh.mesh.indices[faceIdx * FACE_MAX_VERTS + 0], mesh.mesh.indices[faceIdx * FACE_MAX_VERTS + 1],
                     mesh.mesh.indices[faceIdx * FACE_MAX_VERTS + 2] };
+            if (idxs[0].vertex_index == -1 || idxs[1].vertex_index == -1 || idxs[2].vertex_index == -1)
+            {
+                outImportData.errorsCounter[EImportErrorCodes::InvalidFace]++;
+                continue;
+            }
 
             std::array<uint32, FACE_MAX_VERTS> newVertIdxs;
 
-            faceMaterialId[faceIdx] = mesh.mesh.material_ids[faceIdx];
+            faceMaterialId[newFaceIdx] = mesh.mesh.material_ids[faceIdx];
             uniqueMatIds.insert(mesh.mesh.material_ids[faceIdx]);
 
             // Filling vertex data to mesh struct
@@ -404,10 +422,10 @@ void load(
                 {
                     meshImportData.bound.grow(Vector3(outImportData.vertices[newVertIdxs[i]].position));
                     // Invalid normal, use faceNormal. It will not be invalid as degenerate case is handled already
-                    if (outImportData.vertices[newVertIdxs[i]].normal.sqrlength() < SLIGHTLY_SMALL_EPSILON)
+                    if (outImportData.vertices[newVertIdxs[i]].normal.sqrlength3() < SLIGHTLY_SMALL_EPSILON)
                     {
                         outImportData.vertices[newVertIdxs[i]].normal = Vector4(faceNormal, outImportData.vertices[newVertIdxs[i]].normal.w());
-                        outImportData.errorsCounter[EImportErrorCodes::DegenerateNormals]++;
+                        outImportData.errorsCounter[EImportErrorCodes::DegenerateNormal]++;
                     }
                 }
             }
@@ -426,9 +444,11 @@ void load(
             // makeCCW(newVertIdx0, newVertIdx1, newVertIdx2, meshLoaderData.vertices);
             for (uint32 i = 0; i != FACE_MAX_VERTS; ++i)
             {
-                meshImportData.indices[faceIdx * FACE_MAX_VERTS + i] = newVertIdxs[i];
+                meshImportData.indices[newFaceIdx * FACE_MAX_VERTS + i] = newVertIdxs[i];
             }
+            ++newFaceIdx;
         }
+        faceCount = newFaceIdx;
     }
 
     splitMeshBatches(meshImportData, faceMaterialId, materials, uint32(uniqueMatIds.size()), faceCount);
@@ -455,6 +475,8 @@ void smoothAndLoad(
         std::vector<Vector3> faceNormals(faceCount);
         std::vector<uint32> faceSmoothingId(faceCount);
 
+        // To keep track of final face count and removed faces from imported data
+        uint32 newFaceIdx = 0;
         for (uint32 faceIdx = 0; faceIdx < faceCount; ++faceIdx)
         {
             debugAssert(FACE_MAX_VERTS == 3 && FACE_MAX_VERTS == mesh.mesh.num_face_vertices[faceIdx]);
@@ -462,11 +484,16 @@ void smoothAndLoad(
             const std::array<tinyobj::index_t, FACE_MAX_VERTS> idxs
                 = { mesh.mesh.indices[faceIdx * FACE_MAX_VERTS + 0], mesh.mesh.indices[faceIdx * FACE_MAX_VERTS + 1],
                     mesh.mesh.indices[faceIdx * FACE_MAX_VERTS + 2] };
+            if (idxs[0].vertex_index == -1 || idxs[1].vertex_index == -1 || idxs[2].vertex_index == -1)
+            {
+                outImportData.errorsCounter[EImportErrorCodes::InvalidFace]++;
+                continue;
+            }
 
             std::array<uint32, FACE_MAX_VERTS> newVertIdxs;
 
-            faceSmoothingId[faceIdx] = mesh.mesh.smoothing_group_ids[faceIdx];
-            faceMaterialId[faceIdx] = mesh.mesh.material_ids[faceIdx];
+            faceSmoothingId[newFaceIdx] = mesh.mesh.smoothing_group_ids[faceIdx];
+            faceMaterialId[newFaceIdx] = mesh.mesh.material_ids[faceIdx];
             uniqueMatIds.insert(mesh.mesh.material_ids[faceIdx]);
 
             // Filling vertex data to mesh struct
@@ -519,10 +546,10 @@ void smoothAndLoad(
                 {
                     meshImportData.bound.grow(Vector3(outImportData.vertices[newVertIdxs[i]].position));
                     // Invalid normal, use faceNormal. It will not be invalid as degenerate case is handled already
-                    if (outImportData.vertices[newVertIdxs[i]].normal.sqrlength() < SLIGHTLY_SMALL_EPSILON)
+                    if (outImportData.vertices[newVertIdxs[i]].normal.sqrlength3() < SLIGHTLY_SMALL_EPSILON)
                     {
                         outImportData.vertices[newVertIdxs[i]].normal = Vector4(faceNormal, outImportData.vertices[newVertIdxs[i]].normal.w());
-                        outImportData.errorsCounter[EImportErrorCodes::DegenerateNormals]++;
+                        outImportData.errorsCounter[EImportErrorCodes::DegenerateNormal]++;
                     }
                 }
             }
@@ -541,11 +568,11 @@ void smoothAndLoad(
             // makeCCW(newVertIdx0, newVertIdx1, newVertIdx2, meshLoaderData.vertices);
             for (uint32 i = 0; i != FACE_MAX_VERTS; ++i)
             {
-                meshImportData.indices[faceIdx * FACE_MAX_VERTS + i] = newVertIdxs[i];
+                meshImportData.indices[newFaceIdx * FACE_MAX_VERTS + i] = newVertIdxs[i];
             }
 
             // Prepare smoothing data
-            faceNormals[faceIdx] = faceNormal;
+            faceNormals[newFaceIdx] = faceNormal;
             // Fill vertex pair's(Edge's) faces adjacency
             for (uint32 i = 0; i != FACE_MAX_VERTS; ++i)
             {
@@ -566,10 +593,11 @@ void smoothAndLoad(
                         // Swap again to keep consistency (i, j)
                         std::swap(vertIdx0, vertIdx1);
                     }
-                    vertexFaceAdjacency[vertIdx0][vertIdx1].emplace_back(faceIdx);
+                    vertexFaceAdjacency[vertIdx0][vertIdx1].emplace_back(newFaceIdx);
                 }
             }
         }
+        faceCount = newFaceIdx;
 
         uint32 originalVertCount = uint32(outImportData.vertices.size());
         for (uint32 vertIdx = 0; vertIdx < originalVertCount; ++vertIdx)

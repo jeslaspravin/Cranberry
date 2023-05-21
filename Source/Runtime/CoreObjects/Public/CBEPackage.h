@@ -17,7 +17,7 @@
 
 namespace cbe
 {
-constexpr inline const TChar *PACKAGE_EXT = TCHAR("berry");
+constexpr inline const TChar *PACKAGE_EXT = TCHAR("bry");
 
 class COREOBJECTS_EXPORT Package final : public Object
 {

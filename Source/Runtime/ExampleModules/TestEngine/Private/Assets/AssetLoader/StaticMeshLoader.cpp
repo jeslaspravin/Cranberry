@@ -165,21 +165,27 @@ void calcTangent(MeshLoaderData &loaderData, StaticMeshVertex &vertexData, const
 
 void fillVertexInfo(StaticMeshVertex &vertexData, const tinyobj::attrib_t &attrib, const tinyobj::index_t &index)
 {
-    // Inverting Y since UV origin is at left bottom of image and Graphics API's UV origin is at left top
-    Vector2 uvCoord{ attrib.texcoords[index.texcoord_index * 2 + 0], (1.0f - attrib.texcoords[index.texcoord_index * 2 + 1]) };
-    uvCoord = Math::clamp(uvCoord, Vector2::ZERO, Vector2::ONE);
+    Vector2 uvCoord;
+    Vector3 normal;
+    if (index.texcoord_index != -1)
+    {
+        // Inverting Y since UV origin is at left bottom of image and Graphics API's UV origin is at left top
+        uvCoord = { attrib.texcoords[index.texcoord_index * 2 + 0], (1.0f - attrib.texcoords[index.texcoord_index * 2 + 1]) };
+    }
+    if (index.normal_index != -1)
+    {
+        normal = { attrib.normals[index.normal_index * 3], attrib.normals[index.normal_index * 3 + 1],
+                   attrib.normals[index.normal_index * 3 + 2] };
+    }
 
+    uvCoord = Math::clamp(uvCoord, Vector2::ZERO, Vector2::ONE);
     vertexData.position = Vector4(
         attrib.vertices[index.vertex_index * 3], attrib.vertices[index.vertex_index * 3 + 1], attrib.vertices[index.vertex_index * 3 + 2],
         uvCoord.x()
     );
-    Vector3 normal{ attrib.normals[index.normal_index * 3], attrib.normals[index.normal_index * 3 + 1],
-                    attrib.normals[index.normal_index * 3 + 2] };
-
-    vertexData.normal = Vector4(normal.normalized(), uvCoord.y());
-    // vertexData.vertexColor = Vector4(attrib.colors[index.vertex_index * 3],
-    // attrib.colors[index.vertex_index * 3 + 1]
-    //     , attrib.colors[index.vertex_index * 3 + 2], 1.0f);
+    vertexData.normal = Vector4(normal.safeNormalized(), uvCoord.y());
+    // vertexData.vertexColor = Vector4(attrib.colors[index.vertex_index * 3], attrib.colors[index.vertex_index * 3 + 1],
+    // attrib.colors[index.vertex_index * 2 + 2], 1.0f);
 }
 
 Vector3 StaticMeshLoader::getFaceNormal(uint32 index0, uint32 index1, uint32 index2, const std::vector<StaticMeshVertex> &verticesData) const
@@ -204,7 +210,7 @@ void StaticMeshLoader::addNormal(StaticMeshVertex &vertex, Vector3 &normal) cons
 void StaticMeshLoader::normalize(Vector4 &normal) const
 {
     Vector3 newNormal(normal);
-    newNormal = newNormal.normalized();
+    newNormal = newNormal.safeNormalized();
     normal.x() = newNormal.x();
     normal.y() = newNormal.y();
     normal.z() = newNormal.z();

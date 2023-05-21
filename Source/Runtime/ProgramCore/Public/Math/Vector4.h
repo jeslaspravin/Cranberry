@@ -84,6 +84,8 @@ public:
     Vector4 safeNormalized(float threshold = SMALL_EPSILON) const;
     float length() const;
     float sqrlength() const;
+    float length3() const;
+    float sqrlength3() const;
 
     Vector4 projectTo(const Vector4 &b) const;
     Vector4 rejectFrom(const Vector4 &b) const;
@@ -212,6 +214,8 @@ inline Vector4 Vector4::normalized() const { return Vector4(glm::normalize(value
 
 inline float Vector4::length() const { return glm::length(value); }
 inline float Vector4::sqrlength() const { return value.x * value.x + value.y * value.y + value.z * value.z + value.w * value.w; }
+inline float Vector4::length3() const { return glm::sqrt(sqrlength3()); }
+inline float Vector4::sqrlength3() const { return value.x * value.x + value.y * value.y + value.z * value.z; }
 
 inline Vector4 Vector4::projectTo(const Vector4 &b) const { return Vector4(b * (*this | b) / (b | b)); }
 inline Vector4 Vector4::rejectFrom(const Vector4 &b) const { return *this - projectTo(b); }
