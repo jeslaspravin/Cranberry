@@ -148,7 +148,7 @@ template <typename Type>
 void *CBEObjectConstructionPolicy::allocate()
 {
     ObjectAllocIdx allocIdx;
-    Type *ptr = (Type *)cbe::getObjAllocator<Type>().allocate(allocIdx);
+    Type *ptr = (Type *)cbe::INTERNAL_getOrCreateObjAllocator<Type>().allocate(allocIdx);
     CBEMemory::memZero(ptr, sizeof(Type));
 
     cbe::Object *objPtr = static_cast<cbe::Object *>(ptr);
@@ -160,7 +160,8 @@ template <typename Type>
 void CBEObjectConstructionPolicy::deallocate(void *ptr)
 {
     cbe::Object *objPtr = static_cast<cbe::Object *>(ptr);
-    cbe::getObjAllocator<Type>().free(ptr, ObjectAllocIdx(objPtr->dbIdx));
+    // dbIdx will be set with allocIdx at cbe::INTERNAL_destroyCBEObject()
+    cbe::INTERNAL_getOrCreateObjAllocator<Type>().free(ptr, ObjectAllocIdx(objPtr->dbIdx));
 }
 
 template <typename Type, typename... CtorArgs>

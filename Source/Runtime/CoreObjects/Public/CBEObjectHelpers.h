@@ -287,11 +287,9 @@ COREOBJECTS_EXPORT bool save(Object *obj);
 template <typename ClassType>
 ClassType *getDefaultObject()
 {
-    ObjectAllocator<ClassType> &objAllocator = getObjAllocator<ClassType>();
-    return reinterpret_cast<ClassType *>(objAllocator.getDefault());
+    return static_cast<ClassType *>(getOrCreateObjAllocator<ClassType>().getDefault());
 }
-
-COREOBJECTS_EXPORT Object *getDefaultObject(CBEClass clazz);
+FORCE_INLINE Object *getDefaultObject(CBEClass clazz) { return static_cast<Object *>(getOrCreateObjAllocator(clazz).getDefault()); }
 
 //////////////////////////////////////////////////////////////////////////
 // Object modification helpers

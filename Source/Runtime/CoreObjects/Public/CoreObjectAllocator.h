@@ -42,7 +42,7 @@ protected:
 
 public:
     virtual ~ObjectAllocatorBase() = default;
-    virtual void *getDefault() = 0;
+    virtual void *getDefault() const = 0;
     virtual void *allocate(AllocIdx &outAllocIdx) = 0;
     virtual void free(void *ptr, AllocIdx allocIdx) = 0;
     virtual void free(void *ptr) = 0;
@@ -193,7 +193,7 @@ protected:
     }
 
 public:
-    void *getDefault() override { return getAllocAt(defaultAllocIdx); }
+    void *getDefault() const override { return getAllocAt(defaultAllocIdx); }
     void *allocate(AllocIdx &outAllocIdx) override
     {
         SizeT allocateFrom = lastAllocatedCacheValid() ? lastAllocPoolCache : findAllocator();
@@ -305,6 +305,10 @@ FORCE_INLINE SizeT ObjectAllocator<ClassType>::findAllocator()
 
 COREOBJECTS_EXPORT void initializeObjectAllocators();
 
+/**
+ * Below functions will be called only from reflected translation unit.
+ * This is to keep the static allocator instance unique across all the translation units and across the application
+ */
 template <typename ClassType>
 ObjectAllocator<ClassType> &INTERNAL_createObjAllocator()
 {
@@ -316,13 +320,24 @@ ObjectAllocator<ClassType> &INTERNAL_createObjAllocator()
     (*gCBEObjectAllocators)[ClassType::staticType()] = &objAllocator;
     return objAllocator;
 }
-
 template <typename ClassType>
-ObjectAllocator<ClassType> &getObjAllocator()
+ObjectAllocator<ClassType> &INTERNAL_getOrCreateObjAllocator()
 {
     static ObjectAllocator<ClassType> &objAllocator = INTERNAL_createObjAllocator<ClassType>();
     return objAllocator;
 }
 
-COREOBJECTS_EXPORT ObjectAllocatorBase *getObjAllocator(CBEClass classType);
+// Always returns a valid ObjectAllocatorBase
+COREOBJECTS_EXPORT ObjectAllocatorBase &getOrCreateObjAllocator(CBEClass clazz);
+// Always returns a valid ObjectAllocatorBase and caches the result
+template <typename ClassType>
+ObjectAllocator<ClassType> &getOrCreateObjAllocator()
+{
+    static ObjectAllocator<ClassType> &objAllocator
+        = static_cast<ObjectAllocator<ClassType> &>(getOrCreateObjAllocator(ClassType::staticType()));
+    return objAllocator;
+}
+
+// Returns valid allocator if it exists else returns nullptr
+COREOBJECTS_EXPORT ObjectAllocatorBase *getObjAllocator(CBEClass clazz);
 } // namespace cbe

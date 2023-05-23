@@ -44,6 +44,20 @@ void ObjectAllocatorBase::constructDefault(void *objPtr, AllocIdx allocIdx, CBEC
         object = ctor->invokeUnsafe<Object *, void *>(objPtr);
     }
 }
+ObjectAllocatorBase &getOrCreateObjAllocator(CBEClass clazz)
+{
+    ObjectAllocatorBase *objAllocator = getObjAllocator(clazz);
+    if (objAllocator)
+    {
+        return *objAllocator;
+    }
+    // If clazz if not abstract we could try and create first instance to trigger object allocator creation
+    debugAssertf(clazz->allocFunc && clazz->destructor, "Object allocator cannot be created on Abstract class {}", clazz->nameString);
+    Object *obj = create(clazz, TCHAR("DummyForObjectAllocator"), nullptr, EObjectFlagBits::ObjFlag_Transient);
+    debugAssert(obj);
+    INTERNAL_destroyCBEObject(obj);
+    return *getObjAllocator(clazz);
+}
 
 void INTERNAL_destroyCBEObject(Object *obj)
 {
@@ -87,24 +101,6 @@ String INTERNAL_getValidObjectName(StringView name, CBEClass clazz)
     {
         return PropertyHelper::getValidSymbolName(name);
     }
-}
-
-Object *getDefaultObject(CBEClass clazz)
-{
-    ObjectAllocatorBase *objAllocator = getObjAllocator(clazz);
-    if (objAllocator)
-    {
-        return reinterpret_cast<Object *>(objAllocator->getDefault());
-    }
-    // If clazz if not abstract we could try and create first instance to trigger object allocator creation
-    if (clazz->allocFunc && clazz->destructor)
-    {
-        Object *obj = create(clazz, TCHAR("DummyForDefault"), nullptr, EObjectFlagBits::ObjFlag_Transient);
-        debugAssert(obj);
-        INTERNAL_destroyCBEObject(obj);
-        return getDefaultObject(clazz);
-    }
-    return nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////

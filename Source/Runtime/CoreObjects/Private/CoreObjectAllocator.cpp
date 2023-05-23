@@ -30,13 +30,14 @@ void initializeObjectAllocators()
     }
 }
 
-ObjectAllocatorBase *getObjAllocator(CBEClass classType)
+ObjectAllocatorBase *getObjAllocator(CBEClass clazz)
 {
     if (!gCBEObjectAllocators)
     {
         initializeObjectAllocators();
     }
-    auto itr = gCBEObjectAllocators->find(classType);
+    auto itr = gCBEObjectAllocators->find(clazz);
     return itr != gCBEObjectAllocators->end() ? itr->second : nullptr;
 }
+
 } // namespace cbe
