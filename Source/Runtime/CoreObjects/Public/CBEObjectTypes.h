@@ -78,6 +78,7 @@ enum EObjectFlagBits : EObjectFlags
 
 enum class EObjectTraversalMode
 {
+    // This option can also be used for shallow copy per object
     OnlyObject,
     // If we want to traverse all the sub objects of Object, but not grand children and after
     ObjectAndChildren,

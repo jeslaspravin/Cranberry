@@ -363,6 +363,7 @@ bool copyObject(CopyObjectOptions options)
         );
         return false;
     }
+    CBE_PROFILER_SCOPE("CopyObjects");
 
     const CoreObjectsDB &objDb = CoreObjectsModule::objectsDB();
     std::vector<Object *> subObjects;
@@ -370,12 +371,14 @@ bool copyObject(CopyObjectOptions options)
     {
     case EObjectTraversalMode::EntireObjectTree:
     {
+        CBE_PROFILER_SCOPE("GatherObjsToCopy");
         // We need to copy the entire object graph under this objects
         objDb.getSubobjects(subObjects, options.fromObject->getDbIdx());
         break;
     }
     case EObjectTraversalMode::ObjectAndChildren:
     {
+        CBE_PROFILER_SCOPE("GatherObjsToCopy");
         // We need to copy the object and its children only
         objDb.getChildren(subObjects, options.fromObject->getDbIdx());
         break;
@@ -392,6 +395,8 @@ bool copyObject(CopyObjectOptions options)
     // Create all sub-objects to be duplicated with appropriate path and name
     for (Object *subObj : subObjects)
     {
+        CBE_PROFILER_SCOPE("CreateSubObject");
+
         // From this subobject at 0 to outer after fromObject at (size - 1)
         std::vector<StringView> objectNamesChain{ subObj->getObjectData().name };
         Object *subObjOuter = subObj->getOuter();
@@ -433,6 +438,8 @@ bool copyObject(CopyObjectOptions options)
 
     for (const std::pair<Object *, Object *> fromToPair : duplicatedObjects)
     {
+        CBE_PROFILER_SCOPE("CopyAnObject");
+
         DeepCopyUserData userData{ .objDb = &objDb,
                                    .fromCommonRoot = options.fromObject,
                                    .toCommonRoot = options.toObject,
@@ -444,11 +451,15 @@ bool copyObject(CopyObjectOptions options)
         FieldVisitor::visitFields<StartDeepCopyFieldVisitable>(fromToPair.first->getType(), fromToPair.first, &userData);
         if (options.bConstructSubObjects && options.toObject != fromToPair.second)
         {
+            CBE_PROFILER_SCOPE("ConstructCopiedSubobject");
+
             fromToPair.second->constructed();
         }
     }
     if (options.bConstructToObject)
     {
+        CBE_PROFILER_SCOPE("ConstructCopiedObject");
+
         options.toObject->constructed();
     }
     return true;
@@ -493,9 +504,8 @@ Object *duplicateCBEObject(
     CLEAR_BITS(flags, clearFlags);
     SET_BITS(flags, additionalFlags);
     Object *duplicateObj = INTERNAL_create(fromObjDatV.clazz, newName, newOuter, flags);
-    if (deepCopy(fromObject, duplicateObj, additionalFlags, clearFlags, false))
+    if (deepCopy(fromObject, duplicateObj, additionalFlags, clearFlags, true))
     {
-        duplicateObj->constructed();
         return duplicateObj;
     }
     duplicateObj->beginDestroy();
@@ -619,17 +629,21 @@ void replaceObjectReferences(
     EObjectTraversalMode replaceMode /*= EObjectTraversalMode::EntireObjectTree */
 )
 {
+    CBE_PROFILER_SCOPE("ReplaceObjectRefs");
+
     const CoreObjectsDB &objDb = CoreObjectsModule::objectsDB();
     std::vector<Object *> subObjects;
     switch (replaceMode)
     {
     case EObjectTraversalMode::EntireObjectTree:
     {
+        CBE_PROFILER_SCOPE("GatherObjsToCopy");
         objDb.getSubobjects(subObjects, object->getDbIdx());
         break;
     }
     case EObjectTraversalMode::ObjectAndChildren:
     {
+        CBE_PROFILER_SCOPE("GatherObjsToCopy");
         objDb.getChildren(subObjects, object->getDbIdx());
         break;
     }
@@ -643,6 +657,44 @@ void replaceObjectReferences(
     for (Object *subObj : subObjects)
     {
         FieldVisitor::visitFields<ReplaceObjRefsVisitable>(subObj->getType(), subObj, &userData);
+    }
+}
+
+void replaceTreeObjRefs(Object *fromTreeRoot, Object *toTreeRoot, bool bReplaceInRoot)
+{
+    CBE_PROFILER_SCOPE("ReplaceTreeObjRefs");
+
+    const CoreObjectsDB &objDb = CoreObjectsModule::objectsDB();
+
+    std::unordered_map<Object *, Object *> replacements = {
+        {fromTreeRoot, toTreeRoot}
+    };
+    std::vector<Object *> objectsToReplace;
+    if (bReplaceInRoot)
+    {
+        objectsToReplace.emplace_back(toTreeRoot);
+    }
+    {
+        CBE_PROFILER_SCOPE("PrepObjTreeRefs");
+
+        std::vector<Object *> fromSubObjs;
+        objDb.getSubobjects(fromSubObjs, fromTreeRoot->getDbIdx());
+
+        objectsToReplace.reserve(fromSubObjs.size());
+        for (Object *fromObj : fromSubObjs)
+        {
+            String fullPath = ObjectPathHelper::getFullPath(ObjectPathHelper::computeObjectPath(fromObj, fromTreeRoot), toTreeRoot);
+            Object *toObj = get(fullPath);
+            debugAssert(toObj);
+            replacements[fromObj] = toObj;
+            objectsToReplace.emplace_back(toObj);
+        }
+    }
+
+    // Could be parallelized
+    for (Object *thisObj : objectsToReplace)
+    {
+        cbe::replaceObjectReferences(thisObj, replacements, EObjectTraversalMode::OnlyObject);
     }
 }
 

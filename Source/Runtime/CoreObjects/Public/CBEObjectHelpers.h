@@ -331,7 +331,7 @@ AsType *duplicateObject(T *fromObject, Object *newOuter, StringView newName = {}
 }
 
 /**
- * cbe::replaceObjectReferences - Replaces
+ * cbe::replaceObjectReferences - Replaces all the references with corresponding replacement.
  *
  * @param Object * object
  * @param const std::unordered_map<Object *, Object * > &replacements
@@ -341,6 +341,17 @@ COREOBJECTS_EXPORT void replaceObjectReferences(
     Object *object, const std::unordered_map<Object *, Object *> &replacements,
     EObjectTraversalMode replaceMode = EObjectTraversalMode::EntireObjectTree
 );
+/**
+ * cbe::replaceTreeObjRefs - Replaces all object references fromTree with object of similar path in toTree.
+ * Assumes that the corresponding object is already created and setup.
+ *
+ * Access: public
+ *
+ * @param Object * fromTreeRoot
+ * @param Object * toTreeRoot
+ *
+ */
+COREOBJECTS_EXPORT void replaceTreeObjRefs(Object *fromTreeRoot, Object *toTreeRoot, bool bReplaceInRoot);
 
 struct ObjectReferences
 {

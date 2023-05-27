@@ -357,34 +357,7 @@ bool World::copyFrom(World *otherWorld)
      * Replacements are necessary in case there is actor/component references across tree, Then ActorPrefab.copyFrom is alone not enough
      * Example ObjectTemplate.copyFrom if it stores object from another sibling ObjectTemplate then it never gets replaced. It gets handled here
      */
-    std::unordered_map<Object *, Object *> replacements = {
-        {otherWorld, this}
-    };
-    std::vector<Object *> objectsToReplace;
-    {
-        CBE_PROFILER_SCOPE("PrepWorldObjTreeRefs");
-
-        std::vector<Object *> otherSubObjs;
-        objectsDb.getSubobjects(otherSubObjs, otherWorld->getDbIdx());
-
-        objectsToReplace.reserve(otherSubObjs.size());
-        for (Object *otherObj : otherSubObjs)
-        {
-            String fullPath = ObjectPathHelper::getFullPath(ObjectPathHelper::computeObjectPath(otherObj, otherWorld), this);
-            Object *thisObj = get(fullPath);
-            debugAssert(thisObj);
-            replacements[otherObj] = thisObj;
-            objectsToReplace.emplace_back(thisObj);
-        }
-    }
-    // This world is not included in objectsToReplace
-    // Could be parallelized
-    for (Object *thisObj : objectsToReplace)
-    {
-        CBE_PROFILER_SCOPE("FixObjRefs");
-
-        cbe::replaceObjectReferences(thisObj, replacements, EObjectTraversalMode::OnlyObject);
-    }
+    replaceTreeObjRefs(otherWorld, this, false);
 
     markDirty(this);
     return bAllCopied;

@@ -97,7 +97,7 @@ ActorPrefab::ActorPrefab(ActorPrefab *inPrefab, String name)
     // TODO(Jeslas) : Should I really do this in world? I can avoid doing this if I recreate entire actor and its component at runtime.
     // Right now this piece of code is important and most other world logics are done in this assumption
     // This is mainly to use actor prefab directly in world/level without constructing a new actor from prefab. Makes it easier in editor
-    bool bIsInWorld = cast<World>(getOuter());
+    bool bIsInWorld = getWorld();
     if (bIsInWorld)
     {
         // Do not have to replace actor inner components as they will already be replaced in deep copy
@@ -109,6 +109,7 @@ ActorPrefab::ActorPrefab(ActorPrefab *inPrefab, String name)
             debugAssert(overrideInfo.overriddenTemplate);
             objectReplacements[templateToOverride->getTemplate()] = overrideInfo.overriddenTemplate->getTemplate();
         }
+        // It is okay to do reference replacement here, This corrects references when world is not prepared
         replaceObjectReferences(this, objectReplacements, EObjectTraversalMode::EntireObjectTree);
     }
     markDirty(this);
@@ -366,6 +367,14 @@ bool ActorPrefab::copyFrom(ActorPrefab *otherPrefab)
 
         setComponentAttachedTo(attachingComp, attachedToComp);
     }
+
+    // If this is not part of a world, Then we need to take care of subobject cross references during copy
+    const bool bIsInWorld = getWorld();
+    if (!bIsInWorld)
+    {
+        replaceTreeObjRefs(otherPrefab, this, false);
+    }
+
     markDirty(this);
     return true;
 }
@@ -578,6 +587,8 @@ void ActorPrefab::removeComponent(Object *component)
     compTemplate->beginDestroy();
     component->beginDestroy();
 }
+
+World *ActorPrefab::getWorld() const { return cast<World>(getOuter()); }
 
 TransformComponent *ActorPrefab::getRootComponent() const
 {

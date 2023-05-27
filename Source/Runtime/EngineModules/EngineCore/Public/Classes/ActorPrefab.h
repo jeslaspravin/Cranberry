@@ -22,6 +22,7 @@ class ObjectTemplate;
 class TransformComponent;
 class TransformLeafComponent;
 class Actor;
+class World;
 
 class ENGINECORE_EXPORT ActorPrefab : public Object
 {
@@ -117,6 +118,7 @@ public:
     const std::vector<ObjectTemplate *> &getPrefabComponents() const { return components; }
     const std::vector<ComponentOverrideInfo> &getOverridenComponents() const { return componentOverrides; }
     Actor *getActorTemplate() const;
+    World *getWorld() const;
     // Use below getRootComponent if you want to find the root component from prefab that might not be a part of Prepared to play world
     TransformComponent *getRootComponent() const;
     /**
