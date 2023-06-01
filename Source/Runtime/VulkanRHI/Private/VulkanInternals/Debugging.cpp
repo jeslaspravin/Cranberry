@@ -53,7 +53,7 @@ VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackDebug(
     LOG_DEBUG(
         "VulkanDebugUtils", "{}[ID : {}][Name : {}] Message : {}", messageTypeStr(messageTypes), pCallbackData->messageIdNumber,
         pCallbackData->pMessageIdName == nullptr ? "NullMsgID" : pCallbackData->pMessageIdName,
-        pCallbackData->pMessageIdName == nullptr ? "NullMsg" : pCallbackData->pMessageIdName
+        pCallbackData->pMessage == nullptr ? "NullMsg" : pCallbackData->pMessage
     );
 
     if (pCallbackData->queueLabelCount > 0 && pCallbackData->pQueueLabels[0].pLabelName != nullptr)
@@ -102,7 +102,7 @@ VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackInfo(
 {
     LOG("VulkanDebugUtils", "{}[ID : {}][Name : {}] Message : {}", messageTypeStr(messageTypes), pCallbackData->messageIdNumber,
         pCallbackData->pMessageIdName == nullptr ? "NullMsgID" : pCallbackData->pMessageIdName,
-        pCallbackData->pMessageIdName == nullptr ? "NullMsg" : pCallbackData->pMessageIdName);
+        pCallbackData->pMessage == nullptr ? "NullMsg" : pCallbackData->pMessage);
 
     if (pCallbackData->queueLabelCount > 0 && pCallbackData->pQueueLabels[0].pLabelName != nullptr)
     {
@@ -145,7 +145,7 @@ VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackWarn(
     LOG_WARN(
         "VulkanDebugUtils", "{}[ID : {}][Name : {}] Message : {}", messageTypeStr(messageTypes), pCallbackData->messageIdNumber,
         pCallbackData->pMessageIdName == nullptr ? "NullMsgID" : pCallbackData->pMessageIdName,
-        pCallbackData->pMessageIdName == nullptr ? "NullMsg" : pCallbackData->pMessageIdName
+        pCallbackData->pMessage == nullptr ? "NullMsg" : pCallbackData->pMessage
     );
 
     if (pCallbackData->queueLabelCount > 0 && pCallbackData->pQueueLabels[0].pLabelName != nullptr)
@@ -195,7 +195,7 @@ VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackError(
     LOG_ERROR(
         "VulkanDebugUtils", "{}[ID : {}][Name : {}] Message : {}", messageTypeStr(messageTypes), pCallbackData->messageIdNumber,
         (pCallbackData->pMessageIdName == nullptr ? "NullMsgID" : pCallbackData->pMessageIdName),
-        (pCallbackData->pMessageIdName == nullptr ? "NullMsg" : pCallbackData->pMessageIdName)
+        (pCallbackData->pMessage == nullptr ? "NullMsg" : pCallbackData->pMessage)
     );
 
     if (pCallbackData->queueLabelCount > 0 && pCallbackData->pQueueLabels[0].pLabelName != nullptr)
