@@ -182,7 +182,7 @@ public:
         constexpr std::suspend_never initial_suspend() const noexcept { return {}; }
         constexpr std::suspend_never final_suspend() const noexcept { return {}; }
         constexpr void return_void() const noexcept {}
-        constexpr void unhandled_exception() const noexcept {}
+        constexpr void unhandled_exception() const noexcept { COPAT_UNHANDLED_EXCEPT(); }
     };
 };
 
@@ -224,7 +224,7 @@ public:
         constexpr std::suspend_never initial_suspend() const noexcept { return {}; }
         constexpr std::suspend_never final_suspend() const noexcept { return {}; }
         constexpr void return_void() const noexcept {}
-        constexpr void unhandled_exception() const noexcept {}
+        constexpr void unhandled_exception() const noexcept { COPAT_UNHANDLED_EXCEPT(); }
     };
 
     using promise_type = PromiseType;

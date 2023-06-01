@@ -99,7 +99,7 @@ public:
         // So moved awaitable continue to exist until AwaitAllTasks is finished
         constexpr std::suspend_never initial_suspend() const noexcept { return {}; }
         constexpr FinalSuspendAwaiter final_suspend() const noexcept { return {}; }
-        constexpr void unhandled_exception() const noexcept {}
+        constexpr void unhandled_exception() const noexcept { COPAT_UNHANDLED_EXCEPT(); }
 
         /**
          * Why not use return_value? For that we need both return_value and return_void defined but we cannot have both in same promise so went

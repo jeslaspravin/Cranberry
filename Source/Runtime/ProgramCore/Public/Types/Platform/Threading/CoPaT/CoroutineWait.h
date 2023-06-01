@@ -89,7 +89,7 @@ public:
         WaitOnAwaitable get_return_object() noexcept { return WaitOnAwaitable(std::coroutine_handle<PromiseType>::from_promise(*this)); }
         constexpr std::suspend_always initial_suspend() const noexcept { return {}; }
         constexpr FinalSuspendAwaiter final_suspend() const noexcept { return {}; }
-        constexpr void unhandled_exception() const noexcept {}
+        constexpr void unhandled_exception() const noexcept { COPAT_UNHANDLED_EXCEPT(); }
 
         /**
          * Why not use return_value? For that we need both return_value and return_void defined but we cannot have both in same promise so went

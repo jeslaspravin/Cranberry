@@ -105,7 +105,7 @@ public:
     }
 
     FinalSuspendAwaiter final_suspend() noexcept { return {}; }
-    constexpr void unhandled_exception() const {}
+    constexpr void unhandled_exception() const { COPAT_UNHANDLED_EXCEPT(); }
 };
 
 struct ContinuationEventChain
@@ -232,7 +232,7 @@ public:
     }
 
     FinalSuspendAwaiter final_suspend() noexcept { return {}; }
-    constexpr void unhandled_exception() const {}
+    constexpr void unhandled_exception() const { COPAT_UNHANDLED_EXCEPT(); }
 };
 
 /**

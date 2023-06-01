@@ -70,6 +70,12 @@
 #define OVERRIDE_ASSERT(expr) debugAssert((expr))
 
 /**
+ * Override promise::unhandled_exception() handler
+ */
+// #define OVERRIDE_UNHANDLED_EXCEPT_HANDLER() unhandledexception_handler::crash()
+#define OVERRIDE_UNHANDLED_EXCEPT_HANDLER() fatalAssert(!"Coroutine unhandled exception")
+
+/**
  * Override Function store type, expects signature FunctionType<ReturnType, Args...>
  */
 // #define OVERRIDE_FUNCTION_TYPE std::function
@@ -148,6 +154,12 @@
 #else
 #include <assert.h>
 #define COPAT_ASSERT(expr) assert((expr))
+#endif
+
+#ifdef OVERRIDE_UNHANDLED_EXCEPT_HANDLER
+#define COPAT_UNHANDLED_EXCEPT() OVERRIDE_UNHANDLED_EXCEPT_HANDLER()
+#else
+#define COPAT_UNHANDLED_EXCEPT() COPAT_ASSERT(!COPAT_TCHAR("CoPaT unhandled exception"))
 #endif
 
 #ifdef OVERRIDE_TCHAR
