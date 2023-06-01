@@ -22,9 +22,13 @@ public:
      * Deliberately crashes the application after trying to close core systems. Tries breaking the application before that
      */
     static void crashApplication();
+    static void unexpectedTermination();
 
-    virtual void registerFilter() = 0;
-    virtual void unregisterFilter() const = 0;
+    void registerFilter();
+    void unregisterFilter() const;
+
+    virtual void registerPlatformFilters() = 0;
+    virtual void unregisterPlatformFilters() const = 0;
     virtual void dumpCallStack(bool bShouldCrashApp) const = 0;
     /**
      * Calls debugger only if present else does nothing

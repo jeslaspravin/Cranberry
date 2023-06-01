@@ -23,8 +23,11 @@
 
 class SymbolInfo
 {
+public:
+    constexpr static const int32 MAX_BUFFER_LEN = 1024;
+    constexpr static const uint32 INVALID_LINE_NUM = ~(0u);
 
-    static const int MAX_BUFFER_LEN = 1024;
+private:
     union SymType
     {
         IMAGEHLP_SYMBOL64 symbol;
@@ -48,7 +51,7 @@ public:
         if (!SymGetLineFromAddr64(process, address, &offset, &line))
         {
             line.FileName = nullptr;
-            line.LineNumber = ~(0u);
+            line.LineNumber = INVALID_LINE_NUM;
         }
     }
 
@@ -77,7 +80,8 @@ public:
     dword lineNumber() { return line.LineNumber; }
 };
 
-void WindowsUnexpectedErrorHandler::registerFilter() { previousFilter = ::SetUnhandledExceptionFilter(handlerFilter); }
+void WindowsUnexpectedErrorHandler::registerPlatformFilters() { previousFilter = ::SetUnhandledExceptionFilter(handlerFilter); }
+void WindowsUnexpectedErrorHandler::unregisterPlatformFilters() const { SetUnhandledExceptionFilter(previousFilter); }
 
 void WindowsUnexpectedErrorHandler::dumpCallStack(bool bShouldCrashApp) const
 {
@@ -95,8 +99,6 @@ void WindowsUnexpectedErrorHandler::debugBreak() const
     }
 }
 
-void WindowsUnexpectedErrorHandler::unregisterFilter() const { SetUnhandledExceptionFilter(previousFilter); }
-
 void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT *context, bool bCloseApp) const
 {
     HANDLE processHandle = ::GetCurrentProcess();
@@ -109,9 +111,14 @@ void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT *context, bool bCl
 
     if (!::SymInitialize(processHandle, NULL, TRUE))
     {
-        LOG_ERROR("WindowsUnexpectedErrorHandler", "Failed loading symbols for initializing stack trace symbols");
-        Logger::flushStream();
-        return;
+        // Try cleaning once
+        ::SymCleanup(processHandle);
+        if (!::SymInitialize(processHandle, NULL, TRUE))
+        {
+            LOG_ERROR("WindowsUnexpectedErrorHandler", "Failed loading symbols for initializing stack trace symbols");
+            Logger::flushStream();
+            return;
+        }
     }
 
     // We do not want to write all debug logs when getting all modules
@@ -159,8 +166,13 @@ void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT *context, bool bCl
             String fileName = symInfo.fileName();
             fileName = fileName.length() > 0 ? PlatformFile(fileName).getFileName() : fileName;
 
-            stackTrace << moduleName.getChar() << TCHAR(" [0x") << std::hex << frame.AddrPC.Offset << std::dec << TCHAR("] : ")
-                       << symInfo.name() << TCHAR("(") << fileName.getChar() << TCHAR("):") << symInfo.lineNumber();
+            stackTrace << TCHAR("\t0x") << std::hex << frame.AddrPC.Offset << std::dec << TCHAR(" : ") << symInfo.name();
+            stackTrace << TCHAR("(") << fileName.getChar();
+            if (symInfo.lineNumber() != SymbolInfo::INVALID_LINE_NUM)
+            {
+                stackTrace << TCHAR(":") << symInfo.lineNumber();
+            }
+            stackTrace << TCHAR(")[") << moduleName << TCHAR("]");
         }
         else
         {
@@ -262,8 +274,14 @@ String exceptionCodeMessage(dword ExpCode)
 
 long WindowsUnexpectedErrorHandler::handlerFilter(struct _EXCEPTION_POINTERS *exp)
 {
-    PEXCEPTION_RECORD pExceptionRecord = exp->ExceptionRecord;
+    AChar *errorMsg;
+    DWORD dw = GetLastError();
+    ::FormatMessageA(
+        FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, dw,
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&errorMsg, 0, NULL
+    );
 
+    PEXCEPTION_RECORD pExceptionRecord = exp->ExceptionRecord;
     StringStream errorStream;
     while (pExceptionRecord != NULL)
     {
@@ -271,12 +289,6 @@ long WindowsUnexpectedErrorHandler::handlerFilter(struct _EXCEPTION_POINTERS *ex
                     << TCHAR(" [0x") << std::hex << pExceptionRecord->ExceptionAddress << TCHAR("]");
         pExceptionRecord = pExceptionRecord->ExceptionRecord;
     }
-    AChar *errorMsg;
-    DWORD dw = GetLastError();
-    ::FormatMessageA(
-        FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, dw,
-        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&errorMsg, 0, NULL
-    );
 
     LOG_ERROR("WindowsUnexpectedErrorHandler", "Application encountered an error! Error : {}{}", errorMsg, errorStream.str().c_str());
     ::LocalFree(errorMsg);
@@ -285,3 +297,19 @@ long WindowsUnexpectedErrorHandler::handlerFilter(struct _EXCEPTION_POINTERS *ex
     getHandler()->dumpStack(exp->ContextRecord, true);
     return EXCEPTION_CONTINUE_SEARCH;
 }
+
+// In Windows termination_handler is thread local
+// Correct: https://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/set-terminate-crt
+// Incorrect: https://en.cppreference.com/w/cpp/error/set_unexpected
+struct WindowsTlTerminationHandler
+{
+    std::terminate_handler oldHandler;
+
+    WindowsTlTerminationHandler() { oldHandler = std::set_terminate(UnexpectedErrorHandler::unexpectedTermination); }
+    ~WindowsTlTerminationHandler()
+    {
+        std::set_terminate(oldHandler);
+        oldHandler = nullptr;
+    }
+};
+thread_local WindowsTlTerminationHandler windowsTlTerminationHandler;

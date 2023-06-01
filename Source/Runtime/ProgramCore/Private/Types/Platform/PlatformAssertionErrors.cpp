@@ -45,3 +45,14 @@ void UnexpectedErrorHandler::crashApplication()
 
     exit(1);
 }
+
+void UnexpectedErrorHandler::unexpectedTermination()
+{
+    LOG_ERROR("CrashHandler", "Unexpected termination!");
+
+    getHandler()->unregisterFilter();
+    getHandler()->dumpCallStack(true);
+}
+
+void UnexpectedErrorHandler::registerFilter() { registerPlatformFilters(); }
+void UnexpectedErrorHandler::unregisterFilter() const { unregisterPlatformFilters(); }

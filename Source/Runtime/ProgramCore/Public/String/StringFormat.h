@@ -233,22 +233,22 @@ private:
 
 public:
     template <typename FmtType, typename... Args>
-    NODISCARD static String printf(FmtType &&fmt, Args &&...args)
+    NODISCARD static String printf(FmtType &&fmt, Args &&...args) noexcept
     {
         return stringPrintf(getChar<FmtType>(std::forward<FmtType>(fmt)), toString<Args>(std::forward<Args>(args))...);
     }
     template <typename FmtType>
-    NODISCARD static String printf(FmtType &&fmt, va_list args)
+    NODISCARD static String printf(FmtType &&fmt, va_list args) noexcept
     {
         return stringPrintf(getChar<FmtType>(std::forward<FmtType>(fmt)), args);
     }
     template <StringLiteral Fmt, typename... Args>
-    NODISCARD constexpr static String lFormat(Args &&...args)
+    NODISCARD constexpr static String lFormat(Args &&...args) noexcept
     {
         return std::format(Fmt.value, toFormatValue<Args>(std::forward<Args>(args))...);
     }
     template <typename FmtType, typename... Args>
-    NODISCARD static String vFormat(FmtType &&fmt, Args &&...args)
+    NODISCARD static String vFormat(FmtType &&fmt, Args &&...args) noexcept
     {
         return std::vformat(
             getChar<FmtType>(std::forward<FmtType>(fmt)),

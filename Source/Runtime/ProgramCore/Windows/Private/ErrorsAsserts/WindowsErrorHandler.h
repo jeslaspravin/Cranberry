@@ -30,8 +30,8 @@ public:
     static long handlerFilter(struct _EXCEPTION_POINTERS *exp);
 
     /* UnexpectedErrorHandler Implementation */
-    void registerFilter() override;
-    void unregisterFilter() const override;
+    void registerPlatformFilters() override;
+    void unregisterPlatformFilters() const override;
     void dumpCallStack(bool bShouldCrashApp) const override;
     void debugBreak() const override;
     /* Ends */
