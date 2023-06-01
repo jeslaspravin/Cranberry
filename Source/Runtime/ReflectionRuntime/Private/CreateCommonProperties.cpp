@@ -15,7 +15,7 @@
 #include "String/NameString.h"
 #include "String/StringLiteral.h"
 #include "Types/Colors.h"
-#include "Types/Transform3D.h"
+#include "Math/Transform3D.h"
 #include "Types/TypesInfo.h"
 
 template <typename Type, StringLiteral TypeName>

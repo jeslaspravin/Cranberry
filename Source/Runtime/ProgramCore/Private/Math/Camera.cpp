@@ -9,13 +9,14 @@
  *  License can be read in LICENSE file at this repository's root
  */
 
-#include "Types/Camera/Camera.h"
+#include "Math/Camera.h"
 #include "Math/Math.h"
 #include "Math/RotationMatrix.h"
 #include "Math/Vector2.h"
 #include "Math/Vector4.h"
-#include "Types/Transform3D.h"
+#include "Math/Transform3D.h"
 #include "Math/Quaternion.h"
+#include "Math/Plane.h"
 
 const float Camera::MAX_FOV(175.f);
 const float Camera::MIN_NEAR_FAR_DIFF(1.f);
@@ -113,7 +114,7 @@ void Camera::setTranslation(const Vector3 &newLocation) { camTranslation = newLo
 
 void Camera::setRotation(const Rotation &newRotation) { camRotation = newRotation; }
 
-void Camera::frustumCorners(Vector3 *corners, Vector3 *center /*= nullptr*/) const
+void Camera::frustumCorners(ArrayRange<Vector3> corners, Vector3 *center /*= nullptr*/) const
 {
     Matrix4 ndcToWorld = viewMatrix() * projectionMatrix().inverse();
     Vector3 frustumMid(0);
@@ -137,6 +138,38 @@ void Camera::frustumCorners(Vector3 *corners, Vector3 *center /*= nullptr*/) con
     {
         *center = frustumMid / float(cornerIdx);
     }
+}
+
+void Camera::frustumPlanes(ArrayRange<Plane> planes) const
+{
+    // Gribb-Hartmann Plane extraction from Frustum
+    // https://www.gamedevs.org/uploads/fast-extraction-viewing-frustum-planes-from-world-view-projection-matrix.pdf
+
+    Matrix4 worldToClip;
+    viewMatrix(worldToClip); // get inverted view matrix
+    worldToClip = projectionMatrix() * worldToClip;
+
+    // Transpose to address Rows directly
+    worldToClip = worldToClip.transpose();
+
+    // Left => V.(R0 + R3) >= 0
+    planes[FPlane_Left] = Plane{ worldToClip[3] + worldToClip[0] };
+    planes[FPlane_Left].normalized();
+    // Right => V.(R3 - R0) >= 0
+    planes[FPlane_Right] = Plane{ worldToClip[3] - worldToClip[0] };
+    planes[FPlane_Right].normalized();
+    // Bottom => V.(R1 + R3) >= 0
+    planes[FPlane_Bottom] = Plane{ worldToClip[3] + worldToClip[1] };
+    planes[FPlane_Bottom].normalized();
+    // Top => V.(R3 - R1) >= 0
+    planes[FPlane_Top] = Plane{ worldToClip[3] - worldToClip[1] };
+    planes[FPlane_Top].normalized();
+    // Near => V.R2 >= 0
+    planes[FPlane_Near] = Plane{ worldToClip[2] };
+    planes[FPlane_Near].normalized();
+    // Far => V.(R3 - R2) >= 0
+    planes[FPlane_Far] = Plane{ worldToClip[3] - worldToClip[2] };
+    planes[FPlane_Far].normalized();
 }
 
 void Camera::lookAt(const Vector3 &lookAtTarget)

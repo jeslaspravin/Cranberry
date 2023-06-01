@@ -15,7 +15,7 @@
 #include "Memory/FreeListAllocator.h"
 #include "Types/Containers/BitArray.h"
 #include "Types/Containers/SparseVector.h"
-#include "Types/Camera/Camera.h"
+#include "Math/Camera.h"
 #include "ObjectPtrs.h"
 #include "Render/EngineRenderTypes.h"
 #include "RenderInterface/Resources/MemoryResources.h"

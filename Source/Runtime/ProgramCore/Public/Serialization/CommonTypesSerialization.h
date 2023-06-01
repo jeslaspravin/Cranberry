@@ -14,7 +14,7 @@
 #include "Serialization/ArchiveBase.h"
 #include "Math/CoreMathTypes.h"
 #include "Math/Box.h"
-#include "Types/Transform3D.h"
+#include "Math/Transform3D.h"
 #include "Types/Colors.h"
 #include "String/StringID.h"
 #include "String/NameString.h"

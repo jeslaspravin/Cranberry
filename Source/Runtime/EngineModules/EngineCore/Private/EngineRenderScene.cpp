@@ -10,7 +10,8 @@
  */
 
 #include "EngineRenderScene.h"
-#include "Types/Camera/Camera.h"
+#include "Math/Camera.h"
+#include "Math/Plane.h"
 #include "IApplicationModule.h"
 #include "ApplicationInstance.h"
 #include "Classes/World.h"
@@ -1045,14 +1046,15 @@ void EngineRenderScene::updateVisibility(const RenderSceneViewParams &viewParams
         totalCompCapacity, appInstance->getRenderFrameAllocator()
     );
 
-    Matrix4 w2clip;
-    viewParams.view.viewMatrix(w2clip);
-    w2clip = viewParams.view.projectionMatrix() * w2clip;
+    Vector3 frustumCorners[8];
+    Plane frustumPlanes[6];
+    viewParams.view.frustumCorners(frustumCorners);
+    viewParams.view.frustumPlanes(frustumPlanes);
 
     copat::parallelFor(
         appInstance->jobSystem,
         copat::DispatchFunctionType::createLambda(
-            [this, &compsInsideFrustum, &w2clip](uint32 idx)
+            [this, &compsInsideFrustum, &frustumPlanes, &frustumCorners](uint32 idx)
             {
                 CBE_PROFILER_SCOPE(CBE_PROFILER_CHAR("CompVisibility"));
                 if (!compsRenderInfo.isValid(idx))
@@ -1076,19 +1078,39 @@ void EngineRenderScene::updateVisibility(const RenderSceneViewParams &viewParams
                     Vector3 aabbCorners[8];
                     compRenderInfo.worldBound.boundCorners(aabbCorners);
 
-                    for (uint32 i = 0; i != ARRAY_LENGTH(aabbCorners); ++i)
+                    // Ensure that box is not completely outside all frustum planes,
+                    // Even if all point is outside 1 plane it will be completely out like AABB
+                    for (const Plane &plane : ArrayView<Plane>{ frustumPlanes })
                     {
-                        Vector4 projectedPt = w2clip * Vector4(aabbCorners[i], 1.0f);
-                        projectedPt.x() = Math::abs(projectedPt.x());
-                        projectedPt.y() = Math::abs(projectedPt.y());
-                        projectedPt.z() /= projectedPt.w();
-                        projectedPt.w() = Math::abs(projectedPt.w());
-                        if (projectedPt.x() <= projectedPt.w() && projectedPt.y() <= projectedPt.w() && projectedPt.z() > 0
-                            && projectedPt.z() <= 1)
+                        uint32 outsideFrustumCount = 0;
+                        for (const Vector3 &corner : ArrayView<Vector3>{ aabbCorners })
                         {
-                            compsInsideFrustum[idx].test_and_set(std::memory_order::relaxed);
+                            outsideFrustumCount += (plane | corner) < 0 ? 1 : 0;
+                        }
+                        if (outsideFrustumCount == 8)
+                        {
                             return;
                         }
+                    }
+                    // Now make sure that AABB is not passing through the frustum,
+                    // Pass thru happens when any corner pts axial component is inside it corresponding AABB extremes
+                    uint32 outsideExtremeCount[6] = { 0 };
+                    for (const Vector3 &corner : ArrayView<Vector3>{ frustumCorners })
+                    {
+                        outsideExtremeCount[0] += corner.x() > compRenderInfo.worldBound.maxBound.x() ? 1 : 0;
+                        outsideExtremeCount[1] += corner.x() < compRenderInfo.worldBound.minBound.x() ? 1 : 0;
+
+                        outsideExtremeCount[2] += corner.y() > compRenderInfo.worldBound.maxBound.y() ? 1 : 0;
+                        outsideExtremeCount[3] += corner.y() < compRenderInfo.worldBound.minBound.y() ? 1 : 0;
+
+                        outsideExtremeCount[4] += corner.z() > compRenderInfo.worldBound.maxBound.z() ? 1 : 0;
+                        outsideExtremeCount[5] += corner.z() < compRenderInfo.worldBound.minBound.z() ? 1 : 0;
+                    }
+
+                    if (outsideExtremeCount[0] != 8 && outsideExtremeCount[1] != 8 && outsideExtremeCount[2] != 8 && outsideExtremeCount[3] != 8
+                        && outsideExtremeCount[4] != 8 && outsideExtremeCount[5] != 8)
+                    {
+                        compsInsideFrustum[idx].test_and_set(std::memory_order_relaxed);
                     }
 #endif
                 }

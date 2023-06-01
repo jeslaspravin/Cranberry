@@ -13,7 +13,7 @@
 #include "Classes/EngineBase.h"
 #include "Classes/WorldsManager.h"
 #include "EngineRenderScene.h"
-#include "Types/Camera/Camera.h"
+#include "Math/Camera.h"
 #include "Widgets/WgRenderTarget.h"
 #include "RenderInterface/Rendering/RenderInterfaceContexts.h"
 #include "IRenderInterfaceModule.h"

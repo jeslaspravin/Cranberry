@@ -103,15 +103,16 @@ void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT *context, bool bCl
     HANDLE threadHandle = ::GetCurrentThread();
     dword symOffset = 0;
 
+    dword symOptions = ::SymGetOptions();
+    symOptions |= SYMOPT_LOAD_LINES | SYMOPT_UNDNAME;
+    ::SymSetOptions(symOptions);
+
     if (!::SymInitialize(processHandle, NULL, TRUE))
     {
         LOG_ERROR("WindowsUnexpectedErrorHandler", "Failed loading symbols for initializing stack trace symbols");
         Logger::flushStream();
         return;
     }
-    dword symOptions = ::SymGetOptions();
-    symOptions |= SYMOPT_LOAD_LINES | SYMOPT_UNDNAME;
-    ::SymSetOptions(symOptions);
 
     // We do not want to write all debug logs when getting all modules
     Logger::pushMuteSeverities(Logger::Debug);

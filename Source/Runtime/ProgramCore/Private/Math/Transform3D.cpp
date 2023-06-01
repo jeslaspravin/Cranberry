@@ -9,7 +9,7 @@
  *  License can be read in LICENSE file at this repository's root
  */
 
-#include "Types/Transform3D.h"
+#include "Math/Transform3D.h"
 #include "Math/Math.h"
 #include "Math/RotationMatrix.h"
 #include "Math/Vector4.h"

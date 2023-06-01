@@ -1,4 +1,5 @@
 #define {{ReflectionTUDefine}}
+#define __CBE_GENERATED_TU__
 
 #include "{{HeaderInclude}}"
 /* Additional includes */
@@ -301,4 +302,5 @@ void HEADER_FILE_ID::init_{{SanitizedName}}(ClassProperty* typeProperty)
 }
 {{/Classes}}
 
+#undef __CBE_GENERATED_TU__
 #undef {{ReflectionTUDefine}}

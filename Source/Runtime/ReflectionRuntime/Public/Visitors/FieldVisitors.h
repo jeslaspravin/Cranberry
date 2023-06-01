@@ -20,7 +20,7 @@
 #include "String/NameString.h"
 #include "Types/PropertyTypes.h"
 #include "Types/Templates/TypeList.h"
-#include "Types/Transform3D.h"
+#include "Math/Transform3D.h"
 
 #define IS_TYPE_SAME_FIRST(TypeName) std::is_same<Type, TypeName>
 #define IS_TYPE_SAME(TypeName) , std::is_same<Type, TypeName>

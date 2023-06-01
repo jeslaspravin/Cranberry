@@ -12,7 +12,7 @@
 #pragma once
 
 #include "Widgets/ImGui/IImGuiLayer.h"
-#include "Types/Camera/Camera.h"
+#include "Math/Camera.h"
 #include "EditorTypes.h"
 
 class WorldViewport;

@@ -357,7 +357,7 @@ public:
     }
 
     template <NotAnIntegral Type>
-    FORCE_INLINE static bool isEqual(const Type &a, const Type &b, Type epsilon = SMALL_EPSILON)
+    FORCE_INLINE static bool isEqual(const Type &a, const Type &b, float epsilon = SMALL_EPSILON)
     {
         return MathHelper<Type>::isEqual(a, b, epsilon);
     }

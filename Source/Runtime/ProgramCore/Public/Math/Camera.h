@@ -10,12 +10,16 @@
  */
 
 #pragma once
+
+#include "ProgramCoreExports.h"
 #include "Math/Matrix4.h"
 #include "Math/Rotation.h"
 #include "Math/Vector3.h"
-#include "ProgramCoreExports.h"
+#include "Types/Containers/ArrayView.h"
 
 #include <optional>
+
+class Plane;
 
 enum class PROGRAMCORE_EXPORT ECameraProjection
 {
@@ -45,6 +49,16 @@ private:
 public:
     ECameraProjection cameraProjection;
 
+    enum EFrustumPlane
+    {
+        FPlane_Left = 0,
+        FPlane_Right,
+        FPlane_Bottom,
+        FPlane_Top,
+        FPlane_Near,
+        FPlane_Far,
+    };
+
 private:
     void orthographicMatrix(Matrix4 &matrix, float halfWidth, float halfHeight) const;
     void orthographicMatrix(Matrix4 &matrix, float left, float right, float top, float bottom) const;
@@ -68,7 +82,9 @@ public:
     Rotation rotation() const { return camRotation; }
     float farPlane() const { return farClip; }
     float nearPlane() const { return nearClip; }
-    void frustumCorners(Vector3 *corners, Vector3 *center = nullptr) const;
+    void frustumCorners(ArrayRange<Vector3> corners, Vector3 *center = nullptr) const;
+    // use EFrustumPlane to index the exact plane
+    void frustumPlanes(ArrayRange<Plane> planes) const;
 
     void lookAt(const Vector3 &lookAtTarget);
     // Expected pos input

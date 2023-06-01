@@ -62,13 +62,13 @@
 #include "RenderApi/Shaders/EngineShaders/SingleColorShader.h"
 #include "RenderApi/Shaders/EngineShaders/TexturedShader.h"
 #include "String/StringID.h"
-#include "Types/Camera/Camera.h"
+#include "Math/Camera.h"
 #include "Types/Colors.h"
 #include "Types/CompilerDefines.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
 #include "Types/Platform/LFS/Paths.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
-#include "Types/Transform3D.h"
+#include "Math/Transform3D.h"
 #include "Types/TypesInfo.h"
 #include "WindowManager.h"
 #include "ApplicationSettings.h"
@@ -1012,7 +1012,7 @@ void ExperimentalEnginePBR::setupCascadeShadowViews()
         // Finding view orthographic size
         AABB box(Vector3(FLT_MAX), Vector3(FLT_MIN));
         std::array<Vector3, 8> corners;
-        tempCamera.frustumCorners(corners.data());
+        tempCamera.frustumCorners(corners);
         for (const Vector3 &corner : corners)
         {
             box.grow(worldToDirLight * corner);
@@ -1058,7 +1058,7 @@ void ExperimentalEnginePBR::setupCascadeShadowViewsShimmerFix()
         // Finding view orthographic size
         std::array<Vector3, 8> corners;
         Vector3 center;
-        tempCamera.frustumCorners(corners.data(), &center);
+        tempCamera.frustumCorners(corners, &center);
         // Using sphere bounds to fix rotational shimmering
         float frustumMaxRadius = 0;
         for (const Vector3 &corner : corners)

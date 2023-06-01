@@ -13,9 +13,10 @@
 
 #ifndef __REF_PARSE__
 
-#ifndef REFLECTNATIVESTRUCTS_GEN_TU
+// Must be allowed in Generated files as they include this file in generated TU
+#ifndef __CBE_GENERATED_TU__
 #error "ReflectNativeStruct.h must not be included from any where"
-#endif // REFLECTNATIVESTRUCTS_GEN_TU
+#endif // __CBE_GENERATED_TU__
 
 // It is okay, This file must not be included from anywhere else except ReflectNativeStructs.gen.cpp in runtime
 #include "ObjectPtrs.h"
