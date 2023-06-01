@@ -52,7 +52,8 @@ VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackDebug(
 {
     LOG_DEBUG(
         "VulkanDebugUtils", "{}[ID : {}][Name : {}] Message : {}", messageTypeStr(messageTypes), pCallbackData->messageIdNumber,
-        pCallbackData->pMessageIdName, pCallbackData->pMessage
+        pCallbackData->pMessageIdName == nullptr ? "NullMsgID" : pCallbackData->pMessageIdName,
+        pCallbackData->pMessageIdName == nullptr ? "NullMsg" : pCallbackData->pMessageIdName
     );
 
     if (pCallbackData->queueLabelCount > 0 && pCallbackData->pQueueLabels[0].pLabelName != nullptr)
@@ -62,7 +63,7 @@ VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackDebug(
         {
             LOG_DEBUG(
                 "VulkanDebugUtils", "        {} : {}", i,
-                pCallbackData->pQueueLabels[i].pLabelName == nullptr ? "NullName" : pCallbackData->pQueueLabels[i].pLabelName
+                pCallbackData->pQueueLabels[i].pLabelName == nullptr ? "NullLabel" : pCallbackData->pQueueLabels[i].pLabelName
             );
         }
     }
@@ -74,7 +75,7 @@ VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackDebug(
         {
             LOG_DEBUG(
                 "VulkanDebugUtils", "        {} : {}", i,
-                pCallbackData->pCmdBufLabels[i].pLabelName == nullptr ? "NullName" : pCallbackData->pCmdBufLabels[i].pLabelName
+                pCallbackData->pCmdBufLabels[i].pLabelName == nullptr ? "NullLabel" : pCallbackData->pCmdBufLabels[i].pLabelName
             );
         }
     }
@@ -86,7 +87,7 @@ VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackDebug(
         {
             LOG_DEBUG(
                 "VulkanDebugUtils", "        {} : {}", i,
-                pCallbackData->pObjects[i].pObjectName == nullptr ? "NullName" : pCallbackData->pObjects[i].pObjectName
+                pCallbackData->pObjects[i].pObjectName == nullptr ? "NullLabel" : pCallbackData->pObjects[i].pObjectName
             );
         }
     }
@@ -100,7 +101,8 @@ VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackInfo(
 )
 {
     LOG("VulkanDebugUtils", "{}[ID : {}][Name : {}] Message : {}", messageTypeStr(messageTypes), pCallbackData->messageIdNumber,
-        pCallbackData->pMessageIdName, pCallbackData->pMessage);
+        pCallbackData->pMessageIdName == nullptr ? "NullMsgID" : pCallbackData->pMessageIdName,
+        pCallbackData->pMessageIdName == nullptr ? "NullMsg" : pCallbackData->pMessageIdName);
 
     if (pCallbackData->queueLabelCount > 0 && pCallbackData->pQueueLabels[0].pLabelName != nullptr)
     {
@@ -108,7 +110,7 @@ VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackInfo(
         for (uint32 i = 0; i < pCallbackData->queueLabelCount; i++)
         {
             LOG("VulkanDebugUtils", "        {} : {}", i,
-                pCallbackData->pQueueLabels[i].pLabelName == nullptr ? "NullName" : pCallbackData->pQueueLabels[i].pLabelName);
+                pCallbackData->pQueueLabels[i].pLabelName == nullptr ? "NullLabel" : pCallbackData->pQueueLabels[i].pLabelName);
         }
     }
 
@@ -118,7 +120,7 @@ VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackInfo(
         for (uint32 i = 0; i < pCallbackData->cmdBufLabelCount; i++)
         {
             LOG("VulkanDebugUtils", "        {} : {}", i,
-                pCallbackData->pCmdBufLabels[i].pLabelName == nullptr ? "NullName" : pCallbackData->pCmdBufLabels[i].pLabelName);
+                pCallbackData->pCmdBufLabels[i].pLabelName == nullptr ? "NullLabel" : pCallbackData->pCmdBufLabels[i].pLabelName);
         }
     }
 
@@ -128,7 +130,7 @@ VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackInfo(
         for (uint32 i = 0; i < pCallbackData->objectCount; i++)
         {
             LOG("VulkanDebugUtils", "        {} : {}", i,
-                pCallbackData->pObjects[i].pObjectName == nullptr ? "NullName" : pCallbackData->pObjects[i].pObjectName);
+                pCallbackData->pObjects[i].pObjectName == nullptr ? "NullLabel" : pCallbackData->pObjects[i].pObjectName);
         }
     }
 
@@ -142,7 +144,8 @@ VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackWarn(
 {
     LOG_WARN(
         "VulkanDebugUtils", "{}[ID : {}][Name : {}] Message : {}", messageTypeStr(messageTypes), pCallbackData->messageIdNumber,
-        pCallbackData->pMessageIdName, pCallbackData->pMessage
+        pCallbackData->pMessageIdName == nullptr ? "NullMsgID" : pCallbackData->pMessageIdName,
+        pCallbackData->pMessageIdName == nullptr ? "NullMsg" : pCallbackData->pMessageIdName
     );
 
     if (pCallbackData->queueLabelCount > 0 && pCallbackData->pQueueLabels[0].pLabelName != nullptr)
@@ -152,7 +155,7 @@ VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackWarn(
         {
             LOG_WARN(
                 "VulkanDebugUtils", "        {} : {}", i,
-                pCallbackData->pQueueLabels[i].pLabelName == nullptr ? "NullName" : pCallbackData->pQueueLabels[i].pLabelName
+                pCallbackData->pQueueLabels[i].pLabelName == nullptr ? "NullLabel" : pCallbackData->pQueueLabels[i].pLabelName
             );
         }
     }
@@ -164,7 +167,7 @@ VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackWarn(
         {
             LOG_WARN(
                 "VulkanDebugUtils", "        {} : {}", i,
-                pCallbackData->pCmdBufLabels[i].pLabelName == nullptr ? "NullName" : pCallbackData->pCmdBufLabels[i].pLabelName
+                pCallbackData->pCmdBufLabels[i].pLabelName == nullptr ? "NullLabel" : pCallbackData->pCmdBufLabels[i].pLabelName
             );
         }
     }
@@ -176,7 +179,7 @@ VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackWarn(
         {
             LOG_WARN(
                 "VulkanDebugUtils", "        {} : {}", i,
-                pCallbackData->pObjects[i].pObjectName == nullptr ? "NullName" : pCallbackData->pObjects[i].pObjectName
+                pCallbackData->pObjects[i].pObjectName == nullptr ? "NullLabel" : pCallbackData->pObjects[i].pObjectName
             );
         }
     }
@@ -191,7 +194,8 @@ VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackError(
 {
     LOG_ERROR(
         "VulkanDebugUtils", "{}[ID : {}][Name : {}] Message : {}", messageTypeStr(messageTypes), pCallbackData->messageIdNumber,
-        pCallbackData->pMessageIdName, pCallbackData->pMessage
+        (pCallbackData->pMessageIdName == nullptr ? "NullMsgID" : pCallbackData->pMessageIdName),
+        (pCallbackData->pMessageIdName == nullptr ? "NullMsg" : pCallbackData->pMessageIdName)
     );
 
     if (pCallbackData->queueLabelCount > 0 && pCallbackData->pQueueLabels[0].pLabelName != nullptr)
@@ -201,7 +205,7 @@ VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackError(
         {
             LOG_ERROR(
                 "VulkanDebugUtils", "        {} : {}", i,
-                pCallbackData->pQueueLabels[i].pLabelName == nullptr ? "NullName" : pCallbackData->pQueueLabels[i].pLabelName
+                pCallbackData->pQueueLabels[i].pLabelName == nullptr ? "NullLabel" : pCallbackData->pQueueLabels[i].pLabelName
             );
         }
     }
@@ -213,7 +217,7 @@ VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackError(
         {
             LOG_ERROR(
                 "VulkanDebugUtils", "        {} : {}", i,
-                pCallbackData->pCmdBufLabels[i].pLabelName == nullptr ? "NullName" : pCallbackData->pCmdBufLabels[i].pLabelName
+                pCallbackData->pCmdBufLabels[i].pLabelName == nullptr ? "NullLabel" : pCallbackData->pCmdBufLabels[i].pLabelName
             );
         }
     }
@@ -225,7 +229,7 @@ VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackError(
         {
             LOG_ERROR(
                 "VulkanDebugUtils", "        {} : {}", i,
-                pCallbackData->pObjects[i].pObjectName == nullptr ? "NullName" : pCallbackData->pObjects[i].pObjectName
+                pCallbackData->pObjects[i].pObjectName == nullptr ? "NullLabel" : pCallbackData->pObjects[i].pObjectName
             );
         }
     }

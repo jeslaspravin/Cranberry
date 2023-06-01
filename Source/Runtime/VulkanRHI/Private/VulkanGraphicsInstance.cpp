@@ -136,7 +136,7 @@ void VulkanGraphicsInstance::createVulkanInstance()
         String layersStr;
         for (std::string::const_pointer layer : layers)
         {
-            layersStr.append(TCHAR("\n\t"));
+            layersStr.append(TCHAR("\n    "));
             layersStr.append(UTF8_TO_TCHAR(layer));
         }
         LOG_ERROR("Vulkan", "Requested layer/s not available{}", layersStr.getChar());

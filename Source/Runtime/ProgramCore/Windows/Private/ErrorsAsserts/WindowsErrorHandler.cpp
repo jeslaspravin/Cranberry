@@ -166,7 +166,7 @@ void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT *context, bool bCl
             String fileName = symInfo.fileName();
             fileName = fileName.length() > 0 ? PlatformFile(fileName).getFileName() : fileName;
 
-            stackTrace << TCHAR("\t0x") << std::hex << frame.AddrPC.Offset << std::dec << TCHAR(" : ") << symInfo.name();
+            stackTrace << TCHAR("  0x") << std::hex << frame.AddrPC.Offset << std::dec << TCHAR(" : ") << symInfo.name();
             stackTrace << TCHAR("(") << fileName.getChar();
             if (symInfo.lineNumber() != SymbolInfo::INVALID_LINE_NUM)
             {
