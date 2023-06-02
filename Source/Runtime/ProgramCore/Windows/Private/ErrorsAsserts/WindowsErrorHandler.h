@@ -10,16 +10,14 @@
  */
 
 #pragma once
+
 #include "Types/Platform/PlatformAssertionErrors.h"
+
+struct _EXCEPTION_POINTERS;
+struct _CONTEXT;
 
 class WindowsUnexpectedErrorHandler : public UnexpectedErrorHandler
 {
-private:
-    typedef long (*PreviousFilterFunc)(struct _EXCEPTION_POINTERS *ExceptionInfo);
-    PreviousFilterFunc previousFilter;
-
-    void dumpStack(struct _CONTEXT *context, bool bCloseApp) const;
-
 public:
     static WindowsUnexpectedErrorHandler *getHandler()
     {
@@ -27,7 +25,7 @@ public:
         return &handler;
     }
 
-    static long handlerFilter(struct _EXCEPTION_POINTERS *exp);
+    static long handlerFilter(_EXCEPTION_POINTERS *exp);
 
     /* UnexpectedErrorHandler Implementation */
     void registerPlatformFilters() override;
@@ -35,6 +33,12 @@ public:
     void dumpCallStack(bool bShouldCrashApp) const override;
     void debugBreak() const override;
     /* Ends */
+private:
+    typedef long (*PreviousFilterFunc)(_EXCEPTION_POINTERS *ExceptionInfo);
+    PreviousFilterFunc previousFilter;
+
+    _CONTEXT *getCurrentExceptionCntxt() const;
+    void dumpStack(_CONTEXT *context, bool bCloseApp) const;
 };
 
 typedef WindowsUnexpectedErrorHandler PlatformUnexpectedErrorHandler;

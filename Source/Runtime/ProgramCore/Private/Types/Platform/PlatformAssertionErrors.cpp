@@ -54,5 +54,34 @@ void UnexpectedErrorHandler::unexpectedTermination()
     getHandler()->dumpCallStack(true);
 }
 
-void UnexpectedErrorHandler::registerFilter() { registerPlatformFilters(); }
-void UnexpectedErrorHandler::unregisterFilter() const { unregisterPlatformFilters(); }
+void UnexpectedErrorHandler::registerFilter()
+{
+#ifndef STD_TERMINATION_HANDLER_TL
+    oldTerminationHandler = std::set_terminate(unexpectedTermination);
+#endif
+    registerPlatformFilters();
+}
+void UnexpectedErrorHandler::unregisterFilter() const
+{
+    unregisterPlatformFilters();
+#ifndef STD_TERMINATION_HANDLER_TL
+    std::set_terminate(oldTerminationHandler);
+#endif
+}
+
+#ifdef STD_TERMINATION_HANDLER_TL
+
+struct ThreadLocalTerminationHandler
+{
+    std::terminate_handler oldHandler;
+
+    ThreadLocalTerminationHandler() { oldHandler = std::set_terminate(UnexpectedErrorHandler::unexpectedTermination); }
+    ~ThreadLocalTerminationHandler()
+    {
+        std::set_terminate(oldHandler);
+        oldHandler = nullptr;
+    }
+};
+thread_local ThreadLocalTerminationHandler tlTerminationHandler;
+
+#endif

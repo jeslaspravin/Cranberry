@@ -14,6 +14,14 @@
 #include "ProgramCoreExports.h"
 #include "Logger/Logger.h"
 
+// define STD_TERMINATION_HANDLER_TL - If terminate_handler is thread local
+#ifdef _MSC_VER
+// In Windows termination_handler is thread local
+// Correct: https://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/set-terminate-crt
+// Incorrect: https://en.cppreference.com/w/cpp/error/set_unexpected
+#define STD_TERMINATION_HANDLER_TL
+#endif
+
 class PROGRAMCORE_EXPORT UnexpectedErrorHandler
 {
 public:
@@ -34,6 +42,11 @@ public:
      * Calls debugger only if present else does nothing
      */
     virtual void debugBreak() const = 0;
+
+private:
+#ifndef STD_TERMINATION_HANDLER_TL
+    std::terminate_handler oldTerminationHandler;
+#endif
 };
 
 #define LOG_ASSERTION_FORMATTED(Expr, Category, Message, ...) LOG_ERROR(Category, "Assert expression failed [" #Expr "] " Message, __VA_ARGS__)

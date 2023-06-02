@@ -13,7 +13,7 @@
 #include "Logger/Logger.h"
 #include "Modules/ModuleManager.h"
 #include "Types/Platform/PlatformFunctions.h"
-#include "Types/Platform/LFS/PlatformLFS.h"
+#include "Types/Platform/LFS/PathFunctions.h"
 #include "WindowsCommonHeaders.h"
 
 #pragma comment(lib, "dbghelp.lib")
@@ -83,14 +83,6 @@ public:
 void WindowsUnexpectedErrorHandler::registerPlatformFilters() { previousFilter = ::SetUnhandledExceptionFilter(handlerFilter); }
 void WindowsUnexpectedErrorHandler::unregisterPlatformFilters() const { SetUnhandledExceptionFilter(previousFilter); }
 
-void WindowsUnexpectedErrorHandler::dumpCallStack(bool bShouldCrashApp) const
-{
-    CONTEXT context = {};
-    context.ContextFlags = CONTEXT_FULL;
-    ::RtlCaptureContext(&context);
-    dumpStack(&context, bShouldCrashApp);
-}
-
 void WindowsUnexpectedErrorHandler::debugBreak() const
 {
     if (PlatformFunctions::hasAttachedDebugger())
@@ -99,7 +91,34 @@ void WindowsUnexpectedErrorHandler::debugBreak() const
     }
 }
 
-void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT *context, bool bCloseApp) const
+void WindowsUnexpectedErrorHandler::dumpCallStack(bool bShouldCrashApp) const
+{
+    if (_CONTEXT *exceptionCntxt = getCurrentExceptionCntxt())
+    {
+        LOG_ERROR("WindowsUnexpectedErrorHandler", "Exception call trace -->");
+        dumpStack(exceptionCntxt, false);
+    }
+
+    LOG_ERROR("WindowsUnexpectedErrorHandler", "Current call trace -->");
+    CONTEXT context = {};
+    context.ContextFlags = CONTEXT_FULL;
+    ::RtlCaptureContext(&context);
+    dumpStack(&context, bShouldCrashApp);
+}
+
+#if defined(_MSC_VER) && _MSC_VER >= 1900
+extern "C" void **__cdecl __current_exception_context();
+#endif
+_CONTEXT *WindowsUnexpectedErrorHandler::getCurrentExceptionCntxt() const
+{
+    _CONTEXT **pctx = NULL;
+#if defined(_MSC_VER) && _MSC_VER >= 1900
+    pctx = (_CONTEXT **)__current_exception_context();
+#endif
+    return pctx ? *pctx : NULL;
+}
+
+void WindowsUnexpectedErrorHandler::dumpStack(_CONTEXT *context, bool bCloseApp) const
 {
     HANDLE processHandle = ::GetCurrentProcess();
     HANDLE threadHandle = ::GetCurrentThread();
@@ -159,30 +178,26 @@ void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT *context, bool bCl
             {
                 if (moduleBase == (uint64)modulePair.second.basePtr)
                 {
-                    moduleName = modulePair.second.name;
+                    moduleName = PathFunctions::fileOrDirectoryName(modulePair.second.imgPath);
                     break;
                 }
             }
-            String fileName = symInfo.fileName();
-            fileName = fileName.length() > 0 ? PlatformFile(fileName).getFileName() : fileName;
 
-            stackTrace << TCHAR("  0x") << std::hex << frame.AddrPC.Offset << std::dec << TCHAR(" : ") << symInfo.name();
-            stackTrace << TCHAR("(") << fileName.getChar();
-            if (symInfo.lineNumber() != SymbolInfo::INVALID_LINE_NUM)
-            {
-                stackTrace << TCHAR(":") << symInfo.lineNumber();
-            }
-            stackTrace << TCHAR(")[") << moduleName << TCHAR("]");
+            const TChar *fmtStr = symInfo.lineNumber() == SymbolInfo::INVALID_LINE_NUM ? TCHAR("  {0}!{1} ({2}) ({3:#018x})")
+                                                                                       : TCHAR("  {0}!{1} ({2}, {4}) ({3:#018x})");
+            stackTrace << StringFormat::vFormat(
+                fmtStr, moduleName, symInfo.name(), symInfo.fileName(), frame.AddrPC.Offset, symInfo.lineNumber()
+            );
         }
         else
         {
             stackTrace << TCHAR("No symbols found");
         }
 
-        if (!::StackWalk64(
-                imageType, processHandle, threadHandle, &frame, context, nullptr, SymFunctionTableAccess64, SymGetModuleBase64, nullptr
-            )
-            || frame.AddrReturn.Offset == 0)
+        bool bSuccess = ::StackWalk64(
+            imageType, processHandle, threadHandle, &frame, context, nullptr, SymFunctionTableAccess64, SymGetModuleBase64, nullptr
+        );
+        if (!bSuccess || frame.AddrReturn.Offset == 0)
         {
             break;
         }
@@ -191,7 +206,7 @@ void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT *context, bool bCl
     while (true);
     ::SymCleanup(processHandle);
 
-    LOG_ERROR("WindowsUnexpectedErrorHandler", "Error call trace : \n{}", stackTrace.str().c_str());
+    LOG_ERROR("WindowsUnexpectedErrorHandler", "Call trace : \n{}\n", stackTrace.str().c_str());
 
     if (bCloseApp)
     {
@@ -297,19 +312,3 @@ long WindowsUnexpectedErrorHandler::handlerFilter(struct _EXCEPTION_POINTERS *ex
     getHandler()->dumpStack(exp->ContextRecord, true);
     return EXCEPTION_CONTINUE_SEARCH;
 }
-
-// In Windows termination_handler is thread local
-// Correct: https://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/set-terminate-crt
-// Incorrect: https://en.cppreference.com/w/cpp/error/set_unexpected
-struct WindowsTlTerminationHandler
-{
-    std::terminate_handler oldHandler;
-
-    WindowsTlTerminationHandler() { oldHandler = std::set_terminate(UnexpectedErrorHandler::unexpectedTermination); }
-    ~WindowsTlTerminationHandler()
-    {
-        std::set_terminate(oldHandler);
-        oldHandler = nullptr;
-    }
-};
-thread_local WindowsTlTerminationHandler windowsTlTerminationHandler;
