@@ -27,7 +27,7 @@ private:
 
     static DebugMessengerData &getData();
 
-    static String messageTypeStr(VkDebugUtilsMessageTypeFlagsEXT messageTypes);
+    static const TChar *messageTypeStr(VkDebugUtilsMessageTypeFlagsEXT messageTypes);
 
     static VkBool32 vkDebugUtilsMessengerCallbackDebug(
         VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes,
@@ -66,9 +66,9 @@ public:
     VulkanDebugGraphics(VulkanDevice *device);
 
     VulkanDebugGraphics(const VulkanDebugGraphics &other);
-    VulkanDebugGraphics(VulkanDebugGraphics &&rValue);
+    VulkanDebugGraphics(VulkanDebugGraphics &&rValue) noexcept;
     void operator= (const VulkanDebugGraphics &other);
-    void operator= (VulkanDebugGraphics &&rValue);
+    void operator= (VulkanDebugGraphics &&rValue) noexcept;
 
     void markObject(const IVulkanResources *resource) const;
     void markObject(uint64 objectHandle, const String &objectName, VkObjectType objectType) const;
