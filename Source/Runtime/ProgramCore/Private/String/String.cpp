@@ -61,7 +61,7 @@ FORCE_INLINE bool convertFromUtf8(BufferType &buffer, const AChar *start)
     return true;
 }
 
-const AChar *StringConv<WChar, AChar>::convert(const WChar *start)
+const AChar *StringConv<WChar, AChar>::convert(const WChar *start) noexcept
 {
     if (!(PlatformFunctions::wcharToUtf8(str, start) || convertToUtf8(str, start)))
     {
@@ -69,7 +69,7 @@ const AChar *StringConv<WChar, AChar>::convert(const WChar *start)
     }
     return str.c_str();
 }
-const WChar *StringConv<AChar, WChar>::convert(const AChar *start)
+const WChar *StringConv<AChar, WChar>::convert(const AChar *start) noexcept
 {
     if (!(PlatformFunctions::utf8ToWChar(str, start) || convertFromUtf8(str, start)))
     {
@@ -78,7 +78,7 @@ const WChar *StringConv<AChar, WChar>::convert(const AChar *start)
     return str.c_str();
 }
 
-const Utf16 *StlStringConv<AChar, Utf16>::convert(const AChar *start)
+const Utf16 *StlStringConv<AChar, Utf16>::convert(const AChar *start) noexcept
 {
     if (!convertFromUtf8(str, start))
     {
@@ -86,7 +86,7 @@ const Utf16 *StlStringConv<AChar, Utf16>::convert(const AChar *start)
     }
     return str.c_str();
 }
-const AChar *StlStringConv<Utf16, AChar>::convert(const Utf16 *start)
+const AChar *StlStringConv<Utf16, AChar>::convert(const Utf16 *start) noexcept
 {
     if (!convertToUtf8(str, start))
     {
@@ -95,7 +95,7 @@ const AChar *StlStringConv<Utf16, AChar>::convert(const Utf16 *start)
     return str.c_str();
 }
 
-const Utf32 *StlStringConv<AChar, Utf32>::convert(const AChar *start)
+const Utf32 *StlStringConv<AChar, Utf32>::convert(const AChar *start) noexcept
 {
     if (!convertFromUtf8(str, start))
     {
@@ -103,7 +103,7 @@ const Utf32 *StlStringConv<AChar, Utf32>::convert(const AChar *start)
     }
     return str.c_str();
 }
-const AChar *StlStringConv<Utf32, AChar>::convert(const Utf32 *start)
+const AChar *StlStringConv<Utf32, AChar>::convert(const Utf32 *start) noexcept
 {
     if (!convertToUtf8(str, start))
     {
@@ -112,9 +112,9 @@ const AChar *StlStringConv<Utf32, AChar>::convert(const Utf32 *start)
     return str.c_str();
 }
 
-void StringCodePointsHelper::validateStartCode(AChar startChar) { alertAlways((startChar >= 192u) || (startChar < 128u)); }
+void StringCodePointsHelper::validateStartCode(AChar startChar) noexcept { alertAlways((startChar >= 192u) || (startChar < 128u)); }
 
-void StringCodePointsHelper::validateStartCode(WChar startChar)
+void StringCodePointsHelper::validateStartCode(WChar startChar) noexcept
 {
     alertAlways(sizeof(WChar) == 4 || (startChar < 0xDC00u) || (startChar >= 0xE000u));
 }

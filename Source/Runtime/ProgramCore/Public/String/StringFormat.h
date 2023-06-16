@@ -98,28 +98,28 @@ public:
     // getChar - String to TChar* and primitive types pass templates
     template <typename StrType>
     requires HasValidCStrMethod<StrType>
-    constexpr static const TChar *getChar(const StrType &value)
+    constexpr static const TChar *getChar(const StrType &value) noexcept
     {
         return static_cast<const TChar *>(value.c_str());
     }
 
     template <typename StrType>
     requires HasValidGetCharMethod<StrType> && (!HasValidCStrMethod<StrType>)
-    constexpr static const TChar *getChar(const StrType &value)
+    constexpr static const TChar *getChar(const StrType &value) noexcept
     {
         return static_cast<const TChar *>(value.getChar());
     }
 
     template <typename StrType>
     requires std::convertible_to<StrType, const TChar *>
-    constexpr static const TChar *getChar(StrType value)
+    constexpr static const TChar *getChar(StrType value) noexcept
     {
         return static_cast<const TChar *>(value);
     }
 
     // Fall through getChar()
     template <typename StrType>
-    constexpr static StrType getChar(StrType value)
+    constexpr static StrType getChar(StrType value) noexcept
     {
         return std::forward<StrType>(value);
     }
@@ -127,7 +127,7 @@ public:
     // toString - To String templates
     template <typename Type>
     requires HasToStringMethod<Type>
-    FORCE_INLINE static String toString(const Type &value)
+    FORCE_INLINE static String toString(const Type &value) noexcept
     {
         return value.toString();
     }
@@ -135,7 +135,7 @@ public:
     // Only std::ostream << type exists
     template <typename Type>
     requires HasOStreamInsertOverrideMethod<Type>
-    FORCE_INLINE static BaseString toString(const Type &value)
+    FORCE_INLINE static BaseString toString(const Type &value) noexcept
     {
         OStringStream stream;
         stream << value;
@@ -145,14 +145,14 @@ public:
     // All string and primitive(fundamental) type
     template <typename Type>
     requires StringOrFundamentalTypes<Type>
-    constexpr static Type toString(Type &&value)
+    constexpr static Type toString(Type &&value) noexcept
     {
         return std::forward<Type>(value);
     }
 
     template <typename KeyType, typename ValueType>
     requires HasStringFormatToStringImpl<KeyType, StringFormat> && HasStringFormatToStringImpl<ValueType, StringFormat>
-    static String toString(const std::pair<KeyType, ValueType> &pair)
+    static String toString(const std::pair<KeyType, ValueType> &pair) noexcept
     {
         OStringStream stream;
         stream << TCHAR("{ ") << toString(pair.first) << TCHAR(", ") << toString(pair.second) << TCHAR(" }");
@@ -161,7 +161,7 @@ public:
 
     template <typename IterableType>
     requires StringConvertibleIteratorType<IterableType, StringFormat>
-    static BaseString toString(IterableType &&iterable)
+    static BaseString toString(IterableType &&iterable) noexcept
     {
         using Type = UnderlyingType<IterableType>;
 
@@ -182,13 +182,13 @@ public:
 
     // std::format preprocessors
     template <HasStdFormatter Type>
-    constexpr static Type toFormatValue(Type &&value)
+    constexpr static Type toFormatValue(Type &&value) noexcept
     {
         return std::forward<Type>(value);
     }
     template <HasStringFormatToStringImpl<StringFormat> Type>
     requires (!HasStdFormatter<Type>)
-    constexpr static String toFormatValue(Type &&value)
+    constexpr static String toFormatValue(Type &&value) noexcept
     {
         return toString(std::forward<Type>(value));
     }
@@ -206,7 +206,7 @@ private:
     // && (Not necessary but nice to have this)passes the type as it is from the caller like r-values as
     // well, else r-values gets converted to l-values on this call
     template <typename... Args>
-    DEBUG_INLINE static String stringPrintf(const TChar *fmt, Args &&...args)
+    DEBUG_INLINE static String stringPrintf(const TChar *fmt, Args &&...args) noexcept
     {
         int32 size = STRING_PRINTF(nullptr, 0, fmt, getChar<Args>(args)...);
         String fmted;
@@ -217,7 +217,7 @@ private:
         fmted.resize(size);
         return fmted;
     }
-    DEBUG_INLINE static String stringPrintf(const TChar *fmt, va_list args)
+    DEBUG_INLINE static String stringPrintf(const TChar *fmt, va_list args) noexcept
     {
         int32 size = STRING_VPRINTF(nullptr, 0, fmt, args);
         String fmted;

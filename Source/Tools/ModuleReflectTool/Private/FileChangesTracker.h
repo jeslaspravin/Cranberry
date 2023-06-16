@@ -46,5 +46,5 @@ public:
     bool isTargetOutdated(StringView absPath, ArrayView<StringView> outputFiles) const;
     bool updateNewerFile(StringView absPath, ArrayView<StringView> outputFiles);
     // clears files not present in this list from tracked entry, and returns list of removed files
-    std::vector<String> filterIntersects(ArrayView<String> srcfilePaths);
+    std::vector<String> filterIntersects(ArrayView<String> srcfilePaths) noexcept;
 };

@@ -16,7 +16,7 @@ struct ToStringImpl
     using value_type = CharType;
 
     template <typename Type>
-    static String toString(Type &&value)
+    static String toString(Type &&value) noexcept
     {
         static_assert(DependentFalseTypeValue<Type>, "Unsupported CharType to convert into");
         return {};
@@ -25,24 +25,24 @@ struct ToStringImpl
 
 struct StringCodePointsHelper
 {
-    static uint64 count(const AChar *startChar);
-    static uint64 count(const WChar *startChar);
+    static uint64 count(const AChar *startChar) noexcept;
+    static uint64 count(const WChar *startChar) noexcept;
 
-    PROGRAMCORE_EXPORT static void validateStartCode(AChar startChar);
-    PROGRAMCORE_EXPORT static void validateStartCode(WChar startChar);
-    FORCE_INLINE static uint32 utf8ToCode(const Utf8 *firstChar, uint32 byteCount);
-    FORCE_INLINE static uint32 utf16ToCode(const Utf16 *firstChar);
+    PROGRAMCORE_EXPORT static void validateStartCode(AChar startChar) noexcept;
+    PROGRAMCORE_EXPORT static void validateStartCode(WChar startChar) noexcept;
+    FORCE_INLINE static uint32 utf8ToCode(const Utf8 *firstChar, uint32 byteCount) noexcept;
+    FORCE_INLINE static uint32 utf16ToCode(const Utf16 *firstChar) noexcept;
     // startChar must be valid a code point start
-    FORCE_INLINE static uint32 codePoint(AChar const *&endChar, AChar const *&startChar);
-    FORCE_INLINE static uint32 codePoint(WChar const *&endChar, WChar const *&startChar);
+    FORCE_INLINE static uint32 codePoint(AChar const *&endChar, AChar const *&startChar) noexcept;
+    FORCE_INLINE static uint32 codePoint(WChar const *&endChar, WChar const *&startChar) noexcept;
 
     // Gets next/previous code point from given character start and reference outs endChar for this
     // variable length character
-    FORCE_INLINE static uint32 nextCodePoint(AChar const *&endChar, AChar const *&startChar);
-    FORCE_INLINE static uint32 nextCodePoint(WChar const *&endChar, WChar const *&startChar);
+    FORCE_INLINE static uint32 nextCodePoint(AChar const *&endChar, AChar const *&startChar) noexcept;
+    FORCE_INLINE static uint32 nextCodePoint(WChar const *&endChar, WChar const *&startChar) noexcept;
     // Previous must be invoked from 1st char and never from 0th char
-    FORCE_INLINE static uint32 prevCodePoint(AChar const *&endChar, AChar const *&startChar);
-    FORCE_INLINE static uint32 prevCodePoint(WChar const *&endChar, WChar const *&startChar);
+    FORCE_INLINE static uint32 prevCodePoint(AChar const *&endChar, AChar const *&startChar) noexcept;
+    FORCE_INLINE static uint32 prevCodePoint(WChar const *&endChar, WChar const *&startChar) noexcept;
 };
 
 // Remember we are only converting to UTF-8 when we convert to AChar or char or char8_t
@@ -51,21 +51,21 @@ template <typename FromCharType, typename ToCharType>
 struct StringConv
 {
     // End is inclusive of null-terminated character
-    const ToCharType *convert(const FromCharType *start)
+    const ToCharType *convert(const FromCharType *start) noexcept
     {
         static_assert(DependentFalseTypeValue<StringConv>, "Unsupported CharType conversion combination");
         return nullptr;
     }
 };
 
-// Converter that uses STL to convert between an encoded format(UTF-16/UTF-32) and UTF-8, This is not for
-// converting between platform string and multi byte string Set locale if converting to wchar_t from it's
-// corresponding encoded value utf16/32 using C++ stl functions, Right now it is just converted using
-// reinterpret_cast
+// Converter that uses STL to convert between an encoded format(UTF-16/UTF-32) and UTF-8,
+// This is not for converting between platform string and multi byte string.
+// Set locale if converting to wchar_t from it's corresponding encoded value utf16/32 using C++ stl functions.
+// Right now it is just converted using reinterpret_cast.
 template <typename FromCharType, typename ToCharType>
 struct StlStringConv
 {
-    const ToCharType *convert(const FromCharType *start)
+    const ToCharType *convert(const FromCharType *start) noexcept
     {
         static_assert(DependentFalseTypeValue<StlStringConv>, "Unsupported CharType conversion combination for stl only string conv");
         return nullptr;
@@ -77,13 +77,13 @@ struct StlStringConv
 //////////////////////////////////////////////////////////////////////////
 template <>
 template <typename Type>
-FORCE_INLINE String ToStringImpl<WChar>::toString(Type &&value)
+FORCE_INLINE String ToStringImpl<WChar>::toString(Type &&value) noexcept
 {
     return String(std::to_wstring(std::forward<Type>(value)));
 }
 template <>
 template <typename Type>
-FORCE_INLINE String ToStringImpl<AChar>::toString(Type &&value)
+FORCE_INLINE String ToStringImpl<AChar>::toString(Type &&value) noexcept
 {
     return String(std::to_string(std::forward<Type>(value)));
 }
@@ -91,7 +91,7 @@ FORCE_INLINE String ToStringImpl<AChar>::toString(Type &&value)
 // Code counter for UTF
 // Count code points
 // https://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&item_id=IWS-AppendixA
-FORCE_INLINE uint64 StringCodePointsHelper::count(const WChar *startChar)
+FORCE_INLINE uint64 StringCodePointsHelper::count(const WChar *startChar) noexcept
 {
     uint64 num = 0;
     if CONST_EXPR (std::is_same_v<Utf16, WCharEncodedType>)
@@ -119,7 +119,7 @@ FORCE_INLINE uint64 StringCodePointsHelper::count(const WChar *startChar)
     return num;
 }
 
-FORCE_INLINE uint64 StringCodePointsHelper::count(const AChar *startChar)
+FORCE_INLINE uint64 StringCodePointsHelper::count(const AChar *startChar) noexcept
 {
     uint64 num = 0;
     while (const auto ch = *reinterpret_cast<const Utf8 *>(startChar++))
@@ -131,7 +131,7 @@ FORCE_INLINE uint64 StringCodePointsHelper::count(const AChar *startChar)
     return num;
 }
 
-FORCE_INLINE uint32 StringCodePointsHelper::utf8ToCode(const Utf8 *firstChar, uint32 byteCount)
+FORCE_INLINE uint32 StringCodePointsHelper::utf8ToCode(const Utf8 *firstChar, uint32 byteCount) noexcept
 {
     uint32 codePoint = 0;
     switch (byteCount)
@@ -165,7 +165,7 @@ FORCE_INLINE uint32 StringCodePointsHelper::utf8ToCode(const Utf8 *firstChar, ui
     return codePoint;
 }
 
-FORCE_INLINE uint32 StringCodePointsHelper::utf16ToCode(const Utf16 *firstChar)
+FORCE_INLINE uint32 StringCodePointsHelper::utf16ToCode(const Utf16 *firstChar) noexcept
 {
     // Single wide char
     if ((*firstChar < 0xD800u) && (*firstChar >= 0xE000u))
@@ -180,7 +180,7 @@ FORCE_INLINE uint32 StringCodePointsHelper::utf16ToCode(const Utf16 *firstChar)
     return 0x10000u + (*firstChar - 0xD800u) * 0x400u + (*(firstChar + 1) - 0xDC00u);
 }
 
-FORCE_INLINE uint32 StringCodePointsHelper::codePoint(AChar const *&endChar, AChar const *&startChar)
+FORCE_INLINE uint32 StringCodePointsHelper::codePoint(AChar const *&endChar, AChar const *&startChar) noexcept
 {
 #if DEBUG_VALIDATIONS
     validateStartCode(*startChar);
@@ -213,7 +213,7 @@ FORCE_INLINE uint32 StringCodePointsHelper::codePoint(AChar const *&endChar, ACh
     return utf8ToCode(reinterpret_cast<const Utf8 *>(startChar), byteCount);
 }
 
-FORCE_INLINE uint32 StringCodePointsHelper::nextCodePoint(AChar const *&endChar, AChar const *&startChar)
+FORCE_INLINE uint32 StringCodePointsHelper::nextCodePoint(AChar const *&endChar, AChar const *&startChar) noexcept
 {
     // Find the next char that has valid first byte, This avoids invalid char if startChar is from middle
     // of multi-byte Any character in range [128u, 192) is not valid start byte
@@ -227,7 +227,7 @@ FORCE_INLINE uint32 StringCodePointsHelper::nextCodePoint(AChar const *&endChar,
     return codePoint(endChar, startChar);
 }
 
-FORCE_INLINE uint32 StringCodePointsHelper::prevCodePoint(AChar const *&endChar, AChar const *&startChar)
+FORCE_INLINE uint32 StringCodePointsHelper::prevCodePoint(AChar const *&endChar, AChar const *&startChar) noexcept
 {
     const Utf8 *firstChar = reinterpret_cast<const Utf8 *>(--startChar);
     while (*firstChar < 192u && *firstChar >= 128u)
@@ -239,7 +239,7 @@ FORCE_INLINE uint32 StringCodePointsHelper::prevCodePoint(AChar const *&endChar,
     return codePoint(endChar, startChar);
 }
 
-FORCE_INLINE uint32 StringCodePointsHelper::codePoint(WChar const *&endChar, WChar const *&startChar)
+FORCE_INLINE uint32 StringCodePointsHelper::codePoint(WChar const *&endChar, WChar const *&startChar) noexcept
 {
 #if DEBUG_VALIDATIONS
     validateStartCode(*startChar);
@@ -266,7 +266,7 @@ FORCE_INLINE uint32 StringCodePointsHelper::codePoint(WChar const *&endChar, WCh
     }
 }
 
-FORCE_INLINE uint32 StringCodePointsHelper::nextCodePoint(WChar const *&endChar, WChar const *&startChar)
+FORCE_INLINE uint32 StringCodePointsHelper::nextCodePoint(WChar const *&endChar, WChar const *&startChar) noexcept
 {
     if CONST_EXPR (std::is_same_v<Utf16, WCharEncodedType>)
     {
@@ -288,7 +288,7 @@ FORCE_INLINE uint32 StringCodePointsHelper::nextCodePoint(WChar const *&endChar,
     }
 }
 
-FORCE_INLINE uint32 StringCodePointsHelper::prevCodePoint(WChar const *&endChar, WChar const *&startChar)
+FORCE_INLINE uint32 StringCodePointsHelper::prevCodePoint(WChar const *&endChar, WChar const *&startChar) noexcept
 {
     if CONST_EXPR (std::is_same_v<Utf16, WCharEncodedType>)
     {
@@ -320,7 +320,7 @@ struct StringConv<CharType, CharType>
 {
 private:
 public:
-    FORCE_INLINE const CharType *convert(const CharType *start)
+    FORCE_INLINE const CharType *convert(const CharType *start) noexcept
     {
         // Does it pass the same pointer and keep the temporary converter if any valid?
         return start;
@@ -334,9 +334,9 @@ protected:
     std::string str{};
 
 public:
-    PROGRAMCORE_EXPORT const AChar *convert(const WChar *start);
+    PROGRAMCORE_EXPORT const AChar *convert(const WChar *start) noexcept;
     // Just alias for above to allow converting from inherited StringConv<Utf16/32, Utf8>
-    FORCE_INLINE const AChar *convert(const WCharEncodedType *start) { return convert(reinterpret_cast<const WChar *>(start)); }
+    FORCE_INLINE const AChar *convert(const WCharEncodedType *start) noexcept { return convert(reinterpret_cast<const WChar *>(start)); }
 };
 template <>
 struct StringConv<AChar, WChar>
@@ -345,7 +345,7 @@ protected:
     std::wstring str{};
 
 public:
-    PROGRAMCORE_EXPORT const WChar *convert(const AChar *start);
+    PROGRAMCORE_EXPORT const WChar *convert(const AChar *start) noexcept;
 };
 // Conversion to UTF-8 between UTF-16
 template <>
@@ -355,7 +355,7 @@ protected:
     std::u16string str{};
 
 public:
-    PROGRAMCORE_EXPORT const Utf16 *convert(const AChar *start);
+    PROGRAMCORE_EXPORT const Utf16 *convert(const AChar *start) noexcept;
 };
 template <>
 struct StlStringConv<Utf16, AChar>
@@ -364,7 +364,7 @@ protected:
     std::string str{};
 
 public:
-    PROGRAMCORE_EXPORT const AChar *convert(const Utf16 *start);
+    PROGRAMCORE_EXPORT const AChar *convert(const Utf16 *start) noexcept;
 };
 // Conversion to UTF-8 between UTF-32
 template <>
@@ -374,7 +374,7 @@ protected:
     std::u32string str{};
 
 public:
-    PROGRAMCORE_EXPORT const Utf32 *convert(const AChar *start);
+    PROGRAMCORE_EXPORT const Utf32 *convert(const AChar *start) noexcept;
 };
 template <>
 struct StlStringConv<Utf32, AChar>
@@ -383,28 +383,18 @@ protected:
     std::string str{};
 
 public:
-    PROGRAMCORE_EXPORT const AChar *convert(const Utf32 *start);
+    PROGRAMCORE_EXPORT const AChar *convert(const Utf32 *start) noexcept;
 };
 // StringConv specialization for conversion between any encoded char type and UTF-8
 template <typename FromCharType>
 requires (!std::same_as<FromCharType, AChar>)
 struct StringConv<FromCharType, AChar>
-    : public std::conditional_t<
-          std::is_same_v<FromCharType, WCharEncodedType> // ?
-          ,
-          StringConv<WChar, AChar> // :
-          ,
-          StlStringConv<FromCharType, AChar>>
+    : public std::conditional_t<std::is_same_v<FromCharType, WCharEncodedType>, StringConv<WChar, AChar>, StlStringConv<FromCharType, AChar>>
 {};
 template <typename ToCharType>
 requires (!std::same_as<ToCharType, AChar>)
 struct StringConv<AChar, ToCharType>
-    : public std::conditional_t<
-          std::is_same_v<ToCharType, WCharEncodedType> // ?
-          ,
-          StringConv<AChar, WChar> // :
-          ,
-          StlStringConv<AChar, ToCharType>>
+    : public std::conditional_t<std::is_same_v<ToCharType, WCharEncodedType>, StringConv<AChar, WChar>, StlStringConv<AChar, ToCharType>>
 {};
 
 //////////////////////////////////////////////////////////////////////////
@@ -412,12 +402,12 @@ struct StringConv<AChar, ToCharType>
 //////////////////////////////////////////////////////////////////////////
 
 template <typename Type>
-STRING_FUNCQUALIFIER String String::toString(Type &&value)
+STRING_FUNCQUALIFIER String String::toString(Type &&value) noexcept
 {
     return ToStringImpl<String::value_type>::toString(std::forward<Type>(value));
 }
 
-FORCE_INLINE uint64 String::codeCount() const { return StringCodePointsHelper::count(getChar()); }
+FORCE_INLINE uint64 String::codeCount() const noexcept { return StringCodePointsHelper::count(getChar()); }
 // Code points iterator
 // Lifetime must be less than the string that this is iterating
 class StringCodePointsIterator
@@ -427,7 +417,7 @@ private:
     String::const_pointer endPtr;
     String::const_pointer charStart;
     String::const_pointer charEnd;
-    uint32 codePoint;
+    uint32 codePtValue;
 
 public:
     /* Iterator traits skipped difference_type as it does not makes sense */
@@ -441,15 +431,15 @@ public:
     StringCodePointsIterator() = default;
     StringCodePointsIterator(const StringCodePointsIterator &itr) = default;
     StringCodePointsIterator(StringCodePointsIterator &&itr) = default;
-    StringCodePointsIterator(const String &str)
+    StringCodePointsIterator(const String &str) noexcept
         : beginPtr(str.getChar())
         , endPtr(str.getChar() + str.size())
         , charStart(str.getChar())
-        , codePoint(StringCodePointsHelper::codePoint(charEnd, charStart))
+        , codePtValue(StringCodePointsHelper::codePoint(charEnd, charStart))
     {}
 
     // Helper to get end iterator for a String
-    static StringCodePointsIterator end(const String &str)
+    static StringCodePointsIterator end(const String &str) noexcept
     {
         StringCodePointsIterator itr(str);
         // Setting end will make next char to start from end
@@ -457,51 +447,51 @@ public:
         return ++itr;
     }
 
-    StringView view() const { return StringView(charStart, charEnd); }
+    StringView view() const noexcept { return StringView(charStart, charEnd); }
 
-    const_pointer operator->() const { return &codePoint; }
+    const_pointer operator->() const noexcept { return &codePtValue; }
 
-    const value_type &operator* () const { return codePoint; }
+    const value_type &operator* () const noexcept { return codePtValue; }
 
-    bool operator!= (const StringCodePointsIterator &other) const
+    bool operator!= (const StringCodePointsIterator &other) const noexcept
     {
-        return !(codePoint == other.codePoint && charStart == other.charStart && charEnd == other.charEnd);
+        return !(codePtValue == other.codePtValue && charStart == other.charStart && charEnd == other.charEnd);
     }
 
-    StringCodePointsIterator &operator++ ()
+    StringCodePointsIterator &operator++ () noexcept
     {
         // if we arrived at end just setup few things manually, calling nextCodePoint must give same
         // result with same input
         if (charEnd == endPtr)
         {
             charStart = charEnd = endPtr;
-            codePoint = 0;
+            codePtValue = 0;
         }
         else
         {
             charStart = charEnd;
-            codePoint = StringCodePointsHelper::nextCodePoint(charEnd, charStart);
+            codePtValue = StringCodePointsHelper::nextCodePoint(charEnd, charStart);
         }
         return *this;
     }
 
-    StringCodePointsIterator operator++ (int)
+    StringCodePointsIterator operator++ (int) noexcept
     {
         StringCodePointsIterator retVal(*this);
         this->operator++ ();
         return retVal;
     }
 
-    StringCodePointsIterator &operator-- ()
+    StringCodePointsIterator &operator-- () noexcept
     {
         if (charStart != beginPtr)
         {
-            codePoint = StringCodePointsHelper::prevCodePoint(charEnd, charStart);
+            codePtValue = StringCodePointsHelper::prevCodePoint(charEnd, charStart);
         }
         return *this;
     }
 
-    StringCodePointsIterator operator-- (int)
+    StringCodePointsIterator operator-- (int) noexcept
     {
         StringCodePointsIterator retVal(*this);
         this->operator-- ();
@@ -513,11 +503,11 @@ struct StringCodePoints
 {
     const String *str = nullptr;
 
-    StringCodePoints(const String &inStr)
+    StringCodePoints(const String &inStr) noexcept
         : str(&inStr)
     {}
 
-    StringCodePointsIterator begin() const
+    StringCodePointsIterator begin() const noexcept
     {
         if (!str)
         {
@@ -526,7 +516,7 @@ struct StringCodePoints
         return StringCodePointsIterator(*str);
     }
 
-    StringCodePointsIterator end() const
+    StringCodePointsIterator end() const noexcept
     {
         if (!str)
         {

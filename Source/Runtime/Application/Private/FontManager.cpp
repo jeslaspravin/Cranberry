@@ -134,19 +134,19 @@ public:
     std::unordered_set<GlyphIndex> glyphsPending;
 
 private:
-    DEBUG_INLINE uint32 findFallbackCodepoint(FontIndex font);
+    DEBUG_INLINE uint32 findFallbackCodepoint(FontIndex font) noexcept;
 
 public:
-    FontManagerContext(const FontManager *inOwner)
+    FontManagerContext(const FontManager *inOwner) noexcept
         : owner(inOwner)
         , defaultFont(0){};
 
-    FORCE_INLINE static UShortRect clipBorder(const UShortRect &inTexCoord)
+    FORCE_INLINE static UShortRect clipBorder(const UShortRect &inTexCoord) noexcept
     {
         return UShortRect(inTexCoord.minBound + BORDER_SIZE, inTexCoord.maxBound - BORDER_SIZE);
     }
 
-    FORCE_INLINE static FontHeight pixelsToHeight(uint32 heightInPixels)
+    FORCE_INLINE static FontHeight pixelsToHeight(uint32 heightInPixels) noexcept
     {
         uint32 contextHeight = heightInPixels / 32u;
         // Only if height in pixels is above 16 then we have to ceil the value
@@ -154,9 +154,9 @@ public:
         return FontHeight(Math::min(contextHeight, 31u));
     }
 
-    FORCE_INLINE static uint32 heightToPixels(FontHeight height) { return Math::max(height * 32u, 16u); }
+    FORCE_INLINE static uint32 heightToPixels(FontHeight height) noexcept { return Math::max(height * 32u, 16u); }
 
-    FORCE_INLINE static void fromGlyphIndex(uint32 &outCodepoint, FontIndex &outFontIndex, FontHeight &outHeight, GlyphIndex glyph)
+    FORCE_INLINE static void fromGlyphIndex(uint32 &outCodepoint, FontIndex &outFontIndex, FontHeight &outHeight, GlyphIndex glyph) noexcept
     {
         // Mask first 5bits
         outHeight = (glyph & 0x1Fu);
@@ -168,7 +168,7 @@ public:
     }
 
     // FontManagerContext::pixelsToHeight to get FontHeight for pixel height
-    FORCE_INLINE static GlyphIndex toGlyphIndex(uint32 codepoint, FontIndex fontIndex, FontHeight height)
+    FORCE_INLINE static GlyphIndex toGlyphIndex(uint32 codepoint, FontIndex fontIndex, FontHeight height) noexcept
     {
         GlyphIndex retVal = 0;
         retVal = codepoint;
@@ -179,7 +179,7 @@ public:
         return retVal;
     }
 
-    FORCE_INLINE FontIndex addFont(const std::vector<uint8> &fontData, const String &fontName)
+    FORCE_INLINE FontIndex addFont(const std::vector<uint8> &fontData, const String &fontName) noexcept
     {
         FontIndex idx = FontIndex(allFonts.size());
 
@@ -202,25 +202,25 @@ public:
     // Wrapper
     // Codepoint's equivalent Glyph index in font
     // Use only if this data is not available in FontGlyph data
-    FORCE_INLINE uint32 codepointToFontGlyphIndex(FontIndex font, uint32 codepoint) const
+    FORCE_INLINE uint32 codepointToFontGlyphIndex(FontIndex font, uint32 codepoint) const noexcept
     {
         return stbtt_FindGlyphIndex(&allFonts[font].stbFont, codepoint);
     }
 
     // Wrapper
     // Scale factor to make font of given size from font's size
-    FORCE_INLINE float scaleToPixelHeight(FontIndex font, uint32 heightInPixels) const
+    FORCE_INLINE float scaleToPixelHeight(FontIndex font, uint32 heightInPixels) const noexcept
     {
         return stbtt_ScaleForPixelHeight(&allFonts[font].stbFont, float(heightInPixels));
     }
     // Scale factor to make glyph height to requested height in pixels
-    FORCE_INLINE static float scaleHeightToPixelHeight(uint32 heightInPixels, FontHeight height)
+    FORCE_INLINE static float scaleHeightToPixelHeight(uint32 heightInPixels, FontHeight height) noexcept
     {
         return float(heightInPixels) / float(heightToPixels(height));
     }
 
     // Wrapper
-    FORCE_INLINE void glyphHMetrics(FontIndex font, const FontGlyph &glyph, int32 &advance, int32 &leftSideBearing) const
+    FORCE_INLINE void glyphHMetrics(FontIndex font, const FontGlyph &glyph, int32 &advance, int32 &leftSideBearing) const noexcept
     {
         stbtt_GetGlyphHMetrics(&allFonts[font].stbFont, glyph.glyphIdx, &advance, &leftSideBearing);
     }
@@ -230,7 +230,7 @@ public:
     // Box is scaled with provided scaling
     FORCE_INLINE void glyphBitmapBoxSubPixel(
         FontIndex font, const FontGlyph &glyph, float scale, float xShift, float yShift, int32 &x0, int32 &y0, int32 &x1, int32 &y1
-    ) const
+    ) const noexcept
     {
         stbtt_GetGlyphBitmapBoxSubpixel(&allFonts[font].stbFont, glyph.glyphIdx, scale, scale, xShift, yShift, &x0, &y0, &x1, &y1);
     }
@@ -242,7 +242,7 @@ public:
     FORCE_INLINE void glyphBitmapSubPixel(
         FontIndex font, const FontGlyph &glyph, float scale, float xShift, float yShift, uint8 *outBitmap, int32 glyphWidth, int32 glyphHeight,
         int32 bitmapStride
-    ) const
+    ) const noexcept
     {
         // stbtt_MakeGlyphBitmapSubpixel(
         //     &allFonts[font].stbFont, outBitmap, glyphWidth, glyphHeight, bitmapStride, scale, scale, xShift, yShift, glyph.glyphIdx
@@ -258,7 +258,7 @@ public:
     // Wrapper
     // Kern advance if next character is glyph2
     // Advance value is unscaled
-    FORCE_INLINE int32 glyphKernAdvance(FontIndex font, const FontGlyph &glyph1, const FontGlyph &glyph2) const
+    FORCE_INLINE int32 glyphKernAdvance(FontIndex font, const FontGlyph &glyph1, const FontGlyph &glyph2) const noexcept
     {
         return stbtt_GetGlyphKernAdvance(&allFonts[font].stbFont, glyph1.glyphIdx, glyph2.glyphIdx);
     }
@@ -266,7 +266,7 @@ public:
     // Utility functions
 
     // Just finds glyph and does not adds incoming glyph
-    FORCE_INLINE const FontGlyph *findGlyph(uint32 codepoint, FontIndex font, FontHeight height) const
+    FORCE_INLINE const FontGlyph *findGlyph(uint32 codepoint, FontIndex font, FontHeight height) const noexcept
     {
         auto glyphItr = allGlyphs.find(toGlyphIndex(codepoint, font, height));
         if (glyphItr == allGlyphs.cend())
@@ -277,7 +277,7 @@ public:
     }
 
     // Adds some necessary glyphs for this fonts at given height
-    FORCE_INLINE void addNecessaryGlyphs(FontIndex font, FontHeight height)
+    FORCE_INLINE void addNecessaryGlyphs(FontIndex font, FontHeight height) noexcept
     {
         CONST_EXPR static const uint32 NECESSARY_CODEPOINTS[] = { SPACE_CHAR, UNKNOWN_GLYPH, QUESTION_CHAR };
         for (uint32 codePt : NECESSARY_CODEPOINTS)
@@ -290,9 +290,9 @@ public:
         }
     }
 
-    void updatePendingGlyphs();
+    void updatePendingGlyphs() noexcept;
 
-    bool isSpaceCode(uint32 codepoint)
+    bool isSpaceCode(uint32 codepoint) noexcept
     {
         for (uint32 i = 0; i < ARRAY_LENGTH(UNICODE_SPACES); ++i)
         {
@@ -306,8 +306,9 @@ public:
     // gives advance value for given spaces and return true if one of the handled spaces
     // xAdvance is given out in glyph scaled value
     // yAdvance is scaled to fontToHeightScale value
-    FORCE_INLINE bool
-    advanceSpace(uint32 codepoint, FontIndex font, const FontGlyph &spaceGlyph, float fontToHeightScale, int32 &xAdvance, int32 &yAdvance)
+    FORCE_INLINE bool advanceSpace(
+        uint32 codepoint, FontIndex font, const FontGlyph &spaceGlyph, float fontToHeightScale, int32 &xAdvance, int32 &yAdvance
+    ) noexcept
     {
         xAdvance = 0;
         yAdvance = 0;
@@ -342,7 +343,7 @@ public:
     }
 };
 
-DEBUG_INLINE uint32 FontManagerContext::findFallbackCodepoint(FontIndex font)
+DEBUG_INLINE uint32 FontManagerContext::findFallbackCodepoint(FontIndex font) noexcept
 {
     CONST_EXPR static const uint32 FALLBACK_CHARS[] = { UNKNOWN_GLYPH, QUESTION_CHAR, SPACE_CHAR };
     for (uint32 codePt : FALLBACK_CHARS)
@@ -356,7 +357,7 @@ DEBUG_INLINE uint32 FontManagerContext::findFallbackCodepoint(FontIndex font)
     return UNKNOWN_GLYPH;
 }
 
-void FontManagerContext::updatePendingGlyphs()
+void FontManagerContext::updatePendingGlyphs() noexcept
 {
     if (glyphsPending.empty())
     {

@@ -78,14 +78,14 @@ public:
         : BaseString(strView)
     {}
 
-    STRING_FUNCQUALIFIER const TChar *getChar() const { return c_str(); }
+    STRING_FUNCQUALIFIER const TChar *getChar() const noexcept { return c_str(); }
 
     // Count of String's character code points
-    FORCE_INLINE uint64 codeCount() const;
+    FORCE_INLINE uint64 codeCount() const noexcept;
 
     STRING_FUNCQUALIFIER bool findAny(
         size_type &outIndex, StringView &outFoundString, const std::vector<String> &findStrgs, size_type offset = 0, bool fromEnd = false
-    ) const
+    ) const noexcept
     {
         size_type foundAt = npos;
         for (const String &strg : findStrgs)
@@ -108,7 +108,7 @@ public:
         return false;
     }
 
-    STRING_FUNCQUALIFIER String replaceAllCopy(StringView from, StringView to) const
+    STRING_FUNCQUALIFIER String replaceAllCopy(StringView from, StringView to) const noexcept
     {
         String newStr{ this->getChar() };
         size_type replaceAtPos = 0;
@@ -120,7 +120,7 @@ public:
         return newStr;
     }
 
-    STRING_FUNCQUALIFIER String &replaceAll(StringView from, StringView to)
+    STRING_FUNCQUALIFIER String &replaceAll(StringView from, StringView to) noexcept
     {
         size_type replaceAtPos = 0;
         while ((replaceAtPos = find(from, replaceAtPos)) != npos)
@@ -131,7 +131,7 @@ public:
         return *this;
     }
 
-    STRING_FUNCQUALIFIER bool isEqual(StringView match, bool bMatchCase = true) const
+    STRING_FUNCQUALIFIER bool isEqual(StringView match, bool bMatchCase = true) const noexcept
     {
         if (length() != match.length())
         {
@@ -154,7 +154,7 @@ public:
         return cbegin() == it;
     }
 
-    STRING_FUNCQUALIFIER bool startsWith(StringView match, bool bMatchCase = true) const
+    STRING_FUNCQUALIFIER bool startsWith(StringView match, bool bMatchCase = true) const noexcept
     {
         if (length() < match.length())
         {
@@ -177,7 +177,7 @@ public:
         return cbegin() == it;
     }
 
-    STRING_FUNCQUALIFIER bool startsWith(TChar match, bool bMatchCase = true) const
+    STRING_FUNCQUALIFIER bool startsWith(TChar match, bool bMatchCase = true) const noexcept
     {
         if (length() == 0)
         {
@@ -192,7 +192,7 @@ public:
         return std::toupper(*begin()) == std::toupper(match);
     }
 
-    STRING_FUNCQUALIFIER bool endsWith(StringView match, bool bMatchCase = true) const
+    STRING_FUNCQUALIFIER bool endsWith(StringView match, bool bMatchCase = true) const noexcept
     {
         if (length() < match.length())
         {
@@ -216,7 +216,7 @@ public:
         return it == searchFrom;
     }
 
-    STRING_FUNCQUALIFIER bool endsWith(TChar match, bool bMatchCase = true) const
+    STRING_FUNCQUALIFIER bool endsWith(TChar match, bool bMatchCase = true) const noexcept
     {
         if (length() == 0)
         {
@@ -231,7 +231,7 @@ public:
         return std::toupper(*endItr) == std::toupper(match);
     }
 
-    STRING_FUNCQUALIFIER String &trimL()
+    STRING_FUNCQUALIFIER String &trimL() noexcept
     {
         erase(
             begin(), std::find_if(
@@ -245,7 +245,7 @@ public:
         return *this;
     }
 
-    STRING_FUNCQUALIFIER String &trimR()
+    STRING_FUNCQUALIFIER String &trimR() noexcept
     {
         erase(
             std::find_if(
@@ -260,7 +260,7 @@ public:
         return *this;
     }
 
-    STRING_FUNCQUALIFIER String &trim()
+    STRING_FUNCQUALIFIER String &trim() noexcept
     {
         trimL();
         trimR();
@@ -269,7 +269,7 @@ public:
 
     // Removes consequently duplicated chars
     // **NOTE** Only works for characters that can be represented in sizeof(TChar)
-    STRING_FUNCQUALIFIER String &trimDuplicates(TChar duplicateChar, uint64 offset = 0)
+    STRING_FUNCQUALIFIER String &trimDuplicates(TChar duplicateChar, uint64 offset = 0) noexcept
     {
         uint64 foundAt = find(duplicateChar, offset);
         while (foundAt != npos)
@@ -295,7 +295,7 @@ public:
         return (*this);
     }
 
-    STRING_FUNCQUALIFIER String trimLCopy() const
+    STRING_FUNCQUALIFIER String trimLCopy() const noexcept
     {
         String s(*this);
         s.erase(
@@ -310,7 +310,7 @@ public:
         return s;
     }
 
-    STRING_FUNCQUALIFIER String trimRCopy() const
+    STRING_FUNCQUALIFIER String trimRCopy() const noexcept
     {
         String s(*this);
         s.erase(
@@ -326,7 +326,7 @@ public:
         return s;
     }
 
-    STRING_FUNCQUALIFIER String trimCopy() const
+    STRING_FUNCQUALIFIER String trimCopy() const noexcept
     {
         String s(*this);
         s.trim();
@@ -335,7 +335,7 @@ public:
 
     // Removes consequently duplicated chars
     // **NOTE** Only works for characters that can be represented in sizeof(TChar)
-    STRING_FUNCQUALIFIER String trimDuplicatesCopy(TChar duplicateChar, uint64 offset = 0) const
+    STRING_FUNCQUALIFIER String trimDuplicatesCopy(TChar duplicateChar, uint64 offset = 0) const noexcept
     {
         String s(*this);
         s.trimDuplicates(duplicateChar, offset);
@@ -416,27 +416,27 @@ public:
         return outStrs;
     }
 
-    void toUpper()
+    void toUpper() noexcept
     {
         for (TChar &ch : (*this))
         {
             ch = TChar(std::toupper(ch));
         }
     }
-    void toLower()
+    void toLower() noexcept
     {
         for (TChar &ch : (*this))
         {
             ch = TChar(std::tolower(ch));
         }
     }
-    String toUpperCopy() const
+    String toUpperCopy() const noexcept
     {
         String str = *this;
         str.toUpper();
         return str;
     }
-    String toLowerCopy() const
+    String toLowerCopy() const noexcept
     {
         String str = *this;
         str.toLower();
@@ -444,7 +444,7 @@ public:
     }
 
     template <typename IteratorType, typename StrType>
-    STRING_FUNCQUALIFIER static String join(IteratorType begin, IteratorType end, StrType &&separator)
+    STRING_FUNCQUALIFIER static String join(IteratorType begin, IteratorType end, StrType &&separator) noexcept
     {
         String s;
         if (begin == end)
@@ -460,7 +460,7 @@ public:
         return s;
     }
 
-    STRING_FUNCQUALIFIER static std::vector<StringView> split(StringView inStr, StringView separator)
+    STRING_FUNCQUALIFIER static std::vector<StringView> split(StringView inStr, StringView separator) noexcept
     {
         std::vector<StringView> outStrs;
         uint64 foundAtPos = 0;
@@ -478,7 +478,7 @@ public:
     }
 
     template <typename Type>
-    STRING_FUNCQUALIFIER static String toString(Type &&value);
+    STRING_FUNCQUALIFIER static String toString(Type &&value) noexcept;
 };
 
 template <>

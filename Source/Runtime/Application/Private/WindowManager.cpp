@@ -22,8 +22,6 @@
 #include "ApplicationSettings.h"
 #include "IApplicationModule.h"
 
-GenericAppWindow *WindowManager::getMainWindow() const { return appMainWindow; }
-
 void WindowManager::init()
 {
     const ApplicationInstance *appInstance = IApplicationModule::get()->getApplication();
@@ -111,7 +109,9 @@ void WindowManager::destroyWindow(GenericAppWindow *window)
     destroyPendingWindows();
 }
 
-WindowCanvasRef WindowManager::getWindowCanvas(GenericAppWindow *window) const
+GenericAppWindow *WindowManager::getMainWindow() const noexcept { return appMainWindow; }
+
+WindowCanvasRef WindowManager::getWindowCanvas(GenericAppWindow *window) const noexcept
 {
     if (window && window->isValidWindow())
     {
@@ -121,7 +121,7 @@ WindowCanvasRef WindowManager::getWindowCanvas(GenericAppWindow *window) const
     return nullptr;
 }
 
-std::vector<GenericAppWindow *> WindowManager::getArrangedWindows() const
+std::vector<GenericAppWindow *> WindowManager::getArrangedWindows() const noexcept
 {
     std::vector<GenericAppWindow *> arrangedWindows(windowsOpened.size());
     for (const std::pair<GenericAppWindow *const, ManagerData> &wnd : windowsOpened)
@@ -131,7 +131,7 @@ std::vector<GenericAppWindow *> WindowManager::getArrangedWindows() const
     return arrangedWindows;
 }
 
-GenericAppWindow *WindowManager::findWindowUnder(Short2 screenPos) const
+GenericAppWindow *WindowManager::findWindowUnder(Short2 screenPos) const noexcept
 {
     // First find using native API
     WindowHandle wndHnd = PlatformAppWindow::getWindowUnderPoint(screenPos);
@@ -152,7 +152,7 @@ GenericAppWindow *WindowManager::findWindowUnder(Short2 screenPos) const
     return nullptr;
 }
 
-GenericAppWindow *WindowManager::findNativeHandleWindow(WindowHandle wndHnd) const
+GenericAppWindow *WindowManager::findNativeHandleWindow(WindowHandle wndHnd) const noexcept
 {
     if (wndHnd == nullptr)
     {
@@ -169,7 +169,7 @@ GenericAppWindow *WindowManager::findNativeHandleWindow(WindowHandle wndHnd) con
     return nullptr;
 }
 
-void WindowManager::postInitGraphicCore()
+void WindowManager::postInitGraphicCore() noexcept
 {
     ENQUEUE_RENDER_COMMAND(InitWindowCanvas)
     (
@@ -209,7 +209,7 @@ void WindowManager::updateWindowCanvas()
     );
 }
 
-void WindowManager::activateWindow(GenericAppWindow *window)
+void WindowManager::activateWindow(GenericAppWindow *window) noexcept
 {
     if (window != activeWindow)
     {
@@ -233,7 +233,7 @@ void WindowManager::activateWindow(GenericAppWindow *window)
     }
 }
 
-void WindowManager::deactivateWindow(GenericAppWindow *window)
+void WindowManager::deactivateWindow(GenericAppWindow *window) noexcept
 {
     if (window == activeWindow)
     {
@@ -241,7 +241,7 @@ void WindowManager::deactivateWindow(GenericAppWindow *window)
     }
 }
 
-bool WindowManager::pollWindows()
+bool WindowManager::pollWindows() noexcept
 {
     windowsToDestroy.clear();
     for (std::pair<GenericAppWindow *const, ManagerData> &windowData : windowsOpened)
@@ -252,7 +252,7 @@ bool WindowManager::pollWindows()
     return activeWindow != nullptr;
 }
 
-void WindowManager::onWindowResize(uint32 width, uint32 height, GenericAppWindow *window)
+void WindowManager::onWindowResize(uint32 width, uint32 height, GenericAppWindow *window) noexcept
 {
     if (window->windowHeight != height || window->windowWidth != width)
     {
@@ -289,7 +289,7 @@ void WindowManager::onWindowResize(uint32 width, uint32 height, GenericAppWindow
     }
 }
 
-void WindowManager::requestDestroyWindow(GenericAppWindow *window)
+void WindowManager::requestDestroyWindow(GenericAppWindow *window) noexcept
 {
     // If destroying main window we have to destroy everything
     if (window == appMainWindow)
@@ -310,7 +310,7 @@ void WindowManager::requestDestroyWindow(GenericAppWindow *window)
     windowsToDestroy.emplace_back(window);
 }
 
-void WindowManager::destroyPendingWindows()
+void WindowManager::destroyPendingWindows() noexcept
 {
     std::vector<WindowCanvasRef> canvasesToDestroy;
     canvasesToDestroy.reserve(windowsToDestroy.size());
@@ -368,7 +368,7 @@ void WindowManager::destroyPendingWindows()
     windowsToDestroy.clear();
 }
 
-GenericAppWindow *WindowManager::findChildWindowUnder(GenericAppWindow *window, Short2 screenPos) const
+GenericAppWindow *WindowManager::findChildWindowUnder(GenericAppWindow *window, Short2 screenPos) const noexcept
 {
     for (GenericAppWindow *childWnd : window->childWindows)
     {

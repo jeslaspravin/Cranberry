@@ -97,7 +97,7 @@ bool FileChangesTracker::updateNewerFile(StringView absPath, ArrayView<StringVie
     return false;
 }
 
-std::vector<String> FileChangesTracker::filterIntersects(ArrayView<String> srcfilePaths)
+std::vector<String> FileChangesTracker::filterIntersects(ArrayView<String> srcfilePaths) noexcept
 {
     std::vector<String> deletedSrcs;
     deletedSrcs.reserve(srcfilePaths.size());

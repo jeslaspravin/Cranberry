@@ -46,33 +46,33 @@ public:
      *  v4------v3
      */
     APPLICATION_EXPORT void
-    drawBox(ArrayView<UInt2> verts, ArrayView<Vector2> coords, ArrayView<Color> colors, ImageResourceRef texture, ShortRect clip);
-    APPLICATION_EXPORT void drawBox(ArrayView<UInt2> verts, ArrayView<Color> colors, ShortRect clip);
-    APPLICATION_EXPORT void drawBox(ArrayView<UInt2> verts, ShortRect clip);
-    APPLICATION_EXPORT void drawBox(ShortRect box, ImageResourceRef texture, ShortRect clip, Color color = ColorConst::WHITE);
-    APPLICATION_EXPORT void drawBox(ShortRect box, ImageResourceRef texture, ShortRect clip, ArrayView<Color> colors);
+    drawBox(ArrayView<UInt2> verts, ArrayView<Vector2> coords, ArrayView<Color> colors, ImageResourceRef texture, ShortRect clip) noexcept;
+    APPLICATION_EXPORT void drawBox(ArrayView<UInt2> verts, ArrayView<Color> colors, ShortRect clip) noexcept;
+    APPLICATION_EXPORT void drawBox(ArrayView<UInt2> verts, ShortRect clip) noexcept;
+    APPLICATION_EXPORT void drawBox(ShortRect box, ImageResourceRef texture, ShortRect clip, Color color = ColorConst::WHITE) noexcept;
+    APPLICATION_EXPORT void drawBox(ShortRect box, ImageResourceRef texture, ShortRect clip, ArrayView<Color> colors) noexcept;
 
-    APPLICATION_EXPORT void addWaitCondition(SemaphoreRef semaphore);
+    APPLICATION_EXPORT void addWaitCondition(SemaphoreRef semaphore) noexcept;
 
-    APPLICATION_EXPORT void beginLayer();
-    APPLICATION_EXPORT void endLayer();
+    APPLICATION_EXPORT void beginLayer() noexcept;
+    APPLICATION_EXPORT void endLayer() noexcept;
 
-    FORCE_INLINE const std::vector<Color> &perVertexColor() const { return vertexColor; }
-    FORCE_INLINE const std::vector<Short2> &perVertexPos() const { return vertices; }
-    FORCE_INLINE const std::vector<Vector2> &perVertexUV() const { return vertexCoord; }
+    FORCE_INLINE const std::vector<Color> &perVertexColor() const noexcept { return vertexColor; }
+    FORCE_INLINE const std::vector<Short2> &perVertexPos() const noexcept { return vertices; }
+    FORCE_INLINE const std::vector<Vector2> &perVertexUV() const noexcept { return vertexCoord; }
 
-    FORCE_INLINE const std::vector<ImageResourceRef> &perQuadTexture() const { return instanceTexture; }
-    FORCE_INLINE const std::vector<ShortRect> &perQuadClipping() const { return instanceClip; }
+    FORCE_INLINE const std::vector<ImageResourceRef> &perQuadTexture() const noexcept { return instanceTexture; }
+    FORCE_INLINE const std::vector<ShortRect> &perQuadClipping() const noexcept { return instanceClip; }
 
-    FORCE_INLINE const std::vector<SemaphoreRef> &allWaitOnSemaphores() const { return waitOnSemaphores; }
+    FORCE_INLINE const std::vector<SemaphoreRef> &allWaitOnSemaphores() const noexcept { return waitOnSemaphores; }
 
     // Layers at higher indices appear on top of ones below
-    FORCE_INLINE const auto &allLayerVertRange() const
+    FORCE_INLINE const auto &allLayerVertRange() const noexcept
     {
         debugAssertf(layerAlt == -1, "Getting all layer vertex range before all endLayer()");
         return altToVertRange;
     }
 
 private:
-    bool canAddMoreVerts(uint32 vertsCount) const;
+    bool canAddMoreVerts(uint32 vertsCount) const noexcept;
 };

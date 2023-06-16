@@ -14,7 +14,7 @@
 
 void WidgetDrawContext::drawBox(
     ArrayView<UInt2> verts, ArrayView<Vector2> coords, ArrayView<Color> colors, ImageResourceRef texture, ShortRect clip
-)
+) noexcept
 {
     debugAssert(verts.size() == 4 && canAddMoreVerts(4));
 
@@ -26,7 +26,7 @@ void WidgetDrawContext::drawBox(
     instanceClip.emplace_back(clip);
 }
 
-void WidgetDrawContext::drawBox(ArrayView<UInt2> verts, ArrayView<Color> colors, ShortRect clip)
+void WidgetDrawContext::drawBox(ArrayView<UInt2> verts, ArrayView<Color> colors, ShortRect clip) noexcept
 {
     debugAssert(verts.size() == 4 && canAddMoreVerts(4));
 
@@ -38,7 +38,7 @@ void WidgetDrawContext::drawBox(ArrayView<UInt2> verts, ArrayView<Color> colors,
     instanceClip.emplace_back(clip);
 }
 
-void WidgetDrawContext::drawBox(ArrayView<UInt2> verts, ShortRect clip)
+void WidgetDrawContext::drawBox(ArrayView<UInt2> verts, ShortRect clip) noexcept
 {
     debugAssert(verts.size() == 4 && canAddMoreVerts(4));
 
@@ -50,7 +50,7 @@ void WidgetDrawContext::drawBox(ArrayView<UInt2> verts, ShortRect clip)
     instanceClip.emplace_back(clip);
 }
 
-void WidgetDrawContext::drawBox(ShortRect box, ImageResourceRef texture, ShortRect clip, Color color /*= ColorConst::WHITE*/)
+void WidgetDrawContext::drawBox(ShortRect box, ImageResourceRef texture, ShortRect clip, Color color /*= ColorConst::WHITE*/) noexcept
 {
     UInt2 verts[4] = {
         box.minBound, {box.maxBound.x, box.minBound.y},
@@ -67,7 +67,7 @@ void WidgetDrawContext::drawBox(ShortRect box, ImageResourceRef texture, ShortRe
     drawBox(verts, vertCoords, colors, texture, clip);
 }
 
-void WidgetDrawContext::drawBox(ShortRect box, ImageResourceRef texture, ShortRect clip, ArrayView<Color> colors)
+void WidgetDrawContext::drawBox(ShortRect box, ImageResourceRef texture, ShortRect clip, ArrayView<Color> colors) noexcept
 {
     UInt2 verts[4] = {
         box.minBound, {box.maxBound.x, box.minBound.y},
@@ -82,9 +82,9 @@ void WidgetDrawContext::drawBox(ShortRect box, ImageResourceRef texture, ShortRe
     drawBox(verts, vertCoords, colors, texture, clip);
 }
 
-void WidgetDrawContext::addWaitCondition(SemaphoreRef semaphore) { waitOnSemaphores.emplace_back(semaphore); }
+void WidgetDrawContext::addWaitCondition(SemaphoreRef semaphore) noexcept { waitOnSemaphores.emplace_back(semaphore); }
 
-void WidgetDrawContext::beginLayer()
+void WidgetDrawContext::beginLayer() noexcept
 {
     if (layerAlt >= 0)
     {
@@ -103,7 +103,7 @@ void WidgetDrawContext::beginLayer()
     layerVerts.emplace_back(ValueRange<uint32>(uint32(vertices.size()), 0));
 }
 
-void WidgetDrawContext::endLayer()
+void WidgetDrawContext::endLayer() noexcept
 {
     debugAssert(layerAlt >= 0);
     altToVertRange[layerAlt].back().maxBound = vertices.empty() ? 0 : uint32(vertices.size() - 1);
@@ -120,7 +120,7 @@ void WidgetDrawContext::endLayer()
     }
 }
 
-bool WidgetDrawContext::canAddMoreVerts(uint32 vertsCount) const { return (vertices.size() + vertsCount) < (~0u); }
+bool WidgetDrawContext::canAddMoreVerts(uint32 vertsCount) const noexcept { return (vertices.size() + vertsCount) < (~0u); }
 
 void WidgetBase::rebuildWidgetGeometry(WidgetGeomId thisId, WidgetGeomTree &geomTree)
 {

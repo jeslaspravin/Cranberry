@@ -23,7 +23,7 @@ DECLARE_MODULE(ReflectionRuntime, ReflectionRuntimeModule)
 
 const ReflectTypeInfo *ReflectTypeInfo::createTypeInfo(
     const std::type_info &cleanTypeInfo, const ReflectTypeInfo *innerTypeInfo, SizeT size, uint32 alignment, uint32 inQualifiers
-)
+) noexcept
 {
     static std::unordered_set<ReflectTypeInfo> dbTypeInfo;
 

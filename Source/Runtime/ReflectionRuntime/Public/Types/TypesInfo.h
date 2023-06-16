@@ -47,7 +47,7 @@ struct ReflectTypeInfo
 
     REFLECTIONRUNTIME_EXPORT static const ReflectTypeInfo *createTypeInfo(
         const std::type_info &cleanTypeInfo, const ReflectTypeInfo *innerTypeInfo, SizeT size, uint32 alignment, uint32 inQualifiers
-    );
+    ) noexcept;
 };
 
 template <typename Type>
@@ -95,7 +95,7 @@ struct TypeSizeAndAlignment<T>
     static uint32 alignOf() { return 0; }
 };
 template <typename Type>
-const ReflectTypeInfo *typeInfoFrom()
+const ReflectTypeInfo *typeInfoFrom() noexcept
 {
     // Pointer can be const reference cannot be const
     using InnerType
@@ -123,7 +123,7 @@ const ReflectTypeInfo *typeInfoFrom()
 // const* const&, int32 const* const&&>();
 //
 template <typename... Types>
-FORCE_INLINE std::vector<const ReflectTypeInfo *> typeInfoListFrom()
+FORCE_INLINE std::vector<const ReflectTypeInfo *> typeInfoListFrom() noexcept
 {
     std::vector<const ReflectTypeInfo *> retVal{ typeInfoFrom<Types>()... };
     return retVal;
@@ -133,7 +133,7 @@ FORCE_INLINE std::vector<const ReflectTypeInfo *> typeInfoListFrom()
     << (BIT_SET(ti.qualifiers, EReflectTypeQualifiers::Type::QualifierEnum) ? TCHAR(" " #QualifierEnum) : TCHAR(""))
 
 // Logger overrides
-inline OutputStream &operator<< (OutputStream &stream, const ReflectTypeInfo &ti)
+inline OutputStream &operator<< (OutputStream &stream, const ReflectTypeInfo &ti) noexcept
 {
     stream << TCHAR("Type info[0x") << std::hex << &ti << std::dec << TCHAR("]");
     stream << TCHAR("[Name:") << ti.typeID.name() << TCHAR(", ");
