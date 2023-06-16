@@ -64,6 +64,8 @@ private:
 
     FORCE_INLINE static Type abs(const Type &value) { return glm::abs(value); }
 
+    FORCE_INLINE static Type sign(const Type &value) { return glm::sign(value); }
+
     FORCE_INLINE static Type frac(const Type &value) { return glm::fract(value); }
 
     FORCE_INLINE static Type floor(const Type &value) { return glm::floor(value); }
@@ -85,6 +87,7 @@ private:
     FORCE_INLINE static bool isEqual(const Type &a, const Type &b, Type epsilon) { return abs(a - b) <= epsilon; }
 
     FORCE_INLINE static bool isFinite(const Type &value) { return IS_FINITE(value); }
+    FORCE_INLINE static bool isNan(const Type &value) { return glm::isnan(value); }
 };
 
 template <CustomMathTypes Type>
@@ -100,6 +103,8 @@ private:
     FORCE_INLINE static Type max(const Type &a, const Type &b) { return Type::max(a, b); }
 
     FORCE_INLINE static Type abs(const Type &value) { return Type::abs(value); }
+
+    FORCE_INLINE static Type sign(const Type &value) { return Type::sign(value); }
 
     FORCE_INLINE static Type frac(const Type &value) { return Type::fract(value); }
 
@@ -122,6 +127,7 @@ private:
     static bool isEqual(const Type &a, const Type &b, float epsilon) { return a.isSame(b, epsilon); }
 
     FORCE_INLINE static bool isFinite(const Type &value) { return value.isFinite(); }
+    FORCE_INLINE static bool isNan(const Type &value) { return value.isNan(); }
 };
 
 class PROGRAMCORE_EXPORT Math
@@ -161,6 +167,11 @@ public:
     FORCE_INLINE static Type abs(const Type &value)
     {
         return absInternal<Type>(value);
+    }
+    template <typename Type>
+    FORCE_INLINE static Type sign(const Type &value)
+    {
+        return signInternal<Type>(value);
     }
 
     template <typename Type>
@@ -371,6 +382,15 @@ public:
         }
         return MathHelper<Type>::isFinite(value);
     }
+    template <typename Type>
+    FORCE_INLINE static bool isNan(const Type &value)
+    {
+        if CONST_EXPR (std::is_integral_v<Type>)
+        {
+            return false;
+        }
+        return MathHelper<Type>::isNan(value);
+    }
 
     // Rotation specializations
     static Rotation deg2Rad(const Rotation &value);
@@ -409,6 +429,11 @@ private:
     FORCE_INLINE static Type absInternal(const Type &value)
     {
         return MathHelper<Type>::abs(value);
+    }
+    template <typename Type>
+    FORCE_INLINE static Type signInternal(const Type &value)
+    {
+        return MathHelper<Type>::sign(value);
     }
 
     template <typename Type>

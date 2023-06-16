@@ -30,6 +30,7 @@ bool Vector4::isFinite() const
 {
     return Math::isFinite(value.x) && Math::isFinite(value.y) && Math::isFinite(value.z) && Math::isFinite(value.w);
 }
+bool Vector4::isNan() const { return Math::isNan(value.x) || Math::isNan(value.y) || Math::isNan(value.z) || Math::isNan(value.w); }
 
 Vector4 Vector4::safeInverse() const
 {

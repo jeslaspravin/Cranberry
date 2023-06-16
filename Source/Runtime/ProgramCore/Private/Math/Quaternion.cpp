@@ -55,8 +55,11 @@ Rotation Quat::toRotation() const
 
     // https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles#Quaternion_to_Euler_angles_conversion
     float roll = Math::atan(2 * (qwx + qyz), 1.0f - 2 * (qxx + qyy));
-    float pitch = Math::asin(2 * (qwy - qxz));
+    // There is chance when using arc-sin that the input to arc-sin might be outside valid range.
+    // That is because of square length precision loss while normalizing
+    float pitch = Math::asin(Math::clamp(2 * (qwy - qxz), -1.f, 1.f));
     float yaw = Math::atan(2 * (qwz + qxy), 1.0f - 2 * (qyy + qzz));
+
     return Math::rad2Deg(Rotation(roll, pitch, yaw));
 }
 
@@ -166,6 +169,7 @@ bool Quat::isSame(const Quat &b, float epsilon /*= SMALL_EPSILON*/) const
 }
 
 bool Quat::isFinite() const { return Math::isFinite(x) && Math::isFinite(y) && Math::isFinite(z) && Math::isFinite(w); }
+bool Quat::isNan() const { return Math::isNan(x) || Math::isNan(y) || Math::isNan(z) || Math::isNan(w); }
 
 Quat Quat::normalized() const { return (*this) * Math::invSqrt(sqrlength()); }
 
@@ -175,6 +179,11 @@ Quat Quat::safeNormalize(float threshold /*= SMALL_EPSILON*/) const
     if (sqrLen < threshold)
     {
         return IDENTITY;
+    }
+    // https://stackoverflow.com/a/12934750 If normalizing often allows integration based normalization
+    if (Math::isEqual(sqrLen, 1.0f, 2.00050249077e-06f))
+    {
+        return Quat((*this) * float(2.0 / (1.0 + sqrLen)));
     }
     return Quat((*this) * Math::invSqrt(sqrLen));
 }

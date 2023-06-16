@@ -28,6 +28,7 @@ bool Vector2::isSame(const Vector2 &b, float epsilon /*= SMALL_EPSILON*/) const
 }
 
 bool Vector2::isFinite() const { return Math::isFinite(value.x) && Math::isFinite(value.y); }
+bool Vector2::isNan() const { return Math::isNan(value.x) || Math::isNan(value.y); }
 
 Vector2 Vector2::safeInverse() const
 {

@@ -19,6 +19,7 @@ bool Rotation::isSame(const Rotation &b, float epsilon /*= SMALL_EPSILON*/) cons
 }
 
 bool Rotation::isFinite() const { return Math::isFinite(value.x) && Math::isFinite(value.y) && Math::isFinite(value.z); }
+bool Rotation::isNan() const { return Math::isNan(value.x) || Math::isNan(value.y) || Math::isNan(value.z); }
 
 Rotation Math::deg2Rad(const Rotation &value)
 {

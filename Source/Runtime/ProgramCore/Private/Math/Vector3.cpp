@@ -35,6 +35,7 @@ bool Vector3::isSame(const Vector3 &b, float epsilon /*= SMALL_EPSILON*/) const
 }
 
 bool Vector3::isFinite() const { return Math::isFinite(value.x) && Math::isFinite(value.y) && Math::isFinite(value.z); }
+bool Vector3::isNan() const { return Math::isNan(value.x) || Math::isNan(value.y) || Math::isNan(value.z); }
 
 Vector3 Vector3::safeInverse() const
 {

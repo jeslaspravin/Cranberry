@@ -61,6 +61,7 @@ public:
     Quat operator- () const;
     bool isSame(const Quat &b, float epsilon = SMALL_EPSILON) const;
     bool isFinite() const;
+    bool isNan() const;
     Quat normalized() const;
     Quat safeNormalize(float threshold = SMALL_EPSILON) const;
     Quat inverse() const;

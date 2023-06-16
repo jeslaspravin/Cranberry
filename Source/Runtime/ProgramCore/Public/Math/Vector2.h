@@ -76,6 +76,7 @@ public:
 
     bool isSame(const Vector2 &b, float epsilon = SMALL_EPSILON) const;
     bool isFinite() const;
+    bool isNan() const;
     Vector2 safeInverse() const;
     Vector2 normalized() const;
     Vector2 safeNormalized(float threshold = SMALL_EPSILON) const;
@@ -101,6 +102,7 @@ public:
     static Vector2 min(const Vector2 &a, const Vector2 &b);
     static Vector2 max(const Vector2 &a, const Vector2 &b);
     static Vector2 abs(const Vector2 &value);
+    static Vector2 sign(const Vector2 &value);
     static Vector2 floor(const Vector2 &value);
     static Vector2 ceil(const Vector2 &value);
     static Vector2 round(const Vector2 &value);
@@ -223,6 +225,7 @@ inline Vector2 Vector2::min(const Vector2 &a, const Vector2 &b) { return Vector2
 inline Vector2 Vector2::max(const Vector2 &a, const Vector2 &b) { return Vector2(glm::max(a.value, b.value)); }
 
 inline Vector2 Vector2::abs(const Vector2 &value) { return Vector2(glm::abs(value.value)); }
+inline Vector2 Vector2::sign(const Vector2 &value) { return Vector2(glm::sign(value.value)); }
 
 inline Vector2 Vector2::floor(const Vector2 &value) { return Vector2(glm::floor(value.value)); }
 inline Vector2 Vector2::ceil(const Vector2 &value) { return Vector2(glm::ceil(value.value)); }

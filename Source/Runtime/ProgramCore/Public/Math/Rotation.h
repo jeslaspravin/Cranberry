@@ -69,11 +69,13 @@ public:
     Rotation &operator+= (float scalar);
     bool isSame(const Rotation &b, float epsilon = SMALL_EPSILON) const;
     bool isFinite() const;
+    bool isNan() const;
 
     static Rotation clamp(const Rotation &value, const Rotation &min, const Rotation &max);
     static Rotation min(const Rotation &a, const Rotation &b);
     static Rotation max(const Rotation &a, const Rotation &b);
     static Rotation abs(const Rotation &value);
+    static Rotation sign(const Rotation &value);
     static Rotation floor(const Rotation &value);
     static Rotation ceil(const Rotation &value);
     static Rotation round(const Rotation &value);
@@ -172,6 +174,7 @@ inline Rotation Rotation::min(const Rotation &a, const Rotation &b) { return Rot
 inline Rotation Rotation::max(const Rotation &a, const Rotation &b) { return Rotation(glm::max(a.value, b.value)); }
 
 inline Rotation Rotation::abs(const Rotation &value) { return Rotation(glm::abs(value.value)); }
+inline Rotation Rotation::sign(const Rotation &value) { return Rotation(glm::sign(value.value)); }
 
 inline Rotation Rotation::floor(const Rotation &value) { return Rotation(glm::floor(value.value)); }
 inline Rotation Rotation::ceil(const Rotation &value) { return Rotation(glm::ceil(value.value)); }

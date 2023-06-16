@@ -79,6 +79,7 @@ public:
     Vector4 operator- () const;
     bool isSame(const Vector4 &b, float epsilon = SMALL_EPSILON) const;
     bool isFinite() const;
+    bool isNan() const;
     Vector4 safeInverse() const;
     Vector4 normalized() const;
     Vector4 safeNormalized(float threshold = SMALL_EPSILON) const;
@@ -103,6 +104,7 @@ public:
     static Vector4 min(const Vector4 &a, const Vector4 &b);
     static Vector4 max(const Vector4 &a, const Vector4 &b);
     static Vector4 abs(const Vector4 &value);
+    static Vector4 sign(const Vector4 &value);
     static Vector4 floor(const Vector4 &value);
     static Vector4 ceil(const Vector4 &value);
     static Vector4 round(const Vector4 &value);
@@ -231,6 +233,7 @@ inline Vector4 Vector4::min(const Vector4 &a, const Vector4 &b) { return Vector4
 inline Vector4 Vector4::max(const Vector4 &a, const Vector4 &b) { return Vector4(glm::max(a.value, b.value)); }
 
 inline Vector4 Vector4::abs(const Vector4 &value) { return Vector4(glm::abs(value.value)); }
+inline Vector4 Vector4::sign(const Vector4 &value) { return Vector4(glm::sign(value.value)); }
 
 inline Vector4 Vector4::floor(const Vector4 &value) { return Vector4(glm::floor(value.value)); }
 inline Vector4 Vector4::ceil(const Vector4 &value) { return Vector4(glm::ceil(value.value)); }

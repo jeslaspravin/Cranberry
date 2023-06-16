@@ -81,6 +81,7 @@ public:
     Vector3 operator- () const;
     bool isSame(const Vector3 &b, float epsilon = SMALL_EPSILON) const;
     bool isFinite() const;
+    bool isNan() const;
     Vector3 safeInverse() const;
     Vector3 normalized() const;
     Vector3 safeNormalized(float threshold = SMALL_EPSILON) const;
@@ -108,6 +109,7 @@ public:
     static Vector3 min(const Vector3 &a, const Vector3 &b);
     static Vector3 max(const Vector3 &a, const Vector3 &b);
     static Vector3 abs(const Vector3 &value);
+    static Vector3 sign(const Vector3 &value);
     static Vector3 floor(const Vector3 &value);
     static Vector3 ceil(const Vector3 &value);
     static Vector3 round(const Vector3 &value);
@@ -237,6 +239,7 @@ inline Vector3 Vector3::min(const Vector3 &a, const Vector3 &b) { return Vector3
 inline Vector3 Vector3::max(const Vector3 &a, const Vector3 &b) { return Vector3(glm::max(a.value, b.value)); }
 
 inline Vector3 Vector3::abs(const Vector3 &value) { return Vector3(glm::abs(value.value)); }
+inline Vector3 Vector3::sign(const Vector3 &value) { return Vector3(glm::sign(value.value)); }
 
 inline Vector3 Vector3::floor(const Vector3 &value) { return Vector3(glm::floor(value.value)); }
 inline Vector3 Vector3::ceil(const Vector3 &value) { return Vector3(glm::ceil(value.value)); }
