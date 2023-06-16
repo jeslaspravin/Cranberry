@@ -63,7 +63,7 @@ public:
 private:
 #if ENABLE_STRID_DEBUG
     static const TChar *findDebugString(IDType strId);
-    void insertDbgStr(StringView str);
+    void insertDbgStr(StringView str) noexcept;
 
     StringID(IDType strId, const TChar *debugStr, SizeT len)
         : id(strId)
@@ -81,7 +81,7 @@ private:
         : id(strId)
     {}
 
-    constexpr void insertDbgStr(StringView) {}
+    constexpr void insertDbgStr(StringView) noexcept {}
 #endif
 
     STRINGID_FUNCQUALIFIER void initFromAChar(const AChar *str)

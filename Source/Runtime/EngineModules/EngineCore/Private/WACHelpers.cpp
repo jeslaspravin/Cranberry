@@ -316,6 +316,7 @@ void WACHelpers::setComponentWorldRotation(TransformComponent *thisComp, Rotatio
 {
     World *world = thisComp->getWorld();
     Quat relativeQ = Quat::fromRotation(rotation);
+    debugAssert(!relativeQ.isNan());
     if (world)
     {
         // If there is a world all component even root has chance to be child of another component

@@ -62,7 +62,7 @@ const TChar *StringID::findDebugString(IDType strId)
     return itr->second.cbegin()->getChar();
 }
 
-void StringID::insertDbgStr(StringView str)
+void StringID::insertDbgStr(StringView str) noexcept
 {
     if (str.empty())
     {

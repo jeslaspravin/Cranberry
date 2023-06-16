@@ -122,8 +122,15 @@ void WgViewportImGuiLayer::navigateScene()
     Rotation cameraRotation = defaultCamera.rotation();
     Vector3 cameraTranslation = defaultCamera.translation();
 
-    cameraRotation.yaw() += application->inputSystem->analogState(AnalogStates::RelMouseX)->currentValue * 0.25f;
-    cameraRotation.pitch() += application->inputSystem->analogState(AnalogStates::RelMouseY)->currentValue * 0.25f;
+    // Using Euler rotation
+    // cameraRotation.yaw() += application->inputSystem->analogState(AnalogStates::RelMouseX)->currentValue * 0.25f;
+    // cameraRotation.pitch() += application->inputSystem->analogState(AnalogStates::RelMouseY)->currentValue * 0.25f;
+
+    // Using quaternion https://gamedev.stackexchange.com/a/30669/172491
+    Quat newRotation = Quat::fromAngleAxis(application->inputSystem->analogState(AnalogStates::RelMouseX)->currentValue * 0.25f, Vector3::UP);
+    newRotation *= Quat::fromRotation(cameraRotation);
+    newRotation *= Quat::fromAngleAxis(application->inputSystem->analogState(AnalogStates::RelMouseY)->currentValue * 0.25f, Vector3::RIGHT);
+    cameraRotation = newRotation.toRotation();
 
     float camSpeedModifier = 1;
     if (application->inputSystem->isKeyPressed(Keys::LSHIFT))

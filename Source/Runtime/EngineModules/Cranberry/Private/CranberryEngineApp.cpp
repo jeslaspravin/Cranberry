@@ -377,8 +377,12 @@ void tempTickTest(float deltaTime)
         for (cbe::Actor *ac : worldCubes)
         {
             Rotation r = ac->getWorldRotation();
-            r.yaw() += 180 * deltaTime;
-            ac->setWorldRotation(r);
+            static Vector3 n = Vector3::ONE.normalized() * Vector3(-1, 1, 1);
+            Quat rQ = Quat::fromRotation(r);
+            Quat delQ = Quat::fromAngleAxis(180 * deltaTime, n);
+            Quat newQ = rQ * delQ;
+            Rotation newR = newQ.toRotation();
+            ac->setWorldRotation(newR);
         }
     }
 }

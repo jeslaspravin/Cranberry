@@ -67,9 +67,14 @@ Format specifiers: https://learn.microsoft.com/en-us/visualstudio/debugger/forma
   <Type Name="Quat" Priority="High">
     <DisplayString>{x,g}i + {y,g}j + {z,g}k + {w,g}</DisplayString>
     <Expand HideRawView="true">
+      <Item Name="x">x,g</Item>
+      <Item Name="y">y,g</Item>
+      <Item Name="z">z,g</Item>
+      <Item Name="w">w,g</Item>
       <CustomListItems MaxItemsPerView="1">
         <!-- calculate length using fast inverse sqrt -->
-        <Variable Name="k" InitialValue="x*x+y*y+z*z+w*w"/>
+        <Variable Name="sl" InitialValue="x*x+y*y+z*z+w*w"/>
+        <Variable Name="k" InitialValue="sl"/>
         <Variable Name="n" InitialValue="k/2"/>
         <Variable Name="i" InitialValue="0x5F3759DF - ((*(int *)&amp;k) &gt;&gt; 1)"/>
         <If Condition="k != 0">
@@ -78,15 +83,12 @@ Format specifiers: https://learn.microsoft.com/en-us/visualstudio/debugger/forma
           <Exec>k = k * (1.5f - (n * k * k))</Exec>
           <Exec>k = k * (1.5f - (n * k * k))</Exec>
           <Item Name="[len]">1/k,g</Item>
+          <Item Name="[len^2]">sl</Item>
         </If>
         <If Condition="k == 0">
           <Item Name="[len]">0.0f,g</Item>
         </If>
       </CustomListItems>
-      <Item Name="x">x,g</Item>
-      <Item Name="y">y,g</Item>
-      <Item Name="z">z,g</Item>
-      <Item Name="w">w,g</Item>
     </Expand>
   </Type>
 
