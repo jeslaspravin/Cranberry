@@ -18,19 +18,19 @@
 /// MustacheFormatString
 //////////////////////////////////////////////////////////////////////////
 
-MustacheFormatArg::MustacheFormatArg(const MustacheFormatArg &arg)
+MustacheFormatArg::MustacheFormatArg(const MustacheFormatArg &arg) noexcept
     : type(arg.type)
 {
     (*this) = arg;
 }
 
-MustacheFormatArg::MustacheFormatArg(MustacheFormatArg &&arg)
+MustacheFormatArg::MustacheFormatArg(MustacheFormatArg &&arg) noexcept
     : type(arg.type)
 {
     (*this) = std::move(arg);
 }
 
-MustacheFormatArg &MustacheFormatArg::operator= (MustacheFormatArg &&arg)
+MustacheFormatArg &MustacheFormatArg::operator= (MustacheFormatArg &&arg) noexcept
 {
     type = std::move(arg.type);
     switch (type)
@@ -80,7 +80,7 @@ MustacheFormatArg &MustacheFormatArg::operator= (MustacheFormatArg &&arg)
     return *this;
 }
 
-MustacheFormatArg &MustacheFormatArg::operator= (const MustacheFormatArg &arg)
+MustacheFormatArg &MustacheFormatArg::operator= (const MustacheFormatArg &arg) noexcept
 {
     type = arg.type;
     switch (type)
@@ -132,7 +132,7 @@ MustacheFormatArg &MustacheFormatArg::operator= (const MustacheFormatArg &arg)
 }
 
 #define FORMAT_FUNDAMENTALS(VarName) STR_FORMAT(TCHAR("{}"), value.fundamentalVals.##VarName)
-String MustacheFormatArg::toString() const
+String MustacheFormatArg::toString() const noexcept
 {
     switch (type)
     {
@@ -181,7 +181,7 @@ String MustacheFormatArg::toString() const
 }
 #undef FORMAT_FUNDAMENTALS
 
-MustacheFormatArg::operator bool () const
+MustacheFormatArg::operator bool () const noexcept
 {
     switch (type)
     {
@@ -227,14 +227,14 @@ MustacheFormatArg::operator bool () const
     return false;
 }
 
-MustacheStringFormatter::MustacheStringFormatter(const String &fmt)
+MustacheStringFormatter::MustacheStringFormatter(const String &fmt) noexcept
     : fmtStr(fmt)
     , allMatches()
 {
     parseFmtStr();
 }
 
-void MustacheStringFormatter::parseFmtStr()
+void MustacheStringFormatter::parseFmtStr() noexcept
 {
     // Scans for pattern within a line, Matches inner most {{.+}} and captures the inner name of the
     // match
@@ -274,7 +274,7 @@ void MustacheStringFormatter::parseFmtStr()
     }
 }
 
-FORCE_INLINE void MustacheStringFormatter::removeMustachePrefix(String &tagName) const
+FORCE_INLINE void MustacheStringFormatter::removeMustachePrefix(String &tagName) const noexcept
 {
     // Match and replace first char
     static const StringRegex searchPattern(TCHAR("^[#^!>/]{1}"), std::regex_constants::ECMAScript);
@@ -283,7 +283,7 @@ FORCE_INLINE void MustacheStringFormatter::removeMustachePrefix(String &tagName)
     tagName.trim();
 }
 
-String MustacheStringFormatter::formatBasic(const FormatArgsMap &formatArgs) const
+String MustacheStringFormatter::formatBasic(const FormatArgsMap &formatArgs) const noexcept
 {
     // Each segment starts at first index of prefix and has extend
     struct FormatSegment
@@ -391,7 +391,7 @@ String MustacheStringFormatter::formatBasic(const FormatArgsMap &formatArgs) con
 FORCE_INLINE void MustacheStringFormatter::renderSectionInner(
     OStringStream &outStr, const Section &section, const MustacheContext &context,
     const std::unordered_map<String, MustacheStringFormatter> &partials
-) const
+) const noexcept
 {
     // Render all inner tags
     for (uint32 matchIdx = section.sectionStartIdx + 1; matchIdx < section.sectionEndIdx;)
@@ -405,7 +405,7 @@ FORCE_INLINE void MustacheStringFormatter::renderSectionInner(
 void MustacheStringFormatter::renderSection(
     OStringStream &outStr, uint32 sectionIdx, const MustacheContext &context,
     const std::unordered_map<String, MustacheStringFormatter> &partials
-) const
+) const noexcept
 {
     const Section &section = sections[sectionIdx];
 
@@ -491,7 +491,7 @@ void MustacheStringFormatter::renderSection(
 
 uint32 MustacheStringFormatter::renderTag(
     OStringStream &outStr, uint32 matchIdx, const MustacheContext &context, const std::unordered_map<String, MustacheStringFormatter> &partials
-) const
+) const noexcept
 {
     // Append match's prefix
     outStr << StringView(allMatches[matchIdx].prefix().first, allMatches[matchIdx].prefix().second);
@@ -546,8 +546,8 @@ uint32 MustacheStringFormatter::renderTag(
     return matchIdx + 1;
 }
 
-String
-MustacheStringFormatter::render(const MustacheContext &context, const std::unordered_map<String, MustacheStringFormatter> &partials) const
+String MustacheStringFormatter::render(const MustacheContext &context, const std::unordered_map<String, MustacheStringFormatter> &partials)
+    const noexcept
 {
     // If no matches then return format string itself
     if (allMatches.empty())

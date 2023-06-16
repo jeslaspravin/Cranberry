@@ -14,7 +14,7 @@
 #include "Types/Platform/PlatformFunctions.h"
 
 // Encoding BOM(Byte Order Mark) https://docs.microsoft.com/en-us/globalization/encoding/byte-order-mark
-bool FileHelper::isUtf8(const uint8 *byteStream, SizeT streamSize)
+bool FileHelper::isUtf8(const uint8 *byteStream, SizeT streamSize) noexcept
 {
     // If BOM marked or is not other choices
     return isUtf8Bom(byteStream, streamSize)
@@ -24,30 +24,30 @@ bool FileHelper::isUtf8(const uint8 *byteStream, SizeT streamSize)
            );
 }
 
-bool FileHelper::isUtf8Bom(const uint8 *byteStream, SizeT streamSize)
+bool FileHelper::isUtf8Bom(const uint8 *byteStream, SizeT streamSize) noexcept
 {
     return (streamSize > 3 && byteStream[0] == 0xEF && byteStream[1] == 0xBB && byteStream[2] == 0xBF);
 }
 
-bool FileHelper::isUtf16LEBom(const uint8 *byteStream, SizeT streamSize)
+bool FileHelper::isUtf16LEBom(const uint8 *byteStream, SizeT streamSize) noexcept
 {
     // Has at least 2 header length and size if not odd
     return (streamSize > 2 && !(streamSize & 1) && byteStream[0] == 0xFF && byteStream[1] == 0xFE);
 }
 
-bool FileHelper::isUtf16BEBom(const uint8 *byteStream, SizeT streamSize)
+bool FileHelper::isUtf16BEBom(const uint8 *byteStream, SizeT streamSize) noexcept
 {
     return (streamSize > 2 && !(streamSize & 1) && byteStream[0] == 0xFE && byteStream[1] == 0xFF);
 }
 
-bool FileHelper::isUtf32LEBom(const uint8 *byteStream, SizeT streamSize)
+bool FileHelper::isUtf32LEBom(const uint8 *byteStream, SizeT streamSize) noexcept
 {
     return (
         streamSize > 4 && !(streamSize & 1) && byteStream[0] == 0xFF && byteStream[1] == 0xFE && byteStream[2] == 0x00 && byteStream[3] == 0x00
     );
 }
 
-bool FileHelper::isUtf32BEBom(const uint8 *byteStream, SizeT streamSize)
+bool FileHelper::isUtf32BEBom(const uint8 *byteStream, SizeT streamSize) noexcept
 {
     return (
         streamSize > 4 && !(streamSize & 1) && byteStream[0] == 0x00 && byteStream[1] == 0x00 && byteStream[2] == 0xFE && byteStream[3] == 0xFF
@@ -55,14 +55,14 @@ bool FileHelper::isUtf32BEBom(const uint8 *byteStream, SizeT streamSize)
 }
 
 // TODO(Jeslas) : Replace this with compiler intrinsics if available
-uint16 FileHelper::bytesSwap(uint16 value) { return (value << 8) | (value >> 8); }
+uint16 FileHelper::bytesSwap(uint16 value) noexcept { return (value << 8) | (value >> 8); }
 
-uint32 FileHelper::bytesSwap(uint32 value)
+uint32 FileHelper::bytesSwap(uint32 value) noexcept
 {
     return (value >> 24) | ((value >> 8) & 0x0000FF00u) | ((value << 8) & 0x00FF0000u) | (value << 24);
 }
 
-uint64 FileHelper::bytesSwap(uint64 value)
+uint64 FileHelper::bytesSwap(uint64 value) noexcept
 {
     // Similar to merge sort, first swap smallest components then work your way up
     value = ((value >> 8) & 0x00FF00FF00FF00FFull) | ((value << 8) & 0xFF00FF00FF00FF00ull);
@@ -70,7 +70,7 @@ uint64 FileHelper::bytesSwap(uint64 value)
     return (value >> 32) | (value << 32);
 }
 
-void FileHelper::bytesSwap(void *ptr, SizeT length)
+void FileHelper::bytesSwap(void *ptr, SizeT length) noexcept
 {
     uint8 *bytePtr = (uint8 *)ptr;
     SizeT front = 0;
@@ -81,7 +81,7 @@ void FileHelper::bytesSwap(void *ptr, SizeT length)
     }
 }
 
-bool FileHelper::readString(String &outStr, const String &fileName)
+bool FileHelper::readString(String &outStr, const String &fileName) noexcept
 {
     std::vector<uint8> bytes;
     PlatformFile file(fileName);
@@ -163,7 +163,7 @@ bool FileHelper::readString(String &outStr, const String &fileName)
     return true;
 }
 
-bool FileHelper::readUtf8String(std::string &outStr, const String &fileName)
+bool FileHelper::readUtf8String(std::string &outStr, const String &fileName) noexcept
 {
     std::vector<uint8> bytes;
     PlatformFile file(fileName);
@@ -235,7 +235,7 @@ bool FileHelper::readUtf8String(std::string &outStr, const String &fileName)
     return true;
 }
 
-bool FileHelper::readBytes(std::vector<uint8> &outBytes, const String &fileName)
+bool FileHelper::readBytes(std::vector<uint8> &outBytes, const String &fileName) noexcept
 {
     PlatformFile file(fileName);
     file.setSharingMode(EFileSharing::ReadOnly);
@@ -250,7 +250,7 @@ bool FileHelper::readBytes(std::vector<uint8> &outBytes, const String &fileName)
     return false;
 }
 
-bool FileHelper::writeString(const String &content, const String &fileName)
+bool FileHelper::writeString(const String &content, const String &fileName) noexcept
 {
     std::string utf8Str{ TCHAR_TO_UTF8(content.getChar()) };
 
@@ -267,7 +267,7 @@ bool FileHelper::writeString(const String &content, const String &fileName)
     return false;
 }
 
-bool FileHelper::writeBytes(const std::vector<uint8> &bytes, const String &fileName)
+bool FileHelper::writeBytes(const std::vector<uint8> &bytes, const String &fileName) noexcept
 {
     PlatformFile file(fileName);
     file.setSharingMode(EFileSharing::ReadOnly);
@@ -282,7 +282,7 @@ bool FileHelper::writeBytes(const std::vector<uint8> &bytes, const String &fileN
     return false;
 }
 
-bool FileHelper::touchFile(const String &fileName)
+bool FileHelper::touchFile(const String &fileName) noexcept
 {
     PlatformFile file(fileName);
     file.setSharingMode(EFileSharing::ReadOnly);

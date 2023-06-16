@@ -287,7 +287,7 @@ String exceptionCodeMessage(dword ExpCode)
     return retVal;
 }
 
-long WindowsUnexpectedErrorHandler::handlerFilter(struct _EXCEPTION_POINTERS *exp)
+long WindowsUnexpectedErrorHandler::handlerFilter(struct _EXCEPTION_POINTERS *exp) noexcept
 {
     AChar *errorMsg;
     DWORD dw = GetLastError();

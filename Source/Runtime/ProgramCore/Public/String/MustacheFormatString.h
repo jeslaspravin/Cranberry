@@ -74,79 +74,79 @@ struct PROGRAMCORE_EXPORT MustacheFormatArg
         AsString // Whatever other type that will be stored as string after toString conversion
     } type;
 
-    MustacheFormatArg()
+    MustacheFormatArg() noexcept
         : value()
         , type(NoType)
     {}
-    MustacheFormatArg(bool argValue)
+    MustacheFormatArg(bool argValue) noexcept
         : type(Bool)
     {
         value.fundamentalVals.boolVal = argValue;
     }
-    MustacheFormatArg(uint8 argValue)
+    MustacheFormatArg(uint8 argValue) noexcept
         : type(UInt8)
     {
         value.fundamentalVals.uint8Val = argValue;
     }
-    MustacheFormatArg(uint16 argValue)
+    MustacheFormatArg(uint16 argValue) noexcept
         : type(UInt16)
     {
         value.fundamentalVals.uint16Val = argValue;
     }
-    MustacheFormatArg(uint32 argValue)
+    MustacheFormatArg(uint32 argValue) noexcept
         : type(UInt32)
     {
         value.fundamentalVals.uint32Val = argValue;
     }
-    MustacheFormatArg(uint64 argValue)
+    MustacheFormatArg(uint64 argValue) noexcept
         : type(UInt64)
     {
         value.fundamentalVals.uint64Val = argValue;
     }
-    MustacheFormatArg(int8 argValue)
+    MustacheFormatArg(int8 argValue) noexcept
         : type(Int8)
     {
         value.fundamentalVals.int8Val = argValue;
     }
-    MustacheFormatArg(int16 argValue)
+    MustacheFormatArg(int16 argValue) noexcept
         : type(Int16)
     {
         value.fundamentalVals.int16Val = argValue;
     }
-    MustacheFormatArg(int32 argValue)
+    MustacheFormatArg(int32 argValue) noexcept
         : type(Int32)
     {
         value.fundamentalVals.int32Val = argValue;
     }
-    MustacheFormatArg(int64 argValue)
+    MustacheFormatArg(int64 argValue) noexcept
         : type(Int64)
     {
         value.fundamentalVals.int64Val = argValue;
     }
-    MustacheFormatArg(float argValue)
+    MustacheFormatArg(float argValue) noexcept
         : type(Float)
     {
         value.fundamentalVals.floatVal = argValue;
     }
-    MustacheFormatArg(double argValue)
+    MustacheFormatArg(double argValue) noexcept
         : type(Double)
     {
         value.fundamentalVals.doubleVal = argValue;
     }
-    MustacheFormatArg(ArgGetter &&argValue)
+    MustacheFormatArg(ArgGetter &&argValue) noexcept
         : value(std::forward<ArgGetter>(argValue))
         , type(Getter)
     {}
     template <typename InType>
-    MustacheFormatArg(InType &&argValue);
+    MustacheFormatArg(InType &&argValue) noexcept;
 
-    MustacheFormatArg(const MustacheFormatArg &arg);
-    MustacheFormatArg(MustacheFormatArg &&arg);
-    MustacheFormatArg &operator= (const MustacheFormatArg &arg);
-    MustacheFormatArg &operator= (MustacheFormatArg &&arg);
+    MustacheFormatArg(const MustacheFormatArg &arg) noexcept;
+    MustacheFormatArg(MustacheFormatArg &&arg) noexcept;
+    MustacheFormatArg &operator= (const MustacheFormatArg &arg) noexcept;
+    MustacheFormatArg &operator= (MustacheFormatArg &&arg) noexcept;
 
-    String toString() const;
-    operator bool () const;
+    String toString() const noexcept;
+    operator bool () const noexcept;
 };
 using FormatArgsMap = std::unordered_map<String, MustacheFormatArg>;
 
@@ -190,35 +190,38 @@ private:
     String fmtStr;
     std::vector<StringMatch> allMatches;
     std::vector<Section> sections;
-    void parseFmtStr();
+    void parseFmtStr() noexcept;
 
     constexpr static const TChar *INDEX_FMT = TCHAR("__idx%u__");
 
-    FORCE_INLINE bool isASection(const String &tagName) const { return tagName.startsWith(TCHAR('#')) || tagName.startsWith(TCHAR('^')); }
-    FORCE_INLINE bool isANotSection(const String &tagName) const { return tagName.startsWith(TCHAR('^')); }
-    FORCE_INLINE bool isSectionClose(const String &tagName) const { return tagName.startsWith(TCHAR('/')); }
-    FORCE_INLINE bool isAComment(const String &tagName) const { return tagName.startsWith(TCHAR('!')); }
-    FORCE_INLINE bool isAPartial(const String &tagName) const { return tagName.startsWith(TCHAR('>')); }
-    FORCE_INLINE void removeMustachePrefix(String &tagName) const;
+    FORCE_INLINE bool isASection(const String &tagName) const noexcept
+    {
+        return tagName.startsWith(TCHAR('#')) || tagName.startsWith(TCHAR('^'));
+    }
+    FORCE_INLINE bool isANotSection(const String &tagName) const noexcept { return tagName.startsWith(TCHAR('^')); }
+    FORCE_INLINE bool isSectionClose(const String &tagName) const noexcept { return tagName.startsWith(TCHAR('/')); }
+    FORCE_INLINE bool isAComment(const String &tagName) const noexcept { return tagName.startsWith(TCHAR('!')); }
+    FORCE_INLINE bool isAPartial(const String &tagName) const noexcept { return tagName.startsWith(TCHAR('>')); }
+    FORCE_INLINE void removeMustachePrefix(String &tagName) const noexcept;
 
     void renderSection(
         OStringStream &outStr, uint32 sectionIdx, const MustacheContext &context,
         const std::unordered_map<String, MustacheStringFormatter> &partials
-    ) const;
+    ) const noexcept;
     FORCE_INLINE void renderSectionInner(
         OStringStream &outStr, const Section &section, const MustacheContext &context,
         const std::unordered_map<String, MustacheStringFormatter> &partials
-    ) const;
+    ) const noexcept;
     // Returns next match idx to render
     uint32 renderTag(
         OStringStream &outStr, uint32 matchIdx, const MustacheContext &context,
         const std::unordered_map<String, MustacheStringFormatter> &partials
-    ) const;
+    ) const noexcept;
 
 public:
     MustacheStringFormatter() = default;
-    MustacheStringFormatter(const String &fmt);
-    FORCE_INLINE MustacheStringFormatter(const MustacheStringFormatter &other)
+    MustacheStringFormatter(const String &fmt) noexcept;
+    FORCE_INLINE MustacheStringFormatter(const MustacheStringFormatter &other) noexcept
         : fmtStr(other.fmtStr)
     {
         parseFmtStr();
@@ -228,7 +231,7 @@ public:
     {
         parseFmtStr();
     }
-    FORCE_INLINE MustacheStringFormatter &operator= (const MustacheStringFormatter &other)
+    FORCE_INLINE MustacheStringFormatter &operator= (const MustacheStringFormatter &other) noexcept
     {
         fmtStr = other.fmtStr;
         parseFmtStr();
@@ -246,11 +249,11 @@ public:
     // Efficient with very less string copies and parallel executable(Not yet)
     // Function getter string must be providing constant value during format as they are cached before
     // final copy
-    String formatBasic(const FormatArgsMap &formatArgs) const;
+    String formatBasic(const FormatArgsMap &formatArgs) const noexcept;
 
     // Warning use partials with caution to avoid infinite recursions, When using partials try to wrap
     // around a branch with lambda condition check
-    String render(const MustacheContext &context, const std::unordered_map<String, MustacheStringFormatter> &partials) const;
+    String render(const MustacheContext &context, const std::unordered_map<String, MustacheStringFormatter> &partials) const noexcept;
 
     static String formatMustache(const String &fmt, const FormatArgsMap &formatArgs)
     {
@@ -260,7 +263,7 @@ public:
 };
 
 template <typename InType>
-MustacheFormatArg::MustacheFormatArg(InType &&argValue)
+MustacheFormatArg::MustacheFormatArg(InType &&argValue) noexcept
     : value(StringFormat::toString<InType>(std::forward<InType>(argValue)))
     , type(MustacheFormatArg::AsString)
 {}

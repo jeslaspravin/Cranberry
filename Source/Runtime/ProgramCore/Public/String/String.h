@@ -386,7 +386,7 @@ public:
     /*
      * Splits given string into list of line views
      */
-    STRING_FUNCQUALIFIER std::vector<StringView> splitLines() const
+    STRING_FUNCQUALIFIER std::vector<StringView> splitLines() const noexcept
     {
         std::vector<StringView> outStrs;
         uint64 foundAtPos = 0;

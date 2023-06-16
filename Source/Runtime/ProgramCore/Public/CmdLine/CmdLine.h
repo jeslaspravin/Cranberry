@@ -46,7 +46,7 @@ protected:
 
 private:
     bool parseFromFile(const String &filePath);
-    bool parseViews(const std::vector<StringView> &strViews);
+    bool parseViews(const std::vector<StringView> &strViews) noexcept;
 
 public:
     static ProgramCmdLine &get();

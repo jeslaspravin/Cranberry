@@ -25,7 +25,7 @@ public:
         return &handler;
     }
 
-    static long handlerFilter(_EXCEPTION_POINTERS *exp);
+    static long handlerFilter(_EXCEPTION_POINTERS *exp) noexcept;
 
     /* UnexpectedErrorHandler Implementation */
     void registerPlatformFilters() override;

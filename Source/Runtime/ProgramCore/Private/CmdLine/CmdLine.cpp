@@ -85,7 +85,7 @@ ProgramCmdLine &ProgramCmdLine::get()
     return static_cast<ProgramCmdLine &>(singletonProgramCmdLine);
 }
 
-bool ProgramCmdLine::parseViews(const std::vector<StringView> &strViews)
+bool ProgramCmdLine::parseViews(const std::vector<StringView> &strViews) noexcept
 {
     bool bSuccess = true;
 

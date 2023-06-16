@@ -19,24 +19,24 @@ private:
     FileHelper() = default;
 
 public:
-    static bool isUtf8(const uint8 *byteStream, SizeT streamSize);
-    static bool isUtf8Bom(const uint8 *byteStream, SizeT streamSize);
-    static bool isUtf16LEBom(const uint8 *byteStream, SizeT streamSize);
-    static bool isUtf16BEBom(const uint8 *byteStream, SizeT streamSize);
-    static bool isUtf32LEBom(const uint8 *byteStream, SizeT streamSize);
-    static bool isUtf32BEBom(const uint8 *byteStream, SizeT streamSize);
+    static bool isUtf8(const uint8 *byteStream, SizeT streamSize) noexcept;
+    static bool isUtf8Bom(const uint8 *byteStream, SizeT streamSize) noexcept;
+    static bool isUtf16LEBom(const uint8 *byteStream, SizeT streamSize) noexcept;
+    static bool isUtf16BEBom(const uint8 *byteStream, SizeT streamSize) noexcept;
+    static bool isUtf32LEBom(const uint8 *byteStream, SizeT streamSize) noexcept;
+    static bool isUtf32BEBom(const uint8 *byteStream, SizeT streamSize) noexcept;
 
-    static uint16 bytesSwap(uint16 value);
-    static uint32 bytesSwap(uint32 value);
-    static uint64 bytesSwap(uint64 value);
-    static void bytesSwap(void *ptr, SizeT length);
+    static uint16 bytesSwap(uint16 value) noexcept;
+    static uint32 bytesSwap(uint32 value) noexcept;
+    static uint64 bytesSwap(uint64 value) noexcept;
+    static void bytesSwap(void *ptr, SizeT length) noexcept;
 
-    static bool readString(String &outStr, const String &fileName);
-    static bool readUtf8String(std::string &outStr, const String &fileName);
-    static bool readBytes(std::vector<uint8> &outBytes, const String &fileName);
+    static bool readString(String &outStr, const String &fileName) noexcept;
+    static bool readUtf8String(std::string &outStr, const String &fileName) noexcept;
+    static bool readBytes(std::vector<uint8> &outBytes, const String &fileName) noexcept;
     // Always writes to new file, overwrites if existing
-    static bool writeString(const String &content, const String &fileName);
-    static bool writeBytes(const std::vector<uint8> &bytes, const String &fileName);
+    static bool writeString(const String &content, const String &fileName) noexcept;
+    static bool writeBytes(const std::vector<uint8> &bytes, const String &fileName) noexcept;
 
-    static bool touchFile(const String &fileName);
+    static bool touchFile(const String &fileName) noexcept;
 };

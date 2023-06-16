@@ -221,7 +221,7 @@ public:
     CONST_EXPR FORCE_INLINE SizeT size() const { return bitsCount; }
     CONST_EXPR FORCE_INLINE SizeT capacity() const { return bits.capacity() * BITS_PER_ELEMENT; }
     CONST_EXPR SizeT max_size() const { return bits.max_size(); }
-    CONST_EXPR void reserve(SizeT newCap) { bits.reserve(arraySizeForBits(newCap)); }
+    CONST_EXPR void reserve(SizeT newCap) noexcept { bits.reserve(arraySizeForBits(newCap)); }
     CONST_EXPR void shrink_to_fit() { bits.shrink_to_fit(); }
 
     // Modifiers
@@ -808,7 +808,7 @@ public:
 
 public:
     CONST_EXPR void clear() { sparsityTags.clear(); }
-    CONST_EXPR void reserve(SizeType count) { sparsityTags.reserve(count); }
+    CONST_EXPR void reserve(SizeType count) noexcept { sparsityTags.reserve(count); }
     CONST_EXPR void resize(SizeType count, bool bSet = 0)
     {
         const ValueType value = bSet ? ~(ValueType(0)) : 0;
