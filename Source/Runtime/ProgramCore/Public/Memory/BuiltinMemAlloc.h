@@ -67,7 +67,7 @@ public:
     CONST_EXPR ~CBEStlMallocAllocator() = default;
     CONST_EXPR CBEStlMallocAllocator &operator= (const CBEStlMallocAllocator &) = default;
 
-    CONST_EXPR void deallocate(Type *const ptr, const SizeT count) { allocator.memFree(ptr); }
+    CONST_EXPR void deallocate(Type *const ptr, const SizeT /*count*/) { allocator.memFree(ptr); }
 
     NODISCARD CONST_EXPR Type *allocate(const SizeT count) { return static_cast<Type *>(allocator.memAlloc(count * sizeof(Type))); }
 };

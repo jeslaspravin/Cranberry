@@ -314,7 +314,7 @@ void tempTest()
             );
             debugAssert(smActorPrefab);
             worldCubes.emplace_back(smActorPrefab->getActorTemplate());
-            smActorPrefab->getActorTemplate()->setWorldLocation({ 0, 0, 50 });
+            smActorPrefab->getActorTemplate()->setWorldLocation({ 150, 0, 100 });
         }
         else
         {
@@ -376,13 +376,20 @@ void tempTickTest(float deltaTime)
     {
         for (cbe::Actor *ac : worldCubes)
         {
-            Rotation r = ac->getWorldRotation();
-            static Vector3 n = Vector3::ONE.normalized() * Vector3(-1, 1, 1);
-            Quat rQ = Quat::fromRotation(r);
-            Quat delQ = Quat::fromAngleAxis(180 * deltaTime, n);
-            Quat newQ = rQ * delQ;
-            Rotation newR = newQ.toRotation();
-            ac->setWorldRotation(newR);
+            int32 i = 1;
+            while (i > 0)
+            {
+                Rotation r = ac->getWorldRotation();
+                static Vector3 n = Vector3::ONE.normalized() * Vector3(-1, 1, 1);
+                Quat rQ = Quat::fromRotation(r);
+                Quat delQ = Quat::fromAngleAxis(180 * deltaTime, n);
+                Quat newQ = delQ * rQ;
+                Rotation newR = newQ.toRotation();
+                alertAlways(!newR.isNan() && newR.isFinite());
+                ac->setWorldRotation(newR);
+
+                i--;
+            }
         }
     }
 }

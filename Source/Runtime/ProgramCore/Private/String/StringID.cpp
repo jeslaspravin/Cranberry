@@ -14,12 +14,19 @@
 #if ENABLE_STRID_DEBUG
 
 #include "Logger/Logger.h"
+#include "Memory/BuiltinMemAlloc.h"
 
 #include <unordered_map>
 #include <unordered_set>
 #include <shared_mutex>
 
-using DebugStringsMap = std::unordered_map<StringID::IDType, std::unordered_set<String>>;
+// Using built in malloc as CBEMemory::memAlloc sometimes causing error on exit
+using DebugStringsType = std::basic_string<TChar, std::char_traits<TChar>, CBEStlMallocAllocator<TChar>>;
+using DebugStringsMapValueType = std::unordered_set<
+    DebugStringsType, std::hash<DebugStringsType>, std::equal_to<DebugStringsType>, CBEStlMallocAllocator<DebugStringsType>>;
+using DebugStringsMap = std::unordered_map<
+    StringID::IDType, DebugStringsMapValueType, std::hash<StringID::IDType>, std::equal_to<StringID::IDType>,
+    CBEStlMallocAllocator<std::pair<const StringID::IDType, DebugStringsMapValueType>>>;
 
 struct DebugStringIDsData
 {
@@ -59,7 +66,7 @@ const TChar *StringID::findDebugString(IDType strId)
     {
         LOG("StringID", "StringID {} has overlaps with values {}", strId, itr->second);
     }
-    return itr->second.cbegin()->getChar();
+    return itr->second.cbegin()->c_str();
 }
 
 void StringID::insertDbgStr(StringView str) noexcept
@@ -71,7 +78,7 @@ void StringID::insertDbgStr(StringView str) noexcept
     DebugStringIDsData &stringsDbData = debugStringDB();
 
     std::unique_lock<std::shared_mutex> writeLock{ stringsDbData.lock };
-    stringsDbData.stringsDb[id].insert(str);
+    stringsDbData.stringsDb[id].insert(DebugStringsType{ str });
 }
 
 #endif // DEV_BUILD

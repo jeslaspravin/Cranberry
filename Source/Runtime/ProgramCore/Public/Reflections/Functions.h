@@ -244,12 +244,17 @@ struct CapturedFunctor
             std::negation<std::is_same<std::decay_t<Callable>, CapturedFunctor>>, std::is_invocable_r<ReturnType, Callable, Parameters...>>,
         Type>;
 
-    class LambdaFunctionCapInterface
+    struct LambdaFunctionCapInterface
     {
-    public:
-        virtual void copy(CapturedFunctor &copyTo, const CapturedFunctor &copyFrom) const noexcept = 0;
-        virtual void move(CapturedFunctor &moveTo, CapturedFunctor &&moveFrom) const noexcept = 0;
-        virtual void destruct(CapturedFunctor &) const noexcept = 0;
+        using CopyFunc = void (*)(CapturedFunctor &, const CapturedFunctor &) noexcept;
+        using MoveFunc = void (*)(CapturedFunctor &, CapturedFunctor &&) noexcept;
+        using DestructFunc = void (*)(CapturedFunctor &) noexcept;
+        using TrampolineFunc = ReturnType (*)(const CapturedFunctor &, Parameters...) noexcept;
+
+        CopyFunc copyFn = nullptr;
+        MoveFunc moveFn = nullptr;
+        DestructFunc destructFn = nullptr;
+        TrampolineFunc trampolineFn = nullptr;
     };
 
     /**
@@ -265,64 +270,59 @@ struct CapturedFunctor
             void *dataPtr;
         } heapAlloc;
     };
-    LambdaFunctionCapInterface *lambdaDataInterface = nullptr;
-    using TrampolineFunc = ReturnType (*)(const CapturedFunctor &, Parameters...);
-    TrampolineFunc trampolineFunc = nullptr;
+    const LambdaFunctionCapInterface *captureIxx = nullptr;
 
     // Class default constructors and operators
     CapturedFunctor() = default;
     CapturedFunctor(const CapturedFunctor &otherFuncPtr) noexcept
-        : lambdaDataInterface(otherFuncPtr.lambdaDataInterface)
-        , trampolineFunc(otherFuncPtr.trampolineFunc)
+        : captureIxx(otherFuncPtr.captureIxx)
     {
-        lambdaDataInterface->copy(*this, otherFuncPtr);
+        (*captureIxx->copyFn)(*this, otherFuncPtr);
     }
     CapturedFunctor(CapturedFunctor &&otherFuncPtr) noexcept
-        : lambdaDataInterface(otherFuncPtr.lambdaDataInterface)
-        , trampolineFunc(otherFuncPtr.trampolineFunc)
+        : captureIxx(otherFuncPtr.captureIxx)
     {
-        lambdaDataInterface->move(*this, std::forward<CapturedFunctor>(otherFuncPtr));
-        otherFuncPtr.lambdaDataInterface = nullptr;
-        otherFuncPtr.trampolineFunc = nullptr;
+        (*captureIxx->moveFn)(*this, std::forward<CapturedFunctor>(otherFuncPtr));
+        otherFuncPtr.captureIxx = nullptr;
     }
 
     CapturedFunctor &operator= (const CapturedFunctor &otherFuncPtr) noexcept
     {
-        lambdaDataInterface = otherFuncPtr.lambdaDataInterface;
-        trampolineFunc = otherFuncPtr.trampolineFunc;
-        lambdaDataInterface->copy(*this, otherFuncPtr);
+        captureIxx = otherFuncPtr.captureIxx;
+        (*captureIxx->copyFn)(*this, otherFuncPtr);
         return *this;
     }
     CapturedFunctor &operator= (CapturedFunctor &&otherFuncPtr) noexcept
     {
-        lambdaDataInterface = otherFuncPtr.lambdaDataInterface;
-        trampolineFunc = otherFuncPtr.trampolineFunc;
-        lambdaDataInterface->move(*this, std::forward<CapturedFunctor>(otherFuncPtr));
+        captureIxx = otherFuncPtr.captureIxx;
+        (*captureIxx->moveFn)(*this, std::forward<CapturedFunctor>(otherFuncPtr));
 
-        otherFuncPtr.lambdaDataInterface = nullptr;
-        otherFuncPtr.trampolineFunc = nullptr;
+        otherFuncPtr.captureIxx = nullptr;
 
         return *this;
     }
 
     ~CapturedFunctor() noexcept
     {
-        if (lambdaDataInterface)
+        if (captureIxx)
         {
-            lambdaDataInterface->destruct(*this);
+            (*captureIxx->destructFn)(*this);
+            captureIxx = nullptr;
         }
-        trampolineFunc = nullptr;
     }
 
     bool operator== (const CapturedFunctor &otherFuncPtr) const noexcept
     {
-        // Since two trampoline function will be same in same lambda only, We could may be compare data's memory using memcmp()
-        return lambdaDataInterface == otherFuncPtr.lambdaDataInterface && trampolineFunc == otherFuncPtr.trampolineFunc;
+        // We could may be compare data's memory using memcmp()
+        return captureIxx == otherFuncPtr.captureIxx;
     }
     // End class default constructors and operators
-    ReturnType operator() (Parameters... params) const noexcept { return (*trampolineFunc)(*this, std::forward<Parameters>(params)...); }
+    ReturnType operator() (Parameters... params) const noexcept
+    {
+        return (*captureIxx->trampolineFn)(*this, std::forward<Parameters>(params)...);
+    }
 
-    operator bool () const { return trampolineFunc && lambdaDataInterface; }
+    operator bool () const { return captureIxx; }
 
     // Handling inline or heap allocated lambda data
 
@@ -335,18 +335,18 @@ struct CapturedFunctor
 
     template <typename CallableType>
     requires (IsLambdaInlineable<CallableType>::value)
-    class LambdaFunctionCaptureImpl<CallableType> : public LambdaFunctionCapInterface
+    class LambdaFunctionCaptureImpl<CallableType>
     {
     public:
-        void copy(CapturedFunctor &copyTo, const CapturedFunctor &copyFrom) const noexcept override
+        static void copy(CapturedFunctor &copyTo, const CapturedFunctor &copyFrom) noexcept
         {
             construct(copyTo, *reinterpret_cast<const CallableType *>(&copyFrom.data[0]));
         }
-        void move(CapturedFunctor &moveTo, CapturedFunctor &&moveFrom) const noexcept override
+        static void move(CapturedFunctor &moveTo, CapturedFunctor &&moveFrom) noexcept
         {
             construct(moveTo, std::move(*reinterpret_cast<CallableType *>(&moveFrom.data[0])));
         }
-        void destruct(CapturedFunctor &functor) const noexcept override { reinterpret_cast<CallableType *>(&functor.data[0])->~CallableType(); }
+        static void destruct(CapturedFunctor &functor) noexcept { reinterpret_cast<CallableType *>(&functor.data[0])->~CallableType(); }
 
         template <typename Callable>
         static void construct(CapturedFunctor &functor, Callable &&func) noexcept
@@ -360,14 +360,14 @@ struct CapturedFunctor
     };
     template <typename CallableType>
     requires (!IsLambdaInlineable<CallableType>::value)
-    class LambdaFunctionCaptureImpl<CallableType> : public LambdaFunctionCapInterface
+    class LambdaFunctionCaptureImpl<CallableType>
     {
     public:
-        void copy(CapturedFunctor &copyTo, const CapturedFunctor &copyFrom) const noexcept override
+        static void copy(CapturedFunctor &copyTo, const CapturedFunctor &copyFrom) noexcept
         {
             construct(copyTo, *reinterpret_cast<CallableType *>(copyFrom.heapAlloc.dataPtr));
         }
-        void move(CapturedFunctor &moveTo, CapturedFunctor &&moveFrom) const noexcept override
+        static void move(CapturedFunctor &moveTo, CapturedFunctor &&moveFrom) noexcept
         {
             if (moveTo.heapAlloc.dataPtr)
             {
@@ -376,7 +376,7 @@ struct CapturedFunctor
             moveTo.heapAlloc.dataPtr = moveFrom.heapAlloc.dataPtr;
             moveFrom.heapAlloc.dataPtr = nullptr;
         }
-        void destruct(CapturedFunctor &functor) const noexcept override { delete reinterpret_cast<CallableType *>(functor.heapAlloc.dataPtr); }
+        static void destruct(CapturedFunctor &functor) noexcept { delete reinterpret_cast<CallableType *>(functor.heapAlloc.dataPtr); }
 
         template <typename Callable>
         static void construct(CapturedFunctor &functor, Callable &&func) noexcept
@@ -398,8 +398,7 @@ struct CapturedFunctor
 
     template <typename Callable>
     CapturedFunctor(Callable &&func) noexcept
-        : lambdaDataInterface(nullptr)
-        , trampolineFunc(nullptr)
+        : captureIxx(nullptr)
     {
         this->operator= (std::forward<Callable>(func));
     }
@@ -408,13 +407,14 @@ struct CapturedFunctor
     CapturedFunctor &operator= (Callable &&func) noexcept
     {
         using LambdaCaptureImplType = LambdaFunctionCaptureImpl<CallableType>;
-        static LambdaCaptureImplType lambdaCaptureImpl;
 
-        lambdaDataInterface = &lambdaCaptureImpl;
-        trampolineFunc = &LambdaCaptureImplType::invoke;
+        constexpr static const LambdaFunctionCapInterface lambdaCaptureIxx{ .copyFn = &LambdaCaptureImplType::copy,
+                                                                            .moveFn = &LambdaCaptureImplType::move,
+                                                                            .destructFn = &LambdaCaptureImplType::destruct,
+                                                                            .trampolineFn = &LambdaCaptureImplType::invoke };
 
+        captureIxx = &lambdaCaptureIxx;
         LambdaCaptureImplType::construct(*this, std::forward<Callable>(func));
-
         return *this;
     }
 };

@@ -43,6 +43,7 @@ public:
 
     bool operator== (const Quat &b) const;
     float operator| (const Quat &b) const;
+    // Similar to transforms & matrices. Right quaternion is applied inside the left quaternion's space
     Quat operator* (const Quat &b) const;
     Quat &operator*= (const Quat &b);
     // Component wise operations
