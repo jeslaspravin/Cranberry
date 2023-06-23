@@ -37,7 +37,7 @@ public:
     static void detachCosole();
 
     static bool hasAttachedDebugger();
-    static void outputToDebugger(const TChar *msg);
+    static void outputToDebugger(const TChar *msg) noexcept;
 
     static String getClipboard();
     static bool setClipboard(const String &text);

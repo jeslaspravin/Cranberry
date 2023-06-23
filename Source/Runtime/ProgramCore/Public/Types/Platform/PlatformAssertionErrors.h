@@ -33,10 +33,10 @@ public:
     static void unexpectedTermination();
 
     void registerFilter();
-    void unregisterFilter() const;
+    void unregisterFilter();
 
     virtual void registerPlatformFilters() = 0;
-    virtual void unregisterPlatformFilters() const = 0;
+    virtual void unregisterPlatformFilters() = 0;
     virtual void dumpCallStack(bool bShouldCrashApp) const = 0;
     /**
      * Calls debugger only if present else does nothing

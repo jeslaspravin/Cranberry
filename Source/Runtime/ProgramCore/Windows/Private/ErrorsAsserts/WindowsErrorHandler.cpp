@@ -80,8 +80,18 @@ public:
     dword lineNumber() { return line.LineNumber; }
 };
 
-void WindowsUnexpectedErrorHandler::registerPlatformFilters() { previousFilter = ::SetUnhandledExceptionFilter(handlerFilter); }
-void WindowsUnexpectedErrorHandler::unregisterPlatformFilters() const { SetUnhandledExceptionFilter(previousFilter); }
+void WindowsUnexpectedErrorHandler::registerPlatformFilters()
+{
+    prevExpFilter = ::SetUnhandledExceptionFilter(unhandledExceptFilter);
+    vecExpHandlerHandle = ::AddVectoredExceptionHandler(0, vectoredExceptHandler);
+}
+void WindowsUnexpectedErrorHandler::unregisterPlatformFilters()
+{
+    ::SetUnhandledExceptionFilter(prevExpFilter);
+    ::RemoveVectoredExceptionHandler(vecExpHandlerHandle);
+    prevExpFilter = nullptr;
+    vecExpHandlerHandle = nullptr;
+}
 
 void WindowsUnexpectedErrorHandler::debugBreak() const
 {
@@ -287,7 +297,7 @@ String exceptionCodeMessage(dword ExpCode)
     return retVal;
 }
 
-long WindowsUnexpectedErrorHandler::handlerFilter(struct _EXCEPTION_POINTERS *exp) noexcept
+long WindowsUnexpectedErrorHandler::unhandledExceptFilter(struct _EXCEPTION_POINTERS *exp) noexcept
 {
     AChar *errorMsg;
     DWORD dw = GetLastError();
@@ -311,4 +321,30 @@ long WindowsUnexpectedErrorHandler::handlerFilter(struct _EXCEPTION_POINTERS *ex
     getHandler()->unregisterFilter();
     getHandler()->dumpStack(exp->ContextRecord, true);
     return EXCEPTION_CONTINUE_SEARCH;
+}
+
+long WindowsUnexpectedErrorHandler::vectoredExceptHandler(_EXCEPTION_POINTERS *exp) noexcept
+{
+    bool bHandleException = false;
+    PEXCEPTION_RECORD pExceptionRecord = exp->ExceptionRecord;
+    while (pExceptionRecord != NULL)
+    {
+        switch (exp->ExceptionRecord->ExceptionCode)
+        {
+        case DBG_PRINTEXCEPTION_WIDE_C:
+        case DBG_PRINTEXCEPTION_C:
+            break;
+        default:
+            bHandleException = true;
+            break;
+        }
+        pExceptionRecord = pExceptionRecord->ExceptionRecord;
+    }
+
+    if (!bHandleException)
+    {
+        return EXCEPTION_CONTINUE_EXECUTION;
+    }
+
+    return unhandledExceptFilter(exp);
 }

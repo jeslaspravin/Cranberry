@@ -348,7 +348,12 @@ bool WindowsPlatformFunctions::hasAttachedDebugger()
     return !!bRemoteDebuggerAvailable || bIsRunByDebugger;
 }
 
-void WindowsPlatformFunctions::outputToDebugger(const TChar *msg) { ::OutputDebugString(msg); }
+void WindowsPlatformFunctions::outputToDebugger(const TChar *msg) noexcept
+{
+    // OutputDebugString raises exception with exception code DBG_PRINTEXCEPTION_C or DBG_PRINTEXCEPTION_WIDE_C
+    // These exception gets captured at VectoredExceptionHandler
+    ::OutputDebugString(msg);
+}
 
 String WindowsPlatformFunctions::getClipboard()
 {

@@ -260,13 +260,13 @@ struct CapturedFunctor
     /**
      * Actual data
      */
-    constexpr static const SizeT MAX_INLINED_SIZE = 128;
+    constexpr static const SizeT MAX_INLINED_BYTES = 128;
     union
     {
-        alignas(16) uint8 data[MAX_INLINED_SIZE] = {};
+        alignas(16) uint8 data[MAX_INLINED_BYTES] = {};
         struct
         {
-            UPtrInt nullptrs[(MAX_INLINED_SIZE / sizeof(UPtrInt)) - 1];
+            UPtrInt nullptrs[(MAX_INLINED_BYTES / sizeof(UPtrInt)) - 1];
             void *dataPtr;
         } heapAlloc;
     };
@@ -327,7 +327,7 @@ struct CapturedFunctor
     // Handling inline or heap allocated lambda data
 
     template <typename CallableType>
-    struct IsLambdaInlineable : std::conditional_t<sizeof(CallableType) <= MAX_INLINED_SIZE, std::true_type, std::false_type>
+    struct IsLambdaInlineable : std::conditional_t<sizeof(CallableType) <= MAX_INLINED_BYTES, std::true_type, std::false_type>
     {};
 
     template <typename CallableType>

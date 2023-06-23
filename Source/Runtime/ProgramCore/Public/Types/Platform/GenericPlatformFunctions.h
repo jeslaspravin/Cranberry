@@ -78,7 +78,7 @@ public:
 
     // Debugger related
     FORCE_INLINE static bool hasAttachedDebugger() { return PlatformClass::hasAttachedDebugger(); }
-    FORCE_INLINE static void outputToDebugger(const TChar *msg) { PlatformClass::outputToDebugger(msg); }
+    FORCE_INLINE static void outputToDebugger(const TChar *msg) noexcept { PlatformClass::outputToDebugger(msg); }
 
     // Platform tools
 

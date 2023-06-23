@@ -61,11 +61,12 @@ void UnexpectedErrorHandler::registerFilter()
 #endif
     registerPlatformFilters();
 }
-void UnexpectedErrorHandler::unregisterFilter() const
+void UnexpectedErrorHandler::unregisterFilter()
 {
     unregisterPlatformFilters();
 #ifndef STD_TERMINATION_HANDLER_TL
     std::set_terminate(oldTerminationHandler);
+    oldTerminationHandler = nullptr;
 #endif
 }
 

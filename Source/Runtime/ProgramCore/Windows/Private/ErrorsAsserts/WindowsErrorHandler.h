@@ -25,20 +25,24 @@ public:
         return &handler;
     }
 
-    static long handlerFilter(_EXCEPTION_POINTERS *exp) noexcept;
-
     /* UnexpectedErrorHandler Implementation */
     void registerPlatformFilters() override;
-    void unregisterPlatformFilters() const override;
+    void unregisterPlatformFilters() override;
     void dumpCallStack(bool bShouldCrashApp) const override;
     void debugBreak() const override;
     /* Ends */
 private:
     typedef long (*PreviousFilterFunc)(_EXCEPTION_POINTERS *ExceptionInfo);
-    PreviousFilterFunc previousFilter;
+    // UnhandledExceptionFilter
+    PreviousFilterFunc prevExpFilter;
+    // VectoredExceptionHandler
+    void *vecExpHandlerHandle;
 
     _CONTEXT *getCurrentExceptionCntxt() const;
     void dumpStack(_CONTEXT *context, bool bCloseApp) const;
+
+    static long unhandledExceptFilter(_EXCEPTION_POINTERS *exp) noexcept;
+    static long vectoredExceptHandler(_EXCEPTION_POINTERS *exp) noexcept;
 };
 
 typedef WindowsUnexpectedErrorHandler PlatformUnexpectedErrorHandler;
