@@ -14,17 +14,21 @@
 #include "String/String.h"
 #include "Types/CoreTypes.h"
 
-struct PROGRAMCORE_EXPORT CmdLineArgument
+struct DEPRECATED("Use REGISTER_CMDARG macros instead") CmdLineArgument
 {
     // Short arg is for flags alone
-    CmdLineArgument(String description, String cmdArg, String shortArg = TCHAR(""));
+    PROGRAMCORE_EXPORT CmdLineArgument(StringView description, StringView cmdArg, StringView shortArg = TCHAR(""));
 };
 
 // Use if want to have static registration of command line arguments
 #define REGISTER_CMDARG_S(Desc, CmdArgName, ShortArgName)                                                                                      \
-    static const CmdLineArgument COMBINE(zzzCmdLineArg_, __COUNTER__) { TCHAR(Desc), CmdArgName, ShortArgName }
+    DISABLE_DEPRECATION                                                                                                                        \
+    static const CmdLineArgument COMBINE(zzzCmdLineArg_, __COUNTER__){ TCHAR(Desc), CmdArgName, ShortArgName };                                \
+    ENABLE_DEPRECATION
 #define REGISTER_CMDARG(Desc, CmdArgName)                                                                                                      \
-    static const CmdLineArgument COMBINE(zzzCmdLineArg_, __COUNTER__) { TCHAR(Desc), CmdArgName }
+    DISABLE_DEPRECATION                                                                                                                        \
+    static const CmdLineArgument COMBINE(zzzCmdLineArg_, __COUNTER__){ TCHAR(Desc), CmdArgName };                                              \
+    ENABLE_DEPRECATION
 
 /*
  * Args starting with `single -` will be short hand flags and can be stringed together and they cannot

@@ -61,17 +61,17 @@ void ApplicationModule::graphicsInitEvents(ERenderStateEvent renderState)
 }
 
 constexpr StringLiteralStore<TCHAR("--noRenderThread")> CMDLINE_NORENDERTHREAD;
-REGISTER_CMDARG("Runs the application without special render thread. Useful for debugging!", CMDLINE_NORENDERTHREAD);
+REGISTER_CMDARG("Runs the application without special render thread. Useful for debugging!", CMDLINE_NORENDERTHREAD.getChar());
 
 constexpr StringLiteralStore<TCHAR("--noSpecialThreads")> CMDLINE_NOSPECIALTHREADS;
 REGISTER_CMDARG(
-    "Runs the application without any special render threads. Useful for debugging!\n\
-    Only main thread and worker threads will exist.",
-    CMDLINE_NOSPECIALTHREADS
+    "Runs the application without any special render threads. Useful for debugging!\n    "
+    "Only main thread and worker threads will exist.",
+    CMDLINE_NOSPECIALTHREADS.getChar()
 );
 
 constexpr StringLiteralStore<TCHAR("--singleThread")> CMDLINE_SINGLETHREADED;
-REGISTER_CMDARG("Runs the application only with main thread in Application's copat job system!", CMDLINE_SINGLETHREADED);
+REGISTER_CMDARG("Runs the application only with main thread in Application's copat job system!", CMDLINE_SINGLETHREADED.getChar());
 
 uint32 ApplicationModule::getThreadingConstraints()
 {

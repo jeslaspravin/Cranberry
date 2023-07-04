@@ -118,7 +118,7 @@
 #endif
 
 #ifndef DEPRECATED
-#define DEPRECATED(Message) [[deprecated(#Message)]]
+#define DEPRECATED(Message) [[deprecated(Message)]]
 #endif
 
 #ifndef STATIC_LINKED

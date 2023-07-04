@@ -25,52 +25,57 @@
 
 void initializeCmdArguments()
 {
-    CmdLineArgument genFilesList(
-        TCHAR("List of file path that will be consumed by build as generated "
-              "reflection translation units"),
-        ReflectToolCmdLineConst::GENERATED_TU_LIST
+    REGISTER_CMDARG(
+        "List of file path that will be consumed by build as generated "
+        "reflection translation units",
+        ReflectToolCmdLineConst::GENERATED_TU_LIST.getChar()
     );
-    CmdLineArgument generatedDirector(
-        TCHAR("Directory where the generated files will be dropped.\nGenerated header for headers under Public folder, will be placed under public folder of this directory and others will be placed under Private"), ReflectToolCmdLineConst::GENERATED_DIR
+    REGISTER_CMDARG(
+        "Directory where the generated files will be dropped.\n    "
+        "Generated header for headers under Public folder, "
+        "will be placed under public folder of this directory and others will be placed under Private",
+        ReflectToolCmdLineConst::GENERATED_DIR.getChar()
     );
-    CmdLineArgument reflectedTypesListFile(
-        TCHAR("File where all the reflected types from this module must be written out."), ReflectToolCmdLineConst::REFLECTED_TYPES_LIST_FILE
+    REGISTER_CMDARG(
+        "File where all the reflected types from this module must be written out.", ReflectToolCmdLineConst::REFLECTED_TYPES_LIST_FILE.getChar()
     );
-    CmdLineArgument moduleSrcDir(
-        TCHAR("Directory to search and parse source headers from for this module."), ReflectToolCmdLineConst::MODULE_SRC_DIR
+    REGISTER_CMDARG("Directory to search and parse source headers from for this module.", ReflectToolCmdLineConst::MODULE_SRC_DIR.getChar());
+    REGISTER_CMDARG(
+        "Name of this module. This will be used to derive several build file names.", ReflectToolCmdLineConst::MODULE_NAME.getChar()
     );
-    CmdLineArgument moduleName(
-        TCHAR("Name of this module. This will be used to derive several build file names."), ReflectToolCmdLineConst::MODULE_NAME
+    REGISTER_CMDARG("Name of API export macro for this module.", ReflectToolCmdLineConst::MODULE_EXP_MACRO.getChar());
+    REGISTER_CMDARG(
+        "Directory where intermediate files can be dropped/created.\n    "
+        "This must be unique per configuration to track last generated timestamps for files etc,.",
+        ReflectToolCmdLineConst::INTERMEDIATE_DIR.getChar()
     );
-    CmdLineArgument moduleExpMacro(TCHAR("Name of API export macro for this module."), ReflectToolCmdLineConst::MODULE_EXP_MACRO);
-    CmdLineArgument intermediateDir(
-        TCHAR("Directory where intermediate files can be dropped/created.\n\
-    This must be unique per configuration to track last generated timestamps for files etc,."),
-        ReflectToolCmdLineConst::INTERMEDIATE_DIR
+    REGISTER_CMDARG_S(
+        "File path that contains list of include directories for this "
+        "module semicolon(;) separated.",
+        ReflectToolCmdLineConst::INCLUDE_LIST_FILE.getChar(),
+        TCHAR("--I")
+        );
+    REGISTER_CMDARG_S(
+        "File path that contains list of compile definitions for this "
+        "module semicolon(;) separated.",
+        ReflectToolCmdLineConst::COMPILE_DEF_LIST_FILE.getChar(),
+        TCHAR("--D")
+        );
+    REGISTER_CMDARG(
+        "Intermediate directories of the modules this module depends on.", ReflectToolCmdLineConst::DEP_INTERMEDIATE_DIRS_LIST_FILE.getChar()
     );
-    CmdLineArgument includeDirList(
-        TCHAR("File path that contains list of include directories for this "
-              "module semicolon(;) separated."),
-        ReflectToolCmdLineConst::INCLUDE_LIST_FILE, TCHAR("--I")
+    REGISTER_CMDARG("Executes sample code instead of actual application", ReflectToolCmdLineConst::SAMPLE_CODE.getChar());
+    REGISTER_CMDARG(
+        "Filters the diagnostics results and only display what is absolutely necessary", ReflectToolCmdLineConst::FILTER_DIAGNOSTICS.getChar()
     );
-    CmdLineArgument compileDefList(
-        TCHAR("File path that contains list of compile definitions for this "
-              "module semicolon(;) separated."),
-        ReflectToolCmdLineConst::COMPILE_DEF_LIST_FILE, TCHAR("--D")
-    );
-    CmdLineArgument depIntermDirsList(
-        TCHAR("Intermediate directories of the modules this module depends on."), ReflectToolCmdLineConst::DEP_INTERMEDIATE_DIRS_LIST_FILE
-    );
-    CmdLineArgument exeSampleCode(TCHAR("Executes sample code instead of actual application"), ReflectToolCmdLineConst::SAMPLE_CODE);
-    CmdLineArgument filterDiagnostics(
-        TCHAR("Filters the diagnostics results and only display what is absolutely necessary"), ReflectToolCmdLineConst::FILTER_DIAGNOSTICS
-    );
-    CmdLineArgument noDiagnostics(TCHAR("No diagnostics will be displayed"), ReflectToolCmdLineConst::NO_DIAGNOSTICS);
-    CmdLineArgument logVerbose(TCHAR("Sets the verbosity of logger to debug"), ReflectToolCmdLineConst::LOG_VERBOSE);
+    REGISTER_CMDARG("No diagnostics will be displayed", ReflectToolCmdLineConst::NO_DIAGNOSTICS.getChar());
+    REGISTER_CMDARG("Sets the verbosity of logger to debug", ReflectToolCmdLineConst::LOG_VERBOSE.getChar());
 
-    ProgramCmdLine::get().setProgramDescription(TCHAR("ModuleReflectTool Copyright (C) Jeslas Pravin, Since 2022\n\
-    Parses the headers in provided module and creates reflection files for them.\n\
-    It uses clang libraries and mustache style templates to generate reflection data"));
+    ProgramCmdLine::get().setProgramDescription(TCHAR(
+    "ModuleReflectTool\nCopyright (C) Jeslas Pravin, Since 2022\n    "
+    "Parses the headers in provided module and creates reflection files for them.\n    "
+    "It uses clang libraries and mustache style templates to generate reflection data"
+    ) );
 }
 
 // Override new and delete

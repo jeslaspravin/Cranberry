@@ -32,6 +32,7 @@
 #define COMPILER_MESSAGE(MsgStr) message MsgStr
 
 #define COMPILER_PUSH_WARNING clang diagnostic push
+#define COMPILER_WARNING_AS_ERROR(WarningMacro) clang diagnostic error MACRO_TO_STRING(WarningMacro)
 #define COMPILER_DISABLE_WARNING(WarningMacro) clang diagnostic ignored MACRO_TO_STRING(WarningMacro)
 #define COMPILER_POP_WARNING clang diagnostic pop
 
@@ -47,6 +48,7 @@
 #define WARN_UNNEEDED_INTERNAL_FUNCTION -Wunneeded-internal-declaration
 #define WARN_IMPLICIT_DESTRUCTOR_DELETE
 #define WARN_MISSING_OVERRIDE -Winconsistent-missing-override
+#define WARN_DEPRECATED -Wdeprecated
 
 #elif defined _MSC_VER
 #define COMPILER_MAJOR_VER _MSC_VER
@@ -58,6 +60,7 @@
 #define COMPILER_MESSAGE(MsgStr) message(MsgStr)
 
 #define COMPILER_PUSH_WARNING warning(push)
+#define COMPILER_WARNING_AS_ERROR(WarningMacro) warning(error : WarningMacro)
 #define COMPILER_DISABLE_WARNING(WarningMacro) warning(disable : WarningMacro)
 #define COMPILER_POP_WARNING warning(pop)
 
@@ -73,12 +76,19 @@
 #define WARN_UNNEEDED_INTERNAL_FUNCTION 4505
 #define WARN_IMPLICIT_DESTRUCTOR_DELETE 4624
 #define WARN_MISSING_OVERRIDE
+#define WARN_DEPRECATED 4996
 
 #else
 static_assert(false, "Unsupported compiler");
 #endif
 
 // clang-format on
+
+#define DISABLE_DEPRECATION                                                                                                                    \
+    COMPILER_PRAGMA(COMPILER_PUSH_WARNING)                                                                                                     \
+    COMPILER_PRAGMA(COMPILER_DISABLE_WARNING(WARN_DEPRECATED))
+
+#define ENABLE_DEPRECATION COMPILER_PRAGMA(COMPILER_POP_WARNING)
 
 #ifdef __cpp_lib_source_location
 #define HAS_SOURCE_LOCATION_FEATURE __cpp_lib_source_location >= 201907L

@@ -23,9 +23,9 @@ class ProgramCmdLineInstance : public ProgramCmdLine
 public:
     struct AllowedArg
     {
-        String argName;
-        String shortArgName;
-        String argDescription;
+        StringView argName;
+        StringView shortArgName;
+        StringView argDescription;
     };
     struct ArgElementsRange
     {
@@ -40,7 +40,7 @@ public:
     std::unordered_map<String, ArgElementsRange> cmdArgs;
 
 public:
-    void addAllowedArg(const String &cmdArg, const String &shortArg, const String &description)
+    void addAllowedArg(StringView cmdArg, StringView shortArg, StringView description)
     {
         allowedArgs.emplace_back(AllowedArg{ cmdArg, shortArg, description });
     }
@@ -74,7 +74,7 @@ public:
     void parseArgElements();
 };
 
-CmdLineArgument::CmdLineArgument(String description, String cmdArg, String shortArg /*= ""*/)
+CmdLineArgument::CmdLineArgument(StringView description, StringView cmdArg, StringView shortArg /*= ""*/)
 {
     static_cast<ProgramCmdLineInstance *>(&ProgramCmdLine::get())->addAllowedArg(cmdArg, shortArg, description);
 }
