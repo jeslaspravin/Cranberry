@@ -23,13 +23,15 @@ COPAT_NS_INLINED
 namespace copat
 {
 
+/**
+ * Used to switch between threads(Strictly in same job system)
+ */
 template <EJobThreadType SwitchToThread>
 struct SwitchJobThreadAwaiter
 {
 public:
     SwitchJobThreadAwaiter() = default;
 
-    // Even if nothing is awaiting it is still better to suspend as something might await on it after it if finished
     constexpr bool await_ready() const noexcept { return false; }
     template <JobSystemPromiseType PromiseType>
     void await_suspend(std::coroutine_handle<PromiseType> h) const noexcept
@@ -40,12 +42,14 @@ public:
     constexpr void await_resume() const noexcept {}
 };
 
+/**
+ * Used to yield current thread(Strictly in same job system)
+ */
 struct YieldAwaiter
 {
 public:
     YieldAwaiter() = default;
 
-    // Even if nothing is awaiting it is still better to suspend as something might await on it after it if finished
     constexpr bool await_ready() const noexcept { return false; }
     template <JobSystemPromiseType PromiseType>
     void await_suspend(std::coroutine_handle<PromiseType> h) const noexcept

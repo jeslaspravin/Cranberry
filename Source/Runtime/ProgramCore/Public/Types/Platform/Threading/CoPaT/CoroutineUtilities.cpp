@@ -21,4 +21,10 @@ JobSystemFuncAwaiter::PromiseType::PromiseType()
     : enqToJobSystem(JobSystem::get())
 {}
 
+void SwitchJobSystemThreadAwaiter::enqueueToJs(std::coroutine_handle<> h, EJobPriority priority) const noexcept
+{
+    COPAT_ASSERT(switchToJs);
+    switchToJs->enqueueJob(h, switchToThread, priority);
+}
+
 } // namespace copat

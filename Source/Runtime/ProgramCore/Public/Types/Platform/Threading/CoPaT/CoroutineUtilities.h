@@ -230,6 +230,35 @@ public:
     using promise_type = PromiseType;
 };
 
+/**
+ * Used to switch between threads and between job system,
+ * Use only if want to switch from one job system to another.
+ * Using this requires sizeof(SwitchJobSystemThreadAwaiter) allocated in coroutine's stack
+ */
+struct SwitchJobSystemThreadAwaiter
+{
+private:
+    JobSystem *switchToJs;
+    EJobThreadType switchToThread;
+
+public:
+    SwitchJobSystemThreadAwaiter(JobSystem &execInJs, EJobThreadType execInThread)
+        : switchToJs(&execInJs)
+        , switchToThread(execInThread)
+    {}
+
+    constexpr bool await_ready() const noexcept { return false; }
+    template <JobSystemPromiseType PromiseType>
+    void await_suspend(std::coroutine_handle<PromiseType> h) const noexcept
+    {
+        enqueueToJs(h, h.promise().jobPriority);
+    }
+    constexpr void await_resume() const noexcept {}
+
+private:
+    COPAT_EXPORT_SYM void enqueueToJs(std::coroutine_handle<> h, EJobPriority priority) const noexcept;
+};
+
 //////////////////////////////////////////////////////////////////////////
 /// Helper types
 //////////////////////////////////////////////////////////////////////////
