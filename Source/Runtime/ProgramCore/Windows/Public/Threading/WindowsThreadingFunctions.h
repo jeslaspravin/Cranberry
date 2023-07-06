@@ -29,6 +29,7 @@ public:
     static PlatformHandle getCurrentThreadHandle();
 
     static bool setThreadProcessor(uint32 coreIdx, uint32 logicalProcessorIdx, PlatformHandle threadHandle);
+    static bool setThreadGroupAffinity(uint16 grpIdx, uint64 affinityMask, PlatformHandle threadHandle);
 
     static void sleep(int64 msTicks);
 

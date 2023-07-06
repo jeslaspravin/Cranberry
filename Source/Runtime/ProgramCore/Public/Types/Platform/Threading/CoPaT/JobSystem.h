@@ -183,8 +183,9 @@ public:
     SpecialQHazardToken *allocateEnqTokens() { return nullptr; }
 };
 
-#define NOSPECIALTHREAD_ENUM_TO_FLAGBIT(ThreadType)                                                                                            \
-    (copat::JobSystem::BitMasksStart << (copat::JobSystem::No##ThreadType - copat::JobSystem::BitMasksStart))
+#define THREADCONSTRAINT_ENUM_TO_FLAGBIT(ConstraintName)                                                                                       \
+    (copat::JobSystem::BitMasksStart << (copat::JobSystem::##ConstraintName - copat::JobSystem::BitMasksStart))
+#define NOSPECIALTHREAD_ENUM_TO_FLAGBIT(ThreadType) THREADCONSTRAINT_ENUM_TO_FLAGBIT(No##ThreadType)
 
 class COPAT_EXPORT_SYM JobSystem
 {
@@ -205,7 +206,6 @@ public:
         PerThreadData(WorkerThreadQueueType *workerQs, SpecialThreadQueueType *mainQs, SpecialThreadsPoolType &specialThreadPool);
     };
 
-#define NOSPECIALTHREAD_ENUM_FIRST(ThreadType) No##ThreadType = BitMasksStart,
 #define NOSPECIALTHREAD_ENUM(ThreadType) No##ThreadType,
     // clang-format off
 
@@ -220,8 +220,10 @@ public:
         NoWorkerThreads,
         // Anything after 8 will be bit masked values. Bit shift is determined by (Flag - BitMasksStart)
         BitMasksStart = 8,
+        // Flag if set worker threads will not be set to per logical processor affinity, instead use all processors in a group
+        NoWorkerAffinity = BitMasksStart,
         // Each of below NoSpecialThread mask will not stop creating those threads but will be used only at Enqueue. This is just to avoid unnecessary complexity
-        FOR_EACH_UDTHREAD_TYPES_UNIQUE_FIRST_LAST(NOSPECIALTHREAD_ENUM_FIRST, NOSPECIALTHREAD_ENUM, NOSPECIALTHREAD_ENUM) 
+        FOR_EACH_UDTHREAD_TYPES(NOSPECIALTHREAD_ENUM) 
         BitMasksEnd
     };
 

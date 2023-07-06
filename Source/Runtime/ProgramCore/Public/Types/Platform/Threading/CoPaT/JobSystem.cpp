@@ -125,7 +125,7 @@ void JobSystem::initializeWorkers() noexcept
     u32 coresForWorkers = coreCount;
     if (coreCount <= nonWorkerCount)
     {
-        // If there is very limited cores then let OS decide on scheduling, we just distribute workers evenly
+        // If there is very limited cores then let OS handle better scheduling, we just distribute workers evenly
         nonWorkerCount = 0;
     }
     else
@@ -144,7 +144,22 @@ void JobSystem::initializeWorkers() noexcept
                                 doWorkerJobs();
                             } };
         PlatformThreadingFuncs::setThreadName((COPAT_TCHAR("WorkerThread_") + COPAT_TOSTRING(i)).c_str(), worker.native_handle());
-        PlatformThreadingFuncs::setThreadProcessor(coreIdx, htIdx, worker.native_handle());
+        // If Worker is strictly tied to a logic processor
+        if ((threadingConstraints & THREADCONSTRAINT_ENUM_TO_FLAGBIT(NoWorkerAffinity)) == 0)
+        {
+            PlatformThreadingFuncs::setThreadProcessor(coreIdx, htIdx, worker.native_handle());
+        }
+        else
+        {
+            PlatformThreadingFuncs::GroupAffinityMaskBuilder affinityBuilder;
+            affinityBuilder.setAll();
+            affinityBuilder.setGroupFrom(coreIdx);
+            affinityBuilder.clearUpto(nonWorkerCount, 0);
+            PlatformThreadingFuncs::setThreadGroupAffinity(
+                affinityBuilder.getGroupIdx(), affinityBuilder.getAffinityMask(), worker.native_handle()
+            );
+        }
+
         // Destroy when finishes
         worker.detach();
     }

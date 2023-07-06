@@ -33,7 +33,7 @@ public:
         int32 argIdx;
         // start index of arg's value/s
         int32 argValueIdx;
-        // Count of values in valued arg and offset of char in flag arg
+        // Count of values in valued arg or Offset of char in flag arg
         int32 count;
     };
     std::vector<AllowedArg> allowedArgs;
@@ -45,7 +45,8 @@ public:
         allowedArgs.emplace_back(AllowedArg{ cmdArg, shortArg, description });
     }
 
-    void addCmdArg(const String &argName, const ArgElementsRange &range)
+    // argName must be a string as combined flags get separated into its own argName and needs dynamic allocation
+    void addCmdArg(String argName, const ArgElementsRange &range)
     {
         for (AllowedArg &allowedArg : allowedArgs)
         {

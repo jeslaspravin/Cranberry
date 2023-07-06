@@ -67,6 +67,60 @@ private:
     GenericThreadingFunctions() = default;
 
 public:
+    struct GroupAffinityMaskBuilder
+    {
+    public:
+        GroupAffinityMaskBuilder()
+            : mask(0)
+            , groupIdx(0)
+        {
+            uint32 nCore, nLogicalProcs;
+            getCoreCount(nCore, nLogicalProcs);
+            coreNum = uint16(nCore);
+            logicProcsPerCore = uint16(nLogicalProcs / nCore);
+        }
+
+        GroupAffinityMaskBuilder &setGroupFrom(uint32 coreIdx)
+        {
+            uint16 logicProcGlobalIdx = uint16(coreIdx * logicProcsPerCore);
+            groupIdx = logicProcGlobalIdx / LOGIC_PROCS_PER_GROUP;
+            return *this;
+        }
+        GroupAffinityMaskBuilder &setAll()
+        {
+            mask = ~(0ull);
+            return *this;
+        }
+        GroupAffinityMaskBuilder &clearUpto(uint32 coreIdx, uint32 logicalProcessorIdx)
+        {
+            uint16 logicProcGlobalIdx = uint16(coreIdx * logicProcsPerCore + logicalProcessorIdx);
+            if (isLogicProcGlobalIdxInsideGrp(logicProcGlobalIdx))
+            {
+                uint16 bitIdx = logicProcGlobalIdx % LOGIC_PROCS_PER_GROUP;
+                uint64 bitsToClear = (1ull << bitIdx) - 1;
+                CLEAR_BITS(mask, bitsToClear);
+            }
+            return *this;
+        }
+
+        uint16 getGroupIdx() const { return groupIdx; }
+        uint64 getAffinityMask() const { return mask; }
+
+    private:
+        uint64 mask;
+        uint16 groupIdx;
+        uint16 coreNum;
+        uint16 logicProcsPerCore;
+
+        constexpr static const uint16 LOGIC_PROCS_PER_GROUP = 64;
+        bool isLogicProcGlobalIdxInsideGrp(uint16 logicProcGlobalIdx) const
+        {
+            return logicProcGlobalIdx >= (groupIdx * LOGIC_PROCS_PER_GROUP)
+                   && logicProcGlobalIdx < (groupIdx * LOGIC_PROCS_PER_GROUP + LOGIC_PROCS_PER_GROUP);
+        }
+    };
+
+public:
     FORCE_INLINE static bool createTlsSlot(uint32 &outSlot) { return PlatformClass::createTlsSlot(outSlot); }
     FORCE_INLINE static void releaseTlsSlot(uint32 slot) { PlatformClass::releaseTlsSlot(slot); }
     FORCE_INLINE static bool setTlsSlotValue(uint32 slot, void *value) { return PlatformClass::setTlsSlotValue(slot, value); }
@@ -86,13 +140,20 @@ public:
         outCoreCount = processorsInfo.coresCount;
         outLogicalProcessorCount = processorsInfo.logicalProcessorsCount;
     }
-    FORCE_INLINE static bool setThreadProcessor(uint32 coreIdx, uint32 logicalProcessorIdx, void *threadHandle)
+    FORCE_INLINE static bool setThreadProcessor(uint32 coreIdx, uint32 logicalProcessorIdx, PlatformHandle threadHandle)
     {
         return PlatformClass::setThreadProcessor(coreIdx, logicalProcessorIdx, threadHandle);
     }
     FORCE_INLINE static bool setCurrentThreadProcessor(uint32 coreIdx, uint32 logicalProcessorIdx)
     {
         return setThreadProcessor(coreIdx, logicalProcessorIdx, getCurrentThreadHandle());
+    }
+    /**
+     * Each group has 64 logical processors, Each logical processor has a bit in the affinity mask.
+     */
+    FORCE_INLINE static bool setThreadGroupAffinity(uint16 grpIdx, uint64 affinityMask, PlatformHandle threadHandle)
+    {
+        return PlatformClass::setThreadGroupAffinity(grpIdx, affinityMask, threadHandle);
     }
 
     // Ticks in milliseconds

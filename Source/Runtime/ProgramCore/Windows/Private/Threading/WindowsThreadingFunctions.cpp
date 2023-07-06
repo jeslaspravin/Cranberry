@@ -55,13 +55,18 @@ bool WindowsThreadingFunctions::setThreadProcessor(uint32 coreIdx, uint32 logica
     const uint32 hyperthread = logicalProcCount / coreCount;
     debugAssert(hyperthread > logicalProcessorIdx);
     const uint32 coreAffinityShift = coreIdx * hyperthread + logicalProcessorIdx;
-    const uint32 groupIndex = coreAffinityShift / 64;
+    const uint16 groupIndex = uint16(coreAffinityShift / 64);
     const uint64 groupAffinityMask = 1ull << (coreAffinityShift % 64);
 
+    return setThreadGroupAffinity(groupIndex, groupAffinityMask, threadHandle);
+}
+
+bool WindowsThreadingFunctions::setThreadGroupAffinity(uint16 grpIdx, uint64 affinityMask, PlatformHandle threadHandle)
+{
     // Need to zero initialize for ::SetThreadGroupAffinity to succeed!
     ::GROUP_AFFINITY grpAffinity = {};
-    grpAffinity.Group = WORD(groupIndex);
-    grpAffinity.Mask = groupAffinityMask;
+    grpAffinity.Group = grpIdx;
+    grpAffinity.Mask = affinityMask;
 
     return !!::SetThreadGroupAffinity((HANDLE)threadHandle, &grpAffinity, nullptr);
 }

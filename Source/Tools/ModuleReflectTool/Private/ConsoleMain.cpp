@@ -130,7 +130,7 @@ int32 main(int32 argsc, AChar **args)
     else
     {
         CBE_START_PROFILER();
-        copat::JobSystem js(copat::JobSystem::NoSpecialThreads);
+        copat::JobSystem js(copat::JobSystem::NoSpecialThreads | THREADCONSTRAINT_ENUM_TO_FLAGBIT(NoWorkerAffinity));
         js.initialize({}, nullptr);
 
         StopWatch sw;
