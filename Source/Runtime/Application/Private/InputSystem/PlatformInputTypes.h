@@ -16,6 +16,7 @@
 #include "InputSystem/WindowsKeyCodes.h"
 #include "InputSystem/WindowsKeyboardDevice.h"
 #include "InputSystem/WindowsMouseDevice.h"
+#include "InputSystem/WindowsGamepadDevice.h"
 #include "InputSystem/WindowsRawInputBuffer.h"
 
 #elif PLATFORM_LINUX
@@ -30,5 +31,6 @@ using EKeyCode = MakeBreakKeyCodes::EKeyCode;
 
 using MouseDevice = InputDevices::MouseDevice;
 using KeyboardDevice = InputDevices::KeyboardDevice;
+using GamepadDevice = InputDevices::GamepadDevice;
 
 using RawInputBuffer = Input::RawInputBuffer;

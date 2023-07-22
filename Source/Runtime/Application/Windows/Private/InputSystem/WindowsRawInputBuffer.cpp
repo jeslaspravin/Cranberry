@@ -35,7 +35,8 @@ void WindowsRawInputBuffer::processInputs(const ProcessInputsParam &params) cons
         if (!bProcessed)
         {
             LOG_WARN("WindowsRawInputBuffer", "No device found for processing raw input");
-            DefRawInputProc(&rawInput, 1, sizeof(RAWINPUTHEADER));
+
+            ::DefRawInputProc(&rawInput, 1, sizeof(RAWINPUTHEADER));
         }
         using QWORD = uint64;
         rawInput = NEXTRAWINPUTBLOCK(rawInput);
@@ -56,8 +57,8 @@ void WindowsRawInputBuffer::update()
     {
         const uint32 currRawSize = uint32(bufferedRawInput.size());
 
-        uint32 bufferSize;
-        currentBlocksNum = GetRawInputBuffer(nullptr, &bufferSize, sizeof(RAWINPUTHEADER));
+        uint32 bufferSize = 0;
+        currentBlocksNum = ::GetRawInputBuffer(nullptr, &bufferSize, sizeof(RAWINPUTHEADER));
         if (currentBlocksNum == -1)
         {
             LOG_ERROR("WindowsRawInputBuffer", "Retrieving input buffer size failed");
@@ -73,7 +74,7 @@ void WindowsRawInputBuffer::update()
 
         bufferedRawInput.resize(currRawSize + bufferSize);
         RAWINPUT *rawInput = reinterpret_cast<RAWINPUT *>(&bufferedRawInput[currRawSize]);
-        currentBlocksNum = GetRawInputBuffer(rawInput, &bufferSize, sizeof(RAWINPUTHEADER));
+        currentBlocksNum = ::GetRawInputBuffer(rawInput, &bufferSize, sizeof(RAWINPUTHEADER));
         totalBlocksNum += currentBlocksNum;
         if (currentBlocksNum == -1)
         {

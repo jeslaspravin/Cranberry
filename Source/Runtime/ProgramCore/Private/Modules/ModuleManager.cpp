@@ -224,13 +224,12 @@ LibHandle ModuleManager::getOrLoadLibrary(const TChar *libNameOrPath)
         }
         if (library)
         {
-            LOG_DEBUG("ModuleManager", "Loaded Library {} from {}", moduleName, libNameOrPath);
-
             std::pair<LibHandle, LibraryData> &libDataPair = loadedLibraries[moduleName];
             libDataPair.first = library;
             PlatformFunctions::getModuleInfo(PlatformFunctions::getCurrentProcessHandle(), libDataPair.first, libDataPair.second);
             libDataPair.second.name = PathFunctions::stripExtension(libDataPair.second.name);
 
+            LOG_DEBUG("ModuleManager", "Loaded Library {} from {}", moduleName, libDataPair.second.imgPath);
             return library;
         }
         return nullptr;

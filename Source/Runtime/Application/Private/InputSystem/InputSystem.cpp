@@ -18,6 +18,7 @@ InputSystem::InputSystem()
     rawInputBuffer = new RawInputBuffer();
     inputDevices.emplace_back(new KeyboardDevice());
     inputDevices.emplace_back(new MouseDevice());
+    inputDevices.emplace_back(new GamepadDevice());
 
     keyToCharProcessor.reset(new KeyToAsciiCharProcessor());
 }

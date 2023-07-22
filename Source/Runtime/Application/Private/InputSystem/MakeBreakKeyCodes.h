@@ -11,6 +11,7 @@
 
 #pragma once
 // based on https://www.win.tue.nl/~aeb/linux/kbd/scancodes-1.html
+// Additional special scancodes https://www.scs.stanford.edu/10wi-cs140/pintos/specs/kbd/scancodes-5.html
 namespace MakeBreakKeyCodes
 {
 enum EKeyCode
@@ -99,13 +100,14 @@ enum EKeyCode
     KEY_NUM0,
     KEY_NUMFULLSTOP,
     KEY_SYSREQ,
-    KEY_F11,
+    KEY_UNUSED0,
     KEY_LEFTBCKSLASH,
-    KEY_F12 = 0x58,
+    KEY_F11,
+    KEY_F12,
     KEY_PA1 = 0x5A,
-    KEY_LWIN, // F13
-    KEY_RWIN, // F14
-    KEY_MENU, // F15
+    KEY_F13,
+    KEY_F14,
+    KEY_F15,
     KEY_F16 = 0x63,
     KEY_F17,
     KEY_F18,
@@ -136,6 +138,9 @@ enum EKeyCode
     KEY_INSERT = E0_CODE | KEY_NUM0,
     KEY_DELETE = E0_CODE | KEY_NUMFULLSTOP,
     KEY_NUMENTER = E0_CODE | KEY_ENTER,
+    KEY_LWIN = E0_CODE | KEY_F13,
+    KEY_RWIN = E0_CODE | KEY_F14,
+    KEY_MENU = E0_CODE | KEY_F15,
     // E1 code Only pause/break so only one key after E0
     KEY_PAUSE,
     // Mouse key codes above 512 as they are not keys, we use them just to hold key state for mouse in

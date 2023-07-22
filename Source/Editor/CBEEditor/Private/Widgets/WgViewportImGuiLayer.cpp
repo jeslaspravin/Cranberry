@@ -70,8 +70,7 @@ void WgViewportImGuiLayer::draw(ImGuiDrawInterface * /*drawInterface*/)
             {
                 ImGui::FocusWindow(ImGui::GetCurrentContext()->HoveredWindow);
             }
-
-            if (ImGui::IsMouseDragging(ImGuiMouseButton_Right))
+            else if (ImGui::IsMouseDragging(ImGuiMouseButton_Right))
             {
                 ImGui::FocusWindow(ImGui::GetCurrentWindow());
                 // ImGui::Text("Viewport right dragged");

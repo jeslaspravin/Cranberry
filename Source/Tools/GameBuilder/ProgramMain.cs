@@ -9,7 +9,7 @@
  *  License can be read in LICENSE file at this repository's root
  */
 
-﻿using GameBuilder.BuildFileUtils;
+using GameBuilder.BuildFileUtils;
 using GameBuilder.Logger;
 using GameBuilder.Modes;
 using System.Collections.Generic;
