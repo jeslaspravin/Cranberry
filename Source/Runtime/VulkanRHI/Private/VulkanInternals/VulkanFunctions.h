@@ -12,7 +12,7 @@
 #pragma once
 
 #include "VulkanInternals/Platform/PlatformVulkanFunctions.h"
-#include "vulkan.h"
+#include <vulkan/vulkan.h>
 
 namespace Vk
 {

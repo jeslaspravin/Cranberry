@@ -11,7 +11,7 @@
 
 #pragma once
 
-#include <vulkan_core.h>
+#include <vulkan/vulkan_core.h>
 
 #include "RenderInterface/CoreGraphicsTypes.h"
 #include "RenderInterface/Resources/Pipelines.h"

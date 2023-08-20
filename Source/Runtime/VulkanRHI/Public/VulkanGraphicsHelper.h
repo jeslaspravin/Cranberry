@@ -14,7 +14,7 @@
 #include "RenderInterface/GraphicsHelper.h"
 #include "VulkanRHIExports.h"
 
-#include <vulkan_core.h>
+#include <vulkan/vulkan_core.h>
 
 class GenericAppWindow;
 class GenericWindowCanvas;

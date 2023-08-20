@@ -17,7 +17,7 @@
 #include "VulkanInternals/VulkanFunctions.h"
 #include "WindowsCommonHeaders.h"
 
-#include <vulkan_win32.h>
+#include <vulkan/vulkan_win32.h>
 
 const char *PFN_Win32SurfaceKHR::EXT_NAME = VK_KHR_WIN32_SURFACE_EXTENSION_NAME;
 

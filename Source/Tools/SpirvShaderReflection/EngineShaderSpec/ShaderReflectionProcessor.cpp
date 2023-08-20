@@ -19,7 +19,7 @@
 #include <assert.h>
 #include <iostream>
 #include <set>
-#include <vulkan_core.h>
+#include <vulkan/vulkan_core.h>
 
 ShaderReflectionProcessor::ShaderReflectionProcessor(std::string shaderFilePath)
     : shaderPath(shaderFilePath)

@@ -13,7 +13,7 @@
 
 #include "Types/CoreTypes.h"
 
-#include <vulkan_core.h>
+#include <vulkan/vulkan_core.h>
 
 class String;
 struct VulkanMemoryBlock;

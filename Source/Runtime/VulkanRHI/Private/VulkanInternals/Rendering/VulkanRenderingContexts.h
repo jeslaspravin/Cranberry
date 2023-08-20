@@ -13,7 +13,7 @@
 #include "RenderApi/Rendering/RenderingContexts.h"
 #include "RenderInterface/Resources/DeferredDeleter.h"
 
-#include <vulkan_core.h>
+#include <vulkan/vulkan_core.h>
 
 class DrawMeshShaderConfig;
 

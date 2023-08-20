@@ -11,7 +11,7 @@
 
 #pragma once
 
-#include <vulkan_core.h>
+#include <vulkan/vulkan_core.h>
 
 #include "VulkanInternals/Platform/GenericVulkanFunctions.h"
 #include "Types/Platform/PlatformTypes.h"

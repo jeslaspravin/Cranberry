@@ -16,7 +16,7 @@
 #include "Types/CompilerDefines.h"
 #include "Types/Templates/TypeTraits.h"
 
-#include <utility>
+#include <functional>
 
 template <class T>
 concept SeedType = std::is_same_v<std::remove_cvref_t<T>, size_t>;

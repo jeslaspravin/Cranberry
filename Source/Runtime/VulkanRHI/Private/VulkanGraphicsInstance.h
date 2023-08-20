@@ -16,7 +16,7 @@
 #include "VulkanInternals/VulkanDevice.h"
 
 #include <vector>
-#include <vulkan_core.h>
+#include <vulkan/vulkan_core.h>
 
 class VulkanGraphicsInstance final : public IGraphicsInstance
 {

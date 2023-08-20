@@ -31,6 +31,8 @@
 #include "Types/xxHash/xxh64.hpp"
 #endif // BIG_ENDIAN
 
+#include <bit>
+
 namespace xxHash
 {
 

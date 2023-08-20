@@ -13,7 +13,7 @@
 #include "Types/Colors.h"
 #include "Types/CoreTypes.h"
 
-#include <vulkan_core.h>
+#include <vulkan/vulkan_core.h>
 
 struct DebugMessengerData;
 class IVulkanResources;

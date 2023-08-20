@@ -16,7 +16,7 @@
 #include "VulkanInternals/Resources/IVulkanResources.h"
 #include "VulkanInternals/VulkanMacros.h"
 
-#include <vulkan_core.h>
+#include <vulkan/vulkan_core.h>
 
 class VulkanDevice;
 

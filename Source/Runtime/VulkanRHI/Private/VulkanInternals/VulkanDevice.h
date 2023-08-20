@@ -15,7 +15,7 @@
 #include "VulkanInternals/Debugging.h"
 
 #include <vector>
-#include <vulkan_core.h>
+#include <vulkan/vulkan_core.h>
 
 class String;
 class QueueResourceBase;

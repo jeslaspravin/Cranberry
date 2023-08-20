@@ -12,7 +12,7 @@
 #pragma once
 #include "Memory/SmartPointers.h"
 
-#include <vulkan_core.h>
+#include <vulkan/vulkan_core.h>
 
 class VulkanDevice;
 struct VulkanMemoryBlock;

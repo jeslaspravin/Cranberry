@@ -17,7 +17,7 @@
 #include <queue>
 #include <set>
 #include <vector>
-#include <vulkan_core.h>
+#include <vulkan/vulkan_core.h>
 
 class VulkanDevice;
 struct DescriptorsSetQuery;

@@ -13,7 +13,7 @@
 #include <iostream>
 #include <set>
 #include <sstream>
-#include <vulkan_core.h>
+#include <vulkan/vulkan_core.h>
 
 #include "ApplicationInstance.h"
 #include "IApplicationModule.h"
