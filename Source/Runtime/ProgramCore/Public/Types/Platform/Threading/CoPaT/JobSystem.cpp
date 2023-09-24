@@ -19,18 +19,6 @@ COPAT_NS_INLINED
 namespace copat
 {
 
-// Converts to higher power of two, in 3 gets converted to 4
-template <std::unsigned_integral Type>
-static Type toHigherPowOf2(Type value)
-{
-    /* If 1 or 0 higher power will always be 1 */
-    if (value <= 1)
-    {
-        return 1;
-    }
-    return Type{ 1 } << std::bit_width(value - 1);
-}
-
 void getCoreCount(u32 &outCoreCount, u32 &outLogicalProcessorCount)
 {
     PlatformThreadingFuncs::getCoreCount(outCoreCount, outLogicalProcessorCount);
@@ -51,7 +39,7 @@ JobSystem *JobSystem::singletonInstance = nullptr;
 
 JobSystem::JobSystem(u32 constraints)
     : threadingConstraints(constraints)
-    , workerThreadsPool(toHigherPowOf2(calculateWorkersCount()))
+    , workerThreadsPool(calculateWorkersCount())
 {
     for (u32 i = 0; i < u32(EJobThreadType::MaxThreads); ++i)
     {
@@ -60,7 +48,7 @@ JobSystem::JobSystem(u32 constraints)
 }
 JobSystem::JobSystem(u32 inWorkerCount, u32 constraints)
     : threadingConstraints(constraints)
-    , workerThreadsPool(toHigherPowOf2(inWorkerCount))
+    , workerThreadsPool(inWorkerCount)
 {
     for (u32 i = 0; i < u32(EJobThreadType::MaxThreads); ++i)
     {
@@ -318,10 +306,11 @@ void JobSystem::doWorkerJobs(u32 threadIdx) noexcept
                 }
             }
 
+            /* Try stealing from one other thread and go to sleep */
             if (bEnableJobStealing)
             {
-                u32 stealFromThreadIdx = randomNum() & (getWorkersCount() - 1);
-                COPAT_PROFILER_SCOPE_VALUE(COPAT_PROFILER_CHAR("CopatStealJob"), stealFromThreadIdx);
+                COPAT_PROFILER_SCOPE(COPAT_PROFILER_CHAR("CopatStealJob"));
+                u32 stealFromThreadIdx = randomNum() % getWorkersCount();
                 for (EJobPriority priority = Priority_Critical; priority < Priority_MaxPriority && coroPtr == nullptr;
                      priority = EJobPriority(priority + 1))
                 {
@@ -329,6 +318,7 @@ void JobSystem::doWorkerJobs(u32 threadIdx) noexcept
                 }
                 while (coroPtr)
                 {
+                    COPAT_PROFILER_SCOPE_VALUE(COPAT_PROFILER_CHAR("CopatStolenJob"), stealFromThreadIdx);
                     std::coroutine_handle<>::from_address(coroPtr).resume();
 
                     coroPtr = nullptr;

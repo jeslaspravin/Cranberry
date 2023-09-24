@@ -336,7 +336,6 @@ public:
     EJobThreadType enqToThreadType(EJobThreadType forThreadType) const { return EJobThreadType(enqIndirection[u32(forThreadType)]); }
     bool isInThread(EJobThreadType threadType) const { return getCurrentThreadType() == enqToThreadType(threadType); }
 
-    /* Workers count will always be a power of 2 */
     u32 getWorkersCount() const { return workerThreadsPool.getWorkersCount(); }
     u32 getTotalThreadsCount() const { return getWorkersCount() + SpecialThreadsPoolType::COUNT + 1 /* Main thread */; }
 
