@@ -351,7 +351,11 @@ public:
     {
         return ownerCoroutine.promise().trySetContinuation(awaitingAtCoro);
     }
-    RetTypeStorage::reference_type await_resume() const noexcept { return ownerCoroutine.promise().returnStore.get(); }
+    RetTypeStorage::reference_type await_resume() const noexcept
+    {
+        COPAT_ASSERT(ownerCoroutine && ownerCoroutine.promise().returnStore.isValid());
+        return ownerCoroutine.promise().returnStore.get();
+    }
 };
 
 /**
@@ -553,7 +557,11 @@ public:
         std::coroutine_handle<PromiseType> ownerCoroutine = std::coroutine_handle<>::from_address(ownerCoroutinePtr.get());
         return ownerCoroutine.promise().trySetContinuation(awaitingAtCoro);
     }
-    RetTypeStorage::reference_type await_resume() const noexcept { return ownerCoroutinePtr.promise().returnStore.get(); }
+    RetTypeStorage::reference_type await_resume() const noexcept
+    {
+        COPAT_ASSERT(ownerCoroutinePtr && ownerCoroutinePtr->promise().returnStore.isValid());
+        return ownerCoroutinePtr.promise().returnStore.get();
+    }
 };
 
 /**

@@ -138,6 +138,7 @@ public:
     {
         if constexpr (!std::is_void_v<RetType>)
         {
+            COPAT_ASSERT(ownerCoroutine && ownerCoroutine.promise().returnStore.isValid());
             return ownerCoroutine.promise().returnStore.get();
         }
     }

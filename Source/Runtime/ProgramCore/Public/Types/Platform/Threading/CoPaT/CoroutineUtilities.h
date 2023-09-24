@@ -299,6 +299,7 @@ public:
     constexpr operator Type () const noexcept { return returnValue; }
 
     [[nodiscard]] constexpr RefType get() noexcept { return returnValue; }
+    [[nodiscard]] constexpr bool isValid() noexcept { return true; }
 
 private:
     Type returnValue;
@@ -341,6 +342,7 @@ public:
         COPAT_ASSERT(returnValue);
         return *returnValue;
     }
+    [[nodiscard]] constexpr bool isValid() noexcept { return returnValue != nullptr; }
 
 private:
     Type *returnValue = nullptr;
@@ -377,6 +379,7 @@ public:
     constexpr operator void () const noexcept {}
 
     constexpr RefType get() noexcept { return {}; }
+    [[nodiscard]] constexpr bool isValid() noexcept { return false; }
 };
 
 /**
