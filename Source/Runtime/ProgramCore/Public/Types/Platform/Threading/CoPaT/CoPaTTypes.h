@@ -46,6 +46,27 @@ enum EJobPriority
 };
 
 //////////////////////////////////////////////////////////////////////////
+/// CoPaT type traits
+//////////////////////////////////////////////////////////////////////////
+
+template <typename... Types>
+struct AlignmentOfInternal;
+template <typename Type>
+struct AlignmentOfInternal<Type>
+{
+    constexpr static const u64 Alignment = alignof(Type);
+};
+template <typename Type, typename... Types>
+struct AlignmentOfInternal<Type, Types...> : public AlignmentOfInternal<Types...>
+{
+    using Base = AlignmentOfInternal<Types...>;
+    constexpr static const u64 Alignment = alignof(Type) > Base::Alignment ? alignof(Type) : Base::Alignment;
+};
+/* Finds alignment of aggregate of types, Instead of using tuple or struct */
+template <typename... Types>
+constexpr u64 AlignmentOf = AlignmentOfInternal<Types...>::Alignment;
+
+//////////////////////////////////////////////////////////////////////////
 /// Copat memory allocators
 //////////////////////////////////////////////////////////////////////////
 

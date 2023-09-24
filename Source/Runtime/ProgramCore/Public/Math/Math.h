@@ -17,6 +17,7 @@
 #include "Types/Templates/TypeTraits.h"
 
 #include <cmath>
+#include <bit>
 
 GLM_HEADER_INCLUDES_BEGIN
 
@@ -325,13 +326,22 @@ public:
     template <std::unsigned_integral Type>
     static Type toHigherPowOf2(Type value)
     {
-        return Math::pow(2u, Type(Math::ceil(Math::log2(value))));
+        /* If 1 or 0 higher power will always be 1 */
+        if (value <= 1)
+        {
+            return 1;
+        }
+        return Type{ 1 } << std::bit_width(value - 1);
     }
-    // Converts to higher power of two, in 3 gets converted to 4
+    // Converts to lower power of two, in 3 gets converted to 2
     template <std::unsigned_integral Type>
     static Type toLowerPowOf2(Type value)
     {
-        return Math::pow(2u, Type(Math::floor(Math::log2(value))));
+        if (value == 0)
+        {
+            return 0;
+        }
+        return Type{ 1 } << (std::bit_width(value) - 1);
     }
     template <std::unsigned_integral Type>
     CONST_EXPR static Type alignBy2(Type value)

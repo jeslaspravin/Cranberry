@@ -92,9 +92,11 @@ struct DispatchWithReturn
          */
         COPAT_ASSERT(jobSys && jobSys->enqToThreadType(EJobThreadType::WorkerThreads) == EJobThreadType::WorkerThreads);
 
+        const u32 grpCount = jobSys->getWorkersCount();
+
         std::vector<AwaitableType> dispatchedJobs;
 
-        u32 jobsPerGrp = count / jobSys->getWorkersCount();
+        u32 jobsPerGrp = count / grpCount;
         // If dispatching count is less than max workers count
         if (jobsPerGrp == 0)
         {
@@ -106,8 +108,8 @@ struct DispatchWithReturn
         }
         else
         {
-            dispatchedJobs.reserve(jobSys->getWorkersCount());
-            u32 grpsWithMoreJobCount = count % jobSys->getWorkersCount();
+            dispatchedJobs.reserve(grpCount);
+            u32 grpsWithMoreJobCount = count % grpCount;
             u32 jobIdx = 0;
             for (u32 i = 0; i < grpsWithMoreJobCount; ++i)
             {
@@ -116,7 +118,7 @@ struct DispatchWithReturn
                 jobIdx += jobsPerGrp + 1;
             }
 
-            for (u32 i = grpsWithMoreJobCount; i < jobSys->getWorkersCount(); ++i)
+            for (u32 i = grpsWithMoreJobCount; i < grpCount; ++i)
             {
                 dispatchedJobs.emplace_back(std::move(dispatchTaskGroup(*jobSys, jobPriority, callback, jobIdx, jobsPerGrp)));
                 jobIdx += jobsPerGrp;
@@ -171,10 +173,12 @@ std::vector<RetType> parallelForReturn(
 
     COPAT_ASSERT(jobSys);
 
+    const u32 grpCount = jobSys->getWorkersCount();
+
     // If dispatching count is less than max workers count then jobsPerGrp will be 1
     // Else it will be jobsPerGrp or jobsPerGrp + 1 depending on count equiv-distributable among workers
-    u32 jobsPerGrp = count / jobSys->getWorkersCount();
-    jobsPerGrp += (count % jobSys->getWorkersCount()) > 0;
+    u32 jobsPerGrp = count / grpCount;
+    jobsPerGrp += (count % grpCount) > 0;
 
     AwaitAllTasks<std::vector<AwaitableType>> allAwaits = diverge(jobSys, callback, count - jobsPerGrp, jobPriority);
 
