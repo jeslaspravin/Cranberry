@@ -17,7 +17,7 @@ if (${Cranberry_ENABLE_MIMALLOC})
     # Also added development config to mimalloc cmake configs
     # Maybe I can move it to dll use once module manage is ready with malloc or may I can directly use platform library loader skipping module manager
     make_find_package_hints(mimalloc ${Cranberry_MIMALLOC_INSTALL_PATH} mimalloc_hints)
-    find_package(mimalloc 2.0
+    find_package(mimalloc 2.1
         REQUIRED CONFIG
         HINTS ${mimalloc_hints}
     )

@@ -181,6 +181,9 @@ bool ApplicationInstance::appTick()
         fontManager->flushUpdates();
     }
 
+    /* Widgets must be ticked before drawing as late tick clears ImGui Draw data.
+     * This could be improved by deep copying the Draw data */
+    tickWindowWidgets();
     // Start rendering widgets before application tick to allow application tick and render thread to run parallel
     // This frame's widget update will be visible next frame
     if (wgRenderer)
@@ -192,7 +195,6 @@ bool ApplicationInstance::appTick()
         }
     }
 
-    tickWindowWidgets();
     // Application tick
     onTick();
 

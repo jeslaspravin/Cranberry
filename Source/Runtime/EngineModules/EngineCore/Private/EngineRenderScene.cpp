@@ -1112,6 +1112,10 @@ void EngineRenderScene::updateVisibility(const RenderSceneViewParams &viewParams
                     {
                         compsInsideFrustum[idx].test_and_set(std::memory_order_relaxed);
                     }
+                    else
+                    {
+                        compsInsideFrustum[idx].clear(std::memory_order_relaxed);
+                    }
 #endif
                 }
             }

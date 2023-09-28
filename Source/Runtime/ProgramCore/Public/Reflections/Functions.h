@@ -371,12 +371,16 @@ struct CapturedFunctor
         {
             if (moveTo.heapAlloc.dataPtr)
             {
-                delete reinterpret_cast<CallableType *>(moveTo.heapAlloc.dataPtr);
+                destruct(moveTo);
             }
             moveTo.heapAlloc.dataPtr = moveFrom.heapAlloc.dataPtr;
             moveFrom.heapAlloc.dataPtr = nullptr;
         }
-        static void destruct(CapturedFunctor &functor) noexcept { delete reinterpret_cast<CallableType *>(functor.heapAlloc.dataPtr); }
+        static void destruct(CapturedFunctor &functor) noexcept
+        {
+            delete reinterpret_cast<CallableType *>(functor.heapAlloc.dataPtr);
+            functor.heapAlloc.dataPtr = nullptr;
+        }
 
         template <typename Callable>
         static void construct(CapturedFunctor &functor, Callable &&func) noexcept
