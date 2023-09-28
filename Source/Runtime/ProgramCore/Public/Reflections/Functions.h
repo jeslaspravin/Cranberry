@@ -288,12 +288,14 @@ struct CapturedFunctor
 
     CapturedFunctor &operator= (const CapturedFunctor &otherFuncPtr) noexcept
     {
+        reset();
         captureIxx = otherFuncPtr.captureIxx;
         (*captureIxx->copyFn)(*this, otherFuncPtr);
         return *this;
     }
     CapturedFunctor &operator= (CapturedFunctor &&otherFuncPtr) noexcept
     {
+        reset();
         captureIxx = otherFuncPtr.captureIxx;
         (*captureIxx->moveFn)(*this, std::forward<CapturedFunctor>(otherFuncPtr));
 
@@ -302,7 +304,9 @@ struct CapturedFunctor
         return *this;
     }
 
-    ~CapturedFunctor() noexcept
+    ~CapturedFunctor() noexcept { reset(); }
+
+    void reset() noexcept
     {
         if (captureIxx)
         {
@@ -340,13 +344,17 @@ struct CapturedFunctor
     public:
         static void copy(CapturedFunctor &copyTo, const CapturedFunctor &copyFrom) noexcept
         {
-            construct(copyTo, *reinterpret_cast<const CallableType *>(&copyFrom.data[0]));
+            construct(copyTo, *reinterpret_cast<const CallableType *>(copyFrom.data));
         }
         static void move(CapturedFunctor &moveTo, CapturedFunctor &&moveFrom) noexcept
         {
-            construct(moveTo, std::move(*reinterpret_cast<CallableType *>(&moveFrom.data[0])));
+            construct(moveTo, std::move(*reinterpret_cast<CallableType *>(moveFrom.data)));
         }
-        static void destruct(CapturedFunctor &functor) noexcept { reinterpret_cast<CallableType *>(&functor.data[0])->~CallableType(); }
+        static void destruct(CapturedFunctor &functor) noexcept
+        {
+            reinterpret_cast<CallableType *>(functor.data)->~CallableType();
+            memset(functor.data, 0, MAX_INLINED_BYTES);
+        }
 
         template <typename Callable>
         static void construct(CapturedFunctor &functor, Callable &&func) noexcept
@@ -355,7 +363,7 @@ struct CapturedFunctor
         }
         static ReturnType invoke(const CapturedFunctor &thisFunctor, Parameters... params) noexcept
         {
-            return (*reinterpret_cast<CallableType *>(const_cast<uint8 *>(&thisFunctor.data[0])))(std::forward<Parameters>(params)...);
+            return (*reinterpret_cast<CallableType *>(const_cast<uint8 *>(thisFunctor.data)))(std::forward<Parameters>(params)...);
         }
     };
     template <typename CallableType>
@@ -369,10 +377,6 @@ struct CapturedFunctor
         }
         static void move(CapturedFunctor &moveTo, CapturedFunctor &&moveFrom) noexcept
         {
-            if (moveTo.heapAlloc.dataPtr)
-            {
-                destruct(moveTo);
-            }
             moveTo.heapAlloc.dataPtr = moveFrom.heapAlloc.dataPtr;
             moveFrom.heapAlloc.dataPtr = nullptr;
         }
@@ -416,7 +420,7 @@ struct CapturedFunctor
                                                                             .moveFn = &LambdaCaptureImplType::move,
                                                                             .destructFn = &LambdaCaptureImplType::destruct,
                                                                             .trampolineFn = &LambdaCaptureImplType::invoke };
-
+        reset();
         captureIxx = &lambdaCaptureIxx;
         LambdaCaptureImplType::construct(*this, std::forward<Callable>(func));
         return *this;

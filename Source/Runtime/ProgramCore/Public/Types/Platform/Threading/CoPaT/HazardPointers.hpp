@@ -121,7 +121,7 @@ public:
     HazardRecord records[RECORDS_PER_CHUNK];
 };
 
-template <typename Type, size_t ReuseQueueLength = 256, size_t MinPerThreadDeleteQSize = 4>
+template <typename Type, size_t ReuseQueueLength = 256, size_t MinPerThreadDeleteQSize = 2>
 class HazardPointersManager
 {
 public:
@@ -349,8 +349,16 @@ public:
             return;
         }
 
+        HazardPointerType oldHazardPtr = reuseQ->pop();
+#ifndef NDEBUG
+        bool bReplaced = reuseQ->push(hazardPtr);
+        COPAT_ASSERT(oldHazardPtr && bReplaced);
+#else
+        reuseQ->push(hazardPtr);
+#endif
+
         HazardPtrPerThreadData &threadData = getPerThreadData();
-        threadData.deletingPtrs.emplace_back(hazardPtr);
+        threadData.deletingPtrs.emplace_back(oldHazardPtr);
 
         // If we waited long enough and deleting queue is more than minimum to collect? we start collect
         if ((std::chrono::steady_clock::now().time_since_epoch() - threadData.lastCollect.time_since_epoch()).count() >= COLLECT_INTERVAL
