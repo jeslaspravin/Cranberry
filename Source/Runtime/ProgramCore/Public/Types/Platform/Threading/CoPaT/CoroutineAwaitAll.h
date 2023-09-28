@@ -33,10 +33,18 @@ public:
     AwaitAllTasksCounter(u32 initialCount)
         : counter(initialCount)
     {}
-    AwaitAllTasksCounter(AwaitAllTasksCounter &&) = default;
-    AwaitAllTasksCounter(const AwaitAllTasksCounter &) = default;
-    AwaitAllTasksCounter &operator= (AwaitAllTasksCounter &&) = default;
-    AwaitAllTasksCounter &operator= (const AwaitAllTasksCounter &) = default;
+    AwaitAllTasksCounter(AwaitAllTasksCounter &&other) { this->operator= (std::forward<AwaitAllTasksCounter>(other)); }
+    AwaitAllTasksCounter &operator= (AwaitAllTasksCounter &&other)
+    {
+        /* Must be moved before we start awaiting, else undefined behavior */
+        COPAT_ASSERT(!other.awaitingCoroutine);
+        reset(other.counter.load(std::memory_order::relaxed));
+        other.reset(0);
+        return *this;
+    }
+    /* Deleting copy as AwaitAllTasks that use this counter is non copyable */
+    AwaitAllTasksCounter(const AwaitAllTasksCounter &) = delete;
+    AwaitAllTasksCounter &operator= (const AwaitAllTasksCounter &) = delete;
 
     void reset(u32 newCount) noexcept { counter.store(newCount, std::memory_order::release); }
     void setAwaitingCoroutine(std::coroutine_handle<> awaitingCoro) noexcept
