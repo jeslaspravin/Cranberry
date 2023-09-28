@@ -85,7 +85,7 @@ private:
     EnqueueTokensAllocator tokensAllocator;
 
 public:
-    void initialize(JobSystem *jobSystem) noexcept;
+    void initialize(JobSystem *jobSystem, SpecialThreadQueueType::QueueSharedContext &qSharedContext) noexcept;
     void run() noexcept;
     void shutdown() noexcept;
 
@@ -164,7 +164,7 @@ public:
     constexpr static const u32 COUNT = 0;
     constexpr static const TChar *NAMES[] = { COPAT_TCHAR("Dummy") };
 
-    void initialize(JobSystem *) {}
+    void initialize(JobSystem *, SpecialThreadQueueType::QueueSharedContext &) {}
     void run() {}
     void shutdown() {}
 
@@ -213,7 +213,7 @@ public:
         COPAT_ASSERT((inWorkersCount & (inWorkersCount - 1)) == 0);
     }
 
-    void initialize(JobSystem *jobSystem) noexcept;
+    void initialize(JobSystem *jobSystem, WorkerThreadQueueType::QueueSharedContext &qSharedContext) noexcept;
     void run(INTERNAL_DoWorkerThreadFuncType doWorkerJobFunc, bool bSetAffinity) noexcept;
     void shutdown() noexcept;
 
@@ -291,6 +291,12 @@ private:
 
     u32 tlsSlot = 0;
     u32 threadingConstraints = EThreadingConstraint::NoConstraints;
+
+    static_assert(
+        std::is_same_v<SpecialThreadQueueType::QueueSharedContext, WorkerThreadQueueType::QueueSharedContext>,
+        "Queues shared context are not the same type"
+    );
+    SpecialThreadQueueType::QueueSharedContext qSharedContext;
 
     SpecialThreadQueueType mainThreadJobs[Priority_MaxPriority];
     // 0 will be used by main thread loop itself while 1 will be used by worker threads to run until shutdown is called
@@ -394,12 +400,22 @@ private:
 //////////////////////////////////////////////////////////////////////////
 
 template <u32 SpecialThreadsCount>
-void SpecialThreadsPool<SpecialThreadsCount>::initialize(JobSystem *jobSystem) noexcept
+void SpecialThreadsPool<SpecialThreadsCount>::initialize(
+    JobSystem *jobSystem, SpecialThreadQueueType::QueueSharedContext &qSharedContext
+) noexcept
 {
     COPAT_ASSERT(jobSystem);
     COPAT_PROFILER_SCOPE(COPAT_PROFILER_CHAR("CopatSpecialThreadsInit"));
 
     ownerJobSystem = jobSystem;
+
+    for (u32 threadIdx = 0; threadIdx < COUNT; ++threadIdx)
+    {
+        for (EJobPriority priority = Priority_Critical; priority < Priority_MaxPriority; priority = EJobPriority(priority + 1))
+        {
+            specialQueues[pAndTTypeToIdx(threadIdx, priority)].setupQueue(qSharedContext);
+        }
+    }
 
     tokensAllocator.initialize(ownerJobSystem->getTotalThreadsCount());
 }

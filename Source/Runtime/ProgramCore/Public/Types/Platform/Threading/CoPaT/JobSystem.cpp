@@ -83,7 +83,7 @@ void JobSystem::initialize(MainThreadTickFunc &&mainTick, void *inUserData) noex
     if (bEnableSpecials)
     {
         FOR_EACH_UDTHREAD_TYPES(SPECIALTHREAD_INDIR_SETUP);
-        specialThreadsPool.initialize(this);
+        specialThreadsPool.initialize(this, qSharedContext);
     }
     else
     {
@@ -92,7 +92,7 @@ void JobSystem::initialize(MainThreadTickFunc &&mainTick, void *inUserData) noex
     /* Setup worker threads */
     if (bEnableWorkers)
     {
-        workerThreadsPool.initialize(this);
+        workerThreadsPool.initialize(this, qSharedContext);
     }
     else
     {
@@ -113,6 +113,7 @@ void JobSystem::initialize(MainThreadTickFunc &&mainTick, void *inUserData) noex
     // Setup main thread
     mainThreadTick = std::forward<MainThreadTickFunc>(mainTick);
     userData = inUserData;
+    mainThreadJobs->setupQueue(qSharedContext);
     PlatformThreadingFuncs::setCurrentThreadName(COPAT_TCHAR("MainThread"));
     PlatformThreadingFuncs::setCurrentThreadProcessor(0, 0);
     PerThreadData &mainThreadData = getOrCreatePerThreadData();
@@ -314,7 +315,7 @@ void JobSystem::doWorkerJobs(u32 threadIdx) noexcept
                 for (EJobPriority priority = Priority_Critical; priority < Priority_MaxPriority && coroPtr == nullptr;
                      priority = EJobPriority(priority + 1))
                 {
-                    coroPtr = workerThreadsPool.dequeueJob(stealFromThreadIdx, priority, tlData->workerQsTokens);
+                    coroPtr = workerThreadsPool.stealJob(stealFromThreadIdx, priority, tlData->workerQsTokens);
                 }
                 while (coroPtr)
                 {
@@ -325,7 +326,7 @@ void JobSystem::doWorkerJobs(u32 threadIdx) noexcept
                     for (EJobPriority priority = Priority_Critical; priority < Priority_MaxPriority && coroPtr == nullptr;
                          priority = EJobPriority(priority + 1))
                     {
-                        coroPtr = workerThreadsPool.dequeueJob(stealFromThreadIdx, priority, tlData->workerQsTokens);
+                        coroPtr = workerThreadsPool.stealJob(stealFromThreadIdx, priority, tlData->workerQsTokens);
                     }
                 }
             }
@@ -378,7 +379,7 @@ void INTERNAL_runSpecialThread(INTERNAL_DoSpecialThreadFuncType threadFunc, EJob
 // WorkerThreadsPool implementation
 //////////////////////////////////////////////////////////////////////////
 
-void WorkerThreadsPool::initialize(JobSystem *jobSystem) noexcept
+void WorkerThreadsPool::initialize(JobSystem *jobSystem, WorkerThreadQueueType::QueueSharedContext &qSharedContext) noexcept
 {
     COPAT_ASSERT(workersCount != 0);
     COPAT_ASSERT(jobSystem);
@@ -410,6 +411,7 @@ void WorkerThreadsPool::initialize(JobSystem *jobSystem) noexcept
     for (u32 i = 0; i < workerQsCount(); ++i)
     {
         new (workerQs + i) WorkerThreadQueueType();
+        (workerQs + i)->setupQueue(qSharedContext);
     }
     for (u32 i = 0; i < workersCount; ++i)
     {

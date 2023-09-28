@@ -121,7 +121,7 @@ public:
     HazardRecord records[RECORDS_PER_CHUNK];
 };
 
-template <typename Type, size_t MinPerThreadDeleteQSize = 4>
+template <typename Type, size_t ReuseQueueLength = 256, size_t MinPerThreadDeleteQSize = 4>
 class HazardPointersManager
 {
 public:
@@ -165,6 +165,120 @@ public:
         HazardPointer &operator= (const HazardPointer &) = delete;
     };
 
+    static_assert((ReuseQueueLength & (ReuseQueueLength - 1)) == 0, "Reuse ring buffer length must be a power of 2");
+    struct RingBufferLockFree
+    {
+    public:
+        std::atomic<u32> tail{ 0 };
+        std::atomic<u32> head{ 0 };
+
+        std::atomic<HazardPointerType> buffer[ReuseQueueLength] = { nullptr };
+
+        u32 moduloIdx(u32 inIdx) { return inIdx & (ReuseQueueLength - 1); }
+
+    public:
+        bool push(HazardPointerType ptr)
+        {
+            u32 headIdx = head.load(std::memory_order::relaxed);
+            do
+            {
+                u32 tailIdx = tail.load(std::memory_order::relaxed);
+                if (tailIdx == moduloIdx(headIdx + 1))
+                {
+                    /* There is possibility that tail might have been popped since then
+                     * It is okay however to skip the push here */
+                    return false;
+                }
+            }
+            /* If still no one has pushed the head, push now */
+            while (!head.compare_exchange_weak(headIdx, moduloIdx(headIdx + 1), std::memory_order::acq_rel, std::memory_order::relaxed));
+            headIdx = moduloIdx(headIdx + 1);
+            /* Head index is for use */
+            buffer[headIdx].store(ptr, std::memory_order::release);
+            return true;
+        }
+        HazardPointerType pop()
+        {
+            u32 tailIdx = tail.load(std::memory_order::relaxed);
+            do
+            {
+                u32 headIdx = head.load(std::memory_order::relaxed);
+                if (headIdx == tailIdx)
+                {
+                    /* There is possibility that head might have been pushed since then
+                     * It is okay however to skip the pop here */
+                    return nullptr;
+                }
+            }
+            /* If still no one has popped the tail, pop now */
+            while (!tail.compare_exchange_strong(tailIdx, moduloIdx(tailIdx + 1), std::memory_order::acq_rel, std::memory_order::relaxed));
+
+            /* It is okay if setting null is not visible immediately to other threads */
+            return buffer[tailIdx].exchange(nullptr, std::memory_order::acquire);
+        }
+
+        RingBufferLockFree() = default;
+        ~RingBufferLockFree()
+        {
+            while (HazardPointerType hazPtr = pop())
+            {
+                HazardPointerDeleter<HazardType>{}(hazPtr);
+            }
+        }
+    };
+    struct RingBufferLocked
+    {
+    public:
+        u32 tail{ 0 };
+        /* Head points to last inserted element */
+        u32 head{ 0 };
+
+        HazardPointerType buffer[ReuseQueueLength] = { nullptr };
+        SpinLock lock;
+
+        u32 moduloIdx(u32 inIdx) { return inIdx & (ReuseQueueLength - 1); }
+
+    public:
+        bool push(HazardPointerType ptr)
+        {
+            std::scoped_lock<SpinLock> lockBuffer(lock);
+
+            u32 pushAt = moduloIdx(head + 1);
+            if (tail == pushAt)
+            {
+                return false;
+            }
+            head = pushAt;
+
+            COPAT_ASSERT(buffer[head] == nullptr);
+            buffer[head] = ptr;
+            return true;
+        }
+        HazardPointerType pop()
+        {
+            std::scoped_lock<SpinLock> lockBuffer(lock);
+
+            if (head == tail)
+            {
+                return nullptr;
+            }
+            HazardPointerType ptr = buffer[tail];
+            buffer[tail] = nullptr;
+            tail = moduloIdx(tail + 1);
+            return ptr;
+        }
+
+        RingBufferLocked() = default;
+        ~RingBufferLocked()
+        {
+            while (HazardPointerType hazPtr = pop())
+            {
+                HazardPointerDeleter<HazardType>{}(hazPtr);
+            }
+        }
+    };
+    using RingBuffer = RingBufferLockFree;
+
 private:
     // 2 seconds once at very minimum
     constexpr static const std::chrono::steady_clock::duration::rep COLLECT_INTERVAL
@@ -177,12 +291,13 @@ private:
         std::chrono::time_point<std::chrono::steady_clock> lastCollect;
     };
 
+    HazardPointersChunk head;
+    RingBuffer *reuseQ;
+
     // Necessary for proper clean up
     std::vector<HazardPtrPerThreadData *> allPerThreadData;
     SpinLock perThreadDataLock;
     u32 perThreadSlot;
-
-    HazardPointersChunk head;
 
 public:
     HazardPointersManager()
@@ -192,6 +307,7 @@ public:
     }
     ~HazardPointersManager()
     {
+        /* Delete all HazardPointers */
         for (HazardPtrPerThreadData *threadData : allPerThreadData)
         {
             for (HazardPointerType hazPtr : threadData->deletingPtrs)
@@ -219,8 +335,20 @@ public:
         }
     }
 
+    void setReuseQ(RingBuffer *inReuseQ)
+    {
+        reuseQ = inReuseQ;
+        COPAT_ASSERT(reuseQ);
+    }
+
     void enqueueDelete(HazardPointerType hazardPtr) noexcept
     {
+        COPAT_ASSERT(reuseQ);
+        if (reuseQ->push(hazardPtr))
+        {
+            return;
+        }
+
         HazardPtrPerThreadData &threadData = getPerThreadData();
         threadData.deletingPtrs.emplace_back(hazardPtr);
 
@@ -234,15 +362,8 @@ public:
 
     HazardPointerType dequeueDelete() noexcept
     {
-        HazardPtrPerThreadData &threadData = getPerThreadData();
-        if (threadData.deletingPtrs.empty())
-        {
-            return nullptr;
-        }
-
-        HazardPointerType hazPtr = threadData.deletingPtrs.back();
-        threadData.deletingPtrs.pop_back();
-        return hazPtr;
+        COPAT_ASSERT(reuseQ);
+        return reuseQ->pop();
     }
 
 private:
