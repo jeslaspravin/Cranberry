@@ -10,10 +10,11 @@
  */
 
 #include "ShaderReflectionProcessor.h"
-#include "../SpirV/spirv_cross.hpp"
-#include "../SpirV/spirv_glsl.hpp"
-#include "../Utilities/CommonFunctions.h"
+#include "Utilities/CommonFunctions.h"
 #include "ShaderArchive.h"
+
+#include "SpirV/spirv_cross.hpp"
+#include "SpirV/spirv_glsl.hpp"
 
 #include <algorithm>
 #include <assert.h>

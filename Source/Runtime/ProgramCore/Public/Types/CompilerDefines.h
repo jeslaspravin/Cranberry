@@ -49,6 +49,8 @@
 #define WARN_IMPLICIT_DESTRUCTOR_DELETE
 #define WARN_MISSING_OVERRIDE -Winconsistent-missing-override
 #define WARN_DEPRECATED -Wdeprecated
+#define WARN_ASSIGNMNENT_IN_CONDITIONALEXPR 
+#define WARN_IMPLICIT_CONVERSION -Wconversion
 
 #elif defined _MSC_VER
 #define COMPILER_MAJOR_VER _MSC_VER
@@ -77,6 +79,8 @@
 #define WARN_IMPLICIT_DESTRUCTOR_DELETE 4624
 #define WARN_MISSING_OVERRIDE
 #define WARN_DEPRECATED 4996
+#define WARN_ASSIGNMNENT_IN_CONDITIONALEXPR 4706
+#define WARN_IMPLICIT_CONVERSION 4244
 
 #else
 static_assert(false, "Unsupported compiler");
