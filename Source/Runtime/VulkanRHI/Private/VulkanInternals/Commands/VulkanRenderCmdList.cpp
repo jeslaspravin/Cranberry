@@ -2481,7 +2481,8 @@ void VulkanCommandList::cmdBindIndexBuffer(const GraphicsResource *cmdBuffer, co
 {
     VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
     vDevice->vkCmdBindIndexBuffer(
-        rawCmdBuffer, indexBuffer.reference<VulkanBufferResource>()->buffer, offset, VkIndexType::VK_INDEX_TYPE_UINT32
+        rawCmdBuffer, indexBuffer.reference<VulkanBufferResource>()->buffer, offset,
+        indexBuffer->bufferStride() == 4 ? VkIndexType::VK_INDEX_TYPE_UINT32 : VkIndexType::VK_INDEX_TYPE_UINT16
     );
 }
 

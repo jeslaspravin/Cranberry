@@ -1729,7 +1729,10 @@ void ExperimentalEngineGoochModel::draw(class ImGuiDrawInterface *drawInterface)
                 ImGui::Separator();
                 ImGui::NextColumn();
                 ImGui::Image(
-                    writeTexture->getTextureResource().get(), ImVec2(ImGui::GetWindowContentRegionWidth(), ImGui::GetWindowContentRegionWidth())
+                    writeTexture->getTextureResource().get(), ImVec2(
+                                                                  ImGui::GetWindowContentRegionMax().x - ImGui::GetWindowContentRegionMin().x,
+                                                                  ImGui::GetWindowContentRegionMax().y - ImGui::GetWindowContentRegionMin().y
+                                                              )
                 );
                 ImGui::Separator();
             }
@@ -1823,7 +1826,7 @@ void ExperimentalEngineGoochModel::draw(class ImGuiDrawInterface *drawInterface)
             {
                 bool bAnyModified = false;
                 if (drawInterface->inputTextMultiline(
-                        "Text", &textToRender, ImVec2(ImGui::GetWindowContentRegionWidth(), 200),
+                        "Text", &textToRender, ImVec2(ImGui::GetWindowContentRegionMax().x - ImGui::GetWindowContentRegionMin().x, 200),
                         /*ImGuiInputTextFlags_EnterReturnsTrue | */
                         ImGuiInputTextFlags_CtrlEnterForNewLine
                     ))
