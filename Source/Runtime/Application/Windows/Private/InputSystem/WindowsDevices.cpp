@@ -73,14 +73,28 @@ bool WindowsMouseDevice::sendInRaw(const void *rawInput)
         analogRawStates[AnalogStates::ScrollWheelX] = float(int16(mouseData.usButtonData)) / WHEEL_DELTA;
     }
 
-    if (!(mouseData.usFlags & MOUSE_MOVE_ABSOLUTE))
+    /* In virtual desktop relative move is not getting published */
+    bool bRequiredRelUpdate = false;
+    if (BIT_SET(mouseData.usFlags, MOUSE_MOVE_ABSOLUTE))
     {
+        const bool bIsVirtualDesktop = bRequiredRelUpdate = BIT_SET(mouseData.usFlags, MOUSE_VIRTUAL_DESKTOP);
+        const int32 width = GetSystemMetrics(bIsVirtualDesktop ? SM_CXVIRTUALSCREEN : SM_CXSCREEN);
+        const int32 height = GetSystemMetrics(bIsVirtualDesktop ? SM_CYVIRTUALSCREEN : SM_CYSCREEN);
+
+        analogRawStates[AnalogStates::AbsMouseX] = (mouseData.lLastX / 65535.0f) * width;
+        analogRawStates[AnalogStates::AbsMouseY] = (mouseData.lLastY / 65535.0f) * height;
+    }
+    else if (mouseData.usFlags == MOUSE_MOVE_RELATIVE)
+    {
+        bRequiredRelUpdate = false;
         analogRawStates[AnalogStates::RelMouseX] += float(mouseData.lLastX);
         analogRawStates[AnalogStates::RelMouseY] += float(mouseData.lLastY);
     }
-    else if ((mouseData.usFlags & MOUSE_VIRTUAL_DESKTOP) == MOUSE_VIRTUAL_DESKTOP)
+
+    if (bRequiredRelUpdate)
     {
-        LOG_WARN("WindowMouseDevice", "Virtual desktop setup is not supported");
+        analogRawStates[AnalogStates::RelMouseX] = std::numeric_limits<float>::infinity();
+        analogRawStates[AnalogStates::RelMouseY] = std::numeric_limits<float>::infinity();
     }
 
     return true;
@@ -145,15 +159,27 @@ void WindowsMouseDevice::pullProcessedInputs(Keys *keyStates, AnalogStates *anal
         }
     }
 
-    // Filling direct accessible analog states
+    std::map<AnalogStates::EStates, InputAnalogState> &analogStatesMap = analogStates->getAnalogStates();
+    /* Filling required analog states */
+#if 0
+    /* Not necessary as Virtual Desktop handling is done */
     POINT cursorPos{ 0, 0 };
     if (GetCursorPos(&cursorPos))
     {
         analogRawStates[AnalogStates::AbsMouseX] = float(cursorPos.x);
         analogRawStates[AnalogStates::AbsMouseY] = float(cursorPos.y);
     }
+#endif
+    /* Relative values will be infinite only if we are in virtual desktop environment @see WindowsMouseDevice::sendInRaw */
+    if (analogRawStates[AnalogStates::RelMouseX] == std::numeric_limits<float>::infinity()
+        || analogRawStates[AnalogStates::RelMouseY] == std::numeric_limits<float>::infinity())
+    {
+        analogRawStates[AnalogStates::RelMouseX]
+            = analogRawStates[AnalogStates::AbsMouseX] - analogStatesMap[AnalogStates::AbsMouseX].currentValue;
+        analogRawStates[AnalogStates::RelMouseY]
+            = analogRawStates[AnalogStates::AbsMouseY] - analogStatesMap[AnalogStates::AbsMouseY].currentValue;
+    }
 
-    std::map<AnalogStates::EStates, InputAnalogState> &analogStatesMap = analogStates->getAnalogStates();
     for (std::pair<const uint32, float> &rawAnalogState : analogRawStates)
     {
         InputAnalogState &outAnalogState = analogStatesMap[AnalogStates::EStates(rawAnalogState.first)];
@@ -161,7 +187,8 @@ void WindowsMouseDevice::pullProcessedInputs(Keys *keyStates, AnalogStates *anal
         outAnalogState.stoppedThisFrame = (Math::isEqual(rawAnalogState.second, 0.0f) && outAnalogState.currentValue != 0.0f) ? 1 : 0;
         outAnalogState.acceleration = rawAnalogState.second - outAnalogState.currentValue;
         outAnalogState.currentValue = rawAnalogState.second;
-        rawAnalogState.second = 0;
+        /* If absolute value we need it to be populated every frame but raw input arrives only when device sends messages */
+        rawAnalogState.second = AnalogStates::isAbsoluteValue(AnalogStates::EStates(rawAnalogState.first)) ? rawAnalogState.second : 0;
     }
 }
 
