@@ -18,10 +18,9 @@ private:
     std::map<uint32, int8> buttonRawStates;
     std::map<uint32, float> analogRawStates;
     /* In virtual desktop relative move is not getting published.
-     * Will be true if relative move needs to be updated */
-    bool bReqRelMoveUpdate = false;
-    /* In normal desktop absolute position is not getting published.
-     * Will be true if absolute pos was updated this frame */
+     * In normal desktop absolute position is not getting published.
+     * Below flags will be used to update the respective other, If one is updated and other is not */
+    bool bRelMoveUpdated = false;
     bool bAbsPosUpdated = false;
 
 public:

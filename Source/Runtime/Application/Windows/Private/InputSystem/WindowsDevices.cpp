@@ -81,13 +81,12 @@ bool WindowsMouseDevice::sendInRaw(const void *rawInput)
         const int32 height = GetSystemMetrics(bIsVirtualDesktop ? SM_CYVIRTUALSCREEN : SM_CYSCREEN);
 
         bAbsPosUpdated = true;
-        bReqRelMoveUpdate = bIsVirtualDesktop;
         analogRawStates[AnalogStates::AbsMouseX] = (mouseData.lLastX / 65535.0f) * width;
         analogRawStates[AnalogStates::AbsMouseY] = (mouseData.lLastY / 65535.0f) * height;
     }
     else if (mouseData.usFlags == MOUSE_MOVE_RELATIVE)
     {
-        bReqRelMoveUpdate = false;
+        bRelMoveUpdated = true;
         analogRawStates[AnalogStates::RelMouseX] += float(mouseData.lLastX);
         analogRawStates[AnalogStates::RelMouseY] += float(mouseData.lLastY);
     }
@@ -156,9 +155,8 @@ void WindowsMouseDevice::pullProcessedInputs(Keys *keyStates, AnalogStates *anal
 
     std::map<AnalogStates::EStates, InputAnalogState> &analogStatesMap = analogStates->getAnalogStates();
     /* Filling required analog states */
-    /* Necessary as normal desktop do not publish absolute position
-     * If relative move is updated then abs pos must be updated as well */
-    if ((analogRawStates[AnalogStates::RelMouseX] != 0 || analogRawStates[AnalogStates::RelMouseY] != 0) && !bAbsPosUpdated)
+    /* Necessary as normal desktop do not publish absolute position */
+    if (bRelMoveUpdated && !bAbsPosUpdated)
     {
         POINT cursorPos{ 0, 0 };
         if (GetCursorPos(&cursorPos))
@@ -167,7 +165,7 @@ void WindowsMouseDevice::pullProcessedInputs(Keys *keyStates, AnalogStates *anal
             analogRawStates[AnalogStates::AbsMouseY] = float(cursorPos.y);
         }
     }
-    if (bReqRelMoveUpdate)
+    if (bAbsPosUpdated && !bRelMoveUpdated)
     {
         analogRawStates[AnalogStates::RelMouseX]
             = analogRawStates[AnalogStates::AbsMouseX] - analogStatesMap[AnalogStates::AbsMouseX].currentValue;
@@ -175,7 +173,7 @@ void WindowsMouseDevice::pullProcessedInputs(Keys *keyStates, AnalogStates *anal
             = analogRawStates[AnalogStates::AbsMouseY] - analogStatesMap[AnalogStates::AbsMouseY].currentValue;
     }
     bAbsPosUpdated = false;
-    bReqRelMoveUpdate = false;
+    bRelMoveUpdated = false;
 
     for (std::pair<const uint32, float> &rawAnalogState : analogRawStates)
     {
