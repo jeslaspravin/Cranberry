@@ -173,7 +173,6 @@ bool VulkanDevice::createQueueResources()
             {
                 supportedQueues.insert({ qIdx, &queueFamiliesSupported[qIdx] });
             }
-
             QueueResourceBase *q = new VulkanQueueResource<EQueueFunction::Present>(supportedQueues);
             if (q->isValidQueue())
             {
@@ -384,20 +383,20 @@ int32 VulkanDevice::compareSurfaceCompatibility(const WindowCanvasRef &windowCan
 {
     const VulkanWindowCanvas *vkCanvas = windowCanvas.reference<VulkanWindowCanvas>();
 
-    int32 presentationSupported;
+    int32 presentationSupported = 0;
     for (int32 index = 0; index < queueFamiliesSupported.size(); ++index)
     {
         VkBool32 queueSupported;
         Vk::vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, index, vkCanvas->surface(), &queueSupported);
-        presentationSupported = queueSupported == 0 ? 0 : 1;
+        presentationSupported += queueSupported == 0 ? 0 : 1;
     }
 
-    int32 otherPresentationSupported;
+    int32 otherPresentationSupported = 0;
     for (int32 index = 0; index < otherDevice.queueFamiliesSupported.size(); ++index)
     {
         VkBool32 queueSupported;
         Vk::vkGetPhysicalDeviceSurfaceSupportKHR(otherDevice.physicalDevice, index, vkCanvas->surface(), &queueSupported);
-        otherPresentationSupported = queueSupported == 0 ? 0 : 1;
+        otherPresentationSupported += queueSupported == 0 ? 0 : 1;
     }
     return presentationSupported - otherPresentationSupported;
 }

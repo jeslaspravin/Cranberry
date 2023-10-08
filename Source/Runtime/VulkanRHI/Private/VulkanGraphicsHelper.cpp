@@ -124,9 +124,9 @@ VkSwapchainKHR VulkanGraphicsHelper::createSwapchain(
     else
     {
         swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-        std::vector<uint32> queueFamilyIndices = { graphicsQueue->queueFamilyIndex(), presentQueue->queueFamilyIndex() };
-        swapchainCreateInfo.queueFamilyIndexCount = (uint32_t)queueFamilyIndices.size();
-        swapchainCreateInfo.pQueueFamilyIndices = queueFamilyIndices.data();
+        uint32 queueFamilyIndices[] = { graphicsQueue->queueFamilyIndex(), presentQueue->queueFamilyIndex() };
+        swapchainCreateInfo.queueFamilyIndexCount = ARRAY_LENGTH(queueFamilyIndices);
+        swapchainCreateInfo.pQueueFamilyIndices = queueFamilyIndices;
 
         // Below check is to avoid VK validation error, Cached surface properties works fine in single gpu environment
         VkBool32 presentSupported, graphicsSupported;

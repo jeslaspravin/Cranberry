@@ -68,8 +68,10 @@ private:
         case EQueueFunction::Transfer:
             return VkQueueFlagBits::VK_QUEUE_TRANSFER_BIT;
             break;
-        case EQueueFunction::Generic:
         case EQueueFunction::Present:
+            return VkQueueFlagBits::VK_QUEUE_GRAPHICS_BIT;
+            break;
+        case EQueueFunction::Generic:
         default:
             return VkQueueFlagBits::VK_QUEUE_COMPUTE_BIT | VkQueueFlagBits::VK_QUEUE_GRAPHICS_BIT | VkQueueFlagBits::VK_QUEUE_TRANSFER_BIT
                    | VkQueueFlagBits::VK_QUEUE_SPARSE_BINDING_BIT | VkQueueFlagBits::VK_QUEUE_PROTECTED_BIT;
