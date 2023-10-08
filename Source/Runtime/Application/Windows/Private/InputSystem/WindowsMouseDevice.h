@@ -17,6 +17,12 @@ class WindowsMouseDevice final : public IInputDevice
 private:
     std::map<uint32, int8> buttonRawStates;
     std::map<uint32, float> analogRawStates;
+    /* In virtual desktop relative move is not getting published.
+     * Will be true if relative move needs to be updated */
+    bool bReqRelMoveUpdate = false;
+    /* In normal desktop absolute position is not getting published.
+     * Will be true if absolute pos was updated this frame */
+    bool bAbsPosUpdated = false;
 
 public:
     WindowsMouseDevice();
