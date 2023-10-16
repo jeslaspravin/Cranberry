@@ -4,7 +4,7 @@
  * \author Jeslas Pravin
  * \date January 2022
  * \copyright
- *  Copyright (C) Jeslas Pravin, Since 2022
+ *  Copyright (C) Jeslas Pravin, 2022-2023
  *  @jeslaspravin pravinjeslas@gmail.com
  *  License can be read in LICENSE file at this repository's root
  */
@@ -16,6 +16,7 @@
 #include "InputSystem/WindowsKeyCodes.h"
 #include "InputSystem/WindowsKeyboardDevice.h"
 #include "InputSystem/WindowsMouseDevice.h"
+#include "InputSystem/WindowsGamepadDevice.h"
 #include "InputSystem/WindowsRawInputBuffer.h"
 
 #elif PLATFORM_LINUX
@@ -30,5 +31,6 @@ using EKeyCode = MakeBreakKeyCodes::EKeyCode;
 
 using MouseDevice = InputDevices::MouseDevice;
 using KeyboardDevice = InputDevices::KeyboardDevice;
+using GamepadDevice = InputDevices::GamepadDevice;
 
 using RawInputBuffer = Input::RawInputBuffer;

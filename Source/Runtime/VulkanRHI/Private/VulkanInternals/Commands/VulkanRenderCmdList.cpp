@@ -4,7 +4,7 @@
  * \author Jeslas Pravin
  * \date January 2022
  * \copyright
- *  Copyright (C) Jeslas Pravin, Since 2022
+ *  Copyright (C) Jeslas Pravin, 2022-2023
  *  @jeslaspravin pravinjeslas@gmail.com
  *  License can be read in LICENSE file at this repository's root
  */
@@ -2481,7 +2481,8 @@ void VulkanCommandList::cmdBindIndexBuffer(const GraphicsResource *cmdBuffer, co
 {
     VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
     vDevice->vkCmdBindIndexBuffer(
-        rawCmdBuffer, indexBuffer.reference<VulkanBufferResource>()->buffer, offset, VkIndexType::VK_INDEX_TYPE_UINT32
+        rawCmdBuffer, indexBuffer.reference<VulkanBufferResource>()->buffer, offset,
+        indexBuffer->bufferStride() == 4 ? VkIndexType::VK_INDEX_TYPE_UINT32 : VkIndexType::VK_INDEX_TYPE_UINT16
     );
 }
 

@@ -4,7 +4,7 @@
  * \author Jeslas Pravin
  * \date January 2022
  * \copyright
- *  Copyright (C) Jeslas Pravin, Since 2022
+ *  Copyright (C) Jeslas Pravin, 2022-2023
  *  @jeslaspravin pravinjeslas@gmail.com
  *  License can be read in LICENSE file at this repository's root
  */
@@ -15,8 +15,6 @@
 #include "Math/Math.h"
 #include "InputSystem/PlatformInputTypes.h"
 #include "WindowsCommonHeaders.h"
-#include "InputSystem/WindowsKeyboardDevice.h"
-#include "InputSystem/WindowsMouseDevice.h"
 
 #include <hidusage.h>
 
@@ -107,6 +105,7 @@ bool WindowsMouseDevice::registerWindow(const GenericAppWindow *window) const
         LOG_WARN("WindowsMouseDevice", "Failed registering mouse for window {}", window->getWindowName().getChar());
         return false;
     }
+
     return true;
 }
 
@@ -303,4 +302,56 @@ void WindowsKeyboardDevice::pullProcessedInputs(Keys *keyStates, AnalogStates *a
         /* If absolute value we need it to be populated every frame but raw input arrives only when device sends messages */
         rawAnalogState.second = AnalogStates::isAbsoluteValue(AnalogStates::EStates(rawAnalogState.first)) ? rawAnalogState.second : 0;
     }
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Gamepad device
+//////////////////////////////////////////////////////////////////////////
+
+bool WindowsGamepadDevice::registerWindow(const GenericAppWindow *window) const
+{
+    RAWINPUTDEVICE gamepadDevices[] = {
+        {.usUsagePage = HID_USAGE_PAGE_GENERIC,
+         .usUsage = HID_USAGE_GENERIC_GAMEPAD,
+         .dwFlags = 0,
+         .hwndTarget = (HWND)window->getWindowHandle()},
+        {.usUsagePage = HID_USAGE_PAGE_GENERIC,
+         .usUsage = HID_USAGE_GENERIC_JOYSTICK,
+         .dwFlags = 0,
+         .hwndTarget = (HWND)window->getWindowHandle()}
+    };
+
+    if (!RegisterRawInputDevices(gamepadDevices, ARRAY_LENGTH(gamepadDevices), sizeof(decltype(gamepadDevices[0]))))
+    {
+        LOG_WARN("WindowsGamepadDevice", "Failed registering gamepads for window {}", window->getWindowName().getChar());
+        return false;
+    }
+
+    return true;
+}
+
+bool WindowsGamepadDevice::sendInRaw(const void *rawInput)
+{
+    const RAWINPUT *winRawInput = reinterpret_cast<const RAWINPUT *>(rawInput);
+    if (winRawInput->header.dwType != RIM_TYPEHID)
+    {
+        return false;
+    }
+    uint32 bytesCount = sizeof(RID_DEVICE_INFO);
+    RID_DEVICE_INFO devInfo;
+    if (::GetRawInputDeviceInfo(winRawInput->header.hDevice, RIDI_DEVICEINFO, &devInfo, &bytesCount) == -1
+        || (devInfo.hid.usUsage != HID_USAGE_GENERIC_GAMEPAD && devInfo.hid.usUsage != HID_USAGE_GENERIC_JOYSTICK))
+    {
+        return false;
+    }
+
+    // TODO(Jeslas) : Process gamepad input
+
+    return true;
+}
+void WindowsGamepadDevice::pullProcessedInputs(Keys *keyStates, AnalogStates *analogStates)
+{
+    // TODO(Jeslas) : Process gamepad input
+    CompilerHacks::ignoreUnused(keyStates);
+    CompilerHacks::ignoreUnused(analogStates);
 }

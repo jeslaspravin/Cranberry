@@ -4,7 +4,7 @@
  * \author Jeslas
  * \date August 2022
  * \copyright
- *  Copyright (C) Jeslas Pravin, Since 2022
+ *  Copyright (C) Jeslas Pravin, 2022-2023
  *  @jeslaspravin pravinjeslas@gmail.com
  *  License can be read in LICENSE file at this repository's root
  */
@@ -67,8 +67,8 @@ void WgEditorImGuiLayer::draw(ImGuiDrawInterface *drawInterface)
             ImGui::DockBuilderDockWindow("Viewport", dockViewportId);
 
             // I want contents to be before console however contents will be rendered after console to be active at start
-            ImGui::FindWindowSettings(ImHashStr("Contents"))->DockOrder = 0;
-            ImGui::FindWindowSettings(ImHashStr("Console"))->DockOrder = 1;
+            ImGui::FindWindowSettingsByID(ImHashStr("Contents"))->DockOrder = 0;
+            ImGui::FindWindowSettingsByID(ImHashStr("Console"))->DockOrder = 1;
 
             ImGui::DockBuilderFinish(dockViewportId);
         }

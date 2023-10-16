@@ -4,7 +4,7 @@
  * \author Jeslas
  * \date May 2022
  * \copyright
- *  Copyright (C) Jeslas Pravin, Since 2022
+ *  Copyright (C) Jeslas Pravin, 2022-2023
  *  @jeslaspravin pravinjeslas@gmail.com
  *  License can be read in LICENSE file at this repository's root
  */
@@ -44,6 +44,27 @@ enum EJobPriority
     Priority_Low,
     Priority_MaxPriority
 };
+
+//////////////////////////////////////////////////////////////////////////
+/// CoPaT type traits
+//////////////////////////////////////////////////////////////////////////
+
+template <typename... Types>
+struct AlignmentOfInternal;
+template <typename Type>
+struct AlignmentOfInternal<Type>
+{
+    constexpr static const u64 Alignment = alignof(Type);
+};
+template <typename Type, typename... Types>
+struct AlignmentOfInternal<Type, Types...> : public AlignmentOfInternal<Types...>
+{
+    using Base = AlignmentOfInternal<Types...>;
+    constexpr static const u64 Alignment = alignof(Type) > Base::Alignment ? alignof(Type) : Base::Alignment;
+};
+/* Finds alignment of aggregate of types, Instead of using tuple or struct */
+template <typename... Types>
+constexpr u64 AlignmentOf = AlignmentOfInternal<Types...>::Alignment;
 
 //////////////////////////////////////////////////////////////////////////
 /// Copat memory allocators

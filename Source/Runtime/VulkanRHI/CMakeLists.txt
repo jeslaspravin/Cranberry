@@ -8,7 +8,7 @@ set (private_modules
 
 # TODO : Move unnecessary public includes to private
 set(public_includes
-    ${Cranberry_VULKAN_SDK_PATH}/include/vulkan
+    ${Cranberry_VULKAN_SDK_PATH}/include
     ${Cranberry_CPP_LIBS_PATH}/glm
 )
 

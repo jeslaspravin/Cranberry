@@ -71,6 +71,22 @@ struct FAAArrayQueueNode
     bool casNext(FAAArrayQueueNode *cmp, FAAArrayQueueNode *val) noexcept { return next.compare_exchange_strong(cmp, val); }
 };
 
+/**
+ * Context that provides data that will shared between several queues.
+ * Must have lifetime greater or equal to queues itself.
+ */
+template <typename StoredType>
+struct FAAArrayQueueSharedContext
+{
+public:
+    using NodeType = FAAArrayQueueNode<StoredType>;
+    using HazardPtrsManager = HazardPointersManager<NodeType>;
+    using ReuseBuffer = typename HazardPtrsManager::RingBuffer;
+
+    /* Must be set */
+    ReuseBuffer sharedReuseBuffer;
+};
+
 #if COPAT_ENABLE_QUEUE_ALLOC_TRACKING
 
 struct QueueNodeAllocTracker;
@@ -183,26 +199,27 @@ struct HazardPointerDeleter<FAAArrayQueueNode<T>>
 template <typename T>
 class FAAArrayQueue
 {
-private:
-    constexpr static const uintptr_t TAKEN_PTR = ~(uintptr_t)(0);
+public:
+    using QueueSharedContext = FAAArrayQueueSharedContext<T>;
+    using HazardPtrsManager = typename QueueSharedContext::HazardPtrsManager;
+    using HazardToken = HazardPtrsManager::HazardPointer;
 
+private:
     using Node = FAAArrayQueueNode<T>;
 
+    constexpr static const uintptr_t TAKEN_PTR = ~(uintptr_t)(0);
+
     bool casTail(Node *cmp, Node *val) noexcept { return tail.compare_exchange_strong(cmp, val); }
-
     bool casHead(Node *cmp, Node *val) noexcept { return head.compare_exchange_strong(cmp, val); }
-
     static T *takenPtr() noexcept { return (T *)TAKEN_PTR; }
 
-    HazardPointersManager<Node> hazardsManager;
+    HazardPtrsManager hazardsManager;
 
     // Pointers to head and tail of the list
     alignas(2 * CACHE_LINE_SIZE) std::atomic<Node *> head;
     alignas(2 * CACHE_LINE_SIZE) std::atomic<Node *> tail;
 
 public:
-    using HazardToken = HazardPointersManager<Node>::HazardPointer;
-
     FAAArrayQueue()
     {
         Node *sentinelNode = memNew<Node, Node *>(nullptr);
@@ -224,6 +241,7 @@ public:
         QueueNodeAllocTracker::onDelete();
     }
 
+    inline void setupQueue(QueueSharedContext &ctx) { hazardsManager.setReuseQ(&ctx.sharedReuseBuffer); }
     inline HazardToken getHazardToken() { return { hazardsManager }; }
 
     void enqueue(T *item) noexcept
@@ -347,13 +365,17 @@ public:
 template <typename T>
 class FAAArrayMPSCQueue
 {
-private:
-    constexpr static const uintptr_t TAKEN_PTR = ~(uintptr_t)(0);
+public:
+    using QueueSharedContext = FAAArrayQueueSharedContext<T>;
+    using HazardPtrsManager = typename QueueSharedContext::HazardPtrsManager;
+    using HazardToken = HazardPtrsManager::HazardPointer;
 
+private:
     using Node = FAAArrayQueueNode<T>;
 
-    bool casTail(Node *cmp, Node *val) noexcept { return tail.compare_exchange_strong(cmp, val); }
+    constexpr static const uintptr_t TAKEN_PTR = ~(uintptr_t)(0);
 
+    bool casTail(Node *cmp, Node *val) noexcept { return tail.compare_exchange_strong(cmp, val); }
     static T *takenPtr() noexcept { return (T *)TAKEN_PTR; }
 
     /**
@@ -361,15 +383,13 @@ private:
      * when enqueue from 2 thread and dequeue from a thread at a same time. One enq thread created new node while deq finished and deleted
      * other enq thread's local node
      */
-    HazardPointersManager<Node> hazardsManager;
+    HazardPtrsManager hazardsManager;
 
     // Pointers to head and tail of the list
     alignas(2 * CACHE_LINE_SIZE) Node *head;
     alignas(2 * CACHE_LINE_SIZE) std::atomic<Node *> tail;
 
 public:
-    using HazardToken = HazardPointersManager<Node>::HazardPointer;
-
     FAAArrayMPSCQueue()
     {
         Node *sentinelNode = memNew<Node, Node *>(nullptr);
@@ -391,6 +411,7 @@ public:
         QueueNodeAllocTracker::onDelete();
     }
 
+    inline void setupQueue(QueueSharedContext &ctx) { hazardsManager.setReuseQ(&ctx.sharedReuseBuffer); }
     inline HazardToken getHazardToken() { return { hazardsManager }; }
 
     void enqueue(T *item) noexcept

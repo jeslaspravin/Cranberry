@@ -31,6 +31,9 @@ Right now I have two runtime applications `Cranberry` and `TestEngine`
     - If engine cannot find any valid `obj` file then it auto creates a default scene with bunch of cubes like in the [Screen Shot](#CranberryEditor). It is done here [CranberryAppCubeScene]
 * For `TestEngine` start from [TestEngine-Main]. In order to run `TestEngine` additional Assets directory with raw assets are necessary. If you want to run `TestEngine.exe` download and extract [Assets.zip] in Runtime folder
 
+## Best practises
+* Whenever adding sources to Modules. If the header needs to be public place its source file together in Public folder, This makes source browsing easier. Source files will any way be considered private by module builder.
+
 ## Features
 Many features listed below are supported but tooling still needs to be developed
 * Reflection generator for C++

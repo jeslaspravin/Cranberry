@@ -4,7 +4,7 @@
  * \author Jeslas
  * \date May 2022
  * \copyright
- *  Copyright (C) Jeslas Pravin, Since 2022
+ *  Copyright (C) Jeslas Pravin, 2022-2023
  *  @jeslaspravin pravinjeslas@gmail.com
  *  License can be read in LICENSE file at this repository's root
  */
@@ -351,7 +351,11 @@ public:
     {
         return ownerCoroutine.promise().trySetContinuation(awaitingAtCoro);
     }
-    RetTypeStorage::reference_type await_resume() const noexcept { return ownerCoroutine.promise().returnStore.get(); }
+    RetTypeStorage::reference_type await_resume() const noexcept
+    {
+        COPAT_ASSERT(ownerCoroutine && ownerCoroutine.promise().returnStore.isValid());
+        return ownerCoroutine.promise().returnStore.get();
+    }
 };
 
 /**
@@ -553,7 +557,11 @@ public:
         std::coroutine_handle<PromiseType> ownerCoroutine = std::coroutine_handle<>::from_address(ownerCoroutinePtr.get());
         return ownerCoroutine.promise().trySetContinuation(awaitingAtCoro);
     }
-    RetTypeStorage::reference_type await_resume() const noexcept { return ownerCoroutinePtr.promise().returnStore.get(); }
+    RetTypeStorage::reference_type await_resume() const noexcept
+    {
+        COPAT_ASSERT(ownerCoroutinePtr && ownerCoroutinePtr->promise().returnStore.isValid());
+        return ownerCoroutinePtr.promise().returnStore.get();
+    }
 };
 
 /**

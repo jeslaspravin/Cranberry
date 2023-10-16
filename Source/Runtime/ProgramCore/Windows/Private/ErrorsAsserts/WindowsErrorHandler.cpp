@@ -4,7 +4,7 @@
  * \author Jeslas Pravin
  * \date January 2022
  * \copyright
- *  Copyright (C) Jeslas Pravin, Since 2022
+ *  Copyright (C) Jeslas Pravin, 2022-2023
  *  @jeslaspravin pravinjeslas@gmail.com
  *  License can be read in LICENSE file at this repository's root
  */
@@ -176,7 +176,9 @@ void WindowsUnexpectedErrorHandler::dumpStack(_CONTEXT *context, bool bCloseApp)
     frame.AddrFrame.Mode = AddrModeFlat;
 #endif
 
+    SizeT longestLine = 0;
     StringStream stackTrace;
+    StringStream stackTraceForDebugger;
     do
     {
         if (frame.AddrPC.Offset != 0)
@@ -193,9 +195,25 @@ void WindowsUnexpectedErrorHandler::dumpStack(_CONTEXT *context, bool bCloseApp)
                 }
             }
 
+            /**
+             * {0} - Module name
+             * {1} - Symbol name
+             * {2} - File path
+             * {3} - Program counter(Instruction address)
+             * {4} - Line number
+             */
+
+            /* For logger */
             const TChar *fmtStr = symInfo.lineNumber() == SymbolInfo::INVALID_LINE_NUM ? TCHAR("  {0}!{1} ({2}) ({3:#018x})")
                                                                                        : TCHAR("  {0}!{1} ({2}, {4}) ({3:#018x})");
-            stackTrace << StringFormat::vFormat(
+            String lineStr
+                = StringFormat::vFormat(fmtStr, moduleName, symInfo.name(), symInfo.fileName(), frame.AddrPC.Offset, symInfo.lineNumber());
+            stackTrace << lineStr;
+            longestLine = longestLine < lineStr.length() ? lineStr.length() : longestLine;
+
+            /* For debugger */
+            fmtStr = symInfo.lineNumber() == SymbolInfo::INVALID_LINE_NUM ? TCHAR("{2}(0, 0): {1}") : TCHAR("{2}({4}, 0): {1}");
+            stackTraceForDebugger << StringFormat::vFormat(
                 fmtStr, moduleName, symInfo.name(), symInfo.fileName(), frame.AddrPC.Offset, symInfo.lineNumber()
             );
         }
@@ -212,11 +230,26 @@ void WindowsUnexpectedErrorHandler::dumpStack(_CONTEXT *context, bool bCloseApp)
             break;
         }
         stackTrace << TCHAR("\n");
+        stackTraceForDebugger << TCHAR("\n");
     }
     while (true);
     ::SymCleanup(processHandle);
 
-    LOG_ERROR("WindowsUnexpectedErrorHandler", "Call trace : \n{}\n", stackTrace.str().c_str());
+    const String lineSep{ longestLine, '=' };
+    LOG_ERROR("WindowsUnexpectedErrorHandler", "\n{0}\nCall trace : \n{0}\n{1}\n{0}", lineSep, stackTrace.str().c_str());
+    if (PlatformFunctions::hasAttachedDebugger())
+    {
+        PlatformFunctions::outputToDebugger(lineSep.getChar());
+        PlatformFunctions::outputToDebugger(LINE_FEED_TCHAR);
+        PlatformFunctions::outputToDebugger(stackTraceForDebugger.str().c_str());
+        PlatformFunctions::outputToDebugger(LINE_FEED_TCHAR);
+        PlatformFunctions::outputToDebugger(lineSep.getChar());
+        PlatformFunctions::outputToDebugger(LINE_FEED_TCHAR);
+    }
+    else
+    {
+        LOG_ERROR("WindowsUnexpectedErrorHandler", "\n{0}\nFor debugger : \n{0}\n{1}\n{0}", lineSep, stackTraceForDebugger.str().c_str());
+    }
 
     if (bCloseApp)
     {

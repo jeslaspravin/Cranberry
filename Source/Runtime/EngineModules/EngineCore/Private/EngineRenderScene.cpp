@@ -4,7 +4,7 @@
  * \author Jeslas
  * \date August 2022
  * \copyright
- *  Copyright (C) Jeslas Pravin, Since 2022
+ *  Copyright (C) Jeslas Pravin, 2022-2023
  *  @jeslaspravin pravinjeslas@gmail.com
  *  License can be read in LICENSE file at this repository's root
  */
@@ -1111,6 +1111,10 @@ void EngineRenderScene::updateVisibility(const RenderSceneViewParams &viewParams
                         && outsideExtremeCount[4] != 8 && outsideExtremeCount[5] != 8)
                     {
                         compsInsideFrustum[idx].test_and_set(std::memory_order_relaxed);
+                    }
+                    else
+                    {
+                        compsInsideFrustum[idx].clear(std::memory_order_relaxed);
                     }
 #endif
                 }

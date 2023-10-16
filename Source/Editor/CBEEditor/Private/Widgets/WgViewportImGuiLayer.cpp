@@ -4,7 +4,7 @@
  * \author Jeslas
  * \date August 2022
  * \copyright
- *  Copyright (C) Jeslas Pravin, Since 2022
+ *  Copyright (C) Jeslas Pravin, 2022-2023
  *  @jeslaspravin pravinjeslas@gmail.com
  *  License can be read in LICENSE file at this repository's root
  */
@@ -70,8 +70,7 @@ void WgViewportImGuiLayer::draw(ImGuiDrawInterface * /*drawInterface*/)
             {
                 ImGui::FocusWindow(ImGui::GetCurrentContext()->HoveredWindow);
             }
-
-            if (ImGui::IsMouseDragging(ImGuiMouseButton_Right))
+            else if (ImGui::IsMouseDragging(ImGuiMouseButton_Right))
             {
                 ImGui::FocusWindow(ImGui::GetCurrentWindow());
                 // ImGui::Text("Viewport right dragged");

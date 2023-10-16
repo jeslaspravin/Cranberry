@@ -3,11 +3,13 @@ include(EngineCMakeHelpers)
 
 # Since Clang creates more targets
 get_filename_component(directory_name ${CMAKE_CURRENT_LIST_DIR} NAME)
-set (CMAKE_FOLDER Tools/${directory_name})
 
 # Finding LLVM libraries
+# Set folder so that llvm generated targets stays separated
+set (cmake_folder_backup ${CMAKE_FOLDER})
+set (CMAKE_FOLDER XGenTgts/LLVM)
 make_find_package_hints(LLVM ${Cranberry_LLVM_INSTALL_PATH} llvm_hints)
-find_package(LLVM 16
+find_package(LLVM 17
     REQUIRED CONFIG
     HINTS ${llvm_hints})    
 if (DEFINED LLVM_FOUND AND ${LLVM_FOUND})
@@ -25,6 +27,8 @@ if (DEFINED Clang_FOUND AND ${Clang_FOUND})
 else ()
     message (FATAL_ERROR "Clang package not found, Make sure to configure \"Cranberry_LLVM_INSTALL_PATH\" config CACHE with path to llvm install")
 endif ()
+# Reset folder
+set (CMAKE_FOLDER ${cmake_folder_backup})
 
 map_imported_targets_config(TARGETS libclang 
     # clangAST

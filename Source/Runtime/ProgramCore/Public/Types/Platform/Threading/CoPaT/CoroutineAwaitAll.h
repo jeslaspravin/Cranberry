@@ -4,7 +4,7 @@
  * \author Jeslas
  * \date May 2022
  * \copyright
- *  Copyright (C) Jeslas Pravin, Since 2022
+ *  Copyright (C) Jeslas Pravin, 2022-2023
  *  @jeslaspravin pravinjeslas@gmail.com
  *  License can be read in LICENSE file at this repository's root
  */
@@ -33,10 +33,18 @@ public:
     AwaitAllTasksCounter(u32 initialCount)
         : counter(initialCount)
     {}
-    AwaitAllTasksCounter(AwaitAllTasksCounter &&) = default;
-    AwaitAllTasksCounter(const AwaitAllTasksCounter &) = default;
-    AwaitAllTasksCounter &operator= (AwaitAllTasksCounter &&) = default;
-    AwaitAllTasksCounter &operator= (const AwaitAllTasksCounter &) = default;
+    AwaitAllTasksCounter(AwaitAllTasksCounter &&other) { this->operator= (std::forward<AwaitAllTasksCounter>(other)); }
+    AwaitAllTasksCounter &operator= (AwaitAllTasksCounter &&other)
+    {
+        /* Must be moved before we start awaiting, else undefined behavior */
+        COPAT_ASSERT(!other.awaitingCoroutine);
+        reset(other.counter.load(std::memory_order::relaxed));
+        other.reset(0);
+        return *this;
+    }
+    /* Deleting copy as AwaitAllTasks that use this counter is non copyable */
+    AwaitAllTasksCounter(const AwaitAllTasksCounter &) = delete;
+    AwaitAllTasksCounter &operator= (const AwaitAllTasksCounter &) = delete;
 
     void reset(u32 newCount) noexcept { counter.store(newCount, std::memory_order::release); }
     void setAwaitingCoroutine(std::coroutine_handle<> awaitingCoro) noexcept
@@ -138,6 +146,7 @@ public:
     {
         if constexpr (!std::is_void_v<RetType>)
         {
+            COPAT_ASSERT(ownerCoroutine && ownerCoroutine.promise().returnStore.isValid());
             return ownerCoroutine.promise().returnStore.get();
         }
     }

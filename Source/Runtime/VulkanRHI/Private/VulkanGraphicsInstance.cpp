@@ -4,7 +4,7 @@
  * \author Jeslas Pravin
  * \date January 2022
  * \copyright
- *  Copyright (C) Jeslas Pravin, Since 2022
+ *  Copyright (C) Jeslas Pravin, 2022-2023
  *  @jeslaspravin pravinjeslas@gmail.com
  *  License can be read in LICENSE file at this repository's root
  */
@@ -13,7 +13,7 @@
 #include <iostream>
 #include <set>
 #include <sstream>
-#include <vulkan_core.h>
+#include <vulkan/vulkan_core.h>
 
 #include "ApplicationInstance.h"
 #include "IApplicationModule.h"

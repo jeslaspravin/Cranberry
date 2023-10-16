@@ -4,7 +4,7 @@
  * \author Jeslas
  * \date May 2022
  * \copyright
- *  Copyright (C) Jeslas Pravin, Since 2022
+ *  Copyright (C) Jeslas Pravin, 2022-2023
  *  @jeslaspravin pravinjeslas@gmail.com
  *  License can be read in LICENSE file at this repository's root
  */
@@ -30,12 +30,10 @@ using WorkerQHazardToken = WorkerThreadQueueType::HazardToken;
 /**
  * Just to not leak thread include
  */
-using INTERNAL_SpecialThreadFuncType = void (JobSystem::*)();
-void INTERNAL_initializeAndRunSpecialThread(
-    INTERNAL_SpecialThreadFuncType threadFunc, EJobThreadType threadType, u32 threadIdx, JobSystem *jobSystem
-);
+using INTERNAL_DoSpecialThreadFuncType = void (JobSystem::*)();
+void INTERNAL_runSpecialThread(INTERNAL_DoSpecialThreadFuncType threadFunc, EJobThreadType threadType, u32 threadIdx, JobSystem *jobSystem);
 
-struct alignas(2 * CACHE_LINE_SIZE) SpecialJobReceivedEvent
+struct alignas(2 * CACHE_LINE_SIZE) JobReceivedEvent
 {
     std::atomic_flag flag;
 
@@ -68,7 +66,7 @@ public:
 
     // It is okay to have as array as each queue will be aligned 2x the Cache line size
     SpecialThreadQueueType specialQueues[COUNT * Priority_MaxPriority];
-    SpecialJobReceivedEvent specialJobEvents[COUNT];
+    JobReceivedEvent specialJobEvents[COUNT];
     std::latch allSpecialsExitEvent{ COUNT };
 
 private:
@@ -87,7 +85,8 @@ private:
     EnqueueTokensAllocator tokensAllocator;
 
 public:
-    void initialize(JobSystem *jobSystem) noexcept;
+    void initialize(JobSystem *jobSystem, SpecialThreadQueueType::QueueSharedContext &qSharedContext) noexcept;
+    void run() noexcept;
     void shutdown() noexcept;
 
     void enqueueJob(
@@ -118,7 +117,7 @@ public:
     void onSpecialThreadExit() noexcept { allSpecialsExitEvent.count_down(); }
 
     /**
-     * Allocates COUNT number of enqueue tokens, One for each special thread to be used for en queuing job from threads for each priority
+     * Allocates COUNT number of enqueue tokens, One for each special thread to be used for enqueuing job from threads for each priority
      */
     SpecialQHazardToken *allocateEnqTokens() noexcept
     {
@@ -143,19 +142,13 @@ public:
 private:
     static constexpr u32 threadTypeToIdx(EJobThreadType threadType) { return u32(threadType) - (u32(EJobThreadType::MainThread) + 1); }
     static constexpr EJobThreadType idxToThreadType(u32 threadIdx) { return EJobThreadType(threadIdx + 1 + u32(EJobThreadType::MainThread)); }
-    // Index to job priority and thread type index
-    static constexpr u32 idxToTTypeAndP(u32 idx, EJobPriority &outPriority)
-    {
-        outPriority = idx % Priority_MaxPriority;
-        return idx / Priority_MaxPriority;
-    }
     // Priority and thread type idx combined to get index in linear array
     static constexpr u32 pAndTTypeToIdx(u32 threadIdx, EJobPriority priority) { return threadIdx * Priority_MaxPriority + priority; }
 
     template <u32 Idx>
-    void initializeSpecialThread() noexcept;
+    void runSpecialThread() noexcept;
     template <u32... Indices>
-    void initializeSpecialThreads(std::integer_sequence<u32, Indices...>) noexcept;
+    void runSpecialThreads(std::integer_sequence<u32, Indices...>) noexcept;
 };
 
 #undef SPECIALTHREAD_NAME_FIRST
@@ -171,7 +164,8 @@ public:
     constexpr static const u32 COUNT = 0;
     constexpr static const TChar *NAMES[] = { COPAT_TCHAR("Dummy") };
 
-    void initialize(JobSystem *) {}
+    void initialize(JobSystem *, SpecialThreadQueueType::QueueSharedContext &) {}
+    void run() {}
     void shutdown() {}
 
     void enqueueJob(std::coroutine_handle<>, EJobThreadType, EJobPriority, SpecialQHazardToken *) {}
@@ -183,6 +177,69 @@ public:
     SpecialQHazardToken *allocateEnqTokens() { return nullptr; }
 };
 
+/**
+ * Just to not make WorkerThreadsPool friend of JobSystem
+ */
+using INTERNAL_DoWorkerThreadFuncType = void (JobSystem::*)(u32);
+
+class WorkerThreadsPool
+{
+public:
+    JobSystem *ownerJobSystem = nullptr;
+
+    /* Cache to first pointer of worker queues and worker job events */
+    WorkerThreadQueueType *workerQs = nullptr;
+    JobReceivedEvent *workerJobEvents = nullptr;
+
+    // For waiting until all workers are finishes and exits
+    std::latch allWorkersExitEvent;
+    u32 workersCount;
+
+private:
+    /* The index of the queue to which next enqueue job pushes the job into */
+    std::atomic_uint_fast32_t nextEnqToQ{ 0 };
+
+    std::atomic_int_fast32_t hazardTokensTop{ 0 };
+    WorkerQHazardToken *hazardTokens = nullptr;
+    /* Allocations for all worker queues, each worker's job wait events and each thread's enq/deq tokens */
+    void *workerAllocations = nullptr;
+
+public:
+    WorkerThreadsPool(u32 inWorkersCount)
+        : allWorkersExitEvent(inWorkersCount)
+        , workersCount(inWorkersCount)
+    {
+        /* Is power of 2 */
+        COPAT_ASSERT((inWorkersCount & (inWorkersCount - 1)) == 0);
+    }
+
+    void initialize(JobSystem *jobSystem, WorkerThreadQueueType::QueueSharedContext &qSharedContext) noexcept;
+    void run(INTERNAL_DoWorkerThreadFuncType doWorkerJobFunc, bool bSetAffinity) noexcept;
+    void shutdown() noexcept;
+
+    void enqueueJob(std::coroutine_handle<> coro, EJobPriority priority, WorkerQHazardToken *fromThreadTokens) noexcept;
+    void *dequeueJob(u32 threadIdx, EJobPriority priority, WorkerQHazardToken *fromThreadTokens) noexcept;
+    void *stealJob(u32 stealFromIdx, EJobPriority stealPriority, WorkerQHazardToken *fromThreadTokens) noexcept;
+
+    void waitForJob(u32 workerIdx) noexcept;
+    void onWorkerThreadExit() noexcept;
+
+    WorkerQHazardToken *allocateEnqTokens() noexcept;
+    u32 getWorkersCount() const { return workersCount; }
+
+private:
+    // Priority and thread type idx combined to get index in linear array
+    static u32 pAndTTypeToIdx(u32 threadIdx, EJobPriority priority) { return threadIdx * Priority_MaxPriority + priority; }
+
+    WorkerThreadQueueType *getThreadJobsQueue(u32 workerIdx, EJobPriority priority) const noexcept
+    {
+        return &workerQs[pAndTTypeToIdx(workerIdx, priority)];
+    }
+    u32 workerQsCount() const { return workersCount * Priority_MaxPriority; }
+    /* One token per thread for each worker thread queues and the priorities */
+    u32 hazardTokensCount() const;
+};
+
 #define THREADCONSTRAINT_ENUM_TO_FLAGBIT(ConstraintName)                                                                                       \
     (copat::JobSystem::BitMasksStart << (copat::JobSystem::##ConstraintName - copat::JobSystem::BitMasksStart))
 #define NOSPECIALTHREAD_ENUM_TO_FLAGBIT(ThreadType) THREADCONSTRAINT_ENUM_TO_FLAGBIT(No##ThreadType)
@@ -190,20 +247,17 @@ public:
 class COPAT_EXPORT_SYM JobSystem
 {
 public:
-    constexpr static const u32 MAX_SUPPORTED_WORKERS = 128;
-
     using MainThreadTickFunc = FunctionType<void, void *>;
     using SpecialThreadsPoolType = SpecialThreadsPool<u32(EJobThreadType::WorkerThreads) - u32(EJobThreadType::MainThread) - 1>;
-    friend SpecialThreadsPoolType;
 
     struct PerThreadData
     {
         EJobThreadType threadType;
-        WorkerQHazardToken workerEnqDqToken[Priority_MaxPriority];
-        SpecialQHazardToken mainEnqToken[Priority_MaxPriority];
-        SpecialQHazardToken *specialThreadTokens;
+        SpecialQHazardToken mainQTokens[Priority_MaxPriority];
+        WorkerQHazardToken *workerQsTokens;
+        SpecialQHazardToken *specialQsTokens;
 
-        PerThreadData(WorkerThreadQueueType *workerQs, SpecialThreadQueueType *mainQs, SpecialThreadsPoolType &specialThreadPool);
+        PerThreadData(SpecialThreadQueueType *mainQs, WorkerThreadsPool &workerThreadPool, SpecialThreadsPoolType &specialThreadPool);
     };
 
 #define NOSPECIALTHREAD_ENUM(ThreadType) No##ThreadType,
@@ -222,6 +276,7 @@ public:
         BitMasksStart = 8,
         // Flag if set worker threads will not be set to per logical processor affinity, instead use all processors in a group
         NoWorkerAffinity = BitMasksStart,
+        NoJobStealing,
         // Each of below NoSpecialThread mask will not stop creating those threads but will be used only at Enqueue. This is just to avoid unnecessary complexity
         FOR_EACH_UDTHREAD_TYPES(NOSPECIALTHREAD_ENUM) 
         BitMasksEnd
@@ -237,15 +292,11 @@ private:
     u32 tlsSlot = 0;
     u32 threadingConstraints = EThreadingConstraint::NoConstraints;
 
-    u32 workersCount;
-    WorkerThreadQueueType workerJobs[Priority_MaxPriority];
-    // Binary semaphore wont work if two jobs arrive at same time, and one of 2 just ends up waiting until another job arrives
-    // std::binary_semaphore workerJobEvent{0};
-    std::counting_semaphore<2 * MAX_SUPPORTED_WORKERS> workerJobEvent;
-    // To ensure that we do not trigger workerJobEvent when there is no free workers
-    std::atomic_int_fast64_t availableWorkersCount;
-    // For waiting until all workers are finishes and exits
-    std::latch workersExitEvent;
+    static_assert(
+        std::is_same_v<SpecialThreadQueueType::QueueSharedContext, WorkerThreadQueueType::QueueSharedContext>,
+        "Queues shared context are not the same type"
+    );
+    SpecialThreadQueueType::QueueSharedContext qSharedContext;
 
     SpecialThreadQueueType mainThreadJobs[Priority_MaxPriority];
     // 0 will be used by main thread loop itself while 1 will be used by worker threads to run until shutdown is called
@@ -254,6 +305,7 @@ private:
     MainThreadTickFunc mainThreadTick;
     void *userData = nullptr;
 
+    WorkerThreadsPool workerThreadsPool;
     SpecialThreadsPoolType specialThreadsPool;
 
     EJobThreadType enqIndirection[u32(EJobThreadType::MaxThreads)];
@@ -290,19 +342,19 @@ public:
     EJobThreadType enqToThreadType(EJobThreadType forThreadType) const { return EJobThreadType(enqIndirection[u32(forThreadType)]); }
     bool isInThread(EJobThreadType threadType) const { return getCurrentThreadType() == enqToThreadType(threadType); }
 
-    u32 getWorkersCount() const { return workersCount; }
-    u32 getTotalThreadsCount() const { return workersCount + SpecialThreadsPoolType::COUNT + 1; }
+    u32 getWorkersCount() const { return workerThreadsPool.getWorkersCount(); }
+    u32 getTotalThreadsCount() const { return getWorkersCount() + SpecialThreadsPoolType::COUNT + 1 /* Main thread */; }
 
 private:
-    void initializeWorkers() noexcept;
-
     PerThreadData *getPerThreadData() const noexcept;
     PerThreadData &getOrCreatePerThreadData() noexcept;
 
     u32 calculateWorkersCount() const noexcept;
 
     void runMain() noexcept;
-    void doWorkerJobs() noexcept;
+    void doWorkerJobs(u32 threadIdx) noexcept;
+    /* Necessary to be friend to run special thread jobs */
+    friend SpecialThreadsPoolType;
     template <u32 SpecialThreadIdx, EJobThreadType SpecialThreadType>
     void doSpecialThreadJobs() noexcept
     {
@@ -348,15 +400,30 @@ private:
 //////////////////////////////////////////////////////////////////////////
 
 template <u32 SpecialThreadsCount>
-void SpecialThreadsPool<SpecialThreadsCount>::initialize(JobSystem *jobSystem) noexcept
+void SpecialThreadsPool<SpecialThreadsCount>::initialize(
+    JobSystem *jobSystem, SpecialThreadQueueType::QueueSharedContext &qSharedContext
+) noexcept
 {
     COPAT_ASSERT(jobSystem);
     COPAT_PROFILER_SCOPE(COPAT_PROFILER_CHAR("CopatSpecialThreadsInit"));
 
     ownerJobSystem = jobSystem;
 
+    for (u32 threadIdx = 0; threadIdx < COUNT; ++threadIdx)
+    {
+        for (EJobPriority priority = Priority_Critical; priority < Priority_MaxPriority; priority = EJobPriority(priority + 1))
+        {
+            specialQueues[pAndTTypeToIdx(threadIdx, priority)].setupQueue(qSharedContext);
+        }
+    }
+
     tokensAllocator.initialize(ownerJobSystem->getTotalThreadsCount());
-    initializeSpecialThreads(std::make_integer_sequence<u32, COUNT>{});
+}
+
+template <u32 SpecialThreadsCount>
+void copat::SpecialThreadsPool<SpecialThreadsCount>::run() noexcept
+{
+    runSpecialThreads(std::make_integer_sequence<u32, COUNT>{});
 }
 
 template <u32 SpecialThreadsCount>
@@ -373,18 +440,18 @@ void SpecialThreadsPool<SpecialThreadsCount>::shutdown() noexcept
 
 template <u32 SpecialThreadsCount>
 template <u32 Idx>
-void SpecialThreadsPool<SpecialThreadsCount>::initializeSpecialThread() noexcept
+void SpecialThreadsPool<SpecialThreadsCount>::runSpecialThread() noexcept
 {
     constexpr static const EJobThreadType threadType = idxToThreadType(Idx);
-    INTERNAL_SpecialThreadFuncType func = &JobSystem::doSpecialThreadJobs<Idx, threadType>;
-    INTERNAL_initializeAndRunSpecialThread(func, threadType, Idx, ownerJobSystem);
+    INTERNAL_DoSpecialThreadFuncType func = &JobSystem::doSpecialThreadJobs<Idx, threadType>;
+    INTERNAL_runSpecialThread(func, threadType, Idx, ownerJobSystem);
 }
 
 template <u32 SpecialThreadsCount>
 template <u32... Indices>
-void SpecialThreadsPool<SpecialThreadsCount>::initializeSpecialThreads(std::integer_sequence<u32, Indices...>) noexcept
+void SpecialThreadsPool<SpecialThreadsCount>::runSpecialThreads(std::integer_sequence<u32, Indices...>) noexcept
 {
-    (initializeSpecialThread<Indices>(), ...);
+    (runSpecialThread<Indices>(), ...);
 }
 
 template <u32 SpecialThreadsCount>
@@ -405,6 +472,7 @@ void SpecialThreadsPool<SpecialThreadsCount>::EnqueueTokensAllocator::release() 
 {
     if (hazardTokens != nullptr)
     {
+        /* No need to free as everything will be freed when queues are destructed */
         CoPaTMemAlloc::memFree(hazardTokens);
         hazardTokens = nullptr;
     }
