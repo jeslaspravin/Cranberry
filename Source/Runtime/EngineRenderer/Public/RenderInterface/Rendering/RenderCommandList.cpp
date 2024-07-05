@@ -4,7 +4,7 @@
  * \author Jeslas Pravin
  * \date January 2022
  * \copyright
- *  Copyright (C) Jeslas Pravin, 2022-2023
+ *  Copyright (C) Jeslas Pravin, 2022-2024
  *  @jeslaspravin pravinjeslas@gmail.com
  *  License can be read in LICENSE file at this repository's root
  */
@@ -311,17 +311,17 @@ bool RenderCommandList::hasCmdsUsingResource(const MemoryResourceRef &resource, 
     return cmdList->hasCmdsUsingResource(resource, bFinishCmds);
 }
 
-void RenderCommandList::copyToImage(ImageResourceRef dst, ArrayView<class Color> pixelData, const CopyPixelsToImageInfo &copyInfo)
+void RenderCommandList::copyToImage(ImageResourceRef dst, ArrayView<Color> pixelData, const CopyPixelsToImageInfo &copyInfo)
 {
     cmdList->copyToImage(dst, pixelData, copyInfo);
 }
 
-void RenderCommandList::copyToImage(ImageResourceRef dst, ArrayView<class LinearColor> pixelData, const CopyPixelsToImageInfo &copyInfo)
+void RenderCommandList::copyToImage(ImageResourceRef dst, ArrayView<LinearColor> pixelData, const CopyPixelsToImageInfo &copyInfo)
 {
     cmdList->copyToImage(dst, pixelData, copyInfo);
 }
 
-void RenderCommandList::copyToImageLinearMapped(ImageResourceRef dst, ArrayView<class Color> pixelData, const CopyPixelsToImageInfo &copyInfo)
+void RenderCommandList::copyToImageLinearMapped(ImageResourceRef dst, ArrayView<Color> pixelData, const CopyPixelsToImageInfo &copyInfo)
 {
     cmdList->copyToImageLinearMapped(dst, pixelData, copyInfo);
 }
@@ -1070,7 +1070,8 @@ bool ShaderParameters::setBuffer(StringID paramName, const void *bufferValue, ui
         {
             if (foundInfo.second->bufferField->isIndexAccessible())
             {
-                if (bValueSet = foundInfo.second->bufferField->setFieldDataArray(foundInfo.second->outerPtr, bufferValue, index))
+                bValueSet = foundInfo.second->bufferField->setFieldDataArray(foundInfo.second->outerPtr, bufferValue, index);
+                if (bValueSet)
                 {
                     genericUpdates.emplace_back(
                         [foundInfo, index](ParamUpdateLambdaOut &paramOut, IRenderCommandList *cmdList, IGraphicsInstance *)
@@ -1086,18 +1087,22 @@ bool ShaderParameters::setBuffer(StringID paramName, const void *bufferValue, ui
                     );
                 }
             }
-            else if (bValueSet = foundInfo.second->bufferField->setFieldData(foundInfo.second->outerPtr, bufferValue))
+            else
             {
-                genericUpdates.emplace_back(
-                    [foundInfo](ParamUpdateLambdaOut &paramOut, IRenderCommandList *cmdList, IGraphicsInstance *)
-                    {
-                        cmdList->recordCopyToBuffer(
-                            *paramOut.bufferUpdates, foundInfo.first->gpuBuffer, foundInfo.second->bufferField->offset,
-                            foundInfo.second->bufferField->fieldData(foundInfo.second->outerPtr, nullptr, nullptr),
-                            foundInfo.second->bufferField->paramInfo
-                        );
-                    }
-                );
+                bValueSet = foundInfo.second->bufferField->setFieldData(foundInfo.second->outerPtr, bufferValue);
+                if (bValueSet)
+                {
+                    genericUpdates.emplace_back(
+                        [foundInfo](ParamUpdateLambdaOut &paramOut, IRenderCommandList *cmdList, IGraphicsInstance *)
+                        {
+                            cmdList->recordCopyToBuffer(
+                                *paramOut.bufferUpdates, foundInfo.first->gpuBuffer, foundInfo.second->bufferField->offset,
+                                foundInfo.second->bufferField->fieldData(foundInfo.second->outerPtr, nullptr, nullptr),
+                                foundInfo.second->bufferField->paramInfo
+                            );
+                        }
+                    );
+                }
             }
         }
         else

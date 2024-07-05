@@ -4,7 +4,7 @@
  * \author Jeslas Pravin
  * \date January 2022
  * \copyright
- *  Copyright (C) Jeslas Pravin, 2022-2023
+ *  Copyright (C) Jeslas Pravin, 2022-2024
  *  @jeslaspravin pravinjeslas@gmail.com
  *  License can be read in LICENSE file at this repository's root
  */
@@ -131,7 +131,7 @@ MustacheFormatArg &MustacheFormatArg::operator= (const MustacheFormatArg &arg) n
     return *this;
 }
 
-#define FORMAT_FUNDAMENTALS(VarName) STR_FORMAT(TCHAR("{}"), value.fundamentalVals.##VarName)
+#define FORMAT_FUNDAMENTALS(VarName) STR_FORMAT("{}", value.fundamentalVals.##VarName)
 String MustacheFormatArg::toString() const noexcept
 {
     switch (type)
@@ -238,13 +238,13 @@ void MustacheStringFormatter::parseFmtStr() noexcept
 {
     // Scans for pattern within a line, Matches inner most {{.+}} and captures the inner name of the
     // match
-    static const StringRegex searchPattern(TCHAR("\\{\\{([^{}]+)\\}\\}"), std::regex_constants::ECMAScript);
+    static const StringRegex SEARCH_PATTERN(TCHAR("\\{\\{([^{}]+)\\}\\}"), std::regex_constants::ECMAScript);
     allMatches.clear();
     sections.clear();
 
     auto startItr = fmtStr.cbegin();
     StringMatch matches;
-    while (std::regex_search(startItr, fmtStr.cend(), matches, searchPattern))
+    while (std::regex_search(startItr, fmtStr.cend(), matches, SEARCH_PATTERN))
     {
         allMatches.push_back(matches);
         startItr = matches.suffix().first;
@@ -277,15 +277,21 @@ void MustacheStringFormatter::parseFmtStr() noexcept
 FORCE_INLINE void MustacheStringFormatter::removeMustachePrefix(String &tagName) const noexcept
 {
     // Match and replace first char
-    static const StringRegex searchPattern(TCHAR("^[#^!>/]{1}"), std::regex_constants::ECMAScript);
+    static const StringRegex SEARCH_PATTERN(TCHAR("^[#^!>/]{1}"), std::regex_constants::ECMAScript);
 
-    tagName = std::regex_replace(tagName, searchPattern, TCHAR(""));
+    tagName = std::regex_replace(tagName, SEARCH_PATTERN, TCHAR(""));
     tagName.trim();
 }
 
 String MustacheStringFormatter::formatBasic(const FormatArgsMap &formatArgs) const noexcept
 {
-    // Each segment starts at first index of prefix and has extend
+    /* If no matches then return format string itself */
+    if (allMatches.empty())
+    {
+        return fmtStr;
+    }
+
+    /* Each segment starts at first index of prefix and has extend */
     struct FormatSegment
     {
         uint64 prefixStartIndex;
@@ -297,9 +303,9 @@ String MustacheStringFormatter::formatBasic(const FormatArgsMap &formatArgs) con
     uint64 outStrLength = fmtStr.length();
 
     std::unordered_map<String, String> formatStrings;
-    // Below loop creates arg string for each matched mustache from formatArgs
-    // Then creates post replacement offsets for each prefix from each match
-    // and also as side effect creates post replace suffix offset for last match as well
+    /* Below loop creates arg string for each matched mustache from formatArgs
+     * Then creates post replacement offsets for each prefix from each match
+     * and also as side effect creates post replace suffix offset for last match as well */
     for (const StringMatch &match : allMatches)
     {
         const StringSubmatch &submatch = match[match.size() - 1];
@@ -342,8 +348,7 @@ String MustacheStringFormatter::formatBasic(const FormatArgsMap &formatArgs) con
         backSegmentLength = outSegments.back().prefixStartIndex + outSegments.back().length;
     }
 
-    // Now copy all strings to final string, All segments are non overlapping and can be parallel
-    // processed
+    /* Now copy all strings to final string, All segments are non overlapping and can be parallel processed */
     String outputStr;
     outputStr.resize(outStrLength);
     for (uint32 i = 0; i < allMatches.size(); ++i)
@@ -549,7 +554,7 @@ uint32 MustacheStringFormatter::renderTag(
 String MustacheStringFormatter::render(const MustacheContext &context, const std::unordered_map<String, MustacheStringFormatter> &partials)
     const noexcept
 {
-    // If no matches then return format string itself
+    /* If no matches then return format string itself */
     if (allMatches.empty())
     {
         return fmtStr;

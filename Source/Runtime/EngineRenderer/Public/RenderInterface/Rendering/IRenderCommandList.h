@@ -4,7 +4,7 @@
  * \author Jeslas Pravin
  * \date January 2022
  * \copyright
- *  Copyright (C) Jeslas Pravin, 2022-2023
+ *  Copyright (C) Jeslas Pravin, 2022-2024
  *  @jeslaspravin pravinjeslas@gmail.com
  *  License can be read in LICENSE file at this repository's root
  */
@@ -375,7 +375,8 @@ bool ShaderParameters::setBuffer(StringID paramName, const BufferType &bufferVal
         {
             if (foundInfo.second->bufferField->isIndexAccessible())
             {
-                if (bValueSet = foundInfo.second->bufferField->setFieldDataArray(foundInfo.second->outerPtr, bufferValue, index))
+                bValueSet = foundInfo.second->bufferField->setFieldDataArray(foundInfo.second->outerPtr, bufferValue, index);
+                if (bValueSet)
                 {
                     genericUpdates.emplace_back(
                         [foundInfo, index](ParamUpdateLambdaOut &paramOut, IRenderCommandList *cmdList, IGraphicsInstance *)
@@ -392,20 +393,24 @@ bool ShaderParameters::setBuffer(StringID paramName, const BufferType &bufferVal
                     );
                 }
             }
-            else if (bValueSet = foundInfo.second->bufferField->setFieldData(foundInfo.second->outerPtr, bufferValue))
+            else
             {
-                genericUpdates.emplace_back(
-                    [foundInfo](ParamUpdateLambdaOut &paramOut, IRenderCommandList *cmdList, IGraphicsInstance *)
-                    {
-                        cmdList->recordCopyToBuffer<BufferType>(
-                            *paramOut.bufferUpdates, foundInfo.first->gpuBuffer, foundInfo.second->bufferField->offset,
-                            reinterpret_cast<BufferType *>(
-                                foundInfo.second->bufferField->fieldData(foundInfo.second->outerPtr, nullptr, nullptr)
-                            ),
-                            foundInfo.second->bufferField->paramInfo
-                        );
-                    }
-                );
+                bValueSet = foundInfo.second->bufferField->setFieldData(foundInfo.second->outerPtr, bufferValue);
+                if (bValueSet)
+                {
+                    genericUpdates.emplace_back(
+                        [foundInfo](ParamUpdateLambdaOut &paramOut, IRenderCommandList *cmdList, IGraphicsInstance *)
+                        {
+                            cmdList->recordCopyToBuffer<BufferType>(
+                                *paramOut.bufferUpdates, foundInfo.first->gpuBuffer, foundInfo.second->bufferField->offset,
+                                reinterpret_cast<BufferType *>(
+                                    foundInfo.second->bufferField->fieldData(foundInfo.second->outerPtr, nullptr, nullptr)
+                                ),
+                                foundInfo.second->bufferField->paramInfo
+                            );
+                        }
+                    );
+                }
             }
         }
         else

@@ -4,7 +4,7 @@
  * \author Jeslas Pravin
  * \date January 2022
  * \copyright
- *  Copyright (C) Jeslas Pravin, 2022-2023
+ *  Copyright (C) Jeslas Pravin, 2022-2024
  *  @jeslaspravin pravinjeslas@gmail.com
  *  License can be read in LICENSE file at this repository's root
  */
@@ -44,12 +44,9 @@ using StringStream = std::basic_stringstream<BaseString::value_type, BaseString:
 class String : public BaseString
 {
 public:
-    STRING_FUNCQUALIFIER String()
-        : BaseString()
-    {}
-    STRING_FUNCQUALIFIER String(const String &otherString)
-        : BaseString(otherString)
-    {}
+    STRING_FUNCQUALIFIER String() = default;
+    MAKE_TYPE_DEFAULT_COPY_MOVE(String)
+
     STRING_FUNCQUALIFIER String(const String &otherString, size_type pos, size_type len)
         : BaseString(otherString, pos, len)
     {}
@@ -108,7 +105,7 @@ public:
         return false;
     }
 
-    STRING_FUNCQUALIFIER String replaceAllCopy(StringView from, StringView to) const noexcept
+    NODISCARD STRING_FUNCQUALIFIER String replaceAllCopy(StringView from, StringView to) const noexcept
     {
         String newStr{ this->getChar() };
         size_type replaceAtPos = 0;
@@ -131,7 +128,7 @@ public:
         return *this;
     }
 
-    STRING_FUNCQUALIFIER bool isEqual(StringView match, bool bMatchCase = true) const noexcept
+    NODISCARD STRING_FUNCQUALIFIER bool isEqual(StringView match, bool bMatchCase = true) const noexcept
     {
         if (length() != match.length())
         {
@@ -154,7 +151,7 @@ public:
         return cbegin() == it;
     }
 
-    STRING_FUNCQUALIFIER bool startsWith(StringView match, bool bMatchCase = true) const noexcept
+    NODISCARD STRING_FUNCQUALIFIER bool startsWith(StringView match, bool bMatchCase = true) const noexcept
     {
         if (length() < match.length())
         {
@@ -177,7 +174,7 @@ public:
         return cbegin() == it;
     }
 
-    STRING_FUNCQUALIFIER bool startsWith(TChar match, bool bMatchCase = true) const noexcept
+    NODISCARD STRING_FUNCQUALIFIER bool startsWith(TChar match, bool bMatchCase = true) const noexcept
     {
         if (length() == 0)
         {
@@ -192,7 +189,7 @@ public:
         return std::toupper(*begin()) == std::toupper(match);
     }
 
-    STRING_FUNCQUALIFIER bool endsWith(StringView match, bool bMatchCase = true) const noexcept
+    NODISCARD STRING_FUNCQUALIFIER bool endsWith(StringView match, bool bMatchCase = true) const noexcept
     {
         if (length() < match.length())
         {
@@ -216,7 +213,7 @@ public:
         return it == searchFrom;
     }
 
-    STRING_FUNCQUALIFIER bool endsWith(TChar match, bool bMatchCase = true) const noexcept
+    NODISCARD STRING_FUNCQUALIFIER bool endsWith(TChar match, bool bMatchCase = true) const noexcept
     {
         if (length() == 0)
         {
@@ -295,7 +292,7 @@ public:
         return (*this);
     }
 
-    STRING_FUNCQUALIFIER String trimLCopy() const noexcept
+    NODISCARD STRING_FUNCQUALIFIER String trimLCopy() const noexcept
     {
         String s(*this);
         s.erase(
@@ -310,7 +307,7 @@ public:
         return s;
     }
 
-    STRING_FUNCQUALIFIER String trimRCopy() const noexcept
+    NODISCARD STRING_FUNCQUALIFIER String trimRCopy() const noexcept
     {
         String s(*this);
         s.erase(
@@ -326,7 +323,7 @@ public:
         return s;
     }
 
-    STRING_FUNCQUALIFIER String trimCopy() const noexcept
+    NODISCARD STRING_FUNCQUALIFIER String trimCopy() const noexcept
     {
         String s(*this);
         s.trim();
@@ -335,7 +332,7 @@ public:
 
     // Removes consequently duplicated chars
     // **NOTE** Only works for characters that can be represented in sizeof(TChar)
-    STRING_FUNCQUALIFIER String trimDuplicatesCopy(TChar duplicateChar, uint64 offset = 0) const noexcept
+    NODISCARD STRING_FUNCQUALIFIER String trimDuplicatesCopy(TChar duplicateChar, uint64 offset = 0) const noexcept
     {
         String s(*this);
         s.trimDuplicates(duplicateChar, offset);
@@ -365,7 +362,7 @@ public:
         return *this;
     }
     // Remove count number of characters from start of string
-    STRING_FUNCQUALIFIER String eraseLCopy(uint64 count) const noexcept
+    NODISCARD STRING_FUNCQUALIFIER String eraseLCopy(uint64 count) const noexcept
     {
         if (count > length())
         {
@@ -374,7 +371,7 @@ public:
         return String(cbegin() + count, cend());
     }
     // Remove count number of characters from end of string
-    STRING_FUNCQUALIFIER String eraseRCopy(uint64 count) const noexcept
+    NODISCARD STRING_FUNCQUALIFIER String eraseRCopy(uint64 count) const noexcept
     {
         if (count > length())
         {
@@ -386,7 +383,7 @@ public:
     /*
      * Splits given string into list of line views
      */
-    STRING_FUNCQUALIFIER std::vector<StringView> splitLines() const noexcept
+    NODISCARD STRING_FUNCQUALIFIER std::vector<StringView> splitLines() const noexcept
     {
         std::vector<StringView> outStrs;
         uint64 foundAtPos = 0;
@@ -430,13 +427,13 @@ public:
             ch = TChar(std::tolower(ch));
         }
     }
-    String toUpperCopy() const noexcept
+    NODISCARD String toUpperCopy() const noexcept
     {
         String str = *this;
         str.toUpper();
         return str;
     }
-    String toLowerCopy() const noexcept
+    NODISCARD String toLowerCopy() const noexcept
     {
         String str = *this;
         str.toLower();
@@ -444,7 +441,7 @@ public:
     }
 
     template <typename IteratorType, typename StrType>
-    STRING_FUNCQUALIFIER static String join(IteratorType begin, IteratorType end, StrType &&separator) noexcept
+    NODISCARD STRING_FUNCQUALIFIER static String join(IteratorType begin, IteratorType end, StrType &&separator) noexcept
     {
         String s;
         if (begin == end)
@@ -460,7 +457,7 @@ public:
         return s;
     }
 
-    STRING_FUNCQUALIFIER static std::vector<StringView> split(StringView inStr, StringView separator) noexcept
+    NODISCARD STRING_FUNCQUALIFIER static std::vector<StringView> split(StringView inStr, StringView separator) noexcept
     {
         std::vector<StringView> outStrs;
         uint64 foundAtPos = 0;
@@ -478,7 +475,7 @@ public:
     }
 
     template <typename Type>
-    STRING_FUNCQUALIFIER static String toString(Type &&value) noexcept;
+    NODISCARD STRING_FUNCQUALIFIER static String toString(Type &&value) noexcept;
 };
 
 template <>
@@ -529,6 +526,14 @@ template <typename T>
 concept NonStringType = std::negation_v<IsString<T>>;
 template <typename... T>
 concept StringTypes = IsStringTypes<T...>::value;
+
+// If not a string type and toString method exists
+template <typename Type, typename CleanType = std::remove_cvref_t<Type>>
+concept HasToStringMethod = NonStringType<Type> && std::is_compound_v<CleanType> && requires(Type &&val) {
+    {
+        val.toString()
+    } -> std::convertible_to<String>;
+};
 
 #include "String/StringHelpers.inl"
 
