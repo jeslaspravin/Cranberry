@@ -1,5 +1,7 @@
 # Cranberry Game Engine
 
+***NOTE*** This repository is no longer updated. Latest open source version of this engine can be found at https://git.jeslaspravin.com/jeslaspravin/Cranberry
+
 **Cranberry Game Engine** is my Personal hobby game engine, This is my first from scratch game engine. I work on this as best as I could during my holidays.
 
 Why is `Cranberry` the name? I was eating cranberry and checking Twitter for my daily dose of imposter syndrome. Then suddenly 💡 why not write my engine? I created the project while still eating the berries!
